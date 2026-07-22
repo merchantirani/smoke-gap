@@ -1,5 +1,5 @@
 let logs = JSON.parse(localStorage.getItem('smoke_logs')) || [];
-let settings = JSON.parse(localStorage.getItem('smoke_settings')) || { theme: 'default', haptics: true, dailyLimit: 15, lockSecs: 300, packPrice: 20, packSize: 20 };
+let settings = JSON.parse(localStorage.getItem('smoke_settings')) || { theme: 'default', haptics: true, dailyLimit: 15, lockSecs: 300, packPrice: 20, packSize: 20, currency: 'AED' };
 let triggers = ['💼 Work Stress', '🍽️ After Meal', '☕ Chai / Coffee', '🚗 Driving', '📱 Boredom', '👥 Social'];
 let shields = parseInt(localStorage.getItem('smoke_shields')) || 0;
 let lockEndTime = parseInt(localStorage.getItem('smoke_lock_end')) || 0;
@@ -8,14 +8,16 @@ let appPin = localStorage.getItem('smoke_pin');
 let enteredPin = "";
 
 let myChartInstances = {};
-let mapInstance = null;
+let mapInstance = null, modalMapInstance = null;
 let mainTimer = null, waveTimer = null, cooldownTimer = null;
 
 window.onload = () => {
   applyTheme(settings.theme);
   document.getElementById('dailyLimitInput').value = settings.dailyLimit;
   document.getElementById('packPriceInput').value = settings.packPrice;
+  document.getElementById('packSizeInput').value = settings.packSize;
   document.getElementById('themeSelect').value = settings.theme;
+  document.getElementById('currencySelect').value = settings.currency || 'AED';
   if(appPin) {
     document.getElementById('lockScreen').classList.remove('hidden');
     document.getElementById('pinStatusBtn').innerText = "Remove PIN";
@@ -111,7 +113,7 @@ function switchTab(t) {
   if(cp) cp.classList.remove('hidden'); 
   if(ct) ct.classList.add('tab-active');
   if(t==='history') renderHistory();
-  if(t==='insights') { setTimeout(() => renderAllCharts(), 100); }
+  if(t==='insights') { setTimeout(() => renderAllCharts(), 150); }
 }
 
 function applyTheme(t) {
@@ -121,8 +123,10 @@ function applyTheme(t) {
 
 function updateSettings() {
   settings.theme = document.getElementById('themeSelect').value;
+  settings.currency = document.getElementById('currencySelect').value;
   settings.dailyLimit = parseInt(document.getElementById('dailyLimitInput').value) || 15;
   settings.packPrice = parseFloat(document.getElementById('packPriceInput').value) || 20;
+  settings.packSize = parseInt(document.getElementById('packSizeInput').value) || 20;
   localStorage.setItem('smoke_settings', JSON.stringify(settings)); 
   applyTheme(settings.theme); 
   updateUI();
@@ -132,7 +136,7 @@ function updateUI() {
   document.getElementById('shieldCount').innerText = shields;
   const today = logs.filter(l => new Date(l.timestamp).toDateString() === new Date().toDateString());
   document.getElementById('todayCount').innerText = `${today.length} / ${settings.dailyLimit}`;
-  document.getElementById('todaySpend').innerText = `AED ${(today.length * (settings.packPrice/settings.packSize)).toFixed(1)}`;
+  document.getElementById('todaySpend').innerText = `${settings.currency} ${(today.length * (settings.packPrice/settings.packSize)).toFixed(1)}`;
   if(logs.length>1) document.getElementById('prevGap').innerText = formatGap(logs[logs.length-1].gap);
   if(today.length>0) document.getElementById('bestGap').innerText = formatGap(Math.max(...today.map(l=>l.gap)));
   renderHistory('homeRecentLogs', 4);
@@ -152,48 +156,136 @@ function renderHistory(tId='fullHistoryList', limit=null) {
   c.innerHTML = items.map(l => `<div class="glass-card p-3 rounded-xl flex justify-between border-l-2 border-gray-500 mb-2"><div><div class="font-bold">${new Date(l.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div><div class="text-[10px] opacity-70">${l.trigger||'No Tag'}</div></div><div class="font-bold dynamic-text">${formatGap(l.gap)}</div></div>`).join('');
 }
 
+function getFilteredLogs() {
+  const filter = document.getElementById('insightsDateFilter').value;
+  const now = new Date().getTime();
+  if(filter === 'today') {
+    return logs.filter(l => new Date(l.timestamp).toDateString() === new Date().toDateString());
+  } else if(filter === '7days') {
+    return logs.filter(l => (now - l.timestamp) <= 7 * 86400000);
+  } else if(filter === '1month') {
+    return logs.filter(l => (now - l.timestamp) <= 30 * 86400000);
+  }
+  return logs;
+}
+
 function renderAllCharts() {
-  for (let i = 1; i <= 9; i++) {
-    const canvas = document.getElementById(`chart${i}`);
-    if(!canvas) continue;
-    if(myChartInstances[i]) myChartInstances[i].destroy();
-    
-    let labels = logs.slice(-7).map(l => new Date(l.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}));
-    let data = logs.slice(-7).map(l => l.gap);
-    if(data.length === 0) { data = [0]; labels = ['--']; }
+  const activeLogs = getFilteredLogs();
+  const labels = activeLogs.length > 0 ? activeLogs.map(l => new Date(l.timestamp).toLocaleDateString([], {month:'short', day:'numeric'}) + ' ' + new Date(l.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})) : ['No Data'];
+  const gaps = activeLogs.length > 0 ? activeLogs.map(l => l.gap) : [0];
 
-    myChartInstances[i] = new Chart(canvas.getContext('2d'), {
-      type: i === 3 ? 'radar' : (i === 4 || i === 6 ? 'bar' : 'line'),
-      data: {
-        labels: labels,
-        datasets: [{
-          label: 'Analytics',
-          data: data,
-          borderColor: '#F59E0B',
-          backgroundColor: 'rgba(245, 158, 11, 0.1)',
-          borderWidth: 2,
-          tension: 0.3,
-          fill: true
-        }]
-      },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-    });
-  }
+  // 1. Line Trend
+  if(myChartInstances[1]) myChartInstances[1].destroy();
+  myChartInstances[1] = new Chart(document.getElementById('chart1').getContext('2d'), {
+    type: 'line',
+    data: { labels: labels, datasets: [{ label: 'Gap (m)', data: gaps, borderColor: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.1)', borderWidth: 2, tension: 0.3, fill: true }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+  });
 
-  // Spatial Map
-  const mapEl = document.getElementById('mapContainer');
-  if(mapEl) {
-    if(mapInstance) { mapInstance.remove(); mapInstance = null; }
-    mapEl.innerHTML = "";
-    let lastWithLoc = logs.slice().reverse().find(l => l.lat && l.lng);
-    let lat = lastWithLoc ? lastWithLoc.lat : 25.2048;
-    let lng = lastWithLoc ? lastWithLoc.lng : 55.2708;
-    try {
-      mapInstance = L.map('mapContainer', {zoomControl: false, attributionControl: false}).setView([lat, lng], 13);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{z}.png', {maxZoom: 19}).addTo(mapInstance);
-      if(lastWithLoc) L.marker([lat, lng]).addTo(mapInstance);
-    } catch(e) {}
-  }
+  // 2. Bar Spend
+  if(myChartInstances[2]) myChartInstances[2].destroy();
+  myChartInstances[2] = new Chart(document.getElementById('chart2').getContext('2d'), {
+    type: 'bar',
+    data: { labels: labels, datasets: [{ label: 'Spend', data: gaps.map(g => (settings.packPrice/settings.packSize).toFixed(1)), backgroundColor: '#EF4444' }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+  });
+
+  // 3. Radar Craving
+  if(myChartInstances[3]) myChartInstances[3].destroy();
+  myChartInstances[3] = new Chart(document.getElementById('chart3').getContext('2d'), {
+    type: 'radar',
+    data: { labels: triggers, datasets: [{ label: 'Triggers', data: triggers.map(t => activeLogs.filter(l => l.trigger === t).length), borderColor: '#6366F1', backgroundColor: 'rgba(99, 102, 241, 0.2)' }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+  });
+
+  // 4. Day vs Night Bar
+  if(myChartInstances[4]) myChartInstances[4].destroy();
+  const dayCount = activeLogs.filter(l => { let h = new Date(l.timestamp).getHours(); return h >= 6 && h < 18; }).length;
+  const nightCount = activeLogs.length - dayCount;
+  myChartInstances[4] = new Chart(document.getElementById('chart4').getContext('2d'), {
+    type: 'bar',
+    data: { labels: ['Day (6AM-6PM)', 'Night (6PM-6AM)'], datasets: [{ data: [dayCount, nightCount], backgroundColor: ['#F59E0B', '#3B82F6'] }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+  });
+
+  // 5. 24-Hour Matrix
+  if(myChartInstances[5]) myChartInstances[5].destroy();
+  let hours = Array(24).fill(0);
+  activeLogs.forEach(l => hours[new Date(l.timestamp).getHours()]++);
+  myChartInstances[5] = new Chart(document.getElementById('chart5').getContext('2d'), {
+    type: 'line',
+    data: { labels: Array.from({length:24}, (_,i)=>i+':00'), datasets: [{ data: hours, borderColor: '#F97316', backgroundColor: 'rgba(249, 115, 22, 0.1)', fill: true, tension: 0.4 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+  });
+
+  // 6. Day of Week Pattern
+  if(myChartInstances[6]) myChartInstances[6].destroy();
+  let days = [0,0,0,0,0,0,0];
+  activeLogs.forEach(l => days[new Date(l.timestamp).getDay()]++);
+  myChartInstances[6] = new Chart(document.getElementById('chart6').getContext('2d'), {
+    type: 'bar',
+    data: { labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], datasets: [{ data: days, backgroundColor: '#3B82F6' }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+  });
+
+  // 7. Trigger Breakdown Doughnut
+  if(myChartInstances[7]) myChartInstances[7].destroy();
+  myChartInstances[7] = new Chart(document.getElementById('chart7').getContext('2d'), {
+    type: 'doughnut',
+    data: { labels: triggers, datasets: [{ data: triggers.map(t => activeLogs.filter(l => l.trigger === t).length), backgroundColor: ['#F59E0B','#10B981','#6366F1','#EF4444','#3B82F6','#A855F7'] }] },
+    options: { responsive: true, maintainAspectRatio: false }
+  });
+
+  // 8. Gap Distribution Line
+  if(myChartInstances[8]) myChartInstances[8].destroy();
+  myChartInstances[8] = new Chart(document.getElementById('chart8').getContext('2d'), {
+    type: 'line',
+    data: { labels: labels, datasets: [{ data: gaps, borderColor: '#14B8A6', backgroundColor: 'rgba(20, 184, 166, 0.1)', fill: true }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+  });
+
+  // 9. Stick Count Volume
+  if(myChartInstances[9]) myChartInstances[9].destroy();
+  myChartInstances[9] = new Chart(document.getElementById('chart9').getContext('2d'), {
+    type: 'bar',
+    data: { labels: labels, datasets: [{ data: activeLogs.map(() => 1), backgroundColor: '#EC4899' }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+  });
+
+  // Spatial Map Render
+  renderMap('mapContainer', activeLogs);
+}
+
+function renderMap(containerId, activeLogs) {
+  const mapEl = document.getElementById(containerId);
+  if(!mapEl) return;
+  if(containerId === 'mapContainer' && mapInstance) { mapInstance.remove(); mapInstance = null; }
+  if(containerId === 'mapModalContainer' && modalMapInstance) { modalMapInstance.remove(); modalMapInstance = null; }
+
+  let lastWithLoc = activeLogs.slice().reverse().find(l => l.lat && l.lng);
+  let lat = lastWithLoc ? lastWithLoc.lat : 25.2048;
+  let lng = lastWithLoc ? lastWithLoc.lng : 55.2708;
+
+  try {
+    let m = L.map(containerId, {zoomControl: false, attributionControl: false}).setView([lat, lng], 13);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{z}.png', {maxZoom: 19}).addTo(m);
+    if(lastWithLoc) {
+      activeLogs.forEach(l => {
+        if(l.lat && l.lng) L.marker([l.lat, l.lng]).addTo(m);
+      });
+    }
+    if(containerId === 'mapContainer') mapInstance = m;
+    if(containerId === 'mapModalContainer') modalMapInstance = m;
+  } catch(e) {}
+}
+
+function openMapModal() {
+  document.getElementById('mapModal').classList.remove('hidden');
+  setTimeout(() => { renderMap('mapModalContainer', getFilteredLogs()); }, 200);
+}
+function closeMapModal() {
+  document.getElementById('mapModal').classList.add('hidden');
+  if(modalMapInstance) { modalMapInstance.remove(); modalMapInstance = null; }
 }
 
 window.enterPin = enterPin;
@@ -206,3 +298,6 @@ window.updateSettings = updateSettings;
 window.resetData = resetData;
 window.assignTag = assignTag;
 window.closeTriggerModal = closeTriggerModal;
+window.renderAllCharts = renderAllCharts;
+window.openMapModal = openMapModal;
+window.closeMapModal = closeMapModal;
