@@ -29,10 +29,10 @@
         <div class="w-4 h-4 rounded-full bg-gray-700 pin-dot"></div><div class="w-4 h-4 rounded-full bg-gray-700 pin-dot"></div><div class="w-4 h-4 rounded-full bg-gray-700 pin-dot"></div><div class="w-4 h-4 rounded-full bg-gray-700 pin-dot"></div>
       </div>
       <div class="grid grid-cols-3 gap-4 max-w-[240px] mx-auto text-xl font-mono">
-        <button onclick="enterPin(1)" class="w-16 h-16 glass-card rounded-full">1</button><button onclick="enterPin(2)" class="w-16 h-16 glass-card rounded-full">2</button><button onclick="enterPin(3)" class="w-16 h-16 glass-card rounded-full">3</button>
-        <button onclick="enterPin(4)" class="w-16 h-16 glass-card rounded-full">4</button><button onclick="enterPin(5)" class="w-16 h-16 glass-card rounded-full">5</button><button onclick="enterPin(6)" class="w-16 h-16 glass-card rounded-full">6</button>
-        <button onclick="enterPin(7)" class="w-16 h-16 glass-card rounded-full">7</button><button onclick="enterPin(8)" class="w-16 h-16 glass-card rounded-full">8</button><button onclick="enterPin(9)" class="w-16 h-16 glass-card rounded-full">9</button>
-        <button class="w-16 h-16"></button><button onclick="enterPin(0)" class="w-16 h-16 glass-card rounded-full">0</button><button onclick="clearPin()" class="w-16 h-16 glass-card rounded-full text-red-500 text-sm">DEL</button>
+        <button onclick="window.enterPin(1)" class="w-16 h-16 glass-card rounded-full">1</button><button onclick="window.enterPin(2)" class="w-16 h-16 glass-card rounded-full">2</button><button onclick="window.enterPin(3)" class="w-16 h-16 glass-card rounded-full">3</button>
+        <button onclick="window.enterPin(4)" class="w-16 h-16 glass-card rounded-full">4</button><button onclick="window.enterPin(5)" class="w-16 h-16 glass-card rounded-full">5</button><button onclick="window.enterPin(6)" class="w-16 h-16 glass-card rounded-full">6</button>
+        <button onclick="window.enterPin(7)" class="w-16 h-16 glass-card rounded-full">7</button><button onclick="window.enterPin(8)" class="w-16 h-16 glass-card rounded-full">8</button><button onclick="window.enterPin(9)" class="w-16 h-16 glass-card rounded-full">9</button>
+        <button class="w-16 h-16"></button><button onclick="window.enterPin(0)" class="w-16 h-16 glass-card rounded-full">0</button><button onclick="window.clearPin()" class="w-16 h-16 glass-card rounded-full text-red-500 text-sm">DEL</button>
       </div>
     </div>
   </div>
@@ -51,8 +51,8 @@
         </div>
       </div>
       <div class="grid grid-cols-5 gap-2">
-        <button id="mainLogBtn" onclick="handleLogClick()" class="col-span-3 py-3.5 dynamic-bg text-black font-black text-sm rounded-2xl dynamic-glow">START SMOKING</button>
-        <button onclick="toggleWaveMode()" class="col-span-2 py-3.5 glass-card font-bold text-xs rounded-2xl">🌊 RIDE WAVE</button>
+        <button id="mainLogBtn" onclick="window.handleLogClick()" class="col-span-3 py-3.5 dynamic-bg text-black font-black text-sm rounded-2xl dynamic-glow">START SMOKING</button>
+        <button onclick="window.toggleWaveMode()" class="col-span-2 py-3.5 glass-card font-bold text-xs rounded-2xl">🌊 RIDE WAVE</button>
       </div>
       <div id="waveOverlay" class="hidden glass-card p-3 rounded-2xl text-center border-l-4 border-sky-500">
         <div class="flex justify-between text-xs font-bold font-mono"><span>WAVE TIMER</span><span id="waveCountdown">10:00</span></div>
@@ -88,8 +88,8 @@
     <section id="page-settings" class="space-y-5 hidden">
       <h2 class="text-base font-bold">Settings</h2>
       <div class="glass-card p-4 rounded-2xl space-y-3 text-xs">
-        <select id="themeSelect" onchange="updateSettings()" class="w-full bg-gray-800 p-2 rounded text-white"><option value="default">Amber Glow</option><option value="carbon">Carbon Matrix</option><option value="white">Clean Light</option></select>
-        <button onclick="resetData('all')" class="w-full py-2.5 bg-red-500 text-white font-bold rounded-xl">WIPE ALL DATA</button>
+        <select id="themeSelect" onchange="window.updateSettings()" class="w-full bg-gray-800 p-2 rounded text-white"><option value="default">Amber Glow</option><option value="carbon">Carbon Matrix</option><option value="white">Clean Light</option></select>
+        <button onclick="window.resetData('all')" class="w-full py-2.5 bg-red-500 text-white font-bold rounded-xl">WIPE ALL DATA</button>
       </div>
     </section>
   </div>
@@ -102,10 +102,10 @@
   </div>
 
   <nav class="fixed bottom-0 left-0 right-0 glass-card border-t border-gray-800/20 z-40 flex justify-around p-2 text-xs">
-    <button onclick="switchTab('tracker')" id="tab-tracker" class="flex flex-col items-center py-1 w-full tab-active"><span>⏱️</span><span>Tracker</span></button>
-    <button onclick="switchTab('insights')" id="tab-insights" class="flex flex-col items-center py-1 w-full"><span>📊</span><span>Insights</span></button>
-    <button onclick="switchTab('history')" id="tab-history" class="flex flex-col items-center py-1 w-full"><span>📜</span><span>History</span></button>
-    <button onclick="switchTab('settings')" id="tab-settings" class="flex flex-col items-center py-1 w-full"><span>⚙️</span><span>Settings</span></button>
+    <button onclick="window.switchTab('tracker')" id="tab-tracker" class="flex flex-col items-center py-1 w-full tab-active"><span>⏱️</span><span>Tracker</span></button>
+    <button onclick="window.switchTab('insights')" id="tab-insights" class="flex flex-col items-center py-1 w-full"><span>📊</span><span>Insights</span></button>
+    <button onclick="window.switchTab('history')" id="tab-history" class="flex flex-col items-center py-1 w-full"><span>📜</span><span>History</span></button>
+    <button onclick="window.switchTab('settings')" id="tab-settings" class="flex flex-col items-center py-1 w-full"><span>⚙️</span><span>Settings</span></button>
   </nav>
 
   <script src="app.js"></script>
