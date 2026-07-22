@@ -10,6 +10,7 @@ let enteredPin = "";
 let myChartInstances = {};
 let mapInstance = null, modalMapInstance = null;
 let mainTimer = null, waveTimer = null, cooldownTimer = null;
+let cachedCoords = JSON.parse(localStorage.getItem('smoke_last_coords')) || null;
 
 window.onload = () => {
   applyTheme(settings.theme);
@@ -28,6 +29,13 @@ window.onload = () => {
 
 function bootCore() {
   updateUI(); checkLock(); checkWave();
+  // Request location once in background to cache permission
+  if(navigator.geolocation && !cachedCoords) {
+    navigator.geolocation.getCurrentPosition(p => {
+      cachedCoords = { lat: p.coords.latitude, lng: p.coords.longitude };
+      localStorage.setItem('smoke_last_coords', JSON.stringify(cachedCoords));
+    }, () => {}, {timeout:5000});
+  }
   if(mainTimer) clearInterval(mainTimer);
   mainTimer = setInterval(() => {
     if(logs.length === 0) return;
@@ -55,8 +63,19 @@ function handleLogClick() {
   if(new Date().getTime() < lockEndTime) return;
   if(settings.haptics && navigator.vibrate) navigator.vibrate(50);
   if(waveEndTime>0) { localStorage.removeItem('smoke_wave_end'); waveEndTime=0; clearInterval(waveTimer); document.getElementById('waveOverlay').classList.add('hidden'); }
-  if(navigator.geolocation) navigator.geolocation.getCurrentPosition(p => saveLog(p.coords.latitude, p.coords.longitude), () => saveLog(null,null), {timeout:3000});
-  else saveLog(null,null);
+  
+  // Use cached location silently without prompting again if already allowed
+  if(cachedCoords) {
+    saveLog(cachedCoords.lat, cachedCoords.lng);
+  } else if(navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(p => {
+      cachedCoords = { lat: p.coords.latitude, lng: p.coords.longitude };
+      localStorage.setItem('smoke_last_coords', JSON.stringify(cachedCoords));
+      saveLog(cachedCoords.lat, cachedCoords.lng);
+    }, () => saveLog(null, null), {timeout:3000});
+  } else {
+    saveLog(null, null);
+  }
 }
 
 function saveLog(lat, lng) {
@@ -181,7 +200,6 @@ function renderAllCharts() {
     scales: { x: { grid: { display: false } }, y: { grid: { color: 'rgba(255,255,255,0.05)' } } }
   };
 
-  // 1. Line Trend
   if(myChartInstances[1]) myChartInstances[1].destroy();
   myChartInstances[1] = new Chart(document.getElementById('chart1').getContext('2d'), {
     type: 'line',
@@ -189,7 +207,6 @@ function renderAllCharts() {
     options: commonOptions
   });
 
-  // 2. Area Spend Accumulation
   if(myChartInstances[2]) myChartInstances[2].destroy();
   myChartInstances[2] = new Chart(document.getElementById('chart2').getContext('2d'), {
     type: 'line',
@@ -197,7 +214,6 @@ function renderAllCharts() {
     options: commonOptions
   });
 
-  // 3. Radar Craving
   if(myChartInstances[3]) myChartInstances[3].destroy();
   myChartInstances[3] = new Chart(document.getElementById('chart3').getContext('2d'), {
     type: 'radar',
@@ -205,7 +221,6 @@ function renderAllCharts() {
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
   });
 
-  // 4. Column Comparison (Day vs Night)
   if(myChartInstances[4]) myChartInstances[4].destroy();
   const dayCount = activeLogs.filter(l => { let h = new Date(l.timestamp).getHours(); return h >= 6 && h < 18; }).length;
   const nightCount = activeLogs.length - dayCount;
@@ -215,7 +230,6 @@ function renderAllCharts() {
     options: commonOptions
   });
 
-  // 5. 24-Hour Matrix
   if(myChartInstances[5]) myChartInstances[5].destroy();
   let hours = Array(24).fill(0);
   activeLogs.forEach(l => hours[new Date(l.timestamp).getHours()]++);
@@ -225,7 +239,6 @@ function renderAllCharts() {
     options: commonOptions
   });
 
-  // 6. Day of Week Bar
   if(myChartInstances[6]) myChartInstances[6].destroy();
   let days = [0,0,0,0,0,0,0];
   activeLogs.forEach(l => days[new Date(l.timestamp).getDay()]++);
@@ -235,21 +248,13 @@ function renderAllCharts() {
     options: commonOptions
   });
 
-  // 7. Trigger Breakdown Donut (Fixed Legend & Padding)
   if(myChartInstances[7]) myChartInstances[7].destroy();
   myChartInstances[7] = new Chart(document.getElementById('chart7').getContext('2d'), {
     type: 'doughnut',
     data: { labels: triggers, datasets: [{ data: triggers.map(t => activeLogs.filter(l => l.trigger === t).length), backgroundColor: ['#F59E0B','#10B981','#6366F1','#EF4444','#3B82F6','#A855F7'] }] },
-    options: { 
-      responsive: true, 
-      maintainAspectRatio: false, 
-      plugins: { 
-        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 }, color: '#9CA3AF' } } 
-      } 
-    }
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 }, color: '#9CA3AF' } } } }
   });
 
-  // 8. Gap Distribution Line
   if(myChartInstances[8]) myChartInstances[8].destroy();
   myChartInstances[8] = new Chart(document.getElementById('chart8').getContext('2d'), {
     type: 'line',
@@ -257,7 +262,6 @@ function renderAllCharts() {
     options: commonOptions
   });
 
-  // 9. Stick Count Volume Bar
   if(myChartInstances[9]) myChartInstances[9].destroy();
   myChartInstances[9] = new Chart(document.getElementById('chart9').getContext('2d'), {
     type: 'bar',
@@ -265,7 +269,6 @@ function renderAllCharts() {
     options: commonOptions
   });
 
-  // Spatial Map Render
   renderMap('mapContainer', activeLogs);
 }
 
@@ -276,19 +279,19 @@ function renderMap(containerId, activeLogs) {
   if(containerId === 'mapModalContainer' && modalMapInstance) { modalMapInstance.remove(); modalMapInstance = null; }
 
   let lastWithLoc = activeLogs.slice().reverse().find(l => l.lat && l.lng);
-  let lat = lastWithLoc ? lastWithLoc.lat : 25.2048;
-  let lng = lastWithLoc ? lastWithLoc.lng : 55.2708;
+  let lat = lastWithLoc ? lastWithLoc.lat : (cachedCoords ? cachedCoords.lat : 25.2048);
+  let lng = lastWithLoc ? lastWithLoc.lng : (cachedCoords ? cachedCoords.lng : 55.2708);
 
   try {
     let m = L.map(containerId, {zoomControl: false, attributionControl: false}).setView([lat, lng], 13);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{z}.png', {maxZoom: 19}).addTo(m);
-    if(lastWithLoc) {
-      activeLogs.forEach(l => {
-        if(l.lat && l.lng) L.marker([l.lat, l.lng]).addTo(m);
-      });
-    }
+    // Reliable OpenStreetMap tile layer so tiles never appear blank
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19}).addTo(m);
+    activeLogs.forEach(l => {
+      if(l.lat && l.lng) L.marker([l.lat, l.lng]).addTo(m);
+    });
     if(containerId === 'mapContainer') mapInstance = m;
     if(containerId === 'mapModalContainer') modalMapInstance = m;
+    setTimeout(() => { m.invalidateSize(); }, 250);
   } catch(e) {}
 }
 

@@ -72,7 +72,7 @@
       <div class="glass-card p-4 rounded-2xl space-y-3"><h3 class="text-xs opacity-60 uppercase font-semibold">Recent Logs</h3><div id="homeRecentLogs" class="space-y-2 text-xs"></div></div>
     </section>
 
-    <!-- 2. INSIGHTS TAB (Standardized Clean Charts & Date Filter) -->
+    <!-- 2. INSIGHTS TAB -->
     <section id="page-insights" class="space-y-5 hidden">
       <div class="flex justify-between items-center">
         <h2 class="text-base font-bold">Analytics Mirror</h2>
@@ -85,37 +85,20 @@
       </div>
 
       <div id="chartContainer" class="space-y-5">
-        <!-- 1. Line Trend -->
         <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-emerald-500"><h3 class="text-xs text-emerald-500 font-bold uppercase">1. Widen The Gap Trend (Line)</h3><div class="w-full h-44 relative"><canvas id="chart1"></canvas></div></div>
-        
-        <!-- 2. Area Spend Volume -->
         <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-red-500"><h3 class="text-xs text-red-500 font-bold uppercase">2. Spend Accumulation (Area)</h3><div class="w-full h-44 relative"><canvas id="chart2"></canvas></div></div>
-        
-        <!-- 3. Radar Craving Zones -->
         <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-indigo-500"><h3 class="text-xs text-indigo-500 font-bold uppercase">3. Craving Zones (Radar)</h3><div class="w-full h-52 relative"><canvas id="chart3"></canvas></div></div>
-        
-        <!-- 4. Column Comparison -->
         <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-amber-500"><h3 class="text-xs text-amber-500 font-bold uppercase">4. Day vs Night (Column)</h3><div class="w-full h-40 relative"><canvas id="chart4"></canvas></div></div>
-        
-        <!-- 5. 24-Hour Matrix -->
         <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-orange-500"><h3 class="text-xs text-orange-500 font-bold uppercase">5. 24-Hour Danger Matrix (Line)</h3><div class="w-full h-40 relative"><canvas id="chart5"></canvas></div></div>
-        
-        <!-- 6. Day of Week Bar -->
         <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-blue-500"><h3 class="text-xs text-blue-500 font-bold uppercase">6. Day of Week Pattern (Bar)</h3><div class="w-full h-40 relative"><canvas id="chart6"></canvas></div></div>
-        
-        <!-- 7. Trigger Donut (Fixed padding & layout) -->
         <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-purple-500"><h3 class="text-xs text-purple-500 font-bold uppercase">7. Trigger Breakdown (Donut)</h3><div class="w-full h-56 relative flex items-center justify-center"><canvas id="chart7"></canvas></div></div>
-        
-        <!-- 8. Gap Distribution -->
         <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-teal-500"><h3 class="text-xs text-teal-500 font-bold uppercase">8. Gap Distribution</h3><div class="w-full h-40 relative"><canvas id="chart8"></canvas></div></div>
-        
-        <!-- 9. Stick Count Volume -->
         <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-pink-500"><h3 class="text-xs text-pink-500 font-bold uppercase">9. Stick Volume</h3><div class="w-full h-40 relative"><canvas id="chart9"></canvas></div></div>
         
-        <!-- 10. Spatial Map -->
+        <!-- Spatial Map -->
         <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-sky-500 relative">
           <div class="flex justify-between items-center"><h3 class="text-xs text-sky-500 font-bold uppercase">10. Spatial Map</h3><button onclick="window.openMapModal()" class="text-[10px] bg-sky-500/20 text-sky-400 px-2.5 py-1 rounded-lg font-bold">🔍 Expand Map</button></div>
-          <div id="mapContainer" class="w-full h-48 rounded-xl z-10"></div>
+          <div id="mapContainer" class="w-full h-48 rounded-xl z-10 bg-gray-900"></div>
         </div>
       </div>
     </section>
@@ -123,23 +106,37 @@
     <!-- 3. HISTORY TAB -->
     <section id="page-history" class="space-y-4 hidden"><h2 class="text-base font-bold">History</h2><div id="fullHistoryList" class="space-y-2 text-xs"></div></section>
     
-    <!-- 4. SETTINGS TAB (Multi-Column Grid UI) -->
-    <section id="page-settings" class="space-y-5 hidden">
+    <!-- 4. SETTINGS TAB (Isolated Modular Blocks) -->
+    <section id="page-settings" class="space-y-4 hidden">
       <h2 class="text-base font-bold">Settings & Preferences</h2>
-      <div class="glass-card p-4 rounded-2xl space-y-4 text-xs">
-        <div class="grid grid-cols-2 gap-3">
-          <div><label class="opacity-60 block mb-1">Theme</label><select id="themeSelect" onchange="window.updateSettings()" class="w-full bg-gray-800 p-2.5 rounded-xl text-white border border-gray-700"><option value="default">Amber Glow</option><option value="carbon">Carbon Matrix</option><option value="white">Clean Light</option></select></div>
-          <div><label class="opacity-60 block mb-1">Currency</label><select id="currencySelect" onchange="window.updateSettings()" class="w-full bg-gray-800 p-2.5 rounded-xl text-white border border-gray-700"><option value="AED">AED (د.إ)</option><option value="USD">USD ($)</option><option value="EUR">EUR (€)</option><option value="GBP">GBP (£)</option><option value="INR">INR (₹)</option><option value="CAD">CAD ($)</option><option value="AUD">AUD ($)</option><option value="SGD">SGD ($)</option><option value="JPY">JPY (¥)</option><option value="CHF">CHF (Fr)</option></select></div>
-        </div>
-        <div class="grid grid-cols-3 gap-3">
+      
+      <!-- Block 1: Theme & Appearance -->
+      <div class="glass-card p-4 rounded-2xl space-y-2 text-xs border-l-4 border-amber-500">
+        <h3 class="font-bold uppercase opacity-70 tracking-wider">Appearance</h3>
+        <div><label class="opacity-60 block mb-1">Theme Mode</label><select id="themeSelect" onchange="window.updateSettings()" class="w-full bg-gray-800 p-2.5 rounded-xl text-white border border-gray-700"><option value="default">Amber Glow</option><option value="carbon">Carbon Matrix</option><option value="white">Clean Light</option></select></div>
+      </div>
+
+      <!-- Block 2: Financials & Currency -->
+      <div class="glass-card p-4 rounded-2xl space-y-3 text-xs border-l-4 border-emerald-500">
+        <h3 class="font-bold uppercase opacity-70 tracking-wider">Financials & Limits</h3>
+        <div><label class="opacity-60 block mb-1">Currency Symbol</label><select id="currencySelect" onchange="window.updateSettings()" class="w-full bg-gray-800 p-2.5 rounded-xl text-white border border-gray-700"><option value="AED">AED (د.إ)</option><option value="USD">USD ($)</option><option value="EUR">EUR (€)</option><option value="GBP">GBP (£)</option><option value="INR">INR (₹)</option><option value="CAD">CAD ($)</option><option value="AUD">AUD ($)</option><option value="SGD">SGD ($)</option><option value="JPY">JPY (¥)</option><option value="CHF">CHF (Fr)</option></select></div>
+        <div class="grid grid-cols-3 gap-2">
           <div><label class="opacity-60 block mb-1">Daily Limit</label><input type="number" id="dailyLimitInput" onchange="window.updateSettings()" class="w-full bg-gray-800 p-2.5 rounded-xl text-white border border-gray-700 text-center" value="15"></div>
           <div><label class="opacity-60 block mb-1">Pack Price</label><input type="number" id="packPriceInput" onchange="window.updateSettings()" class="w-full bg-gray-800 p-2.5 rounded-xl text-white border border-gray-700 text-center" value="20"></div>
           <div><label class="opacity-60 block mb-1">Per Pack</label><input type="number" id="packSizeInput" onchange="window.updateSettings()" class="w-full bg-gray-800 p-2.5 rounded-xl text-white border border-gray-700 text-center" value="20"></div>
         </div>
-        <div class="pt-2 space-y-2">
-          <button onclick="window.setupPin()" id="pinStatusBtn" class="w-full py-3 glass-card font-bold rounded-xl text-center">Set App PIN</button>
-          <button onclick="window.resetData('all')" class="w-full py-3 bg-red-500/20 text-red-400 border border-red-500/30 font-bold rounded-xl text-center">WIPE ALL DATA</button>
-        </div>
+      </div>
+
+      <!-- Block 3: Security & PIN -->
+      <div class="glass-card p-4 rounded-2xl space-y-2 text-xs border-l-4 border-indigo-500">
+        <h3 class="font-bold uppercase opacity-70 tracking-wider">Security</h3>
+        <button onclick="window.setupPin()" id="pinStatusBtn" class="w-full py-3 glass-card font-bold rounded-xl text-center">Set App PIN</button>
+      </div>
+
+      <!-- Block 4: Danger Zone -->
+      <div class="glass-card p-4 rounded-2xl space-y-2 text-xs border-l-4 border-red-500">
+        <h3 class="font-bold uppercase opacity-70 tracking-wider text-red-400">Data Management</h3>
+        <button onclick="window.resetData('all')" class="w-full py-3 bg-red-500/20 text-red-400 border border-red-500/30 font-bold rounded-xl text-center">WIPE ALL DATA</button>
       </div>
     </section>
   </div>
@@ -158,7 +155,7 @@
       <h3 class="text-sm font-bold text-sky-400">Spatial Map (Fullscreen View)</h3>
       <button onclick="window.closeMapModal()" class="bg-red-500 text-white text-xs px-3 py-1.5 rounded-xl font-bold">Close ✕</button>
     </div>
-    <div id="mapModalContainer" class="w-full flex-1 rounded-2xl"></div>
+    <div id="mapModalContainer" class="w-full flex-1 rounded-2xl bg-gray-900"></div>
   </div>
 
   <!-- Bottom Navigation Bar -->
