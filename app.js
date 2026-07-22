@@ -19,6 +19,10 @@ window.onload = () => {
   document.getElementById('packSizeInput').value = settings.packSize;
   document.getElementById('themeSelect').value = settings.theme;
   document.getElementById('currencySelect').value = settings.currency || 'AED';
+  
+  loadChartOrder();
+  initDragAndDrop();
+
   if(appPin) {
     document.getElementById('lockScreen').classList.remove('hidden');
     document.getElementById('pinStatusBtn').innerText = "Remove PIN";
@@ -130,7 +134,7 @@ function switchTab(t) {
   if(cp) cp.classList.remove('hidden'); 
   if(ct) ct.classList.add('tab-active');
   if(t==='history') renderHistory();
-  if(t==='insights') { setTimeout(() => renderAllCharts(), 150); }
+  if(t==='insights') { requestAnimationFrame(() => renderAllCharts()); }
 }
 
 function applyTheme(t) {
@@ -194,11 +198,11 @@ function renderAllCharts() {
   const commonOptions = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: false, // Disabling heavy animations for buttery smooth 120Hz feel
     plugins: { legend: { display: false } },
     scales: { x: { grid: { display: false } }, y: { grid: { color: 'rgba(255,255,255,0.05)' } } }
   };
 
-  // 1. Widen The Gap Trend (Line Chart)
   if(myChartInstances[1]) myChartInstances[1].destroy();
   myChartInstances[1] = new Chart(document.getElementById('chart1').getContext('2d'), {
     type: 'line',
@@ -206,7 +210,6 @@ function renderAllCharts() {
     options: commonOptions
   });
 
-  // 2. Daily Consumption vs Limit (Bar Chart)
   if(myChartInstances[2]) myChartInstances[2].destroy();
   let dayMap = {};
   activeLogs.forEach(l => {
@@ -229,7 +232,6 @@ function renderAllCharts() {
     options: commonOptions
   });
 
-  // 3. Financial Drain / Cumulative Spend (Area Chart)
   if(myChartInstances[3]) myChartInstances[3].destroy();
   let cumulativeSpend = 0;
   let spendData = gaps.map(() => {
@@ -242,7 +244,6 @@ function renderAllCharts() {
     options: commonOptions
   });
 
-  // 4. 24-Hour Danger Matrix (Line Step)
   if(myChartInstances[4]) myChartInstances[4].destroy();
   let hours = Array(24).fill(0);
   activeLogs.forEach(l => hours[new Date(l.timestamp).getHours()]++);
@@ -252,15 +253,13 @@ function renderAllCharts() {
     options: commonOptions
   });
 
-  // 5. Trigger Breakdown (Doughnut Chart)
   if(myChartInstances[5]) myChartInstances[5].destroy();
   myChartInstances[5] = new Chart(document.getElementById('chart5').getContext('2d'), {
     type: 'doughnut',
     data: { labels: triggers, datasets: [{ data: triggers.map(t => activeLogs.filter(l => l.trigger === t).length), backgroundColor: ['#F59E0B','#10B981','#6366F1','#EF4444','#3B82F6','#A855F7'] }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 }, color: '#9CA3AF' } } } }
+    options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 }, color: '#9CA3AF' } } } }
   });
 
-  // 6. Spatial Thermal Heat Map
   renderHeatMap('mapContainer', activeLogs);
 }
 
@@ -278,12 +277,11 @@ function renderHeatMap(containerId, activeLogs) {
     let m = L.map(containerId, {zoomControl: false, attributionControl: false}).setView([lat, lng], 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19}).addTo(m);
     
-    // Prepare heat points [lat, lng, intensity]
-    let heatPoints = activeLogs.filter(l => l.lat && l.lng).map(l => [l.lat, l.lng, 0.8]);
+    // Fixed zoom-out scaling by adjusting radius and minOpacity so dots never fade away
+    let heatPoints = activeLogs.filter(l => l.lat && l.lng).map(l => [l.lat, l.lng, 1.0]);
     if(heatPoints.length > 0 && window.L.heatLayer) {
-      L.heatLayer(heatPoints, {radius: 25, blur: 15, maxZoom: 17}).addTo(m);
+      L.heatLayer(heatPoints, {radius: 35, blur: 20, maxZoom: 18, minOpacity: 0.4}).addTo(m);
     } else {
-      // Fallback if no GPS logs yet
       L.marker([lat, lng]).addTo(m);
     }
 
@@ -300,6 +298,66 @@ function openMapModal() {
 function closeMapModal() {
   document.getElementById('mapModal').classList.add('hidden');
   if(modalMapInstance) { modalMapInstance.remove(); modalMapInstance = null; }
+}
+
+// Drag and Drop Logic with Persistent LocalStorage Saving
+function initDragAndDrop() {
+  const container = document.getElementById('chartContainer');
+  let draggedCard = null;
+
+  container.addEventListener('dragstart', (e) => {
+    draggedCard = e.target.closest('.draggable-card');
+    if(draggedCard) draggedCard.classList.add('dragging');
+  });
+
+  container.addEventListener('dragend', (e) => {
+    const card = e.target.closest('.draggable-card');
+    if(card) card.classList.remove('dragging');
+    saveChartOrder();
+  });
+
+  container.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    const afterElement = getDragAfterElement(container, e.clientY);
+    const draggable = document.querySelector('.dragging');
+    if(draggable) {
+      if(afterElement == null) {
+        container.appendChild(draggable);
+      } else {
+        container.insertBefore(draggable, afterElement);
+      }
+    }
+  });
+}
+
+function getDragAfterElement(container, y) {
+  const draggableElements = [...container.querySelectorAll('.draggable-card:not(.dragging)')];
+  return draggableElements.reduce((closest, child) => {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    if(offset < 0 && offset > closest.offset) {
+      return { offset: offset, element: child };
+    } else {
+      return closest;
+    }
+  }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
+function saveChartOrder() {
+  const container = document.getElementById('chartContainer');
+  const cards = [...container.querySelectorAll('.draggable-card')];
+  const order = cards.map(c => c.id);
+  localStorage.setItem('smoke_chart_order', JSON.stringify(order));
+}
+
+function loadChartOrder() {
+  const savedOrder = JSON.parse(localStorage.getItem('smoke_chart_order'));
+  if(!savedOrder) return;
+  const container = document.getElementById('chartContainer');
+  savedOrder.forEach(id => {
+    const card = document.getElementById(id);
+    if(card) container.appendChild(card);
+  });
 }
 
 window.enterPin = enterPin;
