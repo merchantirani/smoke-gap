@@ -1,6 +1,6 @@
 let logs = JSON.parse(localStorage.getItem('smoke_logs')) || [];
 let settings = JSON.parse(localStorage.getItem('smoke_settings')) || { theme: 'default', haptics: true, dailyLimit: 15, lockSecs: 300, packPrice: 20, packSize: 20, currency: 'AED' };
-let triggers = ['💼 Work Stress', '🍽️ After Meal', '☕ Chai / Coffee', '🚗 Driving', '📱 Boredom', '👥 Social'];
+let triggers = JSON.parse(localStorage.getItem('smoke_triggers')) || ['💼 Work Stress', '🍽️ After Meal', '☕ Chai / Coffee', '🚗 Driving', '📱 Boredom', '👥 Social'];
 let shields = parseInt(localStorage.getItem('smoke_shields')) || 0;
 let lockEndTime = parseInt(localStorage.getItem('smoke_lock_end')) || 0;
 let waveEndTime = parseInt(localStorage.getItem('smoke_wave_end')) || 0;
@@ -25,6 +25,7 @@ window.onload = () => {
   
   loadChartOrder();
   initDragAndDrop();
+  renderTriggerSettingsList();
   if(window.lucide) window.lucide.createIcons();
 
   if(appPin) {
@@ -164,12 +165,9 @@ function updateUI() {
   document.getElementById('shieldCount').innerText = shields;
   const today = logs.filter(l => new Date(l.timestamp).toDateString() === new Date().toDateString());
   
-  // Update Tracker Grid Cards
   document.getElementById('todayCount').innerText = `${today.length} / ${settings.dailyLimit}`;
-  
   let spendRaw = (today.length * (settings.packPrice/settings.packSize)).toFixed(1);
   document.getElementById('todaySpend').innerText = `${settings.currency} ${spendRaw}`;
-  
   document.getElementById('prevGapCard').innerText = logs.length > 1 ? formatGap(logs[logs.length-1].gap) : '--';
   document.getElementById('bestGapCard').innerText = today.length > 0 ? formatGap(Math.max(...today.map(l=>l.gap))) : '--';
   
@@ -177,7 +175,64 @@ function updateUI() {
 }
 
 function formatGap(m) { return m<60 ? `${m}m` : `${Math.floor(m/60)}h ${m%60>0?m%60+'m':''}`; }
-function resetData(type) { if(confirm("Wipe all data? This cannot be undone.")) { localStorage.clear(); location.reload(); } }
+
+function resetData(type) { 
+  if(type === '24h') {
+    if(confirm("Delete logs from the last 24 hours?")) {
+      const now = new Date().getTime();
+      logs = logs.filter(l => (now - l.timestamp) > 86400000);
+      localStorage.setItem('smoke_logs', JSON.stringify(logs));
+      location.reload();
+    }
+  } else {
+    if(confirm("Wipe ALL data? This action cannot be undone.")) { 
+      localStorage.clear(); 
+      location.reload(); 
+    } 
+  }
+}
+
+function exportLogsCSV() {
+  if(logs.length === 0) { alert("No logs to export!"); return; }
+  let csvContent = "data:text/csv;charset=utf-8,Timestamp,Date,Time,Gap_Minutes,Trigger,Latitude,Longitude\n";
+  logs.forEach(l => {
+    let d = new Date(l.timestamp);
+    csvContent += `${l.timestamp},"${d.toLocaleDateString()}","${d.toLocaleTimeString()}",${l.gap},"${l.trigger||''}",${l.lat||''},${l.lng||''}\n`;
+  });
+  let encodedUri = encodeURI(csvContent);
+  let link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", `SmokeGap_Logs_${new Date().toISOString().slice(0,10)}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function addCustomTrigger() {
+  let val = document.getElementById('newTriggerInput').value.trim();
+  if(val && !triggers.includes(val)) {
+    triggers.push(val);
+    localStorage.setItem('smoke_triggers', JSON.stringify(triggers));
+    document.getElementById('newTriggerInput').value = '';
+    renderTriggerSettingsList();
+  }
+}
+
+function removeCustomTrigger(idx) {
+  triggers.splice(idx, 1);
+  localStorage.setItem('smoke_triggers', JSON.stringify(triggers));
+  renderTriggerSettingsList();
+}
+
+function renderTriggerSettingsList() {
+  const c = document.getElementById('triggerListSettings');
+  if(!c) return;
+  c.innerHTML = triggers.map((t, idx) => `
+    <span class="bg-gray-500/10 text-xs px-3 py-1.5 rounded-xl border border-gray-500/20 flex items-center gap-1.5 font-medium" style="color: var(--text-main);">
+      ${t} <button onclick="window.removeCustomTrigger(${idx})" class="text-red-500 font-bold hover:opacity-80">✕</button>
+    </span>
+  `).join('');
+}
 
 function openTriggerModal() { document.getElementById('modalTriggerGrid').innerHTML=triggers.map(t=>`<button onclick="window.assignTag('${t}')" class="py-4 px-2 bg-gray-500/10 rounded-xl text-center active:scale-95 transition-transform" style="color: var(--text-main);">${t}</button>`).join(''); document.getElementById('triggerModal').classList.remove('hidden'); }
 function assignTag(tag) { if(logs.length>0) { logs[logs.length-1].trigger=tag; localStorage.setItem('smoke_logs', JSON.stringify(logs)); renderHistory('homeRecentLogs',3); } closeTriggerModal(); }
@@ -200,45 +255,46 @@ function renderHistory(tId='fullHistoryList', limit=null) {
   if(window.lucide) window.lucide.createIcons();
 }
 
+// FIX: Exact Date Filter Logic that respects midnight boundaries
 function getFilteredLogs() {
   const filter = document.getElementById('insightsDateFilter').value;
-  const now = new Date().getTime();
-  if(filter === 'today') return logs.filter(l => new Date(l.timestamp).toDateString() === new Date().toDateString());
-  if(filter === '7days') return logs.filter(l => (now - l.timestamp) <= 7 * 86400000);
-  if(filter === '1month') return logs.filter(l => (now - l.timestamp) <= 30 * 86400000);
+  const now = new Date();
+  
+  if(filter === 'today') {
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    return logs.filter(l => l.timestamp >= startOfToday);
+  } else if(filter === '7days') {
+    const sevenDaysAgo = new Date(now.getTime() - (7 * 86400000)).getTime();
+    return logs.filter(l => l.timestamp >= sevenDaysAgo);
+  } else if(filter === '1month') {
+    const thirtyDaysAgo = new Date(now.getTime() - (30 * 86400000)).getTime();
+    return logs.filter(l => l.timestamp >= thirtyDaysAgo);
+  }
   return logs;
 }
 
 function renderAllCharts() {
   const activeLogs = getFilteredLogs();
   
-  // 1. Calculate and Update Dynamic Insight Stat Cards
+  // 1. Dynamic Top Summary Cards
   let totalSpend = (activeLogs.length * (settings.packPrice/settings.packSize)).toFixed(1);
-  
-  // Avg Gap
   document.getElementById('insightAvgGap').innerText = activeLogs.length > 0 ? formatGap(Math.round(activeLogs.reduce((a, b) => a + b.gap, 0) / activeLogs.length)) : '--';
-  
-  // Shields
   document.getElementById('insightShields').innerText = `${shields} Defeats`;
 
-  // Peak Hour
   if(activeLogs.length > 0) {
     let hours = {}; activeLogs.forEach(l => { let h = new Date(l.timestamp).getHours(); hours[h] = (hours[h]||0)+1; });
     let peak = Object.keys(hours).reduce((a,b) => hours[a] > hours[b] ? a : b);
     document.getElementById('insightPeakHour').innerText = `${peak}:00`;
   } else document.getElementById('insightPeakHour').innerText = '--';
 
-  // Top Trigger
   if(activeLogs.length > 0) {
     let trigs = {}; activeLogs.forEach(l => { let t = l.trigger||'Uncategorized'; trigs[t] = (trigs[t]||0)+1; });
     let topT = Object.keys(trigs).reduce((a,b) => trigs[a] > trigs[b] ? a : b);
     document.getElementById('insightTopTrigger').innerText = topT.length > 15 ? topT.substring(0,12)+'..' : topT;
   } else document.getElementById('insightTopTrigger').innerText = '--';
 
-  // Pack Equivalent
   document.getElementById('insightPackEq').innerText = activeLogs.length > 0 ? `${(activeLogs.length / settings.packSize).toFixed(1)} Packs` : '--';
 
-  // Projected Yearly
   if(activeLogs.length > 0) {
     let filter = document.getElementById('insightsDateFilter').value;
     let days = filter === 'today' ? 1 : filter === '7days' ? 7 : filter === '1month' ? 30 : Math.max(1, Math.ceil((new Date() - new Date(logs[0].timestamp))/86400000));
@@ -246,17 +302,19 @@ function renderAllCharts() {
     document.getElementById('insightProjected').innerText = `${settings.currency} ${yearly}`;
   } else document.getElementById('insightProjected').innerText = '--';
 
-  // 2. Charts Rendering Logic
+  // 2. Charts Logic
   const labels = activeLogs.length > 0 ? activeLogs.map(l => new Date(l.timestamp).toLocaleDateString([], {month:'short', day:'numeric'}) + ' ' + new Date(l.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})) : ['No Data'];
   const gaps = activeLogs.length > 0 ? activeLogs.map(l => l.gap) : [0];
   const chartTextColor = settings.theme === 'white' ? '#64748B' : '#9CA3AF';
 
+  // FIX: Hard-code scale margins and remove internal Y padding so numbers lock to the left edge
   const commonOptions = {
     responsive: true, maintainAspectRatio: false, animation: false,
+    layout: { padding: { left: 0, right: 10, top: 10, bottom: 0 } },
     plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(15,23,42,0.9)', padding: 10, cornerRadius: 8 } },
     scales: { 
       x: { grid: { display: false }, border: { display: false }, ticks: { color: chartTextColor, maxTicksLimit: 5, font: { size: 10 } } }, 
-      y: { beginAtZero: true, grace: '10%', position: 'left', grid: { color: 'rgba(156,163,175,0.08)', drawBorder: false }, border: { display: false }, ticks: { color: chartTextColor, font: { size: 10 } } } 
+      y: { beginAtZero: true, grace: '5%', position: 'left', grid: { color: 'rgba(156,163,175,0.08)', drawBorder: false }, border: { display: false }, ticks: { color: chartTextColor, font: { size: 10 }, padding: 4 } } 
     }
   };
 
@@ -372,3 +430,4 @@ window.handleLogClick = handleLogClick; window.toggleWaveMode = toggleWaveMode; 
 window.updateSettings = updateSettings; window.resetData = resetData; window.assignTag = assignTag;
 window.closeTriggerModal = closeTriggerModal; window.renderAllCharts = renderAllCharts;
 window.openMapModal = openMapModal; window.closeMapModal = closeMapModal;
+window.exportLogsCSV = exportLogsCSV; window.addCustomTrigger = addCustomTrigger; window.removeCustomTrigger = removeCustomTrigger;
