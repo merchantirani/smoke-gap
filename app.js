@@ -13,6 +13,9 @@ let mainTimer = null, waveTimer = null, cooldownTimer = null;
 
 window.onload = () => {
   applyTheme(settings.theme);
+  document.getElementById('dailyLimitInput').value = settings.dailyLimit;
+  document.getElementById('packPriceInput').value = settings.packPrice;
+  document.getElementById('themeSelect').value = settings.theme;
   if(appPin) {
     document.getElementById('lockScreen').classList.remove('hidden');
     document.getElementById('pinStatusBtn').innerText = "Remove PIN";
@@ -59,6 +62,8 @@ function saveLog(lat, lng) {
   let gap = logs.length > 0 ? Math.round((now - logs[logs.length-1].timestamp)/60000) : 0;
   logs.push({timestamp: now, gap: gap, trigger: '', lat, lng});
   localStorage.setItem('smoke_logs', JSON.stringify(logs));
+  lockEndTime = now + (settings.lockSecs * 1000);
+  localStorage.setItem('smoke_lock_end', lockEndTime);
   updateUI(); openTriggerModal(); checkLock();
 }
 
@@ -116,6 +121,8 @@ function applyTheme(t) {
 
 function updateSettings() {
   settings.theme = document.getElementById('themeSelect').value;
+  settings.dailyLimit = parseInt(document.getElementById('dailyLimitInput').value) || 15;
+  settings.packPrice = parseFloat(document.getElementById('packPriceInput').value) || 20;
   localStorage.setItem('smoke_settings', JSON.stringify(settings)); 
   applyTheme(settings.theme); 
   updateUI();
@@ -146,10 +153,47 @@ function renderHistory(tId='fullHistoryList', limit=null) {
 }
 
 function renderAllCharts() {
-  const hasData = logs.length >= 3;
-  document.querySelectorAll('.empty-state').forEach(el => hasData ? el.classList.add('hidden') : el.classList.remove('hidden'));
-  if(!hasData) return;
-  // Chart rendering fallback logic
+  for (let i = 1; i <= 9; i++) {
+    const canvas = document.getElementById(`chart${i}`);
+    if(!canvas) continue;
+    if(myChartInstances[i]) myChartInstances[i].destroy();
+    
+    let labels = logs.slice(-7).map(l => new Date(l.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}));
+    let data = logs.slice(-7).map(l => l.gap);
+    if(data.length === 0) { data = [0]; labels = ['--']; }
+
+    myChartInstances[i] = new Chart(canvas.getContext('2d'), {
+      type: i === 3 ? 'radar' : (i === 4 || i === 6 ? 'bar' : 'line'),
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Analytics',
+          data: data,
+          borderColor: '#F59E0B',
+          backgroundColor: 'rgba(245, 158, 11, 0.1)',
+          borderWidth: 2,
+          tension: 0.3,
+          fill: true
+        }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
+  }
+
+  // Spatial Map
+  const mapEl = document.getElementById('mapContainer');
+  if(mapEl) {
+    if(mapInstance) { mapInstance.remove(); mapInstance = null; }
+    mapEl.innerHTML = "";
+    let lastWithLoc = logs.slice().reverse().find(l => l.lat && l.lng);
+    let lat = lastWithLoc ? lastWithLoc.lat : 25.2048;
+    let lng = lastWithLoc ? lastWithLoc.lng : 55.2708;
+    try {
+      mapInstance = L.map('mapContainer', {zoomControl: false, attributionControl: false}).setView([lat, lng], 13);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{z}.png', {maxZoom: 19}).addTo(mapInstance);
+      if(lastWithLoc) L.marker([lat, lng]).addTo(mapInstance);
+    } catch(e) {}
+  }
 }
 
 window.enterPin = enterPin;

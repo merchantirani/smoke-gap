@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>SmokeGap — Analytics</title>
+  <title>SmokeGap — Analytics Mirror</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -11,14 +11,15 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     :root { --bg-body: #0F1115; --text-main: #E0E6ED; --text-muted: #9CA3AF; --bg-glass: rgba(22, 26, 33, 0.85); --border-glass: rgba(255, 255, 255, 0.06); --accent-primary: #F59E0B; --accent-glow: rgba(245, 158, 11, 0.2); }
-    body { background-color: var(--bg-body); color: var(--text-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; user-select: none; padding-bottom: 5rem; }
+    body.theme-carbon { --bg-body: #050505; --text-main: #FFFFFF; --bg-glass: rgba(20, 20, 20, 0.9); --accent-primary: #3B82F6; --accent-glow: rgba(59, 130, 246, 0.2); }
+    body.theme-white { --bg-body: #F3F4F6; --text-main: #1F2937; --text-muted: #4B5563; --bg-glass: rgba(255, 255, 255, 0.9); --border-glass: rgba(0, 0, 0, 0.06); --accent-primary: #D97706; --accent-glow: rgba(217, 119, 6, 0.15); }
+    body { background-color: var(--bg-body); color: var(--text-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; user-select: none; padding-bottom: 6rem; }
     .glass-card { background: var(--bg-glass); backdrop-filter: blur(16px); border: 1px solid var(--border-glass); }
     .dynamic-glow { box-shadow: 0 0 25px var(--accent-glow); }
     .dynamic-bg { background-color: var(--accent-primary); }
     .dynamic-text { color: var(--accent-primary); }
     .tab-active { color: var(--accent-primary); border-top: 2px solid var(--accent-primary); }
     #lockScreen { z-index: 10000; background-color: var(--bg-body); }
-    .blur-overlay { backdrop-filter: blur(8px); background: rgba(0,0,0,0.4); }
   </style>
 </head>
 <body>
@@ -70,16 +71,16 @@
     <section id="page-insights" class="space-y-5 hidden">
       <h2 class="text-base font-bold">10-Point Analytics Mirror</h2>
       <div id="chartContainer" class="space-y-4">
-        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-emerald-500"><h3 class="text-xs text-emerald-500 font-bold uppercase">Widen The Gap Trend</h3><div class="w-full h-40 relative"><canvas id="chart1"></canvas></div></div>
-        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-red-500"><h3 class="text-xs text-red-500 font-bold uppercase">7-Day Spend Trend</h3><div class="w-full h-40 relative"><canvas id="chart2"></canvas></div></div>
-        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-indigo-500"><h3 class="text-xs text-indigo-500 font-bold uppercase">Craving Zones Radar</h3><div class="w-full h-48 relative"><canvas id="chart3"></canvas></div></div>
-        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-amber-500"><h3 class="text-xs text-amber-500 font-bold uppercase">Day vs Night</h3><div class="w-full h-40 relative"><canvas id="chart4"></canvas></div></div>
-        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-orange-500"><h3 class="text-xs text-orange-500 font-bold uppercase">24-Hour Danger Matrix</h3><div class="w-full h-40 relative"><canvas id="chart5"></canvas></div></div>
-        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-blue-500"><h3 class="text-xs text-blue-500 font-bold uppercase">Day of Week Pattern</h3><div class="w-full h-40 relative"><canvas id="chart6"></canvas></div></div>
-        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-purple-500"><h3 class="text-xs text-purple-500 font-bold uppercase">Trigger Breakdown</h3><div class="w-full h-48 relative"><canvas id="chart7"></canvas></div></div>
-        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-teal-500"><h3 class="text-xs text-teal-500 font-bold uppercase">Gap Distribution</h3><div class="w-full h-40 relative"><canvas id="chart8"></canvas></div></div>
-        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-pink-500"><h3 class="text-xs text-pink-500 font-bold uppercase">7-Day Stick Count</h3><div class="w-full h-40 relative"><canvas id="chart9"></canvas></div></div>
-        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-sky-500"><h3 class="text-xs text-sky-500 font-bold uppercase">Spatial Map</h3><div id="mapContainer" class="w-full h-44 rounded-xl"></div></div>
+        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-emerald-500"><h3 class="text-xs text-emerald-500 font-bold uppercase">1. Widen The Gap Trend</h3><div class="w-full h-40 relative"><canvas id="chart1"></canvas></div></div>
+        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-red-500"><h3 class="text-xs text-red-500 font-bold uppercase">2. 7-Day Spend Trend</h3><div class="w-full h-40 relative"><canvas id="chart2"></canvas></div></div>
+        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-indigo-500"><h3 class="text-xs text-indigo-500 font-bold uppercase">3. Craving Zones Radar</h3><div class="w-full h-48 relative"><canvas id="chart3"></canvas></div></div>
+        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-amber-500"><h3 class="text-xs text-amber-500 font-bold uppercase">4. Day vs Night</h3><div class="w-full h-40 relative"><canvas id="chart4"></canvas></div></div>
+        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-orange-500"><h3 class="text-xs text-orange-500 font-bold uppercase">5. 24-Hour Danger Matrix</h3><div class="w-full h-40 relative"><canvas id="chart5"></canvas></div></div>
+        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-blue-500"><h3 class="text-xs text-blue-500 font-bold uppercase">6. Day of Week Pattern</h3><div class="w-full h-40 relative"><canvas id="chart6"></canvas></div></div>
+        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-purple-500"><h3 class="text-xs text-purple-500 font-bold uppercase">7. Trigger Breakdown</h3><div class="w-full h-48 relative"><canvas id="chart7"></canvas></div></div>
+        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-teal-500"><h3 class="text-xs text-teal-500 font-bold uppercase">8. Gap Distribution</h3><div class="w-full h-40 relative"><canvas id="chart8"></canvas></div></div>
+        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-pink-500"><h3 class="text-xs text-pink-500 font-bold uppercase">9. 7-Day Stick Count</h3><div class="w-full h-40 relative"><canvas id="chart9"></canvas></div></div>
+        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-sky-500"><h3 class="text-xs text-sky-500 font-bold uppercase">10. Spatial Map</h3><div id="mapContainer" class="w-full h-44 rounded-xl"></div></div>
       </div>
     </section>
 
@@ -88,7 +89,10 @@
     <section id="page-settings" class="space-y-5 hidden">
       <h2 class="text-base font-bold">Settings</h2>
       <div class="glass-card p-4 rounded-2xl space-y-3 text-xs">
-        <select id="themeSelect" onchange="window.updateSettings()" class="w-full bg-gray-800 p-2 rounded text-white"><option value="default">Amber Glow</option><option value="carbon">Carbon Matrix</option><option value="white">Clean Light</option></select>
+        <div><label class="opacity-60 block mb-1">Theme</label><select id="themeSelect" onchange="window.updateSettings()" class="w-full bg-gray-800 p-2 rounded text-white"><option value="default">Amber Glow</option><option value="carbon">Carbon Matrix</option><option value="white">Clean Light</option></select></div>
+        <div><label class="opacity-60 block mb-1">Daily Limit</label><input type="number" id="dailyLimitInput" onchange="window.updateSettings()" class="w-full bg-gray-800 p-2 rounded text-white" value="15"></div>
+        <div><label class="opacity-60 block mb-1">Pack Price (AED)</label><input type="number" id="packPriceInput" onchange="window.updateSettings()" class="w-full bg-gray-800 p-2 rounded text-white" value="20"></div>
+        <button onclick="window.setupPin()" id="pinStatusBtn" class="w-full py-2.5 glass-card font-bold rounded-xl">Set App PIN</button>
         <button onclick="window.resetData('all')" class="w-full py-2.5 bg-red-500 text-white font-bold rounded-xl">WIPE ALL DATA</button>
       </div>
     </section>
