@@ -15,6 +15,51 @@ let cachedCoords = JSON.parse(localStorage.getItem('smoke_last_coords')) || null
 Chart.defaults.color = '#64748B';
 Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif';
 
+// --- CUSTOM CANVAS PLUGINS (The Wallet App Magic) ---
+const crosshairPlugin = {
+  id: 'crosshair',
+  afterDraw: chart => {
+    if (chart.tooltip?._active?.length && (chart.config.type === 'line' || chart.config.type === 'bar')) {
+      const activePoint = chart.tooltip._active[0];
+      const ctx = chart.ctx;
+      const x = activePoint.element.x;
+      const topY = chart.scales.y.top;
+      const bottomY = chart.scales.y.bottom;
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(x, topY);
+      ctx.lineTo(x, bottomY);
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.setLineDash([4, 4]);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+};
+
+const centerTextPlugin = {
+  id: 'centerText',
+  beforeDraw: chart => {
+    if (chart.config.type === 'doughnut') {
+      const ctx = chart.ctx;
+      const width = chart.width;
+      const height = chart.height;
+      ctx.restore();
+      const total = chart.data.datasets[0].data.reduce((a,b)=>a+b, 0);
+      const text = total > 0 ? total + " Logs" : "No Data";
+      ctx.font = "bold 16px sans-serif";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#F3F4F6";
+      const textX = Math.round((width - ctx.measureText(text).width) / 2);
+      const textY = height / 2;
+      ctx.fillText(text, textX, textY);
+      ctx.save();
+    }
+  }
+};
+// ---------------------------------------------------
+
 window.onload = () => {
   applyTheme(settings.theme);
   document.getElementById('dailyLimitInput').value = settings.dailyLimit;
@@ -164,13 +209,11 @@ function updateSettings() {
 function updateUI() {
   document.getElementById('shieldCount').innerText = shields;
   const today = logs.filter(l => new Date(l.timestamp).toDateString() === new Date().toDateString());
-  
   document.getElementById('todayCount').innerText = `${today.length} / ${settings.dailyLimit}`;
   let spendRaw = (today.length * (settings.packPrice/settings.packSize)).toFixed(1);
   document.getElementById('todaySpend').innerText = `${settings.currency} ${spendRaw}`;
   document.getElementById('prevGapCard').innerText = logs.length > 1 ? formatGap(logs[logs.length-1].gap) : '--';
   document.getElementById('bestGapCard').innerText = today.length > 0 ? formatGap(Math.max(...today.map(l=>l.gap))) : '--';
-  
   renderHistory('homeRecentLogs', 3);
 }
 
@@ -258,7 +301,6 @@ function renderHistory(tId='fullHistoryList', limit=null) {
 function getFilteredLogs() {
   const filter = document.getElementById('insightsDateFilter').value;
   const now = new Date();
-  
   if(filter === 'today') {
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
     return logs.filter(l => l.timestamp >= startOfToday);
@@ -272,13 +314,28 @@ function getFilteredLogs() {
   return logs;
 }
 
-// PRO ADVANCED CHARTS ENGINE
+function setBadge(id, text, colorClass) {
+  const b = document.getElementById(id);
+  if(b) {
+    if(text) {
+      b.innerText = text;
+      b.className = `text-[9px] font-bold px-2 py-0.5 rounded border ${colorClass}`;
+      b.classList.remove('hidden');
+    } else {
+      b.classList.add('hidden');
+    }
+  }
+}
+
+// 🔥 THE PRO ADVANCED CHARTS ENGINE 🔥
 function renderAllCharts() {
   const activeLogs = getFilteredLogs();
   
   // 1. Dynamic Top Summary Cards
   let totalSpend = (activeLogs.length * (settings.packPrice/settings.packSize)).toFixed(1);
-  document.getElementById('insightAvgGap').innerText = activeLogs.length > 0 ? formatGap(Math.round(activeLogs.reduce((a, b) => a + b.gap, 0) / activeLogs.length)) : '--';
+  let avgGapVal = activeLogs.length > 0 ? Math.round(activeLogs.reduce((a, b) => a + b.gap, 0) / activeLogs.length) : 0;
+  
+  document.getElementById('insightAvgGap').innerText = activeLogs.length > 0 ? formatGap(avgGapVal) : '--';
   document.getElementById('insightShields').innerText = `${shields} Defeats`;
 
   if(activeLogs.length > 0) {
@@ -302,42 +359,32 @@ function renderAllCharts() {
     document.getElementById('insightProjected').innerText = `${settings.currency} ${yearly}`;
   } else document.getElementById('insightProjected').innerText = '--';
 
+  // Badges Update
+  setBadge('badge-chart1', activeLogs.length > 0 ? `Avg ${formatGap(avgGapVal)}` : '', 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20');
+  setBadge('badge-chart2', activeLogs.length > 0 ? `${activeLogs.length} Total` : '', 'bg-amber-500/10 text-amber-500 border-amber-500/20');
+  setBadge('badge-chart3', activeLogs.length > 0 ? `${settings.currency} ${totalSpend}` : '', 'bg-red-500/10 text-red-500 border-red-500/20');
+
   // 2. Advanced Pro Canvas Charts Configuration
   const labels = activeLogs.length > 0 ? activeLogs.map(l => new Date(l.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})) : ['No Data'];
   const gaps = activeLogs.length > 0 ? activeLogs.map(l => l.gap) : [0];
   const chartTextColor = settings.theme === 'white' ? '#64748B' : '#9CA3AF';
 
-  // Base options for 100% Left Flush Layout (No margins/padding glitches)
   const proOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    animation: false,
+    animation: { duration: 600, easing: 'easeOutQuart' },
+    interaction: { mode: 'index', intersect: false }, // Crucial for smooth crosshair tooltips
     layout: { padding: { left: -5, right: 5, top: 10, bottom: 0 } },
     plugins: {
       legend: { display: false },
-      tooltip: {
-        backgroundColor: 'rgba(15, 23, 42, 0.95)',
-        titleColor: '#FFFFFF',
-        bodyColor: '#10B981',
-        padding: 12,
-        cornerRadius: 12,
-        displayColors: false
-      }
+      tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.95)', titleColor: '#FFFFFF', bodyColor: '#10B981', padding: 12, cornerRadius: 12, displayColors: false }
     },
     scales: {
-      x: {
-        grid: { display: false },
-        ticks: { color: chartTextColor, font: { size: 9, weight: '600' }, maxTicksLimit: 4 }
-      },
-      y: {
-        beginAtZero: true,
-        grid: { color: 'rgba(156, 163, 175, 0.05)', drawBorder: false },
-        ticks: { color: chartTextColor, font: { size: 9, weight: '600' }, padding: 6 }
-      }
+      x: { grid: { display: false }, ticks: { color: chartTextColor, font: { size: 9, weight: '600' }, maxTicksLimit: 4 } },
+      y: { beginAtZero: true, grid: { color: 'rgba(156, 163, 175, 0.05)', drawBorder: false }, ticks: { color: chartTextColor, font: { size: 9, weight: '600' }, padding: 6 } }
     }
   };
 
-  // Helper function to create Apple-like Glow Gradients
   const createGradient = (ctx, colorHex) => {
     let gradient = ctx.createLinearGradient(0, 0, 0, 180);
     gradient.addColorStop(0, colorHex);
@@ -345,29 +392,17 @@ function renderAllCharts() {
     return gradient;
   };
 
-  // 1. Gap Trend Line Chart
+  // 1. Gap Trend Line Chart (with Crosshair Plugin)
   if(myChartInstances[1]) myChartInstances[1].destroy();
   const ctx1 = document.getElementById('chart1').getContext('2d');
   myChartInstances[1] = new Chart(ctx1, {
     type: 'line',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: 'Gap (mins)',
-        data: gaps,
-        borderColor: '#10B981',
-        backgroundColor: createGradient(ctx1, 'rgba(16, 185, 129, 0.25)'),
-        borderWidth: 3,
-        tension: 0.4,
-        fill: true,
-        pointRadius: 0,
-        pointHitRadius: 15
-      }]
-    },
-    options: proOptions
+    data: { labels: labels, datasets: [{ label: 'Gap (mins)', data: gaps, borderColor: '#10B981', backgroundColor: createGradient(ctx1, 'rgba(16, 185, 129, 0.25)'), borderWidth: 3, tension: 0.4, fill: true, pointRadius: 0, pointHitRadius: 15 }] },
+    options: proOptions,
+    plugins: [crosshairPlugin]
   });
 
-  // 2. Daily Volume Bar Chart
+  // 2. Daily Volume Bar Chart (CAPSULE BARS - borderSkipped & max radius)
   if(myChartInstances[2]) myChartInstances[2].destroy();
   let dayMap = {}; activeLogs.forEach(l => { let d = new Date(l.timestamp).toLocaleDateString([],{weekday:'short'}); dayMap[d] = (dayMap[d] || 0) + 1; });
   let dayLabels = Object.keys(dayMap); let dayCounts = Object.values(dayMap);
@@ -379,11 +414,12 @@ function renderAllCharts() {
     data: { 
       labels: dayLabels, 
       datasets: [
-        { label: 'Count', data: dayCounts, backgroundColor: settings.theme === 'white' ? '#2563EB' : '#F59E0B', borderRadius: 6, barThickness: 18 },
+        { label: 'Count', data: dayCounts, backgroundColor: settings.theme === 'white' ? '#2563EB' : '#F59E0B', borderRadius: Number.MAX_VALUE, borderSkipped: false, barThickness: 16 }, // Capsule Magic
         { label: 'Limit', data: dayLabels.map(() => settings.dailyLimit), type: 'line', borderColor: '#EF4444', borderWidth: 2, borderDash: [4,4], pointRadius: 0 }
       ] 
     },
-    options: proOptions
+    options: proOptions,
+    plugins: [crosshairPlugin]
   });
 
   // 3. Financial Drain Line Chart
@@ -392,8 +428,9 @@ function renderAllCharts() {
   const ctx3 = document.getElementById('chart3').getContext('2d');
   myChartInstances[3] = new Chart(ctx3, {
     type: 'line',
-    data: { labels: labels, datasets: [{ label: 'Spend', data: spendData, borderColor: '#EF4444', backgroundColor: createGradient(ctx3, 'rgba(239, 68, 68, 0.2)'), fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0 }] },
-    options: proOptions
+    data: { labels: labels, datasets: [{ label: 'Spend', data: spendData, borderColor: '#EF4444', backgroundColor: createGradient(ctx3, 'rgba(239, 68, 68, 0.2)'), fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0, pointHitRadius: 15 }] },
+    options: proOptions,
+    plugins: [crosshairPlugin]
   });
 
   // 4. Danger Matrix Hours Chart
@@ -402,16 +439,18 @@ function renderAllCharts() {
   const ctx4 = document.getElementById('chart4').getContext('2d');
   myChartInstances[4] = new Chart(ctx4, {
     type: 'line',
-    data: { labels: Array.from({length:24}, (_,i)=>i+':00'), datasets: [{ data: hours, borderColor: '#F97316', backgroundColor: createGradient(ctx4, 'rgba(249, 115, 22, 0.2)'), fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0 }] },
-    options: proOptions
+    data: { labels: Array.from({length:24}, (_,i)=>i+':00'), datasets: [{ data: hours, borderColor: '#F97316', backgroundColor: createGradient(ctx4, 'rgba(249, 115, 22, 0.2)'), fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0, pointHitRadius: 15 }] },
+    options: proOptions,
+    plugins: [crosshairPlugin]
   });
 
-  // 5. Trigger Doughnut Chart
+  // 5. Trigger Doughnut Chart (with Center Text Plugin)
   if(myChartInstances[5]) myChartInstances[5].destroy();
   myChartInstances[5] = new Chart(document.getElementById('chart5').getContext('2d'), {
     type: 'doughnut',
-    data: { labels: triggers, datasets: [{ data: triggers.map(t => activeLogs.filter(l => l.trigger === t).length), backgroundColor: ['#F59E0B','#10B981','#6366F1','#EF4444','#2563EB','#A855F7'], borderWidth: 0, cutout: '72%' }] },
-    options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12, font: { size: 10 }, color: chartTextColor } } } }
+    data: { labels: triggers, datasets: [{ data: triggers.map(t => activeLogs.filter(l => l.trigger === t).length), backgroundColor: ['#F59E0B','#10B981','#6366F1','#EF4444','#2563EB','#A855F7'], borderWidth: 0, cutout: '76%' }] },
+    options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12, font: { size: 10 }, color: chartTextColor } } } },
+    plugins: [centerTextPlugin]
   });
 
   renderHeatMap('mapContainer', activeLogs);
