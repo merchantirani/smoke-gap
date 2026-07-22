@@ -12,10 +12,6 @@ let mapInstance = null, modalMapInstance = null;
 let mainTimer = null, waveTimer = null, cooldownTimer = null;
 let cachedCoords = JSON.parse(localStorage.getItem('smoke_last_coords')) || null;
 
-// Wallet style smooth chart defaults
-Chart.defaults.color = '#6B7280';
-Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif';
-
 window.onload = () => {
   applyTheme(settings.theme);
   document.getElementById('dailyLimitInput').value = settings.dailyLimit;
@@ -25,7 +21,7 @@ window.onload = () => {
   document.getElementById('currencySelect').value = settings.currency || 'AED';
   
   loadChartOrder();
-  initDragAndDrop(); // Uses SortableJS
+  initDragAndDrop();
 
   if(appPin) {
     document.getElementById('lockScreen').classList.remove('hidden');
@@ -156,6 +152,7 @@ function updateSettings() {
   localStorage.setItem('smoke_settings', JSON.stringify(settings)); 
   applyTheme(settings.theme); 
   updateUI();
+  if(!document.getElementById('page-insights').classList.contains('hidden')) renderAllCharts();
 }
 
 function updateUI() {
@@ -163,7 +160,6 @@ function updateUI() {
   const today = logs.filter(l => new Date(l.timestamp).toDateString() === new Date().toDateString());
   document.getElementById('todayCount').innerText = `${today.length} / ${settings.dailyLimit}`;
   
-  // Format currency dynamically
   let spendRaw = (today.length * (settings.packPrice/settings.packSize)).toFixed(1);
   document.getElementById('todaySpend').innerText = `${settings.currency} ${spendRaw}`;
   
@@ -174,22 +170,22 @@ function updateUI() {
 function formatGap(m) { return m<60 ? `${m}m` : `${Math.floor(m/60)}h ${m%60>0?m%60+'m':''}`; }
 function resetData(type) { if(confirm("Wipe all data? This cannot be undone.")) { localStorage.clear(); location.reload(); } }
 
-function openTriggerModal() { document.getElementById('modalTriggerGrid').innerHTML=triggers.map(t=>`<button onclick="window.assignTag('${t}')" class="py-4 px-2 bg-gray-800/50 rounded-xl text-center active:scale-95 transition-transform">${t}</button>`).join(''); document.getElementById('triggerModal').classList.remove('hidden'); }
+function openTriggerModal() { document.getElementById('modalTriggerGrid').innerHTML=triggers.map(t=>`<button onclick="window.assignTag('${t}')" class="py-4 px-2 bg-gray-500/10 rounded-xl text-center active:scale-95 transition-transform" style="color: var(--text-main);">${t}</button>`).join(''); document.getElementById('triggerModal').classList.remove('hidden'); }
 function assignTag(tag) { if(logs.length>0) { logs[logs.length-1].trigger=tag; localStorage.setItem('smoke_logs', JSON.stringify(logs)); renderHistory('homeRecentLogs',3); } closeTriggerModal(); }
 function closeTriggerModal() { document.getElementById('triggerModal').classList.add('hidden'); }
 
 function renderHistory(tId='fullHistoryList', limit=null) {
   const c = document.getElementById(tId); if(!c) return;
-  if(logs.length===0) { c.innerHTML="<p class='text-center text-gray-500 py-8 text-sm'>No logs yet. Start tracking.</p>"; return; }
+  if(logs.length===0) { c.innerHTML="<p class='text-center py-6 text-xs' style='color: var(--text-muted);'>No logs recorded yet.</p>"; return; }
   let items = logs.slice().reverse(); if(limit) items = items.slice(0,limit);
   c.innerHTML = items.map(l => `
     <div class="premium-card p-4 flex justify-between items-center relative overflow-hidden">
-      <div class="absolute left-0 top-0 bottom-0 w-1 bg-gray-600"></div>
+      <div class="absolute left-0 top-0 bottom-0 w-1" style="background: var(--accent);"></div>
       <div>
-        <div class="font-semibold text-white tracking-wide">${new Date(l.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
-        <div class="text-[10px] text-gray-400 font-medium uppercase mt-0.5">${l.trigger||'Uncategorized'}</div>
+        <div class="font-bold tracking-wide" style="color: var(--text-main);">${new Date(l.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
+        <div class="text-[10px] font-bold uppercase mt-0.5" style="color: var(--text-muted);">${l.trigger||'Uncategorized'}</div>
       </div>
-      <div class="font-bold text-[var(--accent)] text-lg">${formatGap(l.gap)}</div>
+      <div class="font-bold text-base" style="color: var(--accent);">${formatGap(l.gap)}</div>
     </div>
   `).join('');
 }
@@ -208,19 +204,23 @@ function renderAllCharts() {
   const labels = activeLogs.length > 0 ? activeLogs.map(l => new Date(l.timestamp).toLocaleDateString([], {month:'short', day:'numeric'}) + ' ' + new Date(l.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})) : ['No Data'];
   const gaps = activeLogs.length > 0 ? activeLogs.map(l => l.gap) : [0];
 
+  const chartTextColor = settings.theme === 'white' ? '#64748B' : '#9CA3AF';
+
+  // Common Options with 20% Y-axis Grace so charts are perfectly de-zoomed and centered inside cards
   const commonOptions = {
     responsive: true, maintainAspectRatio: false, animation: false,
-    plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(0,0,0,0.8)', padding: 12, cornerRadius: 8 } },
+    layout: { padding: { top: 10, bottom: 5, left: 5, right: 5 } },
+    plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(15,23,42,0.9)', padding: 10, cornerRadius: 8 } },
     scales: { 
-      x: { grid: { display: false }, border: { display: false }, ticks: { maxTicksLimit: 5 } }, 
-      y: { grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false }, border: { display: false } } 
+      x: { grid: { display: false }, border: { display: false }, ticks: { color: chartTextColor, maxTicksLimit: 5, font: { size: 10 } } }, 
+      y: { grace: '20%', grid: { color: 'rgba(156,163,175,0.08)', drawBorder: false }, border: { display: false }, ticks: { color: chartTextColor, font: { size: 10 } } } 
     }
   };
 
   if(myChartInstances[1]) myChartInstances[1].destroy();
   myChartInstances[1] = new Chart(document.getElementById('chart1').getContext('2d'), {
     type: 'line',
-    data: { labels: labels, datasets: [{ label: 'Gap (m)', data: gaps, borderColor: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.1)', borderWidth: 3, tension: 0.4, fill: true, pointRadius: 0, pointHitRadius: 10 }] },
+    data: { labels: labels, datasets: [{ label: 'Gap (m)', data: gaps, borderColor: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.1)', borderWidth: 2.5, tension: 0.35, fill: true, pointRadius: 0 }] },
     options: commonOptions
   });
 
@@ -234,8 +234,8 @@ function renderAllCharts() {
     data: { 
       labels: dayLabels, 
       datasets: [
-        { label: 'Count', data: dayCounts, backgroundColor: '#F59E0B', borderRadius: 8, barThickness: 'flex', maxBarThickness: 40 },
-        { label: 'Limit', data: dayLabels.map(() => settings.dailyLimit), type: 'line', borderColor: 'rgba(239, 68, 68, 0.5)', borderWidth: 2, borderDash: [5,5], pointRadius: 0 }
+        { label: 'Count', data: dayCounts, backgroundColor: settings.theme === 'white' ? '#2563EB' : '#F59E0B', borderRadius: 6, barThickness: 'flex', maxBarThickness: 32 },
+        { label: 'Limit', data: dayLabels.map(() => settings.dailyLimit), type: 'line', borderColor: '#EF4444', borderWidth: 2, borderDash: [4,4], pointRadius: 0 }
       ] 
     },
     options: commonOptions
@@ -245,7 +245,7 @@ function renderAllCharts() {
   let cumulativeSpend = 0; let spendData = gaps.map(() => { cumulativeSpend += (settings.packPrice / settings.packSize); return cumulativeSpend.toFixed(1); });
   myChartInstances[3] = new Chart(document.getElementById('chart3').getContext('2d'), {
     type: 'line',
-    data: { labels: labels, datasets: [{ label: 'Spend', data: spendData, borderColor: '#EF4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0 }] },
+    data: { labels: labels, datasets: [{ label: 'Spend', data: spendData, borderColor: '#EF4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', fill: true, tension: 0.35, borderWidth: 2.5, pointRadius: 0 }] },
     options: commonOptions
   });
 
@@ -253,15 +253,15 @@ function renderAllCharts() {
   let hours = Array(24).fill(0); activeLogs.forEach(l => hours[new Date(l.timestamp).getHours()]++);
   myChartInstances[4] = new Chart(document.getElementById('chart4').getContext('2d'), {
     type: 'line',
-    data: { labels: Array.from({length:24}, (_,i)=>i+':00'), datasets: [{ data: hours, borderColor: '#F97316', backgroundColor: 'rgba(249, 115, 22, 0.05)', fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0 }] },
+    data: { labels: Array.from({length:24}, (_,i)=>i+':00'), datasets: [{ data: hours, borderColor: '#F97316', backgroundColor: 'rgba(249, 115, 22, 0.08)', fill: true, tension: 0.35, borderWidth: 2.5, pointRadius: 0 }] },
     options: commonOptions
   });
 
   if(myChartInstances[5]) myChartInstances[5].destroy();
   myChartInstances[5] = new Chart(document.getElementById('chart5').getContext('2d'), {
     type: 'doughnut',
-    data: { labels: triggers, datasets: [{ data: triggers.map(t => activeLogs.filter(l => l.trigger === t).length), backgroundColor: ['#F59E0B','#10B981','#6366F1','#EF4444','#3B82F6','#A855F7'], borderWidth: 0, cutout: '75%' }] },
-    options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 15, font: { size: 11 }, color: '#9CA3AF' } } } }
+    data: { labels: triggers, datasets: [{ data: triggers.map(t => activeLogs.filter(l => l.trigger === t).length), backgroundColor: ['#F59E0B','#10B981','#6366F1','#EF4444','#2563EB','#A855F7'], borderWidth: 0, cutout: '70%' }] },
+    options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12, font: { size: 10 }, color: chartTextColor } } } }
   });
 
   renderHeatMap('mapContainer', activeLogs);
@@ -279,11 +279,17 @@ function renderHeatMap(containerId, activeLogs) {
 
   try {
     let m = L.map(containerId, {zoomControl: false, attributionControl: false}).setView([lat, lng], 13);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{z}.png', {maxZoom: 19}).addTo(m);
+    
+    // Choose appropriate map tile theme
+    let tileUrl = settings.theme === 'white' 
+      ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
+      : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png';
+
+    L.tileLayer(tileUrl, {maxZoom: 19}).addTo(m);
     
     let heatPoints = activeLogs.filter(l => l.lat && l.lng).map(l => [l.lat, l.lng, 1.0]);
     if(heatPoints.length > 0 && window.L.heatLayer) {
-      L.heatLayer(heatPoints, {radius: 30, blur: 25, maxZoom: 17, minOpacity: 0.5, gradient: {0.4: 'blue', 0.6: 'cyan', 0.7: 'lime', 0.8: 'yellow', 1.0: 'red'}}).addTo(m);
+      L.heatLayer(heatPoints, {radius: 28, blur: 18, maxZoom: 17, minOpacity: 0.4}).addTo(m);
     } else {
       L.marker([lat, lng]).addTo(m);
     }
@@ -303,7 +309,6 @@ function closeMapModal() {
   if(modalMapInstance) { modalMapInstance.remove(); modalMapInstance = null; }
 }
 
-// 120Hz Mobile Native Feel Drag & Drop via SortableJS
 function initDragAndDrop() {
   const container = document.getElementById('chartContainer');
   if(!container || !window.Sortable) return;
@@ -311,9 +316,7 @@ function initDragAndDrop() {
     handle: '.drag-handle',
     animation: 200,
     ghostClass: 'sortable-ghost',
-    onEnd: function () {
-      saveChartOrder();
-    }
+    onEnd: function () { saveChartOrder(); }
   });
 }
 

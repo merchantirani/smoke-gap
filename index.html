@@ -10,42 +10,56 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
-  <!-- SortableJS for Native-like 120Hz Mobile Drag & Drop -->
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
   <style>
     :root { 
       --bg-body: #090A0F; 
-      --text-main: #FFFFFF; 
-      --text-muted: #8A92A6; 
-      --card-bg: rgba(22, 25, 35, 0.6); 
-      --card-border: rgba(255, 255, 255, 0.04); 
+      --text-main: #F3F4F6; 
+      --text-muted: #9CA3AF; 
+      --card-bg: rgba(22, 25, 35, 0.7); 
+      --card-border: rgba(255, 255, 255, 0.06); 
       --accent: #F59E0B; 
-      --accent-glow: rgba(245, 158, 11, 0.15); 
+      --accent-glow: rgba(245, 158, 11, 0.2); 
     }
-    body.theme-carbon { --bg-body: #000000; --card-bg: rgba(15, 15, 15, 0.8); --accent: #3B82F6; --accent-glow: rgba(59, 130, 246, 0.15); }
-    body.theme-white { --bg-body: #F4F6F8; --text-main: #111827; --text-muted: #6B7280; --card-bg: #FFFFFF; --card-border: rgba(0,0,0,0.05); --accent: #D97706; --accent-glow: rgba(217, 119, 6, 0.1); }
+    body.theme-carbon { 
+      --bg-body: #000000; 
+      --text-main: #FFFFFF; 
+      --text-muted: #6B7280; 
+      --card-bg: rgba(18, 18, 18, 0.85); 
+      --card-border: rgba(255, 255, 255, 0.05); 
+      --accent: #3B82F6; 
+      --accent-glow: rgba(59, 130, 246, 0.2); 
+    }
+    /* Classy White & Royal Blue Theme */
+    body.theme-white { 
+      --bg-body: #F8FAFC; 
+      --text-main: #0F172A; 
+      --text-muted: #64748B; 
+      --card-bg: #FFFFFF; 
+      --card-border: rgba(203, 213, 225, 0.6); 
+      --accent: #2563EB; 
+      --accent-glow: rgba(37, 99, 235, 0.15); 
+    }
     
     body { background-color: var(--bg-body); color: var(--text-main); font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif; user-select: none; -webkit-tap-highlight-color: transparent; padding-bottom: 7rem; }
     
-    /* Premium Glassmorphism */
-    .premium-card { background: var(--card-bg); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid var(--card-border); box-shadow: 0 10px 40px rgba(0,0,0,0.1); border-radius: 1.5rem; transition: transform 0.2s ease; }
+    .premium-card { background: var(--card-bg); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid var(--card-border); box-shadow: 0 10px 30px rgba(0,0,0,0.04); border-radius: 1.5rem; transition: all 0.2s ease; }
     
-    /* Stopwatch Hero Ring */
-    .hero-ring { position: relative; display: flex; justify-content: center; align-items: center; width: 16rem; height: 16rem; border-radius: 50%; background: radial-gradient(circle, var(--card-bg) 0%, transparent 100%); box-shadow: inset 0 0 0 2px var(--card-border), 0 0 40px var(--accent-glow); }
-    .hero-ring::before { content: ''; position: absolute; inset: -4px; border-radius: 50%; background: conic-gradient(var(--accent), transparent 60%); animation: spin 4s linear infinite; opacity: 0.3; z-index: -1; }
+    /* Hero Ring Animation */
+    .hero-ring { position: relative; display: flex; justify-content: center; align-items: center; width: 16rem; height: 16rem; border-radius: 50%; background: var(--card-bg); box-shadow: inset 0 0 0 2px var(--card-border), 0 0 40px var(--accent-glow); }
+    .hero-ring::before { content: ''; position: absolute; inset: -4px; border-radius: 50%; background: conic-gradient(var(--accent), transparent 60%); animation: spin 4s linear infinite; opacity: 0.4; z-index: 0; }
     @keyframes spin { 100% { transform: rotate(360deg); } }
 
     .nav-btn { color: var(--text-muted); transition: all 0.3s ease; }
     .nav-active { color: var(--accent); transform: scale(1.05); }
     .nav-active::after { content: ''; display: block; width: 4px; height: 4px; background: var(--accent); border-radius: 50%; margin: 2px auto 0; box-shadow: 0 0 8px var(--accent); }
     
-    .drag-handle { touch-action: none; cursor: grab; padding: 10px; margin: -10px; opacity: 0.5; }
+    .drag-handle { touch-action: none; cursor: grab; padding: 8px; opacity: 0.4; }
     .drag-handle:active { cursor: grabbing; opacity: 1; }
-    .sortable-ghost { opacity: 0.2; transform: scale(0.95); }
+    .sortable-ghost { opacity: 0.2; transform: scale(0.96); }
     
-    /* Smooth Tab Transitions */
     .page-section { animation: fadeIn 0.3s ease-out forwards; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
 <body>
@@ -53,10 +67,10 @@
   <!-- Lock Screen -->
   <div id="lockScreen" class="fixed inset-0 flex flex-col items-center justify-center hidden" style="z-index: 10000; background-color: var(--bg-body);">
     <div class="text-center space-y-8">
-      <h2 class="text-2xl font-semibold tracking-widest text-gray-300">Unlock Mirror</h2>
+      <h2 class="text-2xl font-semibold tracking-widest" style="color: var(--text-main);">Unlock SmokeGap</h2>
       <div class="flex gap-4 justify-center mb-8" id="pinDots">
-        <div class="w-3 h-3 rounded-full bg-gray-700 pin-dot transition-colors"></div><div class="w-3 h-3 rounded-full bg-gray-700 pin-dot transition-colors"></div>
-        <div class="w-3 h-3 rounded-full bg-gray-700 pin-dot transition-colors"></div><div class="w-3 h-3 rounded-full bg-gray-700 pin-dot transition-colors"></div>
+        <div class="w-3 h-3 rounded-full bg-gray-500 pin-dot transition-colors"></div><div class="w-3 h-3 rounded-full bg-gray-500 pin-dot transition-colors"></div>
+        <div class="w-3 h-3 rounded-full bg-gray-500 pin-dot transition-colors"></div><div class="w-3 h-3 rounded-full bg-gray-500 pin-dot transition-colors"></div>
       </div>
       <div class="grid grid-cols-3 gap-6 max-w-[280px] mx-auto text-2xl font-light">
         <button onclick="window.enterPin(1)" class="w-16 h-16 premium-card flex items-center justify-center rounded-full active:scale-95">1</button>
@@ -70,57 +84,55 @@
         <button onclick="window.enterPin(9)" class="w-16 h-16 premium-card flex items-center justify-center rounded-full active:scale-95">9</button>
         <div></div>
         <button onclick="window.enterPin(0)" class="w-16 h-16 premium-card flex items-center justify-center rounded-full active:scale-95">0</button>
-        <button onclick="window.clearPin()" class="w-16 h-16 premium-card flex items-center justify-center rounded-full text-red-400 text-sm font-bold active:scale-95">DEL</button>
+        <button onclick="window.clearPin()" class="w-16 h-16 premium-card flex items-center justify-center rounded-full text-red-500 text-sm font-bold active:scale-95">DEL</button>
       </div>
     </div>
   </div>
 
   <!-- Header -->
-  <header class="p-5 sticky top-0 z-40 flex justify-between items-center" style="background: linear-gradient(to bottom, var(--bg-body) 60%, transparent);">
+  <header class="p-5 sticky top-0 z-40 flex justify-between items-center" style="background: linear-gradient(to bottom, var(--bg-body) 70%, transparent);">
     <div>
-      <h1 class="text-xl font-bold tracking-tight text-white">SmokeGap</h1>
-      <p class="text-[10px] text-gray-500 font-semibold uppercase tracking-widest mt-0.5">Widen the gap.</p>
+      <h1 class="text-xl font-bold tracking-tight" style="color: var(--text-main);">SmokeGap</h1>
+      <p class="text-[10px] font-semibold uppercase tracking-widest mt-0.5" style="color: var(--text-muted);">Widen the gap.</p>
     </div>
     <div class="premium-card px-4 py-1.5 rounded-full flex items-center gap-2">
       <span class="text-xs">🛡️</span>
-      <span id="shieldCount" class="text-sm font-bold text-white">0</span>
+      <span id="shieldCount" class="text-sm font-bold" style="color: var(--text-main);">0</span>
     </div>
   </header>
 
   <div class="max-w-md mx-auto p-5 space-y-6">
     
-    <!-- 1. TRACKER TAB (Wallet-style Dashboard) -->
+    <!-- 1. TRACKER TAB -->
     <section id="page-tracker" class="page-section space-y-6">
       
       <!-- Hero Ring -->
-      <div class="flex flex-col items-center justify-center py-6">
+      <div class="flex flex-col items-center justify-center py-4">
         <div class="hero-ring">
-          <div class="text-center">
-            <span class="text-xs font-semibold text-gray-500 uppercase tracking-widest block mb-2">Last Smoke</span>
-            <div id="stopwatch" class="text-5xl font-light tracking-tighter text-white" style="font-variant-numeric: tabular-nums;">00:00:00</div>
-            <div id="prevGapHome" class="text-xs font-medium text-gray-500 mt-2">Prev: --</div>
+          <div class="text-center z-10">
+            <span class="text-xs font-semibold uppercase tracking-widest block mb-2" style="color: var(--text-muted);">Last Smoke</span>
+            <div id="stopwatch" class="text-5xl font-light tracking-tighter" style="color: var(--text-main); font-variant-numeric: tabular-nums;">00:00:00</div>
+            <div id="prevGapHome" class="text-xs font-medium mt-2" style="color: var(--text-muted);">Prev: --</div>
           </div>
         </div>
       </div>
 
-      <!-- Quick Stats Grid (Wallet Style) -->
+      <!-- Quick Stats Grid -->
       <div class="grid grid-cols-2 gap-4">
-        <!-- Spend Card -->
         <div class="premium-card p-5">
-          <div class="flex items-center gap-3 mb-2">
-            <div class="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 text-sm">💸</div>
-            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Today's Spend</p>
+          <div class="flex items-center gap-2.5 mb-2">
+            <div class="w-7 h-7 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 text-xs">💸</div>
+            <p class="text-[10px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Today's Spend</p>
           </div>
-          <p id="todaySpend" class="text-2xl font-bold text-white">AED 0</p>
+          <p id="todaySpend" class="text-2xl font-bold" style="color: var(--text-main);">AED 0</p>
         </div>
         
-        <!-- Count Card -->
         <div class="premium-card p-5">
-          <div class="flex items-center gap-3 mb-2">
-            <div class="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500 text-sm">🚬</div>
-            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Today's Sticks</p>
+          <div class="flex items-center gap-2.5 mb-2">
+            <div class="w-7 h-7 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500 text-xs">🚬</div>
+            <p class="text-[10px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Today's Sticks</p>
           </div>
-          <p id="todayCount" class="text-2xl font-bold text-white">0 / 15</p>
+          <p id="todayCount" class="text-2xl font-bold" style="color: var(--text-main);">0 / 15</p>
         </div>
       </div>
 
@@ -129,30 +141,36 @@
         <div class="flex justify-between items-end mb-3">
           <div>
             <p class="text-[10px] font-bold text-sky-500 uppercase tracking-widest">Riding the Wave</p>
-            <p class="text-sm text-gray-400">Resisting craving...</p>
+            <p class="text-xs" style="color: var(--text-muted);">Resisting craving...</p>
           </div>
-          <span id="waveCountdown" class="text-2xl font-bold text-white tabular-nums">10:00</span>
+          <span id="waveCountdown" class="text-2xl font-bold tabular-nums" style="color: var(--text-main);">10:00</span>
         </div>
-        <div class="w-full bg-gray-800 rounded-full h-1.5"><div id="waveProgressBar" class="bg-sky-500 h-full rounded-full transition-all duration-1000 ease-linear" style="width: 100%"></div></div>
+        <div class="w-full bg-gray-500/20 rounded-full h-1.5"><div id="waveProgressBar" class="bg-sky-500 h-full rounded-full transition-all duration-1000 ease-linear" style="width: 100%"></div></div>
       </div>
 
-      <!-- Action Area (Thumb friendly) -->
-      <div class="pt-2 grid grid-cols-3 gap-4">
-        <button onclick="window.toggleWaveMode()" class="col-span-1 premium-card flex flex-col items-center justify-center py-4 active:scale-95 transition-transform text-sky-400">
+      <!-- Action Area -->
+      <div class="grid grid-cols-3 gap-4">
+        <button onclick="window.toggleWaveMode()" class="col-span-1 premium-card flex flex-col items-center justify-center py-4 active:scale-95 transition-transform text-sky-500">
           <span class="text-xl mb-1">🌊</span>
           <span class="text-[10px] font-bold uppercase tracking-wider">Ride</span>
         </button>
-        <button id="mainLogBtn" onclick="window.handleLogClick()" class="col-span-2 py-4 rounded-2xl font-bold text-sm tracking-wide active:scale-95 transition-all text-black" style="background: var(--accent); box-shadow: 0 10px 25px var(--accent-glow);">
+        <button id="mainLogBtn" onclick="window.handleLogClick()" class="col-span-2 py-4 rounded-2xl font-bold text-sm tracking-wide active:scale-95 transition-all text-white" style="background: var(--accent); box-shadow: 0 10px 25px var(--accent-glow);">
           START SMOKING
         </button>
+      </div>
+
+      <!-- RESTORED: Recent Logs List -->
+      <div class="space-y-3 pt-2">
+        <h3 class="text-xs font-bold uppercase tracking-widest px-1" style="color: var(--text-muted);">Recent Activity</h3>
+        <div id="homeRecentLogs" class="space-y-3"></div>
       </div>
     </section>
 
     <!-- 2. INSIGHTS TAB -->
     <section id="page-insights" class="page-section space-y-6 hidden">
       <div class="flex justify-between items-center px-1">
-        <h2 class="text-xl font-semibold">Analytics</h2>
-        <select id="insightsDateFilter" onchange="window.renderAllCharts()" class="bg-transparent text-sm text-gray-400 font-medium outline-none">
+        <h2 class="text-xl font-bold" style="color: var(--text-main);">Analytics Mirror</h2>
+        <select id="insightsDateFilter" onchange="window.renderAllCharts()" class="bg-transparent text-xs font-semibold outline-none" style="color: var(--accent);">
           <option value="today">Today</option>
           <option value="7days" selected>Last 7 Days</option>
           <option value="1month">1 Month</option>
@@ -163,145 +181,145 @@
       <div id="chartContainer" class="space-y-6 pb-4">
         
         <!-- 1. Gap Trend -->
-        <div id="card-1" class="premium-card p-6">
-          <div class="flex justify-between items-center mb-6">
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500">📈</div>
-              <h3 class="text-sm font-semibold text-gray-300">Widen The Gap Trend</h3>
+        <div id="card-1" class="premium-card p-5">
+          <div class="flex justify-between items-center mb-4">
+            <div class="flex items-center gap-2.5">
+              <div class="w-7 h-7 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 text-xs">📈</div>
+              <h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">Widen The Gap Trend</h3>
             </div>
-            <div class="drag-handle">≡</div>
+            <div class="drag-handle text-base">≡</div>
           </div>
-          <div class="w-full h-48 relative"><canvas id="chart1"></canvas></div>
+          <div class="w-full h-44 relative"><canvas id="chart1"></canvas></div>
         </div>
         
-        <!-- 2. Consumption vs Limit -->
-        <div id="card-2" class="premium-card p-6">
-          <div class="flex justify-between items-center mb-6">
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500">📊</div>
-              <h3 class="text-sm font-semibold text-gray-300">Daily Volume</h3>
+        <!-- 2. Daily Consumption -->
+        <div id="card-2" class="premium-card p-5">
+          <div class="flex justify-between items-center mb-4">
+            <div class="flex items-center gap-2.5">
+              <div class="w-7 h-7 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500 text-xs">📊</div>
+              <h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">Daily Volume vs Limit</h3>
             </div>
-            <div class="drag-handle">≡</div>
+            <div class="drag-handle text-base">≡</div>
           </div>
-          <div class="w-full h-44 relative"><canvas id="chart2"></canvas></div>
+          <div class="w-full h-40 relative"><canvas id="chart2"></canvas></div>
         </div>
 
         <!-- 3. Financial Drain -->
-        <div id="card-3" class="premium-card p-6">
-          <div class="flex justify-between items-center mb-6">
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center text-red-500">💸</div>
-              <h3 class="text-sm font-semibold text-gray-300">Financial Drain</h3>
+        <div id="card-3" class="premium-card p-5">
+          <div class="flex justify-between items-center mb-4">
+            <div class="flex items-center gap-2.5">
+              <div class="w-7 h-7 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 text-xs">💸</div>
+              <h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">Financial Accumulation</h3>
             </div>
-            <div class="drag-handle">≡</div>
+            <div class="drag-handle text-base">≡</div>
           </div>
-          <div class="w-full h-44 relative"><canvas id="chart3"></canvas></div>
+          <div class="w-full h-40 relative"><canvas id="chart3"></canvas></div>
         </div>
         
         <!-- 4. Danger Matrix -->
-        <div id="card-4" class="premium-card p-6">
-          <div class="flex justify-between items-center mb-6">
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500">⏰</div>
-              <h3 class="text-sm font-semibold text-gray-300">Danger Hours Matrix</h3>
+        <div id="card-4" class="premium-card p-5">
+          <div class="flex justify-between items-center mb-4">
+            <div class="flex items-center gap-2.5">
+              <div class="w-7 h-7 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500 text-xs">⏰</div>
+              <h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">24-Hour Danger Hours</h3>
             </div>
-            <div class="drag-handle">≡</div>
+            <div class="drag-handle text-base">≡</div>
           </div>
           <div class="w-full h-40 relative"><canvas id="chart4"></canvas></div>
         </div>
         
         <!-- 5. Trigger Breakdown -->
-        <div id="card-5" class="premium-card p-6">
-          <div class="flex justify-between items-center mb-6">
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-500">🧠</div>
-              <h3 class="text-sm font-semibold text-gray-300">Trigger Psychology</h3>
+        <div id="card-5" class="premium-card p-5">
+          <div class="flex justify-between items-center mb-4">
+            <div class="flex items-center gap-2.5">
+              <div class="w-7 h-7 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-500 text-xs">🧠</div>
+              <h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">Trigger Psychology</h3>
             </div>
-            <div class="drag-handle">≡</div>
+            <div class="drag-handle text-base">≡</div>
           </div>
-          <div class="w-full h-56 relative"><canvas id="chart5"></canvas></div>
+          <div class="w-full h-52 relative"><canvas id="chart5"></canvas></div>
         </div>
         
         <!-- 6. Spatial Heat Map -->
-        <div id="card-6" class="premium-card p-6 relative overflow-hidden">
+        <div id="card-6" class="premium-card p-5 relative overflow-hidden">
           <div class="flex justify-between items-center mb-4">
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-full bg-sky-500/10 flex items-center justify-center text-sky-500">📍</div>
-              <h3 class="text-sm font-semibold text-gray-300">Thermal Heatmap</h3>
+            <div class="flex items-center gap-2.5">
+              <div class="w-7 h-7 rounded-full bg-sky-500/10 flex items-center justify-center text-sky-500 text-xs">📍</div>
+              <h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">Thermal Spatial Heatmap</h3>
             </div>
-            <div class="flex gap-4 items-center">
-              <button onclick="window.openMapModal()" class="text-sky-400 text-xs font-semibold uppercase tracking-wider">Expand</button>
-              <div class="drag-handle">≡</div>
+            <div class="flex gap-3 items-center">
+              <button onclick="window.openMapModal()" class="text-sky-500 text-xs font-bold uppercase tracking-wider">Expand</button>
+              <div class="drag-handle text-base">≡</div>
             </div>
           </div>
-          <div id="mapContainer" class="w-full h-48 rounded-2xl z-10 bg-[#0f1115] shadow-inner border border-white/5"></div>
+          <div id="mapContainer" class="w-full h-48 rounded-2xl z-10 overflow-hidden border border-gray-500/10"></div>
         </div>
       </div>
     </section>
 
     <!-- 3. HISTORY TAB -->
     <section id="page-history" class="page-section space-y-6 hidden">
-      <h2 class="text-xl font-semibold px-1">Timeline</h2>
+      <h2 class="text-xl font-bold px-1" style="color: var(--text-main);">Full History Log</h2>
       <div id="fullHistoryList" class="space-y-3"></div>
     </section>
     
-    <!-- 4. SETTINGS TAB (iOS Style Lists) -->
+    <!-- 4. SETTINGS TAB -->
     <section id="page-settings" class="page-section space-y-6 hidden">
-      <h2 class="text-xl font-semibold px-1">Preferences</h2>
+      <h2 class="text-xl font-bold px-1" style="color: var(--text-main);">Preferences</h2>
       
-      <div class="premium-card p-5 space-y-5">
-        <h3 class="text-[10px] font-bold text-gray-500 uppercase tracking-widest border-b border-gray-800 pb-2">Appearance</h3>
+      <div class="premium-card p-5 space-y-4">
+        <h3 class="text-[10px] font-bold uppercase tracking-widest border-b border-gray-500/10 pb-2" style="color: var(--text-muted);">Appearance</h3>
         <div class="flex justify-between items-center">
-          <label class="text-sm font-medium text-gray-300">Theme Mode</label>
-          <select id="themeSelect" onchange="window.updateSettings()" class="bg-gray-800/50 text-sm p-2 rounded-lg text-white border border-gray-700 outline-none"><option value="default">Amber Glow</option><option value="carbon">Carbon Matrix</option><option value="white">Clean Light</option></select>
+          <label class="text-xs font-semibold" style="color: var(--text-main);">Theme Mode</label>
+          <select id="themeSelect" onchange="window.updateSettings()" class="bg-gray-500/10 text-xs p-2 rounded-xl text-white font-semibold border border-gray-500/20 outline-none" style="color: var(--text-main);"><option value="default">Amber Glow</option><option value="carbon">Carbon Matrix</option><option value="white">Clean White & Blue</option></select>
         </div>
       </div>
 
-      <div class="premium-card p-5 space-y-5">
-        <h3 class="text-[10px] font-bold text-gray-500 uppercase tracking-widest border-b border-gray-800 pb-2">Financials & Limits</h3>
+      <div class="premium-card p-5 space-y-4">
+        <h3 class="text-[10px] font-bold uppercase tracking-widest border-b border-gray-500/10 pb-2" style="color: var(--text-muted);">Financials & Limits</h3>
         <div class="flex justify-between items-center">
-          <label class="text-sm font-medium text-gray-300">Currency</label>
-          <select id="currencySelect" onchange="window.updateSettings()" class="bg-gray-800/50 text-sm p-2 rounded-lg text-white border border-gray-700 outline-none"><option value="AED">AED (د.إ)</option><option value="USD">USD ($)</option><option value="EUR">EUR (€)</option><option value="GBP">GBP (£)</option><option value="INR">INR (₹)</option></select>
+          <label class="text-xs font-semibold" style="color: var(--text-main);">Currency</label>
+          <select id="currencySelect" onchange="window.updateSettings()" class="bg-gray-500/10 text-xs p-2 rounded-xl font-semibold border border-gray-500/20 outline-none" style="color: var(--text-main);"><option value="AED">AED (د.إ)</option><option value="USD">USD ($)</option><option value="EUR">EUR (€)</option><option value="GBP">GBP (£)</option><option value="INR">INR (₹)</option></select>
         </div>
         <div class="flex justify-between items-center">
-          <label class="text-sm font-medium text-gray-300">Daily Limit</label>
-          <input type="number" id="dailyLimitInput" onchange="window.updateSettings()" class="w-16 bg-gray-800/50 p-2 rounded-lg text-white border border-gray-700 text-center text-sm" value="15">
+          <label class="text-xs font-semibold" style="color: var(--text-main);">Daily Limit</label>
+          <input type="number" id="dailyLimitInput" onchange="window.updateSettings()" class="w-16 bg-gray-500/10 p-2 rounded-xl border border-gray-500/20 text-center text-xs font-bold" style="color: var(--text-main);" value="15">
         </div>
         <div class="flex justify-between items-center">
-          <label class="text-sm font-medium text-gray-300">Pack Price</label>
-          <input type="number" id="packPriceInput" onchange="window.updateSettings()" class="w-20 bg-gray-800/50 p-2 rounded-lg text-white border border-gray-700 text-center text-sm" value="20">
+          <label class="text-xs font-semibold" style="color: var(--text-main);">Pack Price</label>
+          <input type="number" id="packPriceInput" onchange="window.updateSettings()" class="w-20 bg-gray-500/10 p-2 rounded-xl border border-gray-500/20 text-center text-xs font-bold" style="color: var(--text-main);" value="20">
         </div>
         <div class="flex justify-between items-center">
-          <label class="text-sm font-medium text-gray-300">Sticks Per Pack</label>
-          <input type="number" id="packSizeInput" onchange="window.updateSettings()" class="w-16 bg-gray-800/50 p-2 rounded-lg text-white border border-gray-700 text-center text-sm" value="20">
+          <label class="text-xs font-semibold" style="color: var(--text-main);">Sticks Per Pack</label>
+          <input type="number" id="packSizeInput" onchange="window.updateSettings()" class="w-16 bg-gray-500/10 p-2 rounded-xl border border-gray-500/20 text-center text-xs font-bold" style="color: var(--text-main);" value="20">
         </div>
       </div>
 
-      <div class="premium-card p-5 space-y-5">
-        <h3 class="text-[10px] font-bold text-gray-500 uppercase tracking-widest border-b border-gray-800 pb-2">Security & Data</h3>
-        <button onclick="window.setupPin()" id="pinStatusBtn" class="w-full py-3 bg-indigo-500/10 text-indigo-400 font-semibold rounded-xl text-center active:scale-95 transition-transform">Set App PIN</button>
-        <button onclick="window.resetData('all')" class="w-full py-3 bg-red-500/10 text-red-500 font-semibold rounded-xl text-center active:scale-95 transition-transform border border-red-500/20">WIPE ALL DATA</button>
+      <div class="premium-card p-5 space-y-4">
+        <h3 class="text-[10px] font-bold uppercase tracking-widest border-b border-gray-500/10 pb-2" style="color: var(--text-muted);">Security & Data</h3>
+        <button onclick="window.setupPin()" id="pinStatusBtn" class="w-full py-3 bg-indigo-500/10 text-indigo-500 font-bold text-xs rounded-xl text-center active:scale-95 transition-transform">Set App PIN</button>
+        <button onclick="window.resetData('all')" class="w-full py-3 bg-red-500/10 text-red-500 font-bold text-xs rounded-xl text-center active:scale-95 transition-transform border border-red-500/20">WIPE ALL DATA</button>
       </div>
     </section>
   </div>
 
-  <!-- Modals (Trigger & Map) -->
+  <!-- Modals -->
   <div id="triggerModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex flex-col justify-end transition-opacity">
-    <div class="premium-card p-6 rounded-b-none space-y-5 max-w-md mx-auto w-full transform transition-transform">
+    <div class="premium-card p-6 rounded-b-none space-y-4 max-w-md mx-auto w-full">
       <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest text-center">Select Trigger</h3>
-      <div id="modalTriggerGrid" class="grid grid-cols-2 gap-3 text-sm font-medium"></div>
+      <div id="modalTriggerGrid" class="grid grid-cols-2 gap-3 text-xs font-bold"></div>
     </div>
   </div>
 
-  <div id="mapModal" class="hidden fixed inset-0 bg-black/95 z-50 flex flex-col p-4 backdrop-blur-md">
+  <div id="mapModal" class="hidden fixed inset-0 bg-black/90 z-50 flex flex-col p-4 backdrop-blur-md">
     <div class="flex justify-between items-center mb-4 mt-8 px-2">
       <h3 class="text-lg font-bold text-white">Thermal View</h3>
       <button onclick="window.closeMapModal()" class="bg-white/10 text-white text-xs px-4 py-2 rounded-full font-bold active:scale-95">Done</button>
     </div>
-    <div id="mapModalContainer" class="w-full flex-1 rounded-3xl bg-[#0f1115] border border-white/10 overflow-hidden shadow-2xl"></div>
+    <div id="mapModalContainer" class="w-full flex-1 rounded-3xl border border-white/10 overflow-hidden shadow-2xl"></div>
   </div>
 
-  <!-- Bottom Navigation (Floating Pill Style) -->
+  <!-- Bottom Navigation -->
   <div class="fixed bottom-6 left-0 right-0 z-40 flex justify-center px-4">
     <nav class="premium-card !rounded-full flex justify-between items-center p-2 px-4 gap-2 w-full max-w-sm shadow-2xl">
       <button onclick="window.switchTab('tracker')" id="tab-tracker" class="nav-btn nav-active flex flex-col items-center py-2 px-4 rounded-full w-full">
