@@ -11,7 +11,6 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-  <!-- Premium Vector Icons (Lucide) -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
     :root { 
@@ -44,16 +43,13 @@
     
     html, body { background-color: var(--bg-body); color: var(--text-main); font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif; user-select: none; -webkit-tap-highlight-color: transparent; }
     
-    /* Native App padding to protect content from bottom dock */
     .app-container { padding-bottom: 96px; min-height: 100vh; }
-    
     .premium-card { background: var(--card-bg); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid var(--card-border); box-shadow: 0 10px 30px rgba(0,0,0,0.04); border-radius: 1.5rem; transition: all 0.2s ease; }
     
     .hero-ring { position: relative; display: flex; justify-content: center; align-items: center; width: 16rem; height: 16rem; border-radius: 50%; background: var(--card-bg); box-shadow: inset 0 0 0 2px var(--card-border), 0 0 40px var(--accent-glow); }
     .hero-ring::before { content: ''; position: absolute; inset: -4px; border-radius: 50%; background: conic-gradient(var(--accent), transparent 60%); animation: spin 4s linear infinite; opacity: 0.4; z-index: 0; }
     @keyframes spin { 100% { transform: rotate(360deg); } }
 
-    /* Nav Bar Fixes */
     .dock-bar { background: var(--card-bg); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); border-top: 1px solid var(--card-border); }
     .nav-btn { color: var(--text-muted); transition: all 0.3s ease; }
     .nav-active { color: var(--accent); }
@@ -62,6 +58,9 @@
     .drag-handle { touch-action: none; cursor: grab; padding: 8px; opacity: 0.4; }
     .drag-handle:active { cursor: grabbing; opacity: 1; }
     .sortable-ghost { opacity: 0.2; transform: scale(0.96); }
+    
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     
     .page-section { animation: fadeIn 0.3s ease-out forwards; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
@@ -75,22 +74,14 @@
       <i data-lucide="lock" class="w-12 h-12 mx-auto" style="color: var(--text-muted);"></i>
       <h2 class="text-2xl font-semibold tracking-widest" style="color: var(--text-main);">Locked</h2>
       <div class="flex gap-4 justify-center mb-8" id="pinDots">
-        <div class="w-3 h-3 rounded-full bg-gray-500 pin-dot transition-colors"></div><div class="w-3 h-3 rounded-full bg-gray-500 pin-dot transition-colors"></div>
-        <div class="w-3 h-3 rounded-full bg-gray-500 pin-dot transition-colors"></div><div class="w-3 h-3 rounded-full bg-gray-500 pin-dot transition-colors"></div>
+        <div class="w-3 h-3 rounded-full bg-gray-500 pin-dot"></div><div class="w-3 h-3 rounded-full bg-gray-500 pin-dot"></div>
+        <div class="w-3 h-3 rounded-full bg-gray-500 pin-dot"></div><div class="w-3 h-3 rounded-full bg-gray-500 pin-dot"></div>
       </div>
       <div class="grid grid-cols-3 gap-6 max-w-[280px] mx-auto text-2xl font-light">
-        <button onclick="window.enterPin(1)" class="w-16 h-16 premium-card flex items-center justify-center rounded-full active:scale-95">1</button>
-        <button onclick="window.enterPin(2)" class="w-16 h-16 premium-card flex items-center justify-center rounded-full active:scale-95">2</button>
-        <button onclick="window.enterPin(3)" class="w-16 h-16 premium-card flex items-center justify-center rounded-full active:scale-95">3</button>
-        <button onclick="window.enterPin(4)" class="w-16 h-16 premium-card flex items-center justify-center rounded-full active:scale-95">4</button>
-        <button onclick="window.enterPin(5)" class="w-16 h-16 premium-card flex items-center justify-center rounded-full active:scale-95">5</button>
-        <button onclick="window.enterPin(6)" class="w-16 h-16 premium-card flex items-center justify-center rounded-full active:scale-95">6</button>
-        <button onclick="window.enterPin(7)" class="w-16 h-16 premium-card flex items-center justify-center rounded-full active:scale-95">7</button>
-        <button onclick="window.enterPin(8)" class="w-16 h-16 premium-card flex items-center justify-center rounded-full active:scale-95">8</button>
-        <button onclick="window.enterPin(9)" class="w-16 h-16 premium-card flex items-center justify-center rounded-full active:scale-95">9</button>
-        <div></div>
-        <button onclick="window.enterPin(0)" class="w-16 h-16 premium-card flex items-center justify-center rounded-full active:scale-95">0</button>
-        <button onclick="window.clearPin()" class="w-16 h-16 premium-card flex items-center justify-center rounded-full text-red-500 text-sm font-bold active:scale-95">DEL</button>
+        <button onclick="window.enterPin(1)" class="w-16 h-16 premium-card rounded-full">1</button><button onclick="window.enterPin(2)" class="w-16 h-16 premium-card rounded-full">2</button><button onclick="window.enterPin(3)" class="w-16 h-16 premium-card rounded-full">3</button>
+        <button onclick="window.enterPin(4)" class="w-16 h-16 premium-card rounded-full">4</button><button onclick="window.enterPin(5)" class="w-16 h-16 premium-card rounded-full">5</button><button onclick="window.enterPin(6)" class="w-16 h-16 premium-card rounded-full">6</button>
+        <button onclick="window.enterPin(7)" class="w-16 h-16 premium-card rounded-full">7</button><button onclick="window.enterPin(8)" class="w-16 h-16 premium-card rounded-full">8</button><button onclick="window.enterPin(9)" class="w-16 h-16 premium-card rounded-full">9</button>
+        <div></div><button onclick="window.enterPin(0)" class="w-16 h-16 premium-card rounded-full">0</button><button onclick="window.clearPin()" class="w-16 h-16 premium-card rounded-full text-red-500 text-sm font-bold">DEL</button>
       </div>
     </div>
   </div>
@@ -108,39 +99,54 @@
       </div>
     </header>
 
-    <div class="p-5 space-y-6">
+    <div class="p-5 space-y-6 pt-0">
       
       <!-- 1. TRACKER TAB -->
       <section id="page-tracker" class="page-section space-y-6">
-        <div class="flex flex-col items-center justify-center py-4">
+        <div class="flex flex-col items-center justify-center py-2">
           <div class="hero-ring">
             <div class="text-center z-10">
               <span class="text-xs font-semibold uppercase tracking-widest block mb-2" style="color: var(--text-muted);">Last Smoke</span>
               <div id="stopwatch" class="text-5xl font-light tracking-tighter" style="color: var(--text-main); font-variant-numeric: tabular-nums;">00:00:00</div>
-              <div id="prevGapHome" class="text-xs font-medium mt-2" style="color: var(--text-muted);">Prev: --</div>
             </div>
           </div>
         </div>
 
+        <!-- RESTORED: 4 Core Stat Cards Grid -->
         <div class="grid grid-cols-2 gap-4">
-          <div class="premium-card p-5">
-            <div class="flex items-center gap-2.5 mb-2">
-              <div class="w-7 h-7 rounded-full bg-red-500/10 flex items-center justify-center text-red-500"><i data-lucide="wallet" class="w-4 h-4"></i></div>
-              <p class="text-[10px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Today's Spend</p>
+          <div class="premium-card p-4">
+            <div class="flex items-center gap-2 mb-2">
+              <div class="w-6 h-6 rounded-full bg-red-500/10 flex items-center justify-center text-red-500"><i data-lucide="wallet" class="w-3 h-3"></i></div>
+              <p class="text-[9px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Today's Spend</p>
             </div>
-            <p id="todaySpend" class="text-2xl font-bold" style="color: var(--text-main);">AED 0</p>
+            <p id="todaySpend" class="text-xl font-bold" style="color: var(--text-main);">AED 0</p>
           </div>
           
-          <div class="premium-card p-5">
-            <div class="flex items-center gap-2.5 mb-2">
-              <div class="w-7 h-7 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500"><i data-lucide="activity" class="w-4 h-4"></i></div>
-              <p class="text-[10px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Today's Sticks</p>
+          <div class="premium-card p-4">
+            <div class="flex items-center gap-2 mb-2">
+              <div class="w-6 h-6 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500"><i data-lucide="activity" class="w-3 h-3"></i></div>
+              <p class="text-[9px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Today's Sticks</p>
             </div>
-            <p id="todayCount" class="text-2xl font-bold" style="color: var(--text-main);">0 / 15</p>
+            <p id="todayCount" class="text-xl font-bold" style="color: var(--text-main);">0 / 15</p>
+          </div>
+
+          <div class="premium-card p-4">
+            <div class="flex items-center gap-2 mb-2">
+              <div class="w-6 h-6 rounded-full bg-sky-500/10 flex items-center justify-center text-sky-500"><i data-lucide="history" class="w-3 h-3"></i></div>
+              <p class="text-[9px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Previous Gap</p>
+            </div>
+            <p id="prevGapCard" class="text-xl font-bold" style="color: var(--text-main);">--</p>
+          </div>
+
+          <div class="premium-card p-4">
+            <div class="flex items-center gap-2 mb-2">
+              <div class="w-6 h-6 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500"><i data-lucide="trophy" class="w-3 h-3"></i></div>
+              <p class="text-[9px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Best Gap</p>
+            </div>
+            <p id="bestGapCard" class="text-xl font-bold" style="color: var(--text-main);">--</p>
           </div>
         </div>
 
-        <!-- Wave Overlay -->
         <div id="waveOverlay" class="hidden premium-card p-5 border-l-4 border-sky-500 relative overflow-hidden">
           <div class="flex justify-between items-end mb-3">
             <div>
@@ -154,7 +160,7 @@
 
         <div class="grid grid-cols-3 gap-4">
           <button onclick="window.toggleWaveMode()" class="col-span-1 premium-card flex flex-col items-center justify-center py-4 active:scale-95 transition-transform text-sky-500">
-            <i data-lucide="waves" class="w-6 h-6 mb-1"></i>
+            <i data-lucide="shield-check" class="w-6 h-6 mb-1"></i>
             <span class="text-[10px] font-bold uppercase tracking-wider">Ride</span>
           </button>
           <button id="mainLogBtn" onclick="window.handleLogClick()" class="col-span-2 py-4 rounded-2xl font-bold text-sm tracking-wide active:scale-95 transition-all text-white" style="background: var(--accent); box-shadow: 0 10px 25px var(--accent-glow);">
@@ -169,10 +175,10 @@
       </section>
 
       <!-- 2. INSIGHTS TAB -->
-      <section id="page-insights" class="page-section space-y-6 hidden">
-        <div class="flex justify-between items-center px-1">
+      <section id="page-insights" class="page-section space-y-4 hidden">
+        <div class="flex justify-between items-center px-1 mb-2">
           <h2 class="text-xl font-bold" style="color: var(--text-main);">Analytics Mirror</h2>
-          <select id="insightsDateFilter" onchange="window.renderAllCharts()" class="bg-transparent text-xs font-semibold outline-none" style="color: var(--accent);">
+          <select id="insightsDateFilter" onchange="window.renderAllCharts()" class="bg-transparent text-xs font-bold outline-none" style="color: var(--accent);">
             <option value="today">Today</option>
             <option value="7days" selected>Last 7 Days</option>
             <option value="1month">1 Month</option>
@@ -180,12 +186,47 @@
           </select>
         </div>
 
-        <div id="chartContainer" class="space-y-6 pb-4">
+        <!-- NEW: Dynamic Horizontal KPI Summary Widgets -->
+        <div class="flex overflow-x-auto gap-3 pb-2 snap-x hide-scrollbar">
           
+          <div class="premium-card p-4 min-w-[140px] snap-start shrink-0">
+            <div class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2" style="color: var(--text-muted);"><i data-lucide="clock" class="w-3 h-3 text-sky-500"></i> Avg Gap</div>
+            <div id="insightAvgGap" class="text-xl font-bold" style="color: var(--text-main);">--</div>
+          </div>
+          
+          <div class="premium-card p-4 min-w-[140px] snap-start shrink-0">
+            <div class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2" style="color: var(--text-muted);"><i data-lucide="shield-alert" class="w-3 h-3 text-emerald-500"></i> Defeated</div>
+            <div id="insightShields" class="text-xl font-bold" style="color: var(--text-main);">0 Waves</div>
+          </div>
+
+          <div class="premium-card p-4 min-w-[140px] snap-start shrink-0">
+            <div class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2" style="color: var(--text-muted);"><i data-lucide="alert-triangle" class="w-3 h-3 text-orange-500"></i> Peak Hour</div>
+            <div id="insightPeakHour" class="text-xl font-bold" style="color: var(--text-main);">--</div>
+          </div>
+
+          <div class="premium-card p-4 min-w-[140px] snap-start shrink-0">
+            <div class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2" style="color: var(--text-muted);"><i data-lucide="brain-circuit" class="w-3 h-3 text-purple-500"></i> Top Trigger</div>
+            <div id="insightTopTrigger" class="text-lg font-bold truncate" style="color: var(--text-main);">--</div>
+          </div>
+
+          <div class="premium-card p-4 min-w-[140px] snap-start shrink-0">
+            <div class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2" style="color: var(--text-muted);"><i data-lucide="package" class="w-3 h-3 text-amber-500"></i> Pack Equiv.</div>
+            <div id="insightPackEq" class="text-xl font-bold" style="color: var(--text-main);">0.0</div>
+          </div>
+
+          <div class="premium-card p-4 min-w-[140px] snap-start shrink-0">
+            <div class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2" style="color: var(--text-muted);"><i data-lucide="trending-up" class="w-3 h-3 text-red-500"></i> Year Proj.</div>
+            <div id="insightProjected" class="text-xl font-bold" style="color: var(--text-main);">--</div>
+          </div>
+
+        </div>
+
+        <div id="chartContainer" class="space-y-5">
+          <!-- Charts Start -->
           <div id="card-1" class="premium-card p-5">
             <div class="flex justify-between items-center mb-4">
               <div class="flex items-center gap-2.5">
-                <div class="w-7 h-7 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500"><i data-lucide="trending-up" class="w-4 h-4"></i></div>
+                <div class="w-7 h-7 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500"><i data-lucide="activity" class="w-4 h-4"></i></div>
                 <h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">Widen The Gap Trend</h3>
               </div>
               <div class="drag-handle"><i data-lucide="grip-horizontal" class="w-4 h-4"></i></div>

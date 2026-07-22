@@ -163,12 +163,16 @@ function updateSettings() {
 function updateUI() {
   document.getElementById('shieldCount').innerText = shields;
   const today = logs.filter(l => new Date(l.timestamp).toDateString() === new Date().toDateString());
+  
+  // Update Tracker Grid Cards
   document.getElementById('todayCount').innerText = `${today.length} / ${settings.dailyLimit}`;
   
   let spendRaw = (today.length * (settings.packPrice/settings.packSize)).toFixed(1);
   document.getElementById('todaySpend').innerText = `${settings.currency} ${spendRaw}`;
   
-  if(logs.length>1) document.getElementById('prevGapHome').innerText = `Prev Gap: ${formatGap(logs[logs.length-1].gap)}`;
+  document.getElementById('prevGapCard').innerText = logs.length > 1 ? formatGap(logs[logs.length-1].gap) : '--';
+  document.getElementById('bestGapCard').innerText = today.length > 0 ? formatGap(Math.max(...today.map(l=>l.gap))) : '--';
+  
   renderHistory('homeRecentLogs', 3);
 }
 
@@ -207,12 +211,46 @@ function getFilteredLogs() {
 
 function renderAllCharts() {
   const activeLogs = getFilteredLogs();
+  
+  // 1. Calculate and Update Dynamic Insight Stat Cards
+  let totalSpend = (activeLogs.length * (settings.packPrice/settings.packSize)).toFixed(1);
+  
+  // Avg Gap
+  document.getElementById('insightAvgGap').innerText = activeLogs.length > 0 ? formatGap(Math.round(activeLogs.reduce((a, b) => a + b.gap, 0) / activeLogs.length)) : '--';
+  
+  // Shields
+  document.getElementById('insightShields').innerText = `${shields} Defeats`;
+
+  // Peak Hour
+  if(activeLogs.length > 0) {
+    let hours = {}; activeLogs.forEach(l => { let h = new Date(l.timestamp).getHours(); hours[h] = (hours[h]||0)+1; });
+    let peak = Object.keys(hours).reduce((a,b) => hours[a] > hours[b] ? a : b);
+    document.getElementById('insightPeakHour').innerText = `${peak}:00`;
+  } else document.getElementById('insightPeakHour').innerText = '--';
+
+  // Top Trigger
+  if(activeLogs.length > 0) {
+    let trigs = {}; activeLogs.forEach(l => { let t = l.trigger||'Uncategorized'; trigs[t] = (trigs[t]||0)+1; });
+    let topT = Object.keys(trigs).reduce((a,b) => trigs[a] > trigs[b] ? a : b);
+    document.getElementById('insightTopTrigger').innerText = topT.length > 15 ? topT.substring(0,12)+'..' : topT;
+  } else document.getElementById('insightTopTrigger').innerText = '--';
+
+  // Pack Equivalent
+  document.getElementById('insightPackEq').innerText = activeLogs.length > 0 ? `${(activeLogs.length / settings.packSize).toFixed(1)} Packs` : '--';
+
+  // Projected Yearly
+  if(activeLogs.length > 0) {
+    let filter = document.getElementById('insightsDateFilter').value;
+    let days = filter === 'today' ? 1 : filter === '7days' ? 7 : filter === '1month' ? 30 : Math.max(1, Math.ceil((new Date() - new Date(logs[0].timestamp))/86400000));
+    let yearly = ((totalSpend / days) * 365).toFixed(0);
+    document.getElementById('insightProjected').innerText = `${settings.currency} ${yearly}`;
+  } else document.getElementById('insightProjected').innerText = '--';
+
+  // 2. Charts Rendering Logic
   const labels = activeLogs.length > 0 ? activeLogs.map(l => new Date(l.timestamp).toLocaleDateString([], {month:'short', day:'numeric'}) + ' ' + new Date(l.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})) : ['No Data'];
   const gaps = activeLogs.length > 0 ? activeLogs.map(l => l.gap) : [0];
-
   const chartTextColor = settings.theme === 'white' ? '#64748B' : '#9CA3AF';
 
-  // FIX: Explicitly setup proper padding and 'beginAtZero' so Y-Axis doesn't jump to the middle of the chart
   const commonOptions = {
     responsive: true, maintainAspectRatio: false, animation: false,
     plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(15,23,42,0.9)', padding: 10, cornerRadius: 8 } },
@@ -284,11 +322,7 @@ function renderHeatMap(containerId, activeLogs) {
 
   try {
     let m = L.map(containerId, {zoomControl: false, attributionControl: false}).setView([lat, lng], 13);
-    
-    let tileUrl = settings.theme === 'white' 
-      ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
-      : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png';
-
+    let tileUrl = settings.theme === 'white' ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png' : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png';
     L.tileLayer(tileUrl, {maxZoom: 19}).addTo(m);
     
     let heatPoints = activeLogs.filter(l => l.lat && l.lng).map(l => [l.lat, l.lng, 1.0]);
@@ -316,12 +350,7 @@ function closeMapModal() {
 function initDragAndDrop() {
   const container = document.getElementById('chartContainer');
   if(!container || !window.Sortable) return;
-  new Sortable(container, {
-    handle: '.drag-handle',
-    animation: 200,
-    ghostClass: 'sortable-ghost',
-    onEnd: function () { saveChartOrder(); }
-  });
+  new Sortable(container, { handle: '.drag-handle', animation: 200, ghostClass: 'sortable-ghost', onEnd: function () { saveChartOrder(); } });
 }
 
 function saveChartOrder() {
@@ -335,10 +364,7 @@ function loadChartOrder() {
   const savedOrder = JSON.parse(localStorage.getItem('smoke_chart_order'));
   if(!savedOrder) return;
   const container = document.getElementById('chartContainer');
-  savedOrder.forEach(id => {
-    const card = document.getElementById(id);
-    if(card) container.appendChild(card);
-  });
+  savedOrder.forEach(id => { const card = document.getElementById(id); if(card) container.appendChild(card); });
 }
 
 window.enterPin = enterPin; window.clearPin = clearPin; window.setupPin = setupPin;
