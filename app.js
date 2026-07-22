@@ -255,7 +255,6 @@ function renderHistory(tId='fullHistoryList', limit=null) {
   if(window.lucide) window.lucide.createIcons();
 }
 
-// FIX: Exact Date Filter Logic that respects midnight boundaries
 function getFilteredLogs() {
   const filter = document.getElementById('insightsDateFilter').value;
   const now = new Date();
@@ -273,6 +272,7 @@ function getFilteredLogs() {
   return logs;
 }
 
+// PRO ADVANCED CHARTS ENGINE
 function renderAllCharts() {
   const activeLogs = getFilteredLogs();
   
@@ -302,66 +302,115 @@ function renderAllCharts() {
     document.getElementById('insightProjected').innerText = `${settings.currency} ${yearly}`;
   } else document.getElementById('insightProjected').innerText = '--';
 
-  // 2. Charts Logic
-  const labels = activeLogs.length > 0 ? activeLogs.map(l => new Date(l.timestamp).toLocaleDateString([], {month:'short', day:'numeric'}) + ' ' + new Date(l.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})) : ['No Data'];
+  // 2. Advanced Pro Canvas Charts Configuration
+  const labels = activeLogs.length > 0 ? activeLogs.map(l => new Date(l.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})) : ['No Data'];
   const gaps = activeLogs.length > 0 ? activeLogs.map(l => l.gap) : [0];
   const chartTextColor = settings.theme === 'white' ? '#64748B' : '#9CA3AF';
 
-  // FIX: Hard-code scale margins and remove internal Y padding so numbers lock to the left edge
-  const commonOptions = {
-    responsive: true, maintainAspectRatio: false, animation: false,
-    layout: { padding: { left: 0, right: 10, top: 10, bottom: 0 } },
-    plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(15,23,42,0.9)', padding: 10, cornerRadius: 8 } },
-    scales: { 
-      x: { grid: { display: false }, border: { display: false }, ticks: { color: chartTextColor, maxTicksLimit: 5, font: { size: 10 } } }, 
-      y: { beginAtZero: true, grace: '5%', position: 'left', grid: { color: 'rgba(156,163,175,0.08)', drawBorder: false }, border: { display: false }, ticks: { color: chartTextColor, font: { size: 10 }, padding: 4 } } 
+  // Base options for 100% Left Flush Layout (No margins/padding glitches)
+  const proOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: false,
+    layout: { padding: { left: -5, right: 5, top: 10, bottom: 0 } },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: 'rgba(15, 23, 42, 0.95)',
+        titleColor: '#FFFFFF',
+        bodyColor: '#10B981',
+        padding: 12,
+        cornerRadius: 12,
+        displayColors: false
+      }
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: { color: chartTextColor, font: { size: 9, weight: '600' }, maxTicksLimit: 4 }
+      },
+      y: {
+        beginAtZero: true,
+        grid: { color: 'rgba(156, 163, 175, 0.05)', drawBorder: false },
+        ticks: { color: chartTextColor, font: { size: 9, weight: '600' }, padding: 6 }
+      }
     }
   };
 
+  // Helper function to create Apple-like Glow Gradients
+  const createGradient = (ctx, colorHex) => {
+    let gradient = ctx.createLinearGradient(0, 0, 0, 180);
+    gradient.addColorStop(0, colorHex);
+    gradient.addColorStop(1, 'rgba(0,0,0,0)');
+    return gradient;
+  };
+
+  // 1. Gap Trend Line Chart
   if(myChartInstances[1]) myChartInstances[1].destroy();
-  myChartInstances[1] = new Chart(document.getElementById('chart1').getContext('2d'), {
+  const ctx1 = document.getElementById('chart1').getContext('2d');
+  myChartInstances[1] = new Chart(ctx1, {
     type: 'line',
-    data: { labels: labels, datasets: [{ label: 'Gap (m)', data: gaps, borderColor: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.1)', borderWidth: 2.5, tension: 0.35, fill: true, pointRadius: 0 }] },
-    options: commonOptions
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Gap (mins)',
+        data: gaps,
+        borderColor: '#10B981',
+        backgroundColor: createGradient(ctx1, 'rgba(16, 185, 129, 0.25)'),
+        borderWidth: 3,
+        tension: 0.4,
+        fill: true,
+        pointRadius: 0,
+        pointHitRadius: 15
+      }]
+    },
+    options: proOptions
   });
 
+  // 2. Daily Volume Bar Chart
   if(myChartInstances[2]) myChartInstances[2].destroy();
   let dayMap = {}; activeLogs.forEach(l => { let d = new Date(l.timestamp).toLocaleDateString([],{weekday:'short'}); dayMap[d] = (dayMap[d] || 0) + 1; });
   let dayLabels = Object.keys(dayMap); let dayCounts = Object.values(dayMap);
   if(dayLabels.length === 0) { dayLabels = ['Today']; dayCounts = [0]; }
 
-  myChartInstances[2] = new Chart(document.getElementById('chart2').getContext('2d'), {
+  const ctx2 = document.getElementById('chart2').getContext('2d');
+  myChartInstances[2] = new Chart(ctx2, {
     type: 'bar',
     data: { 
       labels: dayLabels, 
       datasets: [
-        { label: 'Count', data: dayCounts, backgroundColor: settings.theme === 'white' ? '#2563EB' : '#F59E0B', borderRadius: 4, barThickness: 'flex', maxBarThickness: 24 },
+        { label: 'Count', data: dayCounts, backgroundColor: settings.theme === 'white' ? '#2563EB' : '#F59E0B', borderRadius: 6, barThickness: 18 },
         { label: 'Limit', data: dayLabels.map(() => settings.dailyLimit), type: 'line', borderColor: '#EF4444', borderWidth: 2, borderDash: [4,4], pointRadius: 0 }
       ] 
     },
-    options: commonOptions
+    options: proOptions
   });
 
+  // 3. Financial Drain Line Chart
   if(myChartInstances[3]) myChartInstances[3].destroy();
   let cumulativeSpend = 0; let spendData = gaps.map(() => { cumulativeSpend += (settings.packPrice / settings.packSize); return cumulativeSpend.toFixed(1); });
-  myChartInstances[3] = new Chart(document.getElementById('chart3').getContext('2d'), {
+  const ctx3 = document.getElementById('chart3').getContext('2d');
+  myChartInstances[3] = new Chart(ctx3, {
     type: 'line',
-    data: { labels: labels, datasets: [{ label: 'Spend', data: spendData, borderColor: '#EF4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', fill: true, tension: 0.35, borderWidth: 2.5, pointRadius: 0 }] },
-    options: commonOptions
+    data: { labels: labels, datasets: [{ label: 'Spend', data: spendData, borderColor: '#EF4444', backgroundColor: createGradient(ctx3, 'rgba(239, 68, 68, 0.2)'), fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0 }] },
+    options: proOptions
   });
 
+  // 4. Danger Matrix Hours Chart
   if(myChartInstances[4]) myChartInstances[4].destroy();
   let hours = Array(24).fill(0); activeLogs.forEach(l => hours[new Date(l.timestamp).getHours()]++);
-  myChartInstances[4] = new Chart(document.getElementById('chart4').getContext('2d'), {
+  const ctx4 = document.getElementById('chart4').getContext('2d');
+  myChartInstances[4] = new Chart(ctx4, {
     type: 'line',
-    data: { labels: Array.from({length:24}, (_,i)=>i+':00'), datasets: [{ data: hours, borderColor: '#F97316', backgroundColor: 'rgba(249, 115, 22, 0.08)', fill: true, tension: 0.35, borderWidth: 2.5, pointRadius: 0 }] },
-    options: commonOptions
+    data: { labels: Array.from({length:24}, (_,i)=>i+':00'), datasets: [{ data: hours, borderColor: '#F97316', backgroundColor: createGradient(ctx4, 'rgba(249, 115, 22, 0.2)'), fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0 }] },
+    options: proOptions
   });
 
+  // 5. Trigger Doughnut Chart
   if(myChartInstances[5]) myChartInstances[5].destroy();
   myChartInstances[5] = new Chart(document.getElementById('chart5').getContext('2d'), {
     type: 'doughnut',
-    data: { labels: triggers, datasets: [{ data: triggers.map(t => activeLogs.filter(l => l.trigger === t).length), backgroundColor: ['#F59E0B','#10B981','#6366F1','#EF4444','#2563EB','#A855F7'], borderWidth: 0, cutout: '70%' }] },
+    data: { labels: triggers, datasets: [{ data: triggers.map(t => activeLogs.filter(l => l.trigger === t).length), backgroundColor: ['#F59E0B','#10B981','#6366F1','#EF4444','#2563EB','#A855F7'], borderWidth: 0, cutout: '72%' }] },
     options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12, font: { size: 10 }, color: chartTextColor } } } }
   });
 
