@@ -2,85 +2,157 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>SmokeGap — Analytics Mirror</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+  <title>SmokeGap — Premium Mirror</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
+  <!-- SortableJS for Native-like 120Hz Mobile Drag & Drop -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
   <style>
-    :root { --bg-body: #0F1115; --text-main: #E0E6ED; --text-muted: #9CA3AF; --bg-glass: rgba(22, 26, 33, 0.9); --border-glass: rgba(255, 255, 255, 0.08); --accent-primary: #F59E0B; --accent-glow: rgba(245, 158, 11, 0.2); }
-    body.theme-carbon { --bg-body: #050505; --text-main: #FFFFFF; --bg-glass: rgba(18, 18, 18, 0.95); --accent-primary: #3B82F6; --accent-glow: rgba(59, 130, 246, 0.2); }
-    body.theme-white { --bg-body: #F4F5F7; --text-main: #1F2937; --text-muted: #4B5563; --bg-glass: rgba(255, 255, 255, 0.95); --border-glass: rgba(0, 0, 0, 0.08); --accent-primary: #D97706; --accent-glow: rgba(217, 119, 6, 0.15); }
-    body { background-color: var(--bg-body); color: var(--text-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; user-select: none; padding-bottom: 6rem; -webkit-font-smoothing: antialiased; }
-    .glass-card { background: var(--bg-glass); backdrop-filter: blur(20px); border: 1px solid var(--border-glass); box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
-    .dynamic-glow { box-shadow: 0 0 25px var(--accent-glow); }
-    .dynamic-bg { background-color: var(--accent-primary); }
-    .dynamic-text { color: var(--accent-primary); }
-    .tab-active { color: var(--accent-primary); border-top: 2px solid var(--accent-primary); }
-    #lockScreen { z-index: 10000; background-color: var(--bg-body); }
-    .draggable-card { cursor: grab; transition: transform 0.15s ease, box-shadow 0.15s ease; }
-    .draggable-card:active { cursor: grabbing; }
-    .dragging { opacity: 0.4; transform: scale(0.98); }
+    :root { 
+      --bg-body: #090A0F; 
+      --text-main: #FFFFFF; 
+      --text-muted: #8A92A6; 
+      --card-bg: rgba(22, 25, 35, 0.6); 
+      --card-border: rgba(255, 255, 255, 0.04); 
+      --accent: #F59E0B; 
+      --accent-glow: rgba(245, 158, 11, 0.15); 
+    }
+    body.theme-carbon { --bg-body: #000000; --card-bg: rgba(15, 15, 15, 0.8); --accent: #3B82F6; --accent-glow: rgba(59, 130, 246, 0.15); }
+    body.theme-white { --bg-body: #F4F6F8; --text-main: #111827; --text-muted: #6B7280; --card-bg: #FFFFFF; --card-border: rgba(0,0,0,0.05); --accent: #D97706; --accent-glow: rgba(217, 119, 6, 0.1); }
+    
+    body { background-color: var(--bg-body); color: var(--text-main); font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif; user-select: none; -webkit-tap-highlight-color: transparent; padding-bottom: 7rem; }
+    
+    /* Premium Glassmorphism */
+    .premium-card { background: var(--card-bg); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid var(--card-border); box-shadow: 0 10px 40px rgba(0,0,0,0.1); border-radius: 1.5rem; transition: transform 0.2s ease; }
+    
+    /* Stopwatch Hero Ring */
+    .hero-ring { position: relative; display: flex; justify-content: center; align-items: center; width: 16rem; height: 16rem; border-radius: 50%; background: radial-gradient(circle, var(--card-bg) 0%, transparent 100%); box-shadow: inset 0 0 0 2px var(--card-border), 0 0 40px var(--accent-glow); }
+    .hero-ring::before { content: ''; position: absolute; inset: -4px; border-radius: 50%; background: conic-gradient(var(--accent), transparent 60%); animation: spin 4s linear infinite; opacity: 0.3; z-index: -1; }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+
+    .nav-btn { color: var(--text-muted); transition: all 0.3s ease; }
+    .nav-active { color: var(--accent); transform: scale(1.05); }
+    .nav-active::after { content: ''; display: block; width: 4px; height: 4px; background: var(--accent); border-radius: 50%; margin: 2px auto 0; box-shadow: 0 0 8px var(--accent); }
+    
+    .drag-handle { touch-action: none; cursor: grab; padding: 10px; margin: -10px; opacity: 0.5; }
+    .drag-handle:active { cursor: grabbing; opacity: 1; }
+    .sortable-ghost { opacity: 0.2; transform: scale(0.95); }
+    
+    /* Smooth Tab Transitions */
+    .page-section { animation: fadeIn 0.3s ease-out forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
 <body>
-  <!-- PIN Lock Screen -->
-  <div id="lockScreen" class="fixed inset-0 flex flex-col items-center justify-center hidden">
-    <div class="text-center space-y-6">
-      <h2 class="text-xl font-bold tracking-widest font-mono">SmokeGap Locked</h2>
-      <div class="flex gap-3 justify-center mb-6" id="pinDots">
-        <div class="w-4 h-4 rounded-full bg-gray-700 pin-dot"></div><div class="w-4 h-4 rounded-full bg-gray-700 pin-dot"></div><div class="w-4 h-4 rounded-full bg-gray-700 pin-dot"></div><div class="w-4 h-4 rounded-full bg-gray-700 pin-dot"></div>
+
+  <!-- Lock Screen -->
+  <div id="lockScreen" class="fixed inset-0 flex flex-col items-center justify-center hidden" style="z-index: 10000; background-color: var(--bg-body);">
+    <div class="text-center space-y-8">
+      <h2 class="text-2xl font-semibold tracking-widest text-gray-300">Unlock Mirror</h2>
+      <div class="flex gap-4 justify-center mb-8" id="pinDots">
+        <div class="w-3 h-3 rounded-full bg-gray-700 pin-dot transition-colors"></div><div class="w-3 h-3 rounded-full bg-gray-700 pin-dot transition-colors"></div>
+        <div class="w-3 h-3 rounded-full bg-gray-700 pin-dot transition-colors"></div><div class="w-3 h-3 rounded-full bg-gray-700 pin-dot transition-colors"></div>
       </div>
-      <div class="grid grid-cols-3 gap-4 max-w-[240px] mx-auto text-xl font-mono">
-        <button onclick="window.enterPin(1)" class="w-16 h-16 glass-card rounded-full">1</button><button onclick="window.enterPin(2)" class="w-16 h-16 glass-card rounded-full">2</button><button onclick="window.enterPin(3)" class="w-16 h-16 glass-card rounded-full">3</button>
-        <button onclick="window.enterPin(4)" class="w-16 h-16 glass-card rounded-full">4</button><button onclick="window.enterPin(5)" class="w-16 h-16 glass-card rounded-full">5</button><button onclick="window.enterPin(6)" class="w-16 h-16 glass-card rounded-full">6</button>
-        <button onclick="window.enterPin(7)" class="w-16 h-16 glass-card rounded-full">7</button><button onclick="window.enterPin(8)" class="w-16 h-16 glass-card rounded-full">8</button><button onclick="window.enterPin(9)" class="w-16 h-16 glass-card rounded-full">9</button>
-        <button class="w-16 h-16"></button><button onclick="window.enterPin(0)" class="w-16 h-16 glass-card rounded-full">0</button><button onclick="window.clearPin()" class="w-16 h-16 glass-card rounded-full text-red-500 text-sm">DEL</button>
+      <div class="grid grid-cols-3 gap-6 max-w-[280px] mx-auto text-2xl font-light">
+        <button onclick="window.enterPin(1)" class="w-16 h-16 premium-card flex items-center justify-center rounded-full active:scale-95">1</button>
+        <button onclick="window.enterPin(2)" class="w-16 h-16 premium-card flex items-center justify-center rounded-full active:scale-95">2</button>
+        <button onclick="window.enterPin(3)" class="w-16 h-16 premium-card flex items-center justify-center rounded-full active:scale-95">3</button>
+        <button onclick="window.enterPin(4)" class="w-16 h-16 premium-card flex items-center justify-center rounded-full active:scale-95">4</button>
+        <button onclick="window.enterPin(5)" class="w-16 h-16 premium-card flex items-center justify-center rounded-full active:scale-95">5</button>
+        <button onclick="window.enterPin(6)" class="w-16 h-16 premium-card flex items-center justify-center rounded-full active:scale-95">6</button>
+        <button onclick="window.enterPin(7)" class="w-16 h-16 premium-card flex items-center justify-center rounded-full active:scale-95">7</button>
+        <button onclick="window.enterPin(8)" class="w-16 h-16 premium-card flex items-center justify-center rounded-full active:scale-95">8</button>
+        <button onclick="window.enterPin(9)" class="w-16 h-16 premium-card flex items-center justify-center rounded-full active:scale-95">9</button>
+        <div></div>
+        <button onclick="window.enterPin(0)" class="w-16 h-16 premium-card flex items-center justify-center rounded-full active:scale-95">0</button>
+        <button onclick="window.clearPin()" class="w-16 h-16 premium-card flex items-center justify-center rounded-full text-red-400 text-sm font-bold active:scale-95">DEL</button>
       </div>
     </div>
   </div>
 
   <!-- Header -->
-  <header class="p-4 border-b border-gray-800/20 sticky top-0 glass-card z-40 flex justify-between items-center px-6 !bg-transparent">
-    <div><h1 class="text-base font-black tracking-wider dynamic-text font-mono">SmokeGap</h1><p class="text-[9px] opacity-70 font-semibold">Widen the gap.</p></div>
-    <div class="glass-card text-[10px] px-3 py-1 rounded-full font-mono dynamic-text">🛡️ <span id="shieldCount">0</span></div>
+  <header class="p-5 sticky top-0 z-40 flex justify-between items-center" style="background: linear-gradient(to bottom, var(--bg-body) 60%, transparent);">
+    <div>
+      <h1 class="text-xl font-bold tracking-tight text-white">SmokeGap</h1>
+      <p class="text-[10px] text-gray-500 font-semibold uppercase tracking-widest mt-0.5">Widen the gap.</p>
+    </div>
+    <div class="premium-card px-4 py-1.5 rounded-full flex items-center gap-2">
+      <span class="text-xs">🛡️</span>
+      <span id="shieldCount" class="text-sm font-bold text-white">0</span>
+    </div>
   </header>
 
-  <div class="max-w-md mx-auto p-4 space-y-5">
+  <div class="max-w-md mx-auto p-5 space-y-6">
     
-    <!-- 1. TRACKER TAB -->
-    <section id="page-tracker" class="space-y-5">
-      <div class="flex flex-col items-center justify-center pt-2">
-        <div class="w-60 h-60 rounded-full border-4 border-gray-500/30 flex flex-col items-center justify-center dynamic-glow glass-card relative">
-          <span class="text-[9px] opacity-60 uppercase tracking-widest mb-1 font-mono">Last Stick</span>
-          <div id="stopwatch" class="text-3xl font-black tracking-tight font-mono">00:00:00</div>
+    <!-- 1. TRACKER TAB (Wallet-style Dashboard) -->
+    <section id="page-tracker" class="page-section space-y-6">
+      
+      <!-- Hero Ring -->
+      <div class="flex flex-col items-center justify-center py-6">
+        <div class="hero-ring">
+          <div class="text-center">
+            <span class="text-xs font-semibold text-gray-500 uppercase tracking-widest block mb-2">Last Smoke</span>
+            <div id="stopwatch" class="text-5xl font-light tracking-tighter text-white" style="font-variant-numeric: tabular-nums;">00:00:00</div>
+            <div id="prevGapHome" class="text-xs font-medium text-gray-500 mt-2">Prev: --</div>
+          </div>
         </div>
       </div>
-      <div class="grid grid-cols-5 gap-2">
-        <button id="mainLogBtn" onclick="window.handleLogClick()" class="col-span-3 py-3.5 dynamic-bg text-black font-black text-sm rounded-2xl dynamic-glow">START SMOKING</button>
-        <button onclick="window.toggleWaveMode()" class="col-span-2 py-3.5 glass-card font-bold text-xs rounded-2xl">🌊 RIDE WAVE</button>
+
+      <!-- Quick Stats Grid (Wallet Style) -->
+      <div class="grid grid-cols-2 gap-4">
+        <!-- Spend Card -->
+        <div class="premium-card p-5">
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 text-sm">💸</div>
+            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Today's Spend</p>
+          </div>
+          <p id="todaySpend" class="text-2xl font-bold text-white">AED 0</p>
+        </div>
+        
+        <!-- Count Card -->
+        <div class="premium-card p-5">
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500 text-sm">🚬</div>
+            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Today's Sticks</p>
+          </div>
+          <p id="todayCount" class="text-2xl font-bold text-white">0 / 15</p>
+        </div>
       </div>
-      <div id="waveOverlay" class="hidden glass-card p-3 rounded-2xl text-center border-l-4 border-sky-500">
-        <div class="flex justify-between text-xs font-bold font-mono"><span>WAVE TIMER</span><span id="waveCountdown">10:00</span></div>
-        <div class="w-full bg-gray-800/50 rounded-full h-2 mt-2"><div id="waveProgressBar" class="bg-emerald-500 h-full rounded-full" style="width: 100%"></div></div>
+
+      <!-- Wave Overlay -->
+      <div id="waveOverlay" class="hidden premium-card p-5 border-l-4 border-sky-500 relative overflow-hidden">
+        <div class="flex justify-between items-end mb-3">
+          <div>
+            <p class="text-[10px] font-bold text-sky-500 uppercase tracking-widest">Riding the Wave</p>
+            <p class="text-sm text-gray-400">Resisting craving...</p>
+          </div>
+          <span id="waveCountdown" class="text-2xl font-bold text-white tabular-nums">10:00</span>
+        </div>
+        <div class="w-full bg-gray-800 rounded-full h-1.5"><div id="waveProgressBar" class="bg-sky-500 h-full rounded-full transition-all duration-1000 ease-linear" style="width: 100%"></div></div>
       </div>
-      <div class="grid grid-cols-2 gap-3">
-        <div class="glass-card p-3.5 rounded-2xl border-l-2 border-amber-500"><p class="text-[10px] opacity-60 uppercase">Today's Count</p><p id="todayCount" class="text-xl font-bold">0</p></div>
-        <div class="glass-card p-3.5 rounded-2xl border-l-2 border-sky-500"><p class="text-[10px] opacity-60 uppercase">Previous Gap</p><p id="prevGap" class="text-xl font-bold dynamic-text">--</p></div>
-        <div class="glass-card p-3.5 rounded-2xl border-l-2 border-red-500"><p class="text-[10px] opacity-60 uppercase">Today's Spend</p><p id="todaySpend" class="text-xl font-bold text-red-500">AED 0</p></div>
-        <div class="glass-card p-3.5 rounded-2xl border-l-2 border-emerald-500"><p class="text-[10px] opacity-60 uppercase">Best Gap</p><p id="bestGap" class="text-xl font-bold text-emerald-500">--</p></div>
+
+      <!-- Action Area (Thumb friendly) -->
+      <div class="pt-2 grid grid-cols-3 gap-4">
+        <button onclick="window.toggleWaveMode()" class="col-span-1 premium-card flex flex-col items-center justify-center py-4 active:scale-95 transition-transform text-sky-400">
+          <span class="text-xl mb-1">🌊</span>
+          <span class="text-[10px] font-bold uppercase tracking-wider">Ride</span>
+        </button>
+        <button id="mainLogBtn" onclick="window.handleLogClick()" class="col-span-2 py-4 rounded-2xl font-bold text-sm tracking-wide active:scale-95 transition-all text-black" style="background: var(--accent); box-shadow: 0 10px 25px var(--accent-glow);">
+          START SMOKING
+        </button>
       </div>
-      <div class="glass-card p-4 rounded-2xl space-y-3"><h3 class="text-xs opacity-60 uppercase font-semibold">Recent Logs</h3><div id="homeRecentLogs" class="space-y-2 text-xs"></div></div>
     </section>
 
-    <!-- 2. INSIGHTS TAB (Draggable & Smooth 6 Core Charts) -->
-    <section id="page-insights" class="space-y-5 hidden">
-      <div class="flex justify-between items-center">
-        <h2 class="text-base font-bold">Analytics Mirror</h2>
-        <select id="insightsDateFilter" onchange="window.renderAllCharts()" class="bg-gray-800 text-xs px-3 py-1.5 rounded-xl border border-gray-700 text-white font-mono">
+    <!-- 2. INSIGHTS TAB -->
+    <section id="page-insights" class="page-section space-y-6 hidden">
+      <div class="flex justify-between items-center px-1">
+        <h2 class="text-xl font-semibold">Analytics</h2>
+        <select id="insightsDateFilter" onchange="window.renderAllCharts()" class="bg-transparent text-sm text-gray-400 font-medium outline-none">
           <option value="today">Today</option>
           <option value="7days" selected>Last 7 Days</option>
           <option value="1month">1 Month</option>
@@ -88,110 +160,164 @@
         </select>
       </div>
 
-      <div id="chartContainer" class="space-y-5">
-        <!-- 1. Widen The Gap Trend -->
-        <div id="card-1" draggable="true" class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-emerald-500 draggable-data draggable-card">
-          <div class="flex justify-between items-center cursor-grab"><h3 class="text-xs text-emerald-500 font-bold uppercase">1. Widen The Gap Trend</h3><span class="text-xs opacity-40 font-mono">☰ Drag</span></div>
+      <div id="chartContainer" class="space-y-6 pb-4">
+        
+        <!-- 1. Gap Trend -->
+        <div id="card-1" class="premium-card p-6">
+          <div class="flex justify-between items-center mb-6">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500">📈</div>
+              <h3 class="text-sm font-semibold text-gray-300">Widen The Gap Trend</h3>
+            </div>
+            <div class="drag-handle">≡</div>
+          </div>
           <div class="w-full h-48 relative"><canvas id="chart1"></canvas></div>
         </div>
         
-        <!-- 2. Daily Consumption vs Limit -->
-        <div id="card-2" draggable="true" class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-amber-500 draggable-data draggable-card">
-          <div class="flex justify-between items-center cursor-grab"><h3 class="text-xs text-amber-500 font-bold uppercase">2. Daily Consumption vs Limit</h3><span class="text-xs opacity-40 font-mono">☰ Drag</span></div>
+        <!-- 2. Consumption vs Limit -->
+        <div id="card-2" class="premium-card p-6">
+          <div class="flex justify-between items-center mb-6">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500">📊</div>
+              <h3 class="text-sm font-semibold text-gray-300">Daily Volume</h3>
+            </div>
+            <div class="drag-handle">≡</div>
+          </div>
           <div class="w-full h-44 relative"><canvas id="chart2"></canvas></div>
         </div>
 
         <!-- 3. Financial Drain -->
-        <div id="card-3" draggable="true" class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-red-500 draggable-data draggable-card">
-          <div class="flex justify-between items-center cursor-grab"><h3 class="text-xs text-red-500 font-bold uppercase">3. Financial Drain (Cumulative Spend)</h3><span class="text-xs opacity-40 font-mono">☰ Drag</span></div>
+        <div id="card-3" class="premium-card p-6">
+          <div class="flex justify-between items-center mb-6">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center text-red-500">💸</div>
+              <h3 class="text-sm font-semibold text-gray-300">Financial Drain</h3>
+            </div>
+            <div class="drag-handle">≡</div>
+          </div>
           <div class="w-full h-44 relative"><canvas id="chart3"></canvas></div>
         </div>
         
-        <!-- 4. 24-Hour Danger Matrix -->
-        <div id="card-4" draggable="true" class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-orange-500 draggable-data draggable-card">
-          <div class="flex justify-between items-center cursor-grab"><h3 class="text-xs text-orange-500 font-bold uppercase">4. 24-Hour Danger Matrix</h3><span class="text-xs opacity-40 font-mono">☰ Drag</span></div>
+        <!-- 4. Danger Matrix -->
+        <div id="card-4" class="premium-card p-6">
+          <div class="flex justify-between items-center mb-6">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500">⏰</div>
+              <h3 class="text-sm font-semibold text-gray-300">Danger Hours Matrix</h3>
+            </div>
+            <div class="drag-handle">≡</div>
+          </div>
           <div class="w-full h-40 relative"><canvas id="chart4"></canvas></div>
         </div>
         
         <!-- 5. Trigger Breakdown -->
-        <div id="card-5" draggable="true" class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-purple-500 draggable-data draggable-card">
-          <div class="flex justify-between items-center cursor-grab"><h3 class="text-xs text-purple-500 font-bold uppercase">5. Trigger Breakdown</h3><span class="text-xs opacity-40 font-mono">☰ Drag</span></div>
-          <div class="w-full h-56 relative flex items-center justify-center"><canvas id="chart5"></canvas></div>
+        <div id="card-5" class="premium-card p-6">
+          <div class="flex justify-between items-center mb-6">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-500">🧠</div>
+              <h3 class="text-sm font-semibold text-gray-300">Trigger Psychology</h3>
+            </div>
+            <div class="drag-handle">≡</div>
+          </div>
+          <div class="w-full h-56 relative"><canvas id="chart5"></canvas></div>
         </div>
         
-        <!-- 6. Spatial Thermal Heat Map -->
-        <div id="card-6" draggable="true" class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-sky-500 relative draggable-data draggable-card">
-          <div class="flex justify-between items-center cursor-grab">
-            <h3 class="text-xs text-sky-500 font-bold uppercase">6. Spatial Thermal Heat Map</h3>
-            <div class="flex gap-2 items-center"><span class="text-xs opacity-40 font-mono">☰ Drag</span><button onclick="window.openMapModal()" class="text-[10px] bg-sky-500/20 text-sky-400 px-2.5 py-1 rounded-lg font-bold">🔍 Expand</button></div>
+        <!-- 6. Spatial Heat Map -->
+        <div id="card-6" class="premium-card p-6 relative overflow-hidden">
+          <div class="flex justify-between items-center mb-4">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full bg-sky-500/10 flex items-center justify-center text-sky-500">📍</div>
+              <h3 class="text-sm font-semibold text-gray-300">Thermal Heatmap</h3>
+            </div>
+            <div class="flex gap-4 items-center">
+              <button onclick="window.openMapModal()" class="text-sky-400 text-xs font-semibold uppercase tracking-wider">Expand</button>
+              <div class="drag-handle">≡</div>
+            </div>
           </div>
-          <div id="mapContainer" class="w-full h-52 rounded-xl z-10 bg-gray-900"></div>
+          <div id="mapContainer" class="w-full h-48 rounded-2xl z-10 bg-[#0f1115] shadow-inner border border-white/5"></div>
         </div>
       </div>
     </section>
 
     <!-- 3. HISTORY TAB -->
-    <section id="page-history" class="space-y-4 hidden"><h2 class="text-base font-bold">History</h2><div id="fullHistoryList" class="space-y-2 text-xs"></div></section>
+    <section id="page-history" class="page-section space-y-6 hidden">
+      <h2 class="text-xl font-semibold px-1">Timeline</h2>
+      <div id="fullHistoryList" class="space-y-3"></div>
+    </section>
     
-    <!-- 4. SETTINGS TAB -->
-    <section id="page-settings" class="space-y-4 hidden">
-      <h2 class="text-base font-bold">Settings & Preferences</h2>
+    <!-- 4. SETTINGS TAB (iOS Style Lists) -->
+    <section id="page-settings" class="page-section space-y-6 hidden">
+      <h2 class="text-xl font-semibold px-1">Preferences</h2>
       
-      <!-- Block 1: Appearance -->
-      <div class="glass-card p-4 rounded-2xl space-y-2 text-xs border-l-4 border-amber-500">
-        <h3 class="font-bold uppercase opacity-70 tracking-wider">Appearance</h3>
-        <div><label class="opacity-60 block mb-1">Theme Mode</label><select id="themeSelect" onchange="window.updateSettings()" class="w-full bg-gray-800 p-2.5 rounded-xl text-white border border-gray-700"><option value="default">Amber Glow</option><option value="carbon">Carbon Matrix</option><option value="white">Clean Light</option></select></div>
-      </div>
-
-      <!-- Block 2: Financials & Currency -->
-      <div class="glass-card p-4 rounded-2xl space-y-3 text-xs border-l-4 border-emerald-500">
-        <h3 class="font-bold uppercase opacity-70 tracking-wider">Financials & Limits</h3>
-        <div><label class="opacity-60 block mb-1">Currency Symbol</label><select id="currencySelect" onchange="window.updateSettings()" class="w-full bg-gray-800 p-2.5 rounded-xl text-white border border-gray-700"><option value="AED">AED (د.إ)</option><option value="USD">USD ($)</option><option value="EUR">EUR (€)</option><option value="GBP">GBP (£)</option><option value="INR">INR (₹)</option><option value="CAD">CAD ($)</option><option value="AUD">AUD ($)</option><option value="SGD">SGD ($)</option><option value="JPY">JPY (¥)</option><option value="CHF">CHF (Fr)</option></select></div>
-        <div class="grid grid-cols-3 gap-2">
-          <div><label class="opacity-60 block mb-1">Daily Limit</label><input type="number" id="dailyLimitInput" onchange="window.updateSettings()" class="w-full bg-gray-800 p-2.5 rounded-xl text-white border border-gray-700 text-center" value="15"></div>
-          <div><label class="opacity-60 block mb-1">Pack Price</label><input type="number" id="packPriceInput" onchange="window.updateSettings()" class="w-full bg-gray-800 p-2.5 rounded-xl text-white border border-gray-700 text-center" value="20"></div>
-          <div><label class="opacity-60 block mb-1">Per Pack</label><input type="number" id="packSizeInput" onchange="window.updateSettings()" class="w-full bg-gray-800 p-2.5 rounded-xl text-white border border-gray-700 text-center" value="20"></div>
+      <div class="premium-card p-5 space-y-5">
+        <h3 class="text-[10px] font-bold text-gray-500 uppercase tracking-widest border-b border-gray-800 pb-2">Appearance</h3>
+        <div class="flex justify-between items-center">
+          <label class="text-sm font-medium text-gray-300">Theme Mode</label>
+          <select id="themeSelect" onchange="window.updateSettings()" class="bg-gray-800/50 text-sm p-2 rounded-lg text-white border border-gray-700 outline-none"><option value="default">Amber Glow</option><option value="carbon">Carbon Matrix</option><option value="white">Clean Light</option></select>
         </div>
       </div>
 
-      <!-- Block 3: Security -->
-      <div class="glass-card p-4 rounded-2xl space-y-2 text-xs border-l-4 border-indigo-500">
-        <h3 class="font-bold uppercase opacity-70 tracking-wider">Security</h3>
-        <button onclick="window.setupPin()" id="pinStatusBtn" class="w-full py-3 glass-card font-bold rounded-xl text-center">Set App PIN</button>
+      <div class="premium-card p-5 space-y-5">
+        <h3 class="text-[10px] font-bold text-gray-500 uppercase tracking-widest border-b border-gray-800 pb-2">Financials & Limits</h3>
+        <div class="flex justify-between items-center">
+          <label class="text-sm font-medium text-gray-300">Currency</label>
+          <select id="currencySelect" onchange="window.updateSettings()" class="bg-gray-800/50 text-sm p-2 rounded-lg text-white border border-gray-700 outline-none"><option value="AED">AED (د.إ)</option><option value="USD">USD ($)</option><option value="EUR">EUR (€)</option><option value="GBP">GBP (£)</option><option value="INR">INR (₹)</option></select>
+        </div>
+        <div class="flex justify-between items-center">
+          <label class="text-sm font-medium text-gray-300">Daily Limit</label>
+          <input type="number" id="dailyLimitInput" onchange="window.updateSettings()" class="w-16 bg-gray-800/50 p-2 rounded-lg text-white border border-gray-700 text-center text-sm" value="15">
+        </div>
+        <div class="flex justify-between items-center">
+          <label class="text-sm font-medium text-gray-300">Pack Price</label>
+          <input type="number" id="packPriceInput" onchange="window.updateSettings()" class="w-20 bg-gray-800/50 p-2 rounded-lg text-white border border-gray-700 text-center text-sm" value="20">
+        </div>
+        <div class="flex justify-between items-center">
+          <label class="text-sm font-medium text-gray-300">Sticks Per Pack</label>
+          <input type="number" id="packSizeInput" onchange="window.updateSettings()" class="w-16 bg-gray-800/50 p-2 rounded-lg text-white border border-gray-700 text-center text-sm" value="20">
+        </div>
       </div>
 
-      <!-- Block 4: Danger Zone -->
-      <div class="glass-card p-4 rounded-2xl space-y-2 text-xs border-l-4 border-red-500">
-        <h3 class="font-bold uppercase opacity-70 tracking-wider text-red-400">Data Management</h3>
-        <button onclick="window.resetData('all')" class="w-full py-3 bg-red-500/20 text-red-400 border border-red-500/30 font-bold rounded-xl text-center">WIPE ALL DATA</button>
+      <div class="premium-card p-5 space-y-5">
+        <h3 class="text-[10px] font-bold text-gray-500 uppercase tracking-widest border-b border-gray-800 pb-2">Security & Data</h3>
+        <button onclick="window.setupPin()" id="pinStatusBtn" class="w-full py-3 bg-indigo-500/10 text-indigo-400 font-semibold rounded-xl text-center active:scale-95 transition-transform">Set App PIN</button>
+        <button onclick="window.resetData('all')" class="w-full py-3 bg-red-500/10 text-red-500 font-semibold rounded-xl text-center active:scale-95 transition-transform border border-red-500/20">WIPE ALL DATA</button>
       </div>
     </section>
   </div>
 
-  <!-- Trigger Selection Modal -->
-  <div id="triggerModal" class="hidden fixed inset-0 bg-black/80 z-50 flex flex-col justify-end">
-    <div class="glass-card p-5 rounded-t-3xl space-y-4 max-w-md mx-auto w-full">
-      <h3 class="text-sm font-bold dynamic-text">SELECT TRIGGER</h3>
-      <div id="modalTriggerGrid" class="grid grid-cols-2 gap-2.5 text-xs"></div>
+  <!-- Modals (Trigger & Map) -->
+  <div id="triggerModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex flex-col justify-end transition-opacity">
+    <div class="premium-card p-6 rounded-b-none space-y-5 max-w-md mx-auto w-full transform transition-transform">
+      <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest text-center">Select Trigger</h3>
+      <div id="modalTriggerGrid" class="grid grid-cols-2 gap-3 text-sm font-medium"></div>
     </div>
   </div>
 
-  <!-- Map Fullscreen Modal -->
-  <div id="mapModal" class="hidden fixed inset-0 bg-black/90 z-50 flex flex-col p-4">
-    <div class="flex justify-between items-center mb-3">
-      <h3 class="text-sm font-bold text-sky-400">Thermal Heatmap (Fullscreen View)</h3>
-      <button onclick="window.closeMapModal()" class="bg-red-500 text-white text-xs px-3 py-1.5 rounded-xl font-bold">Close ✕</button>
+  <div id="mapModal" class="hidden fixed inset-0 bg-black/95 z-50 flex flex-col p-4 backdrop-blur-md">
+    <div class="flex justify-between items-center mb-4 mt-8 px-2">
+      <h3 class="text-lg font-bold text-white">Thermal View</h3>
+      <button onclick="window.closeMapModal()" class="bg-white/10 text-white text-xs px-4 py-2 rounded-full font-bold active:scale-95">Done</button>
     </div>
-    <div id="mapModalContainer" class="w-full flex-1 rounded-2xl bg-gray-900"></div>
+    <div id="mapModalContainer" class="w-full flex-1 rounded-3xl bg-[#0f1115] border border-white/10 overflow-hidden shadow-2xl"></div>
   </div>
 
-  <!-- Bottom Navigation Bar -->
-  <nav class="fixed bottom-0 left-0 right-0 glass-card border-t border-gray-800/20 z-40 flex justify-around p-2 text-xs">
-    <button onclick="window.switchTab('tracker')" id="tab-tracker" class="flex flex-col items-center py-1 w-full tab-active"><span>⏱️</span><span>Tracker</span></button>
-    <button onclick="window.switchTab('insights')" id="tab-insights" class="flex flex-col items-center py-1 w-full"><span>📊</span><span>Insights</span></button>
-    <button onclick="window.switchTab('history')" id="tab-history" class="flex flex-col items-center py-1 w-full"><span>📜</span><span>History</span></button>
-    <button onclick="window.switchTab('settings')" id="tab-settings" class="flex flex-col items-center py-1 w-full"><span>⚙️</span><span>Settings</span></button>
-  </nav>
+  <!-- Bottom Navigation (Floating Pill Style) -->
+  <div class="fixed bottom-6 left-0 right-0 z-40 flex justify-center px-4">
+    <nav class="premium-card !rounded-full flex justify-between items-center p-2 px-4 gap-2 w-full max-w-sm shadow-2xl">
+      <button onclick="window.switchTab('tracker')" id="tab-tracker" class="nav-btn nav-active flex flex-col items-center py-2 px-4 rounded-full w-full">
+        <span class="text-lg mb-1">⏱️</span><span class="text-[9px] font-bold uppercase tracking-wider">Track</span>
+      </button>
+      <button onclick="window.switchTab('insights')" id="tab-insights" class="nav-btn flex flex-col items-center py-2 px-4 rounded-full w-full">
+        <span class="text-lg mb-1">📊</span><span class="text-[9px] font-bold uppercase tracking-wider">Data</span>
+      </button>
+      <button onclick="window.switchTab('history')" id="tab-history" class="nav-btn flex flex-col items-center py-2 px-4 rounded-full w-full">
+        <span class="text-lg mb-1">📜</span><span class="text-[9px] font-bold uppercase tracking-wider">Log</span>
+      </button>
+      <button onclick="window.switchTab('settings')" id="tab-settings" class="nav-btn flex flex-col items-center py-2 px-4 rounded-full w-full">
+        <span class="text-lg mb-1">⚙️</span><span class="text-[9px] font-bold uppercase tracking-wider">Set</span>
+      </button>
+    </nav>
+  </div>
 
   <script src="app.js"></script>
 </body>
