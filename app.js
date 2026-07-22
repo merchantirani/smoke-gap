@@ -174,20 +174,27 @@ function renderAllCharts() {
   const labels = activeLogs.length > 0 ? activeLogs.map(l => new Date(l.timestamp).toLocaleDateString([], {month:'short', day:'numeric'}) + ' ' + new Date(l.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})) : ['No Data'];
   const gaps = activeLogs.length > 0 ? activeLogs.map(l => l.gap) : [0];
 
+  const commonOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: { x: { grid: { display: false } }, y: { grid: { color: 'rgba(255,255,255,0.05)' } } }
+  };
+
   // 1. Line Trend
   if(myChartInstances[1]) myChartInstances[1].destroy();
   myChartInstances[1] = new Chart(document.getElementById('chart1').getContext('2d'), {
     type: 'line',
     data: { labels: labels, datasets: [{ label: 'Gap (m)', data: gaps, borderColor: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.1)', borderWidth: 2, tension: 0.3, fill: true }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    options: commonOptions
   });
 
-  // 2. Bar Spend
+  // 2. Area Spend Accumulation
   if(myChartInstances[2]) myChartInstances[2].destroy();
   myChartInstances[2] = new Chart(document.getElementById('chart2').getContext('2d'), {
-    type: 'bar',
-    data: { labels: labels, datasets: [{ label: 'Spend', data: gaps.map(g => (settings.packPrice/settings.packSize).toFixed(1)), backgroundColor: '#EF4444' }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    type: 'line',
+    data: { labels: labels, datasets: [{ label: 'Spend', data: gaps.map(g => (settings.packPrice/settings.packSize).toFixed(1)), borderColor: '#EF4444', backgroundColor: 'rgba(239, 68, 68, 0.2)', fill: true, tension: 0.4 }] },
+    options: commonOptions
   });
 
   // 3. Radar Craving
@@ -198,14 +205,14 @@ function renderAllCharts() {
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
   });
 
-  // 4. Day vs Night Bar
+  // 4. Column Comparison (Day vs Night)
   if(myChartInstances[4]) myChartInstances[4].destroy();
   const dayCount = activeLogs.filter(l => { let h = new Date(l.timestamp).getHours(); return h >= 6 && h < 18; }).length;
   const nightCount = activeLogs.length - dayCount;
   myChartInstances[4] = new Chart(document.getElementById('chart4').getContext('2d'), {
     type: 'bar',
     data: { labels: ['Day (6AM-6PM)', 'Night (6PM-6AM)'], datasets: [{ data: [dayCount, nightCount], backgroundColor: ['#F59E0B', '#3B82F6'] }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    options: commonOptions
   });
 
   // 5. 24-Hour Matrix
@@ -215,41 +222,47 @@ function renderAllCharts() {
   myChartInstances[5] = new Chart(document.getElementById('chart5').getContext('2d'), {
     type: 'line',
     data: { labels: Array.from({length:24}, (_,i)=>i+':00'), datasets: [{ data: hours, borderColor: '#F97316', backgroundColor: 'rgba(249, 115, 22, 0.1)', fill: true, tension: 0.4 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    options: commonOptions
   });
 
-  // 6. Day of Week Pattern
+  // 6. Day of Week Bar
   if(myChartInstances[6]) myChartInstances[6].destroy();
   let days = [0,0,0,0,0,0,0];
   activeLogs.forEach(l => days[new Date(l.timestamp).getDay()]++);
   myChartInstances[6] = new Chart(document.getElementById('chart6').getContext('2d'), {
     type: 'bar',
     data: { labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], datasets: [{ data: days, backgroundColor: '#3B82F6' }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    options: commonOptions
   });
 
-  // 7. Trigger Breakdown Doughnut
+  // 7. Trigger Breakdown Donut (Fixed Legend & Padding)
   if(myChartInstances[7]) myChartInstances[7].destroy();
   myChartInstances[7] = new Chart(document.getElementById('chart7').getContext('2d'), {
     type: 'doughnut',
     data: { labels: triggers, datasets: [{ data: triggers.map(t => activeLogs.filter(l => l.trigger === t).length), backgroundColor: ['#F59E0B','#10B981','#6366F1','#EF4444','#3B82F6','#A855F7'] }] },
-    options: { responsive: true, maintainAspectRatio: false }
+    options: { 
+      responsive: true, 
+      maintainAspectRatio: false, 
+      plugins: { 
+        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 }, color: '#9CA3AF' } } 
+      } 
+    }
   });
 
   // 8. Gap Distribution Line
   if(myChartInstances[8]) myChartInstances[8].destroy();
   myChartInstances[8] = new Chart(document.getElementById('chart8').getContext('2d'), {
     type: 'line',
-    data: { labels: labels, datasets: [{ data: gaps, borderColor: '#14B8A6', backgroundColor: 'rgba(20, 184, 166, 0.1)', fill: true }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    data: { labels: labels, datasets: [{ data: gaps, borderColor: '#14B8A6', backgroundColor: 'rgba(20, 184, 166, 0.1)', fill: true, tension: 0.3 }] },
+    options: commonOptions
   });
 
-  // 9. Stick Count Volume
+  // 9. Stick Count Volume Bar
   if(myChartInstances[9]) myChartInstances[9].destroy();
   myChartInstances[9] = new Chart(document.getElementById('chart9').getContext('2d'), {
     type: 'bar',
     data: { labels: labels, datasets: [{ data: activeLogs.map(() => 1), backgroundColor: '#EC4899' }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    options: commonOptions
   });
 
   // Spatial Map Render
