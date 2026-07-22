@@ -29,7 +29,6 @@ window.onload = () => {
 
 function bootCore() {
   updateUI(); checkLock(); checkWave();
-  // Request location once in background to cache permission
   if(navigator.geolocation && !cachedCoords) {
     navigator.geolocation.getCurrentPosition(p => {
       cachedCoords = { lat: p.coords.latitude, lng: p.coords.longitude };
@@ -64,7 +63,6 @@ function handleLogClick() {
   if(settings.haptics && navigator.vibrate) navigator.vibrate(50);
   if(waveEndTime>0) { localStorage.removeItem('smoke_wave_end'); waveEndTime=0; clearInterval(waveTimer); document.getElementById('waveOverlay').classList.add('hidden'); }
   
-  // Use cached location silently without prompting again if already allowed
   if(cachedCoords) {
     saveLog(cachedCoords.lat, cachedCoords.lng);
   } else if(navigator.geolocation) {
@@ -200,6 +198,7 @@ function renderAllCharts() {
     scales: { x: { grid: { display: false } }, y: { grid: { color: 'rgba(255,255,255,0.05)' } } }
   };
 
+  // 1. Widen The Gap Trend (Line Chart)
   if(myChartInstances[1]) myChartInstances[1].destroy();
   myChartInstances[1] = new Chart(document.getElementById('chart1').getContext('2d'), {
     type: 'line',
@@ -207,72 +206,65 @@ function renderAllCharts() {
     options: commonOptions
   });
 
+  // 2. Daily Consumption vs Limit (Bar Chart)
   if(myChartInstances[2]) myChartInstances[2].destroy();
+  let dayMap = {};
+  activeLogs.forEach(l => {
+    let d = new Date(l.timestamp).toLocaleDateString();
+    dayMap[d] = (dayMap[d] || 0) + 1;
+  });
+  let dayLabels = Object.keys(dayMap);
+  let dayCounts = Object.values(dayMap);
+  if(dayLabels.length === 0) { dayLabels = ['Today']; dayCounts = [0]; }
+
   myChartInstances[2] = new Chart(document.getElementById('chart2').getContext('2d'), {
-    type: 'line',
-    data: { labels: labels, datasets: [{ label: 'Spend', data: gaps.map(g => (settings.packPrice/settings.packSize).toFixed(1)), borderColor: '#EF4444', backgroundColor: 'rgba(239, 68, 68, 0.2)', fill: true, tension: 0.4 }] },
-    options: commonOptions
-  });
-
-  if(myChartInstances[3]) myChartInstances[3].destroy();
-  myChartInstances[3] = new Chart(document.getElementById('chart3').getContext('2d'), {
-    type: 'radar',
-    data: { labels: triggers, datasets: [{ label: 'Triggers', data: triggers.map(t => activeLogs.filter(l => l.trigger === t).length), borderColor: '#6366F1', backgroundColor: 'rgba(99, 102, 241, 0.2)' }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-  });
-
-  if(myChartInstances[4]) myChartInstances[4].destroy();
-  const dayCount = activeLogs.filter(l => { let h = new Date(l.timestamp).getHours(); return h >= 6 && h < 18; }).length;
-  const nightCount = activeLogs.length - dayCount;
-  myChartInstances[4] = new Chart(document.getElementById('chart4').getContext('2d'), {
     type: 'bar',
-    data: { labels: ['Day (6AM-6PM)', 'Night (6PM-6AM)'], datasets: [{ data: [dayCount, nightCount], backgroundColor: ['#F59E0B', '#3B82F6'] }] },
+    data: { 
+      labels: dayLabels, 
+      datasets: [
+        { label: 'Count', data: dayCounts, backgroundColor: '#F59E0B', borderRadius: 6 },
+        { label: 'Limit', data: dayLabels.map(() => settings.dailyLimit), type: 'line', borderColor: '#EF4444', borderWidth: 2, borderDash: [4,4], pointRadius: 0 }
+      ] 
+    },
     options: commonOptions
   });
 
-  if(myChartInstances[5]) myChartInstances[5].destroy();
+  // 3. Financial Drain / Cumulative Spend (Area Chart)
+  if(myChartInstances[3]) myChartInstances[3].destroy();
+  let cumulativeSpend = 0;
+  let spendData = gaps.map(() => {
+    cumulativeSpend += (settings.packPrice / settings.packSize);
+    return cumulativeSpend.toFixed(1);
+  });
+  myChartInstances[3] = new Chart(document.getElementById('chart3').getContext('2d'), {
+    type: 'line',
+    data: { labels: labels, datasets: [{ label: 'Spend', data: spendData, borderColor: '#EF4444', backgroundColor: 'rgba(239, 68, 68, 0.2)', fill: true, tension: 0.4 }] },
+    options: commonOptions
+  });
+
+  // 4. 24-Hour Danger Matrix (Line Step)
+  if(myChartInstances[4]) myChartInstances[4].destroy();
   let hours = Array(24).fill(0);
   activeLogs.forEach(l => hours[new Date(l.timestamp).getHours()]++);
-  myChartInstances[5] = new Chart(document.getElementById('chart5').getContext('2d'), {
+  myChartInstances[4] = new Chart(document.getElementById('chart4').getContext('2d'), {
     type: 'line',
     data: { labels: Array.from({length:24}, (_,i)=>i+':00'), datasets: [{ data: hours, borderColor: '#F97316', backgroundColor: 'rgba(249, 115, 22, 0.1)', fill: true, tension: 0.4 }] },
     options: commonOptions
   });
 
-  if(myChartInstances[6]) myChartInstances[6].destroy();
-  let days = [0,0,0,0,0,0,0];
-  activeLogs.forEach(l => days[new Date(l.timestamp).getDay()]++);
-  myChartInstances[6] = new Chart(document.getElementById('chart6').getContext('2d'), {
-    type: 'bar',
-    data: { labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], datasets: [{ data: days, backgroundColor: '#3B82F6' }] },
-    options: commonOptions
-  });
-
-  if(myChartInstances[7]) myChartInstances[7].destroy();
-  myChartInstances[7] = new Chart(document.getElementById('chart7').getContext('2d'), {
+  // 5. Trigger Breakdown (Doughnut Chart)
+  if(myChartInstances[5]) myChartInstances[5].destroy();
+  myChartInstances[5] = new Chart(document.getElementById('chart5').getContext('2d'), {
     type: 'doughnut',
     data: { labels: triggers, datasets: [{ data: triggers.map(t => activeLogs.filter(l => l.trigger === t).length), backgroundColor: ['#F59E0B','#10B981','#6366F1','#EF4444','#3B82F6','#A855F7'] }] },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 }, color: '#9CA3AF' } } } }
   });
 
-  if(myChartInstances[8]) myChartInstances[8].destroy();
-  myChartInstances[8] = new Chart(document.getElementById('chart8').getContext('2d'), {
-    type: 'line',
-    data: { labels: labels, datasets: [{ data: gaps, borderColor: '#14B8A6', backgroundColor: 'rgba(20, 184, 166, 0.1)', fill: true, tension: 0.3 }] },
-    options: commonOptions
-  });
-
-  if(myChartInstances[9]) myChartInstances[9].destroy();
-  myChartInstances[9] = new Chart(document.getElementById('chart9').getContext('2d'), {
-    type: 'bar',
-    data: { labels: labels, datasets: [{ data: activeLogs.map(() => 1), backgroundColor: '#EC4899' }] },
-    options: commonOptions
-  });
-
-  renderMap('mapContainer', activeLogs);
+  // 6. Spatial Thermal Heat Map
+  renderHeatMap('mapContainer', activeLogs);
 }
 
-function renderMap(containerId, activeLogs) {
+function renderHeatMap(containerId, activeLogs) {
   const mapEl = document.getElementById(containerId);
   if(!mapEl) return;
   if(containerId === 'mapContainer' && mapInstance) { mapInstance.remove(); mapInstance = null; }
@@ -284,11 +276,17 @@ function renderMap(containerId, activeLogs) {
 
   try {
     let m = L.map(containerId, {zoomControl: false, attributionControl: false}).setView([lat, lng], 13);
-    // Reliable OpenStreetMap tile layer so tiles never appear blank
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19}).addTo(m);
-    activeLogs.forEach(l => {
-      if(l.lat && l.lng) L.marker([l.lat, l.lng]).addTo(m);
-    });
+    
+    // Prepare heat points [lat, lng, intensity]
+    let heatPoints = activeLogs.filter(l => l.lat && l.lng).map(l => [l.lat, l.lng, 0.8]);
+    if(heatPoints.length > 0 && window.L.heatLayer) {
+      L.heatLayer(heatPoints, {radius: 25, blur: 15, maxZoom: 17}).addTo(m);
+    } else {
+      // Fallback if no GPS logs yet
+      L.marker([lat, lng]).addTo(m);
+    }
+
     if(containerId === 'mapContainer') mapInstance = m;
     if(containerId === 'mapModalContainer') modalMapInstance = m;
     setTimeout(() => { m.invalidateSize(); }, 250);
@@ -297,7 +295,7 @@ function renderMap(containerId, activeLogs) {
 
 function openMapModal() {
   document.getElementById('mapModal').classList.remove('hidden');
-  setTimeout(() => { renderMap('mapModalContainer', getFilteredLogs()); }, 200);
+  setTimeout(() => { renderHeatMap('mapModalContainer', getFilteredLogs()); }, 200);
 }
 function closeMapModal() {
   document.getElementById('mapModal').classList.add('hidden');

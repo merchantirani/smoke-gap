@@ -9,6 +9,8 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Leaflet Heatmap Plugin -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
   <style>
     :root { --bg-body: #0F1115; --text-main: #E0E6ED; --text-muted: #9CA3AF; --bg-glass: rgba(22, 26, 33, 0.9); --border-glass: rgba(255, 255, 255, 0.08); --accent-primary: #F59E0B; --accent-glow: rgba(245, 158, 11, 0.2); }
     body.theme-carbon { --bg-body: #050505; --text-main: #FFFFFF; --bg-glass: rgba(18, 18, 18, 0.95); --accent-primary: #3B82F6; --accent-glow: rgba(59, 130, 246, 0.2); }
@@ -72,7 +74,7 @@
       <div class="glass-card p-4 rounded-2xl space-y-3"><h3 class="text-xs opacity-60 uppercase font-semibold">Recent Logs</h3><div id="homeRecentLogs" class="space-y-2 text-xs"></div></div>
     </section>
 
-    <!-- 2. INSIGHTS TAB -->
+    <!-- 2. INSIGHTS TAB (6 Core Premium Charts & Heatmap) -->
     <section id="page-insights" class="space-y-5 hidden">
       <div class="flex justify-between items-center">
         <h2 class="text-base font-bold">Analytics Mirror</h2>
@@ -85,20 +87,43 @@
       </div>
 
       <div id="chartContainer" class="space-y-5">
-        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-emerald-500"><h3 class="text-xs text-emerald-500 font-bold uppercase">1. Widen The Gap Trend (Line)</h3><div class="w-full h-44 relative"><canvas id="chart1"></canvas></div></div>
-        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-red-500"><h3 class="text-xs text-red-500 font-bold uppercase">2. Spend Accumulation (Area)</h3><div class="w-full h-44 relative"><canvas id="chart2"></canvas></div></div>
-        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-indigo-500"><h3 class="text-xs text-indigo-500 font-bold uppercase">3. Craving Zones (Radar)</h3><div class="w-full h-52 relative"><canvas id="chart3"></canvas></div></div>
-        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-amber-500"><h3 class="text-xs text-amber-500 font-bold uppercase">4. Day vs Night (Column)</h3><div class="w-full h-40 relative"><canvas id="chart4"></canvas></div></div>
-        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-orange-500"><h3 class="text-xs text-orange-500 font-bold uppercase">5. 24-Hour Danger Matrix (Line)</h3><div class="w-full h-40 relative"><canvas id="chart5"></canvas></div></div>
-        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-blue-500"><h3 class="text-xs text-blue-500 font-bold uppercase">6. Day of Week Pattern (Bar)</h3><div class="w-full h-40 relative"><canvas id="chart6"></canvas></div></div>
-        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-purple-500"><h3 class="text-xs text-purple-500 font-bold uppercase">7. Trigger Breakdown (Donut)</h3><div class="w-full h-56 relative flex items-center justify-center"><canvas id="chart7"></canvas></div></div>
-        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-teal-500"><h3 class="text-xs text-teal-500 font-bold uppercase">8. Gap Distribution</h3><div class="w-full h-40 relative"><canvas id="chart8"></canvas></div></div>
-        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-pink-500"><h3 class="text-xs text-pink-500 font-bold uppercase">9. Stick Volume</h3><div class="w-full h-40 relative"><canvas id="chart9"></canvas></div></div>
+        <!-- 1. Widen The Gap Trend -->
+        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-emerald-500">
+          <h3 class="text-xs text-emerald-500 font-bold uppercase">1. Widen The Gap Trend</h3>
+          <div class="w-full h-48 relative"><canvas id="chart1"></canvas></div>
+        </div>
         
-        <!-- Spatial Map -->
+        <!-- 2. Daily Consumption vs Limit -->
+        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-amber-500">
+          <h3 class="text-xs text-amber-500 font-bold uppercase">2. Daily Consumption vs Limit</h3>
+          <div class="w-full h-44 relative"><canvas id="chart2"></canvas></div>
+        </div>
+
+        <!-- 3. Financial Drain (Cumulative Spend) -->
+        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-red-500">
+          <h3 class="text-xs text-red-500 font-bold uppercase">3. Financial Drain (Cumulative Spend)</h3>
+          <div class="w-full h-44 relative"><canvas id="chart3"></canvas></div>
+        </div>
+        
+        <!-- 4. 24-Hour Danger Matrix -->
+        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-orange-500">
+          <h3 class="text-xs text-orange-500 font-bold uppercase">4. 24-Hour Danger Matrix</h3>
+          <div class="w-full h-40 relative"><canvas id="chart4"></canvas></div>
+        </div>
+        
+        <!-- 5. Trigger Breakdown -->
+        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-purple-500">
+          <h3 class="text-xs text-purple-500 font-bold uppercase">5. Trigger Breakdown</h3>
+          <div class="w-full h-56 relative flex items-center justify-center"><canvas id="chart5"></canvas></div>
+        </div>
+        
+        <!-- 6. Spatial Thermal Heat Map -->
         <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-sky-500 relative">
-          <div class="flex justify-between items-center"><h3 class="text-xs text-sky-500 font-bold uppercase">10. Spatial Map</h3><button onclick="window.openMapModal()" class="text-[10px] bg-sky-500/20 text-sky-400 px-2.5 py-1 rounded-lg font-bold">🔍 Expand Map</button></div>
-          <div id="mapContainer" class="w-full h-48 rounded-xl z-10 bg-gray-900"></div>
+          <div class="flex justify-between items-center">
+            <h3 class="text-xs text-sky-500 font-bold uppercase">6. Spatial Thermal Heat Map</h3>
+            <button onclick="window.openMapModal()" class="text-[10px] bg-sky-500/20 text-sky-400 px-2.5 py-1 rounded-lg font-bold">🔍 Expand Map</button>
+          </div>
+          <div id="mapContainer" class="w-full h-52 rounded-xl z-10 bg-gray-900"></div>
         </div>
       </div>
     </section>
@@ -110,7 +135,7 @@
     <section id="page-settings" class="space-y-4 hidden">
       <h2 class="text-base font-bold">Settings & Preferences</h2>
       
-      <!-- Block 1: Theme & Appearance -->
+      <!-- Block 1: Appearance -->
       <div class="glass-card p-4 rounded-2xl space-y-2 text-xs border-l-4 border-amber-500">
         <h3 class="font-bold uppercase opacity-70 tracking-wider">Appearance</h3>
         <div><label class="opacity-60 block mb-1">Theme Mode</label><select id="themeSelect" onchange="window.updateSettings()" class="w-full bg-gray-800 p-2.5 rounded-xl text-white border border-gray-700"><option value="default">Amber Glow</option><option value="carbon">Carbon Matrix</option><option value="white">Clean Light</option></select></div>
@@ -127,7 +152,7 @@
         </div>
       </div>
 
-      <!-- Block 3: Security & PIN -->
+      <!-- Block 3: Security -->
       <div class="glass-card p-4 rounded-2xl space-y-2 text-xs border-l-4 border-indigo-500">
         <h3 class="font-bold uppercase opacity-70 tracking-wider">Security</h3>
         <button onclick="window.setupPin()" id="pinStatusBtn" class="w-full py-3 glass-card font-bold rounded-xl text-center">Set App PIN</button>
@@ -152,7 +177,7 @@
   <!-- Map Fullscreen Modal -->
   <div id="mapModal" class="hidden fixed inset-0 bg-black/90 z-50 flex flex-col p-4">
     <div class="flex justify-between items-center mb-3">
-      <h3 class="text-sm font-bold text-sky-400">Spatial Map (Fullscreen View)</h3>
+      <h3 class="text-sm font-bold text-sky-400">Thermal Heatmap (Fullscreen View)</h3>
       <button onclick="window.closeMapModal()" class="bg-red-500 text-white text-xs px-3 py-1.5 rounded-xl font-bold">Close ✕</button>
     </div>
     <div id="mapModalContainer" class="w-full flex-1 rounded-2xl bg-gray-900"></div>
