@@ -12,6 +12,9 @@ let mapInstance = null, modalMapInstance = null;
 let mainTimer = null, waveTimer = null, cooldownTimer = null;
 let cachedCoords = JSON.parse(localStorage.getItem('smoke_last_coords')) || null;
 
+Chart.defaults.color = '#64748B';
+Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif';
+
 window.onload = () => {
   applyTheme(settings.theme);
   document.getElementById('dailyLimitInput').value = settings.dailyLimit;
@@ -22,6 +25,7 @@ window.onload = () => {
   
   loadChartOrder();
   initDragAndDrop();
+  if(window.lucide) window.lucide.createIcons();
 
   if(appPin) {
     document.getElementById('lockScreen').classList.remove('hidden');
@@ -48,7 +52,7 @@ function bootCore() {
 }
 
 function enterPin(n) {
-  if(enteredPin.length < 4) { enteredPin += n; document.querySelectorAll('.pin-dot').forEach((el, i) => el.classList.toggle('bg-amber-500', i < enteredPin.length)); }
+  if(enteredPin.length < 4) { enteredPin += n; document.querySelectorAll('.pin-dot').forEach((el, i) => el.classList.toggle('bg-gray-400', i < enteredPin.length)); }
   if(enteredPin.length === 4) {
     setTimeout(() => {
       if(enteredPin === appPin) { document.getElementById('lockScreen').classList.add('hidden'); bootCore(); } 
@@ -56,7 +60,7 @@ function enterPin(n) {
     }, 200);
   }
 }
-function clearPin() { enteredPin = ""; document.querySelectorAll('.pin-dot').forEach(el => el.classList.remove('bg-amber-500')); }
+function clearPin() { enteredPin = ""; document.querySelectorAll('.pin-dot').forEach(el => el.classList.remove('bg-gray-400')); }
 function setupPin() {
   if(appPin) { if(confirm("Remove PIN?")) { localStorage.removeItem('smoke_pin'); appPin=null; location.reload(); } }
   else { let p = prompt("New 4-digit PIN:"); if(p && p.length===4) { localStorage.setItem('smoke_pin',p); appPin=p; alert("Saved!"); location.reload(); } }
@@ -136,6 +140,7 @@ function switchTab(t) {
   if(ct) ct.classList.add('nav-active');
   if(t==='history') renderHistory();
   if(t==='insights') { requestAnimationFrame(() => renderAllCharts()); }
+  if(window.lucide) window.lucide.createIcons();
 }
 
 function applyTheme(t) {
@@ -176,18 +181,19 @@ function closeTriggerModal() { document.getElementById('triggerModal').classList
 
 function renderHistory(tId='fullHistoryList', limit=null) {
   const c = document.getElementById(tId); if(!c) return;
-  if(logs.length===0) { c.innerHTML="<p class='text-center py-6 text-xs' style='color: var(--text-muted);'>No logs recorded yet.</p>"; return; }
+  if(logs.length===0) { c.innerHTML="<p class='text-center py-6 text-xs flex flex-col items-center gap-2' style='color: var(--text-muted);'><i data-lucide='inbox' class='w-6 h-6 opacity-50'></i> No logs recorded yet.</p>"; if(window.lucide) window.lucide.createIcons(); return; }
   let items = logs.slice().reverse(); if(limit) items = items.slice(0,limit);
   c.innerHTML = items.map(l => `
     <div class="premium-card p-4 flex justify-between items-center relative overflow-hidden">
       <div class="absolute left-0 top-0 bottom-0 w-1" style="background: var(--accent);"></div>
       <div>
         <div class="font-bold tracking-wide" style="color: var(--text-main);">${new Date(l.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
-        <div class="text-[10px] font-bold uppercase mt-0.5" style="color: var(--text-muted);">${l.trigger||'Uncategorized'}</div>
+        <div class="text-[10px] font-bold uppercase mt-0.5 flex items-center gap-1" style="color: var(--text-muted);"><i data-lucide="tag" class="w-3 h-3"></i> ${l.trigger||'Uncategorized'}</div>
       </div>
       <div class="font-bold text-base" style="color: var(--accent);">${formatGap(l.gap)}</div>
     </div>
   `).join('');
+  if(window.lucide) window.lucide.createIcons();
 }
 
 function getFilteredLogs() {
@@ -206,14 +212,13 @@ function renderAllCharts() {
 
   const chartTextColor = settings.theme === 'white' ? '#64748B' : '#9CA3AF';
 
-  // Common Options with 20% Y-axis Grace so charts are perfectly de-zoomed and centered inside cards
+  // FIX: Explicitly setup proper padding and 'beginAtZero' so Y-Axis doesn't jump to the middle of the chart
   const commonOptions = {
     responsive: true, maintainAspectRatio: false, animation: false,
-    layout: { padding: { top: 10, bottom: 5, left: 5, right: 5 } },
     plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(15,23,42,0.9)', padding: 10, cornerRadius: 8 } },
     scales: { 
       x: { grid: { display: false }, border: { display: false }, ticks: { color: chartTextColor, maxTicksLimit: 5, font: { size: 10 } } }, 
-      y: { grace: '20%', grid: { color: 'rgba(156,163,175,0.08)', drawBorder: false }, border: { display: false }, ticks: { color: chartTextColor, font: { size: 10 } } } 
+      y: { beginAtZero: true, grace: '10%', position: 'left', grid: { color: 'rgba(156,163,175,0.08)', drawBorder: false }, border: { display: false }, ticks: { color: chartTextColor, font: { size: 10 } } } 
     }
   };
 
@@ -234,7 +239,7 @@ function renderAllCharts() {
     data: { 
       labels: dayLabels, 
       datasets: [
-        { label: 'Count', data: dayCounts, backgroundColor: settings.theme === 'white' ? '#2563EB' : '#F59E0B', borderRadius: 6, barThickness: 'flex', maxBarThickness: 32 },
+        { label: 'Count', data: dayCounts, backgroundColor: settings.theme === 'white' ? '#2563EB' : '#F59E0B', borderRadius: 4, barThickness: 'flex', maxBarThickness: 24 },
         { label: 'Limit', data: dayLabels.map(() => settings.dailyLimit), type: 'line', borderColor: '#EF4444', borderWidth: 2, borderDash: [4,4], pointRadius: 0 }
       ] 
     },
@@ -280,7 +285,6 @@ function renderHeatMap(containerId, activeLogs) {
   try {
     let m = L.map(containerId, {zoomControl: false, attributionControl: false}).setView([lat, lng], 13);
     
-    // Choose appropriate map tile theme
     let tileUrl = settings.theme === 'white' 
       ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
       : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png';
