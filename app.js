@@ -10,7 +10,6 @@ let enteredPin = "";
 let myChartInstances = {};
 let mapInstance = null, modalMapInstance = null;
 let mainTimer = null, waveTimer = null, cooldownTimer = null;
-let cachedCoords = null; // Will fetch fresh on every click
 
 Chart.defaults.color = '#64748B';
 Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif';
@@ -104,7 +103,6 @@ function setupPin() {
   else { let p = prompt("New 4-digit PIN:"); if(p && p.length===4) { localStorage.setItem('smoke_pin',p); appPin=p; alert("Saved!"); location.reload(); } }
 }
 
-// FIX 1: ALWAYS FETCH FRESH GPS LOCATION ON EVERY SMOKE BUTTON CLICK
 function handleLogClick() {
   if(new Date().getTime() < lockEndTime) return;
   if(settings.haptics && navigator.vibrate) navigator.vibrate(50);
@@ -112,12 +110,10 @@ function handleLogClick() {
   
   if(navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(p => {
-      let lat = p.coords.latitude;
-      let lng = p.coords.longitude;
-      saveLog(lat, lng);
+      saveLog(p.coords.latitude, p.coords.longitude);
     }, () => {
-      saveLog(null, null); // Fallback if GPS fails or denied
-    }, {timeout: 5000, maximumAge: 0, enableHighAccuracy: true}); // maximumAge: 0 forces fresh position!
+      saveLog(null, null);
+    }, {timeout: 5000, maximumAge: 0, enableHighAccuracy: true});
   } else {
     saveLog(null, null);
   }
@@ -320,9 +316,10 @@ function setBadge(id, text, colorClass) {
   }
 }
 
-// 🔥 THE PRO ADVANCED CHARTS ENGINE & FIXED YEARLY PROJECTION MATH 🔥
+// 🔥 EXPERT FIX: STRICT FILTER-BASED YEARLY PROJECTION MATH 🔥
 function renderAllCharts() {
   const activeLogs = getFilteredLogs();
+  const filter = document.getElementById('insightsDateFilter').value;
   
   let totalSpend = (activeLogs.length * (settings.packPrice/settings.packSize)).toFixed(1);
   let avgGapVal = activeLogs.length > 0 ? Math.round(activeLogs.reduce((a, b) => a + b.gap, 0) / activeLogs.length) : 0;
@@ -344,26 +341,21 @@ function renderAllCharts() {
 
   document.getElementById('insightPackEq').innerText = activeLogs.length > 0 ? `${(activeLogs.length / settings.packSize).toFixed(1)} Packs` : '--';
 
-  // FIX 3: LOGICAL ACCURATE YEARLY PROJECTION FORMULA ACROSS FILTERS
+  // FIX: Accurate multiplier per selected dropdown option
   if(activeLogs.length > 0) {
-    let filter = document.getElementById('insightsDateFilter').value;
-    let nowTime = new Date().getTime();
-    let oldestLogTime = Math.min(...activeLogs.map(l => l.timestamp));
-    
-    let daysCovered = 1;
+    let yearlyMultiplier = 365; // Default for All Time / 1 Year base
     if(filter === 'today') {
-      let hoursPassedToday = Math.max(1, (nowTime - new Date(new Date().setHours(0,0,0,0)).getTime()) / 3600000);
-      daysCovered = Math.max(0.1, hoursPassedToday / 24);
+      yearlyMultiplier = 365; // Today's burn rate * 365 days
     } else if(filter === '7days') {
-      daysCovered = 7;
+      yearlyMultiplier = 365 / 7; // Average daily burn in 7 days * 365
     } else if(filter === '1month') {
-      daysCovered = 30;
+      yearlyMultiplier = 365 / 30; // Average daily burn in 30 days * 365
     } else {
-      daysCovered = Math.max(1, Math.ceil((nowTime - oldestLogTime) / 86400000));
+      let oldestLogTime = Math.min(...logs.map(l => l.timestamp));
+      let totalDaysActive = Math.max(1, Math.ceil((new Date().getTime() - oldestLogTime) / 86400000));
+      yearlyMultiplier = 365 / totalDaysActive;
     }
-    
-    let dailyBurnRate = totalSpend / daysCovered;
-    let yearly = (dailyBurnRate * 365).toFixed(0);
+    let yearly = (totalSpend * yearlyMultiplier).toFixed(0);
     document.getElementById('insightProjected').innerText = `${settings.currency} ${yearly}`;
   } else {
     document.getElementById('insightProjected').innerText = '--';
@@ -516,6 +508,7 @@ function loadChartOrder() {
   savedOrder.forEach(id => { const card = document.getElementById(id); if(card) container.appendChild(card); });
 }
 
+window.enterPin = enterPin; window.clearPin = clearPin; window.setupPin = setuppiN = setupPin;
 window.enterPin = enterPin; window.clearPin = clearPin; window.setupPin = setupPin;
 window.handleLogClick = handleLogClick; window.toggleWaveMode = toggleWaveMode; window.switchTab = switchTab;
 window.updateSettings = updateSettings; window.resetData = resetData; window.assignTag = assignTag;
