@@ -359,18 +359,37 @@ function renderAllCharts() {
 
   document.getElementById('insightPackEq').innerText = activeLogs.length > 0 ? `${(activeLogs.length / settings.packSize).toFixed(1)} Packs` : '--';
 
-  // FIX: Accurate multiplier per selected dropdown option
+  // NEW: directly surfaces which specific day was the heaviest, instead of making
+  // the user eyeball the Daily Volume bars to figure it out themselves.
+  const heaviestDayEl = document.getElementById('insightHeaviestDay');
+  if (heaviestDayEl) {
+    if (activeLogs.length > 0) {
+      let perDay = {};
+      activeLogs.forEach(l => { const k = new Date(l.timestamp).toLocaleDateString([], {month:'short', day:'numeric'}); perDay[k] = (perDay[k]||0)+1; });
+      let topDay = Object.keys(perDay).reduce((a,b) => perDay[a] > perDay[b] ? a : b);
+      heaviestDayEl.innerText = `${topDay} (${perDay[topDay]})`;
+    } else {
+      heaviestDayEl.innerText = '--';
+    }
+  }
+
+  // FIX: use the ACTUAL number of days the data covers (capped to the window),
+  // not a fixed 7 or 30 — a new user with only 4 days of history selecting
+  // "1 Month" was having their real 4-day total silently divided by 30, which
+  // crushed the projection (this was the AED 140 vs AED 30 mismatch reported).
   if(activeLogs.length > 0) {
-    let yearlyMultiplier = 365; // Default for All Time / 1 Year base
+    const now = new Date().getTime();
+    let yearlyMultiplier;
     if(filter === 'today') {
       yearlyMultiplier = 365; // Today's burn rate * 365 days
-    } else if(filter === '7days') {
-      yearlyMultiplier = 365 / 7; // Average daily burn in 7 days * 365
-    } else if(filter === '1month') {
-      yearlyMultiplier = 365 / 30; // Average daily burn in 30 days * 365
+    } else if(filter === '7days' || filter === '1month') {
+      const windowDays = filter === '7days' ? 7 : 30;
+      const oldestInRange = Math.min(...activeLogs.map(l => l.timestamp));
+      const daysActive = Math.min(windowDays, Math.max(1, Math.ceil((now - oldestInRange) / 86400000)));
+      yearlyMultiplier = 365 / daysActive;
     } else {
       let oldestLogTime = Math.min(...logs.map(l => l.timestamp));
-      let totalDaysActive = Math.max(1, Math.ceil((new Date().getTime() - oldestLogTime) / 86400000));
+      let totalDaysActive = Math.max(1, Math.ceil((now - oldestLogTime) / 86400000));
       yearlyMultiplier = 365 / totalDaysActive;
     }
     let yearly = (totalSpend * yearlyMultiplier).toFixed(0);
@@ -410,16 +429,29 @@ function renderAllCharts() {
     return gradient;
   };
 
-  if(myChartInstances[1]) myChartInstances[1].destroy();
+  // PERF FIX: reuse existing Chart.js instances instead of destroying and
+  // rebuilding all 6 charts from scratch on every filter change, settings
+  // tweak, or tab switch. Only rebuilds when the chart type actually changes.
+  function upsertChart(key, ctx, config) {
+    const existing = myChartInstances[key];
+    if (existing && existing.config.type === config.type) {
+      existing.data = config.data;
+      if (config.options) existing.options = config.options;
+      existing.update();
+    } else {
+      if (existing) existing.destroy();
+      myChartInstances[key] = new Chart(ctx, config);
+    }
+  }
+
   const ctx1 = document.getElementById('chart1').getContext('2d');
-  myChartInstances[1] = new Chart(ctx1, {
+  upsertChart(1, ctx1, {
     type: 'line',
     data: { labels: labels, datasets: [{ label: 'Gap (mins)', data: gaps, borderColor: '#10B981', backgroundColor: createGradient(ctx1, 'rgba(16, 185, 129, 0.25)'), borderWidth: 3, tension: 0.4, fill: true, pointRadius: 0, pointHitRadius: 15 }] },
     options: proOptions,
     plugins: [crosshairPlugin]
   });
 
-  if(myChartInstances[2]) myChartInstances[2].destroy();
   // BUG FIX: group by actual calendar date, not just weekday name. Grouping by weekday
   // name alone (e.g. "Mon") silently merged every Monday together once data spanned
   // more than a week, badly inflating the 1-Month/All-Time bars.
@@ -433,7 +465,7 @@ function renderAllCharts() {
   if(dayLabels.length === 0) { dayLabels = ['Today']; dayCounts = [0]; }
 
   const ctx2 = document.getElementById('chart2').getContext('2d');
-  myChartInstances[2] = new Chart(ctx2, {
+  upsertChart(2, ctx2, {
     type: 'bar',
     data: { 
       labels: dayLabels, 
@@ -446,33 +478,57 @@ function renderAllCharts() {
     plugins: [crosshairPlugin]
   });
 
-  if(myChartInstances[3]) myChartInstances[3].destroy();
   let cumulativeSpend = 0; let spendData = gaps.map(() => { cumulativeSpend += (settings.packPrice / settings.packSize); return cumulativeSpend.toFixed(1); });
   const ctx3 = document.getElementById('chart3').getContext('2d');
-  myChartInstances[3] = new Chart(ctx3, {
+  upsertChart(3, ctx3, {
     type: 'line',
     data: { labels: labels, datasets: [{ label: 'Spend', data: spendData, borderColor: '#EF4444', backgroundColor: createGradient(ctx3, 'rgba(239, 68, 68, 0.2)'), fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0, pointHitRadius: 15 }] },
     options: proOptions,
     plugins: [crosshairPlugin]
   });
 
-  if(myChartInstances[4]) myChartInstances[4].destroy();
   let hours = Array(24).fill(0); activeLogs.forEach(l => hours[new Date(l.timestamp).getHours()]++);
   const ctx4 = document.getElementById('chart4').getContext('2d');
-  myChartInstances[4] = new Chart(ctx4, {
+  upsertChart(4, ctx4, {
     type: 'line',
     data: { labels: Array.from({length:24}, (_,i)=>i+':00'), datasets: [{ data: hours, borderColor: '#F97316', backgroundColor: createGradient(ctx4, 'rgba(249, 115, 22, 0.2)'), fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0, pointHitRadius: 15 }] },
     options: proOptions,
     plugins: [crosshairPlugin]
   });
 
-  if(myChartInstances[5]) myChartInstances[5].destroy();
-  myChartInstances[5] = new Chart(document.getElementById('chart5').getContext('2d'), {
+  const ctx5 = document.getElementById('chart5').getContext('2d');
+  upsertChart(5, ctx5, {
     type: 'doughnut',
     data: { labels: triggers, datasets: [{ data: triggers.map(t => activeLogs.filter(l => l.trigger === t).length), backgroundColor: ['#F59E0B','#10B981','#6366F1','#EF4444','#2563EB','#A855F7'], borderWidth: 0, cutout: '76%' }] },
     options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12, font: { size: 10 }, color: chartTextColor } } } },
     plugins: [centerTextPlugin]
   });
+
+  // NEW: "Trigger Timing" — stacked bar of WHICH trigger fires during WHICH part of
+  // the day. This is the concept the app is actually for: not pressuring anyone to
+  // quit, just showing them their own pattern (e.g. "Work Stress mostly hits you at
+  // 3-5pm", "Boredom is a Night thing for you") so they can see it clearly.
+  const dayParts = ['Morning', 'Afternoon', 'Evening', 'Night'];
+  const partOf = (hr) => hr >= 5 && hr < 12 ? 0 : hr >= 12 && hr < 17 ? 1 : hr >= 17 && hr < 21 ? 2 : 3;
+  let triggerByPart = {}; triggers.forEach(t => triggerByPart[t] = [0, 0, 0, 0]);
+  activeLogs.forEach(l => { if (l.trigger && triggerByPart[l.trigger]) triggerByPart[l.trigger][partOf(new Date(l.timestamp).getHours())]++; });
+  const palette = ['#F59E0B', '#10B981', '#6366F1', '#EF4444', '#2563EB', '#A855F7'];
+  const chart6El = document.getElementById('chart6');
+  if (chart6El) {
+    const ctx6 = chart6El.getContext('2d');
+    upsertChart(6, ctx6, {
+      type: 'bar',
+      data: { labels: dayParts, datasets: triggers.map((t, i) => ({ label: t, data: triggerByPart[t], backgroundColor: palette[i % palette.length], borderRadius: 4, stack: 'triggers' })) },
+      options: {
+        ...proOptions,
+        scales: {
+          x: { ...proOptions.scales.x, stacked: true },
+          y: { ...proOptions.scales.y, stacked: true, ticks: { ...proOptions.scales.y.ticks, precision: 0 } }
+        },
+        plugins: { ...proOptions.plugins, legend: { display: true, position: 'bottom', labels: { boxWidth: 8, padding: 10, font: { size: 9 }, color: chartTextColor } } }
+      }
+    });
+  }
 
   renderHeatMap('mapContainer', activeLogs);
 }
@@ -480,28 +536,39 @@ function renderAllCharts() {
 function renderHeatMap(containerId, activeLogs) {
   const mapEl = document.getElementById(containerId);
   if(!mapEl) return;
-  if(containerId === 'mapContainer' && mapInstance) { mapInstance.remove(); mapInstance = null; }
-  if(containerId === 'mapModalContainer' && modalMapInstance) { modalMapInstance.remove(); modalMapInstance = null; }
 
   let lastWithLoc = activeLogs.slice().reverse().find(l => l.lat && l.lng);
   let lat = lastWithLoc ? lastWithLoc.lat : 25.2048;
   let lng = lastWithLoc ? lastWithLoc.lng : 55.2708;
+  let heatPoints = activeLogs.filter(l => l.lat && l.lng).map(l => [l.lat, l.lng, 1.0]);
+
+  const isModal = containerId === 'mapModalContainer';
+  let m = isModal ? modalMapInstance : mapInstance;
+  // Only tear down and recreate (which re-downloads map tiles) if there's no map yet
+  // for this container, or the theme changed and the tile layer needs to switch.
+  const needsRebuild = !m || m._smokegapTheme !== settings.theme;
 
   try {
-    let m = L.map(containerId, {zoomControl: false, attributionControl: false}).setView([lat, lng], 13);
-    let tileUrl = settings.theme === 'white' ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png' : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-    L.tileLayer(tileUrl, {maxZoom: 19}).addTo(m);
-    
-    let heatPoints = activeLogs.filter(l => l.lat && l.lng).map(l => [l.lat, l.lng, 1.0]);
-    if(heatPoints.length > 0 && window.L.heatLayer) {
-      L.heatLayer(heatPoints, {radius: 28, blur: 18, maxZoom: 17, minOpacity: 0.4}).addTo(m);
+    if (needsRebuild) {
+      if (m) { try { m.remove(); } catch(e) {} }
+      m = L.map(containerId, {zoomControl: false, attributionControl: false}).setView([lat, lng], 13);
+      let tileUrl = settings.theme === 'white' ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png' : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+      L.tileLayer(tileUrl, {maxZoom: 19}).addTo(m);
+      m._smokegapTheme = settings.theme;
+      if (isModal) modalMapInstance = m; else mapInstance = m;
+      setTimeout(() => { m.invalidateSize(); }, 250);
     } else {
-      L.marker([lat, lng]).addTo(m);
+      m.setView([lat, lng], m.getZoom());
+      setTimeout(() => { m.invalidateSize(); }, 50);
     }
 
-    if(containerId === 'mapContainer') mapInstance = m;
-    if(containerId === 'mapModalContainer') modalMapInstance = m;
-    setTimeout(() => { m.invalidateSize(); }, 250);
+    if (m._smokegapHeat) { m.removeLayer(m._smokegapHeat); m._smokegapHeat = null; }
+    if (m._smokegapMarker) { m.removeLayer(m._smokegapMarker); m._smokegapMarker = null; }
+    if(heatPoints.length > 0 && window.L.heatLayer) {
+      m._smokegapHeat = L.heatLayer(heatPoints, {radius: 28, blur: 18, maxZoom: 17, minOpacity: 0.4}).addTo(m);
+    } else {
+      m._smokegapMarker = L.marker([lat, lng]).addTo(m);
+    }
   } catch(e) {}
 }
 
