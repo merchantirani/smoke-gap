@@ -10,12 +10,11 @@ let enteredPin = "";
 let myChartInstances = {};
 let mapInstance = null, modalMapInstance = null;
 let mainTimer = null, waveTimer = null, cooldownTimer = null;
-let cachedCoords = JSON.parse(localStorage.getItem('smoke_last_coords')) || null;
+let cachedCoords = null; // Will fetch fresh on every click
 
 Chart.defaults.color = '#64748B';
 Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif';
 
-// --- CUSTOM CANVAS PLUGINS (The Wallet App Magic) ---
 const crosshairPlugin = {
   id: 'crosshair',
   afterDraw: chart => {
@@ -58,7 +57,6 @@ const centerTextPlugin = {
     }
   }
 };
-// ---------------------------------------------------
 
 window.onload = () => {
   applyTheme(settings.theme);
@@ -83,12 +81,6 @@ window.onload = () => {
 
 function bootCore() {
   updateUI(); checkLock(); checkWave();
-  if(navigator.geolocation && !cachedCoords) {
-    navigator.geolocation.getCurrentPosition(p => {
-      cachedCoords = { lat: p.coords.latitude, lng: p.coords.longitude };
-      localStorage.setItem('smoke_last_coords', JSON.stringify(cachedCoords));
-    }, () => {}, {timeout:5000});
-  }
   if(mainTimer) clearInterval(mainTimer);
   mainTimer = setInterval(() => {
     if(logs.length === 0) return;
@@ -112,19 +104,20 @@ function setupPin() {
   else { let p = prompt("New 4-digit PIN:"); if(p && p.length===4) { localStorage.setItem('smoke_pin',p); appPin=p; alert("Saved!"); location.reload(); } }
 }
 
+// FIX 1: ALWAYS FETCH FRESH GPS LOCATION ON EVERY SMOKE BUTTON CLICK
 function handleLogClick() {
   if(new Date().getTime() < lockEndTime) return;
   if(settings.haptics && navigator.vibrate) navigator.vibrate(50);
   if(waveEndTime>0) { localStorage.removeItem('smoke_wave_end'); waveEndTime=0; clearInterval(waveTimer); document.getElementById('waveOverlay').classList.add('hidden'); }
   
-  if(cachedCoords) {
-    saveLog(cachedCoords.lat, cachedCoords.lng);
-  } else if(navigator.geolocation) {
+  if(navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(p => {
-      cachedCoords = { lat: p.coords.latitude, lng: p.coords.longitude };
-      localStorage.setItem('smoke_last_coords', JSON.stringify(cachedCoords));
-      saveLog(cachedCoords.lat, cachedCoords.lng);
-    }, () => saveLog(null, null), {timeout:3000});
+      let lat = p.coords.latitude;
+      let lng = p.coords.longitude;
+      saveLog(lat, lng);
+    }, () => {
+      saveLog(null, null); // Fallback if GPS fails or denied
+    }, {timeout: 5000, maximumAge: 0, enableHighAccuracy: true}); // maximumAge: 0 forces fresh position!
   } else {
     saveLog(null, null);
   }
@@ -327,11 +320,10 @@ function setBadge(id, text, colorClass) {
   }
 }
 
-// 🔥 THE PRO ADVANCED CHARTS ENGINE 🔥
+// 🔥 THE PRO ADVANCED CHARTS ENGINE & FIXED YEARLY PROJECTION MATH 🔥
 function renderAllCharts() {
   const activeLogs = getFilteredLogs();
   
-  // 1. Dynamic Top Summary Cards
   let totalSpend = (activeLogs.length * (settings.packPrice/settings.packSize)).toFixed(1);
   let avgGapVal = activeLogs.length > 0 ? Math.round(activeLogs.reduce((a, b) => a + b.gap, 0) / activeLogs.length) : 0;
   
@@ -352,19 +344,35 @@ function renderAllCharts() {
 
   document.getElementById('insightPackEq').innerText = activeLogs.length > 0 ? `${(activeLogs.length / settings.packSize).toFixed(1)} Packs` : '--';
 
+  // FIX 3: LOGICAL ACCURATE YEARLY PROJECTION FORMULA ACROSS FILTERS
   if(activeLogs.length > 0) {
     let filter = document.getElementById('insightsDateFilter').value;
-    let days = filter === 'today' ? 1 : filter === '7days' ? 7 : filter === '1month' ? 30 : Math.max(1, Math.ceil((new Date() - new Date(logs[0].timestamp))/86400000));
-    let yearly = ((totalSpend / days) * 365).toFixed(0);
+    let nowTime = new Date().getTime();
+    let oldestLogTime = Math.min(...activeLogs.map(l => l.timestamp));
+    
+    let daysCovered = 1;
+    if(filter === 'today') {
+      let hoursPassedToday = Math.max(1, (nowTime - new Date(new Date().setHours(0,0,0,0)).getTime()) / 3600000);
+      daysCovered = Math.max(0.1, hoursPassedToday / 24);
+    } else if(filter === '7days') {
+      daysCovered = 7;
+    } else if(filter === '1month') {
+      daysCovered = 30;
+    } else {
+      daysCovered = Math.max(1, Math.ceil((nowTime - oldestLogTime) / 86400000));
+    }
+    
+    let dailyBurnRate = totalSpend / daysCovered;
+    let yearly = (dailyBurnRate * 365).toFixed(0);
     document.getElementById('insightProjected').innerText = `${settings.currency} ${yearly}`;
-  } else document.getElementById('insightProjected').innerText = '--';
+  } else {
+    document.getElementById('insightProjected').innerText = '--';
+  }
 
-  // Badges Update
   setBadge('badge-chart1', activeLogs.length > 0 ? `Avg ${formatGap(avgGapVal)}` : '', 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20');
   setBadge('badge-chart2', activeLogs.length > 0 ? `${activeLogs.length} Total` : '', 'bg-amber-500/10 text-amber-500 border-amber-500/20');
   setBadge('badge-chart3', activeLogs.length > 0 ? `${settings.currency} ${totalSpend}` : '', 'bg-red-500/10 text-red-500 border-red-500/20');
 
-  // 2. Advanced Pro Canvas Charts Configuration
   const labels = activeLogs.length > 0 ? activeLogs.map(l => new Date(l.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})) : ['No Data'];
   const gaps = activeLogs.length > 0 ? activeLogs.map(l => l.gap) : [0];
   const chartTextColor = settings.theme === 'white' ? '#64748B' : '#9CA3AF';
@@ -373,7 +381,7 @@ function renderAllCharts() {
     responsive: true,
     maintainAspectRatio: false,
     animation: { duration: 600, easing: 'easeOutQuart' },
-    interaction: { mode: 'index', intersect: false }, // Crucial for smooth crosshair tooltips
+    interaction: { mode: 'index', intersect: false },
     layout: { padding: { left: -5, right: 5, top: 10, bottom: 0 } },
     plugins: {
       legend: { display: false },
@@ -392,7 +400,6 @@ function renderAllCharts() {
     return gradient;
   };
 
-  // 1. Gap Trend Line Chart (with Crosshair Plugin)
   if(myChartInstances[1]) myChartInstances[1].destroy();
   const ctx1 = document.getElementById('chart1').getContext('2d');
   myChartInstances[1] = new Chart(ctx1, {
@@ -402,7 +409,6 @@ function renderAllCharts() {
     plugins: [crosshairPlugin]
   });
 
-  // 2. Daily Volume Bar Chart (CAPSULE BARS - borderSkipped & max radius)
   if(myChartInstances[2]) myChartInstances[2].destroy();
   let dayMap = {}; activeLogs.forEach(l => { let d = new Date(l.timestamp).toLocaleDateString([],{weekday:'short'}); dayMap[d] = (dayMap[d] || 0) + 1; });
   let dayLabels = Object.keys(dayMap); let dayCounts = Object.values(dayMap);
@@ -414,7 +420,7 @@ function renderAllCharts() {
     data: { 
       labels: dayLabels, 
       datasets: [
-        { label: 'Count', data: dayCounts, backgroundColor: settings.theme === 'white' ? '#2563EB' : '#F59E0B', borderRadius: Number.MAX_VALUE, borderSkipped: false, barThickness: 16 }, // Capsule Magic
+        { label: 'Count', data: dayCounts, backgroundColor: settings.theme === 'white' ? '#2563EB' : '#F59E0B', borderRadius: Number.MAX_VALUE, borderSkipped: false, barThickness: 16 },
         { label: 'Limit', data: dayLabels.map(() => settings.dailyLimit), type: 'line', borderColor: '#EF4444', borderWidth: 2, borderDash: [4,4], pointRadius: 0 }
       ] 
     },
@@ -422,7 +428,6 @@ function renderAllCharts() {
     plugins: [crosshairPlugin]
   });
 
-  // 3. Financial Drain Line Chart
   if(myChartInstances[3]) myChartInstances[3].destroy();
   let cumulativeSpend = 0; let spendData = gaps.map(() => { cumulativeSpend += (settings.packPrice / settings.packSize); return cumulativeSpend.toFixed(1); });
   const ctx3 = document.getElementById('chart3').getContext('2d');
@@ -433,7 +438,6 @@ function renderAllCharts() {
     plugins: [crosshairPlugin]
   });
 
-  // 4. Danger Matrix Hours Chart
   if(myChartInstances[4]) myChartInstances[4].destroy();
   let hours = Array(24).fill(0); activeLogs.forEach(l => hours[new Date(l.timestamp).getHours()]++);
   const ctx4 = document.getElementById('chart4').getContext('2d');
@@ -444,7 +448,6 @@ function renderAllCharts() {
     plugins: [crosshairPlugin]
   });
 
-  // 5. Trigger Doughnut Chart (with Center Text Plugin)
   if(myChartInstances[5]) myChartInstances[5].destroy();
   myChartInstances[5] = new Chart(document.getElementById('chart5').getContext('2d'), {
     type: 'doughnut',
@@ -463,12 +466,12 @@ function renderHeatMap(containerId, activeLogs) {
   if(containerId === 'mapModalContainer' && modalMapInstance) { modalMapInstance.remove(); modalMapInstance = null; }
 
   let lastWithLoc = activeLogs.slice().reverse().find(l => l.lat && l.lng);
-  let lat = lastWithLoc ? lastWithLoc.lat : (cachedCoords ? cachedCoords.lat : 25.2048);
-  let lng = lastWithLoc ? lastWithLoc.lng : (cachedCoords ? cachedCoords.lng : 55.2708);
+  let lat = lastWithLoc ? lastWithLoc.lat : 25.2048;
+  let lng = lastWithLoc ? lastWithLoc.lng : 55.2708;
 
   try {
     let m = L.map(containerId, {zoomControl: false, attributionControl: false}).setView([lat, lng], 13);
-    let tileUrl = settings.theme === 'white' ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png' : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png';
+    let tileUrl = settings.theme === 'white' ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png' : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
     L.tileLayer(tileUrl, {maxZoom: 19}).addTo(m);
     
     let heatPoints = activeLogs.filter(l => l.lat && l.lng).map(l => [l.lat, l.lng, 1.0]);
