@@ -1,5 +1,11 @@
 let logs = JSON.parse(localStorage.getItem('smoke_logs')) || [];
-let settings = JSON.parse(localStorage.getItem('smoke_settings')) || { theme: 'default', haptics: true, dailyLimit: 15, lockSecs: 300, packPrice: 20, packSize: 20, currency: 'AED' };
+// BUG FIX: merge saved settings on top of defaults instead of replacing them wholesale.
+// Old behaviour meant any user whose saved data pre-dated a new field (e.g. "currency")
+// ended up with `settings.currency === undefined`, which printed "undefined 12.5" on the UI.
+const DEFAULT_SETTINGS = { theme: 'default', haptics: true, dailyLimit: 15, lockSecs: 300, packPrice: 20, packSize: 20, currency: 'AED' };
+let settings = Object.assign({}, DEFAULT_SETTINGS, JSON.parse(localStorage.getItem('smoke_settings')) || {});
+// Guard against a 0/blank pack size ever being saved -> avoids Infinity/NaN spend calculations.
+if (!settings.packSize || settings.packSize <= 0) settings.packSize = 20;
 let triggers = JSON.parse(localStorage.getItem('smoke_triggers')) || ['💼 Work Stress', '🍽️ After Meal', '☕ Chai / Coffee', '🚗 Driving', '📱 Boredom', '👥 Social'];
 let shields = parseInt(localStorage.getItem('smoke_shields')) || 0;
 let lockEndTime = parseInt(localStorage.getItem('smoke_lock_end')) || 0;
@@ -121,7 +127,11 @@ function handleLogClick() {
 
 function saveLog(lat, lng) {
   const now = new Date().getTime();
-  let gap = logs.length > 0 ? Math.round((now - logs[logs.length-1].timestamp)/60000) : 0;
+  // BUG FIX: the very first cigarette ever logged has no previous entry to measure a gap
+  // against. It used to be stored as gap: 0, which then quietly counted as a real
+  // "0-minute gap" in every average / best-gap / chart calculation below. Storing it as
+  // null keeps it out of those calculations while still being safe to display.
+  let gap = logs.length > 0 ? Math.round((now - logs[logs.length-1].timestamp)/60000) : null;
   logs.push({timestamp: now, gap: gap, trigger: '', lat, lng});
   localStorage.setItem('smoke_logs', JSON.stringify(logs));
   lockEndTime = now + (settings.lockSecs * 1000);
@@ -189,6 +199,7 @@ function updateSettings() {
   settings.dailyLimit = parseInt(document.getElementById('dailyLimitInput').value) || 15;
   settings.packPrice = parseFloat(document.getElementById('packPriceInput').value) || 20;
   settings.packSize = parseInt(document.getElementById('packSizeInput').value) || 20;
+  if (settings.packSize <= 0) settings.packSize = 20;
   localStorage.setItem('smoke_settings', JSON.stringify(settings)); 
   applyTheme(settings.theme); 
   updateUI();
@@ -202,11 +213,17 @@ function updateUI() {
   let spendRaw = (today.length * (settings.packPrice/settings.packSize)).toFixed(1);
   document.getElementById('todaySpend').innerText = `${settings.currency} ${spendRaw}`;
   document.getElementById('prevGapCard').innerText = logs.length > 1 ? formatGap(logs[logs.length-1].gap) : '--';
-  document.getElementById('bestGapCard').innerText = today.length > 0 ? formatGap(Math.max(...today.map(l=>l.gap))) : '--';
+  const todayGaps = today.map(l => l.gap).filter(g => g !== null && g !== undefined);
+  document.getElementById('bestGapCard').innerText = todayGaps.length > 0 ? formatGap(Math.max(...todayGaps)) : '--';
   renderHistory('homeRecentLogs', 3);
 }
 
-function formatGap(m) { return m<60 ? `${m}m` : `${Math.floor(m/60)}h ${m%60>0?m%60+'m':''}`; }
+function formatGap(m) {
+  if (m === null || m === undefined || isNaN(m)) return '—';
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60), rem = m % 60;
+  return rem > 0 ? `${h}h ${rem}m` : `${h}h`;
+}
 
 function resetData(type) { 
   if(type === '24h') {
@@ -229,7 +246,7 @@ function exportLogsCSV() {
   let csvContent = "data:text/csv;charset=utf-8,Timestamp,Date,Time,Gap_Minutes,Trigger,Latitude,Longitude\n";
   logs.forEach(l => {
     let d = new Date(l.timestamp);
-    csvContent += `${l.timestamp},"${d.toLocaleDateString()}","${d.toLocaleTimeString()}",${l.gap},"${l.trigger||''}",${l.lat||''},${l.lng||''}\n`;
+    csvContent += `${l.timestamp},"${d.toLocaleDateString()}","${d.toLocaleTimeString()}",${l.gap ?? ''},"${l.trigger||''}",${l.lat||''},${l.lng||''}\n`;
   });
   let encodedUri = encodeURI(csvContent);
   let link = document.createElement("a");
@@ -322,9 +339,10 @@ function renderAllCharts() {
   const filter = document.getElementById('insightsDateFilter').value;
   
   let totalSpend = (activeLogs.length * (settings.packPrice/settings.packSize)).toFixed(1);
-  let avgGapVal = activeLogs.length > 0 ? Math.round(activeLogs.reduce((a, b) => a + b.gap, 0) / activeLogs.length) : 0;
+  const gappedLogs = activeLogs.filter(l => l.gap !== null && l.gap !== undefined);
+  let avgGapVal = gappedLogs.length > 0 ? Math.round(gappedLogs.reduce((a, b) => a + b.gap, 0) / gappedLogs.length) : 0;
   
-  document.getElementById('insightAvgGap').innerText = activeLogs.length > 0 ? formatGap(avgGapVal) : '--';
+  document.getElementById('insightAvgGap').innerText = gappedLogs.length > 0 ? formatGap(avgGapVal) : '--';
   document.getElementById('insightShields').innerText = `${shields} Defeats`;
 
   if(activeLogs.length > 0) {
@@ -361,7 +379,7 @@ function renderAllCharts() {
     document.getElementById('insightProjected').innerText = '--';
   }
 
-  setBadge('badge-chart1', activeLogs.length > 0 ? `Avg ${formatGap(avgGapVal)}` : '', 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20');
+  setBadge('badge-chart1', gappedLogs.length > 0 ? `Avg ${formatGap(avgGapVal)}` : '', 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20');
   setBadge('badge-chart2', activeLogs.length > 0 ? `${activeLogs.length} Total` : '', 'bg-amber-500/10 text-amber-500 border-amber-500/20');
   setBadge('badge-chart3', activeLogs.length > 0 ? `${settings.currency} ${totalSpend}` : '', 'bg-red-500/10 text-red-500 border-red-500/20');
 
@@ -402,7 +420,15 @@ function renderAllCharts() {
   });
 
   if(myChartInstances[2]) myChartInstances[2].destroy();
-  let dayMap = {}; activeLogs.forEach(l => { let d = new Date(l.timestamp).toLocaleDateString([],{weekday:'short'}); dayMap[d] = (dayMap[d] || 0) + 1; });
+  // BUG FIX: group by actual calendar date, not just weekday name. Grouping by weekday
+  // name alone (e.g. "Mon") silently merged every Monday together once data spanned
+  // more than a week, badly inflating the 1-Month/All-Time bars.
+  let dayMap = {};
+  activeLogs.forEach(l => {
+    const dt = new Date(l.timestamp);
+    let d = filter === '7days' ? dt.toLocaleDateString([], {weekday:'short'}) : dt.toLocaleDateString([], {month:'short', day:'numeric'});
+    dayMap[d] = (dayMap[d] || 0) + 1;
+  });
   let dayLabels = Object.keys(dayMap); let dayCounts = Object.values(dayMap);
   if(dayLabels.length === 0) { dayLabels = ['Today']; dayCounts = [0]; }
 
@@ -508,7 +534,6 @@ function loadChartOrder() {
   savedOrder.forEach(id => { const card = document.getElementById(id); if(card) container.appendChild(card); });
 }
 
-window.enterPin = enterPin; window.clearPin = clearPin; window.setupPin = setuppiN = setupPin;
 window.enterPin = enterPin; window.clearPin = clearPin; window.setupPin = setupPin;
 window.handleLogClick = handleLogClick; window.toggleWaveMode = toggleWaveMode; window.switchTab = switchTab;
 window.updateSettings = updateSettings; window.resetData = resetData; window.assignTag = assignTag;
