@@ -70,6 +70,7 @@ window.onload = () => {
   document.getElementById('packSizeInput').value = settings.packSize;
   document.getElementById('themeSelect').value = settings.theme;
   document.getElementById('currencySelect').value = settings.currency || 'AED';
+  updateCostPerCigDisplay();
   
   loadChartOrder();
   initDragAndDrop();
@@ -202,8 +203,16 @@ function updateSettings() {
   if (settings.packSize <= 0) settings.packSize = 20;
   localStorage.setItem('smoke_settings', JSON.stringify(settings)); 
   applyTheme(settings.theme); 
+  updateCostPerCigDisplay();
   updateUI();
   if(!document.getElementById('page-insights').classList.contains('hidden')) renderAllCharts();
+}
+
+// NEW: shows the user the auto-calculated per-cigarette cost so they never have to
+// work out Pack Price ÷ Cigarettes Per Pack themselves.
+function updateCostPerCigDisplay() {
+  const el = document.getElementById('costPerCigDisplay');
+  if (el) el.innerText = `${settings.currency} ${(settings.packPrice / settings.packSize).toFixed(2)}`;
 }
 
 function updateUI() {
@@ -224,6 +233,60 @@ function formatGap(m) {
   const h = Math.floor(m / 60), rem = m % 60;
   return rem > 0 ? `${h}h ${rem}m` : `${h}h`;
 }
+
+// NEW: powers the tap-to-expand detail modal on the 4 home stat cards.
+function showStatDetail(type) {
+  const today = logs.filter(l => new Date(l.timestamp).toDateString() === new Date().toDateString());
+  const pricePerStick = settings.packPrice / settings.packSize;
+  const icon = document.getElementById('statDetailIcon');
+  const title = document.getElementById('statDetailTitle');
+  const value = document.getElementById('statDetailValue');
+  const desc = document.getElementById('statDetailDesc');
+  const extra = document.getElementById('statDetailExtra');
+  const row = (label, val) => `<div class="flex justify-between border-t pt-2" style="border-color: var(--text-muted); border-opacity: 0.1;"><span style="color: var(--text-muted);">${label}</span><span class="font-bold" style="color: var(--text-main);">${val}</span></div>`;
+  let iconClass = 'bg-gray-500/10 text-gray-400', iconName = 'info';
+
+  if (type === 'spend') {
+    iconClass = 'bg-red-500/10 text-red-500'; iconName = 'wallet';
+    title.innerText = "Today's Spend";
+    value.innerText = `${settings.currency} ${(today.length * pricePerStick).toFixed(1)}`;
+    desc.innerText = `Based on ${today.length} cigarette${today.length===1?'':'s'} logged today at ${settings.currency} ${pricePerStick.toFixed(2)} per stick.`;
+    const monthLogs = logs.filter(l => (new Date().getTime() - l.timestamp) < 30*86400000);
+    extra.innerHTML = row('Cost per cigarette', `${settings.currency} ${pricePerStick.toFixed(2)}`) + row('Last 30 days', `${settings.currency} ${(monthLogs.length * pricePerStick).toFixed(1)}`);
+  } else if (type === 'count') {
+    const over = today.length > settings.dailyLimit;
+    iconClass = over ? 'bg-red-500/10 text-red-500' : 'bg-amber-500/10 text-amber-500'; iconName = 'activity';
+    title.innerText = "Today's Sticks";
+    value.innerText = `${today.length} / ${settings.dailyLimit}`;
+    desc.innerText = over ? `You're ${today.length - settings.dailyLimit} over your own daily goal of ${settings.dailyLimit} — just information, not a judgement.` : `You're ${settings.dailyLimit - today.length} away from the daily goal you set yourself.`;
+    extra.innerHTML = row('Your daily goal', `${settings.dailyLimit} cigarettes`);
+  } else if (type === 'prevGap') {
+    iconClass = 'bg-sky-500/10 text-sky-500'; iconName = 'history';
+    title.innerText = "Previous Gap";
+    const g = logs.length > 1 ? logs[logs.length-1].gap : null;
+    value.innerText = formatGap(g);
+    desc.innerText = logs.length > 1 ? `Time between your last two logged cigarettes.` : `Log at least 2 cigarettes to see a gap here.`;
+    const gappedAll = logs.map(l => l.gap).filter(g => g !== null && g !== undefined);
+    const avgAll = gappedAll.length ? Math.round(gappedAll.reduce((a,b)=>a+b,0)/gappedAll.length) : null;
+    extra.innerHTML = avgAll !== null ? row('Your all-time average gap', formatGap(avgAll)) : '';
+  } else if (type === 'bestGap') {
+    iconClass = 'bg-emerald-500/10 text-emerald-500'; iconName = 'trophy';
+    title.innerText = "Best Gap Today";
+    const todayGaps = today.map(l => l.gap).filter(g => g !== null && g !== undefined);
+    const best = todayGaps.length ? Math.max(...todayGaps) : null;
+    value.innerText = formatGap(best);
+    desc.innerText = best !== null ? `The longest you've gone between cigarettes today.` : `No gap data for today yet.`;
+    const allGaps = logs.map(l => l.gap).filter(g => g !== null && g !== undefined);
+    const allBest = allGaps.length ? Math.max(...allGaps) : null;
+    extra.innerHTML = allBest !== null ? row('Your all-time best gap', formatGap(allBest)) : '';
+  }
+
+  icon.className = `w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${iconClass}`;
+  icon.innerHTML = `<i data-lucide="${iconName}" class="w-4 h-4"></i>`;
+  document.getElementById('statDetailModal').classList.remove('hidden');
+  if(window.lucide) window.lucide.createIcons();
+}
+function closeStatDetail() { document.getElementById('statDetailModal').classList.add('hidden'); }
 
 function resetData(type) { 
   if(type === '24h') {
@@ -291,16 +354,30 @@ function renderHistory(tId='fullHistoryList', limit=null) {
   const c = document.getElementById(tId); if(!c) return;
   if(logs.length===0) { c.innerHTML="<p class='text-center py-6 text-xs flex flex-col items-center gap-2' style='color: var(--text-muted);'><i data-lucide='inbox' class='w-6 h-6 opacity-50'></i> No logs recorded yet.</p>"; if(window.lucide) window.lucide.createIcons(); return; }
   let items = logs.slice().reverse(); if(limit) items = items.slice(0,limit);
-  c.innerHTML = items.map(l => `
+  // NEW: each entry's gap is compared against the PREVIOUS cigarette's gap —
+  // green if you waited longer than last time, red if you smoked sooner.
+  c.innerHTML = items.map((l, j) => {
+    const origIdx = logs.length - 1 - j;
+    const prev = origIdx > 0 ? logs[origIdx - 1] : null;
+    let trendClass = 'bg-gray-500/10 text-gray-400', trendIcon = 'minus', valueColor = 'var(--accent)';
+    if (l.gap !== null && l.gap !== undefined && prev && prev.gap !== null && prev.gap !== undefined) {
+      if (l.gap > prev.gap) { trendClass = 'bg-emerald-500/10 text-emerald-500'; trendIcon = 'trending-up'; valueColor = '#10B981'; }
+      else if (l.gap < prev.gap) { trendClass = 'bg-red-500/10 text-red-500'; trendIcon = 'trending-down'; valueColor = '#EF4444'; }
+    }
+    return `
     <div class="premium-card p-4 flex justify-between items-center relative overflow-hidden">
       <div class="absolute left-0 top-0 bottom-0 w-1" style="background: var(--accent);"></div>
-      <div>
-        <div class="font-bold tracking-wide" style="color: var(--text-main);">${new Date(l.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
-        <div class="text-[10px] font-bold uppercase mt-0.5 flex items-center gap-1" style="color: var(--text-muted);"><i data-lucide="tag" class="w-3 h-3"></i> ${l.trigger||'Uncategorized'}</div>
+      <div class="flex items-center gap-3">
+        <div class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${trendClass}"><i data-lucide="${trendIcon}" class="w-3.5 h-3.5"></i></div>
+        <div>
+          <div class="font-bold tracking-wide" style="color: var(--text-main);">${new Date(l.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
+          <div class="text-[10px] font-bold uppercase mt-0.5 flex items-center gap-1" style="color: var(--text-muted);"><i data-lucide="tag" class="w-3 h-3"></i> ${l.trigger||'Uncategorized'}</div>
+        </div>
       </div>
-      <div class="font-bold text-base" style="color: var(--accent);">${formatGap(l.gap)}</div>
+      <div class="font-bold text-base" style="color: ${valueColor};">${formatGap(l.gap)}</div>
     </div>
-  `).join('');
+  `;
+  }).join('');
   if(window.lucide) window.lucide.createIcons();
 }
 
@@ -487,19 +564,13 @@ function renderAllCharts() {
     plugins: [crosshairPlugin]
   });
 
-  let hours = Array(24).fill(0); activeLogs.forEach(l => hours[new Date(l.timestamp).getHours()]++);
-  const ctx4 = document.getElementById('chart4').getContext('2d');
-  upsertChart(4, ctx4, {
-    type: 'line',
-    data: { labels: Array.from({length:24}, (_,i)=>i+':00'), datasets: [{ data: hours, borderColor: '#F97316', backgroundColor: createGradient(ctx4, 'rgba(249, 115, 22, 0.2)'), fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0, pointHitRadius: 15 }] },
-    options: proOptions,
-    plugins: [crosshairPlugin]
-  });
-
   const ctx5 = document.getElementById('chart5').getContext('2d');
+  const triggerCounts = triggers.map(t => activeLogs.filter(l => l.trigger === t).length);
+  const topTriggerIdx = triggerCounts.length ? triggerCounts.indexOf(Math.max(...triggerCounts)) : -1;
+  setBadge('badge-chart5', (topTriggerIdx >= 0 && triggerCounts[topTriggerIdx] > 0) ? `Top: ${triggers[topTriggerIdx]}` : '', 'bg-purple-500/10 text-purple-500 border-purple-500/20');
   upsertChart(5, ctx5, {
     type: 'doughnut',
-    data: { labels: triggers, datasets: [{ data: triggers.map(t => activeLogs.filter(l => l.trigger === t).length), backgroundColor: ['#F59E0B','#10B981','#6366F1','#EF4444','#2563EB','#A855F7'], borderWidth: 0, cutout: '76%' }] },
+    data: { labels: triggers, datasets: [{ data: triggerCounts, backgroundColor: ['#F59E0B','#10B981','#6366F1','#EF4444','#2563EB','#A855F7'], borderWidth: 0, cutout: '76%' }] },
     options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12, font: { size: 10 }, color: chartTextColor } } } },
     plugins: [centerTextPlugin]
   });
@@ -513,6 +584,9 @@ function renderAllCharts() {
   let triggerByPart = {}; triggers.forEach(t => triggerByPart[t] = [0, 0, 0, 0]);
   activeLogs.forEach(l => { if (l.trigger && triggerByPart[l.trigger]) triggerByPart[l.trigger][partOf(new Date(l.timestamp).getHours())]++; });
   const palette = ['#F59E0B', '#10B981', '#6366F1', '#EF4444', '#2563EB', '#A855F7'];
+  const partTotals = dayParts.map((_, i) => triggers.reduce((sum, t) => sum + triggerByPart[t][i], 0));
+  const peakPartIdx = partTotals.some(v => v > 0) ? partTotals.indexOf(Math.max(...partTotals)) : -1;
+  setBadge('badge-chart6', peakPartIdx >= 0 ? `Peak: ${dayParts[peakPartIdx]}` : '', 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20');
   const chart6El = document.getElementById('chart6');
   if (chart6El) {
     const ctx6 = chart6El.getContext('2d');
@@ -606,4 +680,5 @@ window.handleLogClick = handleLogClick; window.toggleWaveMode = toggleWaveMode; 
 window.updateSettings = updateSettings; window.resetData = resetData; window.assignTag = assignTag;
 window.closeTriggerModal = closeTriggerModal; window.renderAllCharts = renderAllCharts;
 window.openMapModal = openMapModal; window.closeMapModal = closeMapModal;
+window.showStatDetail = showStatDetail; window.closeStatDetail = closeStatDetail;
 window.exportLogsCSV = exportLogsCSV; window.addCustomTrigger = addCustomTrigger; window.removeCustomTrigger = removeCustomTrigger;
