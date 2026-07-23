@@ -85,7 +85,6 @@ function handleLogClick() {
   const now = new Date().getTime();
   let gap = logs.length > 0 ? Math.round((now - logs[logs.length-1].timestamp)/60000) : null;
   
-  // Optimistic Save
   logs.push({timestamp: now, gap: gap, tags: [], trigger: '', lat: null, lng: null});
   const newLogIdx = logs.length - 1;
   localStorage.setItem('smoke_logs', JSON.stringify(logs));
@@ -93,7 +92,6 @@ function handleLogClick() {
   localStorage.setItem('smoke_lock_end', lockEndTime);
   updateUI(); checkLock(); openTriggerModal(newLogIdx);
 
-  // Background Geo Fetch
   if(navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(p => {
       if(logs[newLogIdx]) {
@@ -288,6 +286,8 @@ function renderHistory(tId='fullHistoryList', limit=null) {
   const c = document.getElementById(tId); if(!c) return;
   if(logs.length===0) { c.innerHTML="<p class='text-center py-6 text-xs flex flex-col items-center gap-2' style='color: var(--text-muted);'><i data-lucide='inbox' class='w-6 h-6 opacity-50'></i> No logs recorded yet.</p>"; if(window.lucide) window.lucide.createIcons(); return; }
   let items = logs.slice().reverse(); if(limit) items = items.slice(0,limit);
+  
+  // FIX: Make entire card clickable, remove edit button, allow tags to wrap dynamically
   c.innerHTML = items.map((l, j) => {
     const origIdx = logs.length - 1 - j;
     const prev = origIdx > 0 ? logs[origIdx - 1] : null;
@@ -298,19 +298,19 @@ function renderHistory(tId='fullHistoryList', limit=null) {
     }
     const tagsDisplay = l.tags && l.tags.length ? l.tags.join(', ') : (l.trigger || 'Uncategorized');
     return `
-    <div class="premium-card p-4 flex justify-between items-center relative overflow-hidden">
+    <div onclick="window.openTriggerModal(${origIdx})" class="premium-card p-4 flex justify-between items-center relative overflow-hidden cursor-pointer active:scale-[0.98] transition-transform hover:bg-gray-500/5">
       <div class="absolute left-0 top-0 bottom-0 w-1" style="background: var(--accent);"></div>
-      <div class="flex items-center gap-3">
+      <div class="flex items-start gap-3 flex-1 min-w-0 pr-3">
         <div class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${trendClass}"><i data-lucide="${trendIcon}" class="w-3.5 h-3.5"></i></div>
-        <div>
+        <div class="flex-1 min-w-0">
           <div class="font-bold tracking-wide" style="color: var(--text-main);">${new Date(l.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
-          <div class="text-[10px] font-bold uppercase mt-0.5 flex items-center gap-1" style="color: var(--text-muted);">
-            <i data-lucide="tag" class="w-3 h-3"></i> <span class="truncate max-w-[120px]">${tagsDisplay}</span>
-            <button onclick="window.openTriggerModal(${origIdx})" class="ml-1 opacity-60 hover:opacity-100 p-1"><i data-lucide="edit-2" class="w-3 h-3 text-sky-400"></i></button>
+          <div class="text-[10px] font-bold uppercase mt-0.5 flex items-start gap-1" style="color: var(--text-muted);">
+            <i data-lucide="tag" class="w-3 h-3 shrink-0 mt-0.5"></i>
+            <span class="leading-relaxed whitespace-normal break-words">${tagsDisplay}</span>
           </div>
         </div>
       </div>
-      <div class="font-bold text-base" style="color: ${valueColor};">${formatGap(l.gap)}</div>
+      <div class="font-bold text-base shrink-0" style="color: ${valueColor};">${formatGap(l.gap)}</div>
     </div>
   `;
   }).join('');
