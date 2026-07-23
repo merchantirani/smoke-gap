@@ -1,10 +1,6 @@
 let logs = JSON.parse(localStorage.getItem('smoke_logs')) || [];
-// BUG FIX: merge saved settings on top of defaults instead of replacing them wholesale.
-// Old behaviour meant any user whose saved data pre-dated a new field (e.g. "currency")
-// ended up with `settings.currency === undefined`, which printed "undefined 12.5" on the UI.
 const DEFAULT_SETTINGS = { theme: 'default', haptics: true, dailyLimit: 15, lockSecs: 300, packPrice: 20, packSize: 20, currency: 'AED' };
 let settings = Object.assign({}, DEFAULT_SETTINGS, JSON.parse(localStorage.getItem('smoke_settings')) || {});
-// Guard against a 0/blank pack size ever being saved -> avoids Infinity/NaN spend calculations.
 if (!settings.packSize || settings.packSize <= 0) settings.packSize = 20;
 let triggers = JSON.parse(localStorage.getItem('smoke_triggers')) || ['💼 Work Stress', '🍽️ After Meal', '☕ Chai / Coffee', '🚗 Driving', '📱 Boredom', '👥 Social'];
 let shields = parseInt(localStorage.getItem('smoke_shields')) || 0;
@@ -128,10 +124,6 @@ function handleLogClick() {
 
 function saveLog(lat, lng) {
   const now = new Date().getTime();
-  // BUG FIX: the very first cigarette ever logged has no previous entry to measure a gap
-  // against. It used to be stored as gap: 0, which then quietly counted as a real
-  // "0-minute gap" in every average / best-gap / chart calculation below. Storing it as
-  // null keeps it out of those calculations while still being safe to display.
   let gap = logs.length > 0 ? Math.round((now - logs[logs.length-1].timestamp)/60000) : null;
   logs.push({timestamp: now, gap: gap, trigger: '', lat, lng});
   localStorage.setItem('smoke_logs', JSON.stringify(logs));
@@ -208,8 +200,6 @@ function updateSettings() {
   if(!document.getElementById('page-insights').classList.contains('hidden')) renderAllCharts();
 }
 
-// NEW: shows the user the auto-calculated per-cigarette cost so they never have to
-// work out Pack Price ÷ Cigarettes Per Pack themselves.
 function updateCostPerCigDisplay() {
   const el = document.getElementById('costPerCigDisplay');
   if (el) el.innerText = `${settings.currency} ${(settings.packPrice / settings.packSize).toFixed(2)}`;
@@ -234,7 +224,6 @@ function formatGap(m) {
   return rem > 0 ? `${h}h ${rem}m` : `${h}h`;
 }
 
-// NEW: powers the tap-to-expand detail modal on the 4 home stat cards.
 function showStatDetail(type) {
   const today = logs.filter(l => new Date(l.timestamp).toDateString() === new Date().toDateString());
   const pricePerStick = settings.packPrice / settings.packSize;
@@ -354,8 +343,6 @@ function renderHistory(tId='fullHistoryList', limit=null) {
   const c = document.getElementById(tId); if(!c) return;
   if(logs.length===0) { c.innerHTML="<p class='text-center py-6 text-xs flex flex-col items-center gap-2' style='color: var(--text-muted);'><i data-lucide='inbox' class='w-6 h-6 opacity-50'></i> No logs recorded yet.</p>"; if(window.lucide) window.lucide.createIcons(); return; }
   let items = logs.slice().reverse(); if(limit) items = items.slice(0,limit);
-  // NEW: each entry's gap is compared against the PREVIOUS cigarette's gap —
-  // green if you waited longer than last time, red if you smoked sooner.
   c.innerHTML = items.map((l, j) => {
     const origIdx = logs.length - 1 - j;
     const prev = origIdx > 0 ? logs[origIdx - 1] : null;
@@ -410,12 +397,19 @@ function setBadge(id, text, colorClass) {
   }
 }
 
-// 🔥 EXPERT FIX: STRICT FILTER-BASED YEARLY PROJECTION MATH 🔥
 function renderAllCharts() {
   const activeLogs = getFilteredLogs();
   const filter = document.getElementById('insightsDateFilter').value;
   
+  const filterLabels = { today: 'Today', '7days': 'Last 7 Days', '1month': '1 Month', all: 'All Time' };
+  const filterEl = document.getElementById('selectedFilterLabel');
+  if(filterEl) filterEl.innerText = filterLabels[filter] || 'Selected Period';
+
   let totalSpend = (activeLogs.length * (settings.packPrice/settings.packSize)).toFixed(1);
+  
+  document.getElementById('insightPeriodSpend').innerText = `${settings.currency} ${totalSpend}`;
+  document.getElementById('insightPeriodCount').innerText = `${activeLogs.length} Sticks`;
+
   const gappedLogs = activeLogs.filter(l => l.gap !== null && l.gap !== undefined);
   let avgGapVal = gappedLogs.length > 0 ? Math.round(gappedLogs.reduce((a, b) => a + b.gap, 0) / gappedLogs.length) : 0;
   
@@ -436,8 +430,6 @@ function renderAllCharts() {
 
   document.getElementById('insightPackEq').innerText = activeLogs.length > 0 ? `${(activeLogs.length / settings.packSize).toFixed(1)} Packs` : '--';
 
-  // NEW: directly surfaces which specific day was the heaviest, instead of making
-  // the user eyeball the Daily Volume bars to figure it out themselves.
   const heaviestDayEl = document.getElementById('insightHeaviestDay');
   if (heaviestDayEl) {
     if (activeLogs.length > 0) {
@@ -448,31 +440,6 @@ function renderAllCharts() {
     } else {
       heaviestDayEl.innerText = '--';
     }
-  }
-
-  // FIX: use the ACTUAL number of days the data covers (capped to the window),
-  // not a fixed 7 or 30 — a new user with only 4 days of history selecting
-  // "1 Month" was having their real 4-day total silently divided by 30, which
-  // crushed the projection (this was the AED 140 vs AED 30 mismatch reported).
-  if(activeLogs.length > 0) {
-    const now = new Date().getTime();
-    let yearlyMultiplier;
-    if(filter === 'today') {
-      yearlyMultiplier = 365; // Today's burn rate * 365 days
-    } else if(filter === '7days' || filter === '1month') {
-      const windowDays = filter === '7days' ? 7 : 30;
-      const oldestInRange = Math.min(...activeLogs.map(l => l.timestamp));
-      const daysActive = Math.min(windowDays, Math.max(1, Math.ceil((now - oldestInRange) / 86400000)));
-      yearlyMultiplier = 365 / daysActive;
-    } else {
-      let oldestLogTime = Math.min(...logs.map(l => l.timestamp));
-      let totalDaysActive = Math.max(1, Math.ceil((now - oldestLogTime) / 86400000));
-      yearlyMultiplier = 365 / totalDaysActive;
-    }
-    let yearly = (totalSpend * yearlyMultiplier).toFixed(0);
-    document.getElementById('insightProjected').innerText = `${settings.currency} ${yearly}`;
-  } else {
-    document.getElementById('insightProjected').innerText = '--';
   }
 
   setBadge('badge-chart1', gappedLogs.length > 0 ? `Avg ${formatGap(avgGapVal)}` : '', 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20');
@@ -506,9 +473,6 @@ function renderAllCharts() {
     return gradient;
   };
 
-  // PERF FIX: reuse existing Chart.js instances instead of destroying and
-  // rebuilding all 6 charts from scratch on every filter change, settings
-  // tweak, or tab switch. Only rebuilds when the chart type actually changes.
   function upsertChart(key, ctx, config) {
     const existing = myChartInstances[key];
     if (existing && existing.config.type === config.type) {
@@ -529,9 +493,6 @@ function renderAllCharts() {
     plugins: [crosshairPlugin]
   });
 
-  // BUG FIX: group by actual calendar date, not just weekday name. Grouping by weekday
-  // name alone (e.g. "Mon") silently merged every Monday together once data spanned
-  // more than a week, badly inflating the 1-Month/All-Time bars.
   let dayMap = {};
   activeLogs.forEach(l => {
     const dt = new Date(l.timestamp);
@@ -575,10 +536,6 @@ function renderAllCharts() {
     plugins: [centerTextPlugin]
   });
 
-  // NEW: "Trigger Timing" — stacked bar of WHICH trigger fires during WHICH part of
-  // the day. This is the concept the app is actually for: not pressuring anyone to
-  // quit, just showing them their own pattern (e.g. "Work Stress mostly hits you at
-  // 3-5pm", "Boredom is a Night thing for you") so they can see it clearly.
   const dayParts = ['Morning', 'Afternoon', 'Evening', 'Night'];
   const partOf = (hr) => hr >= 5 && hr < 12 ? 0 : hr >= 12 && hr < 17 ? 1 : hr >= 17 && hr < 21 ? 2 : 3;
   let triggerByPart = {}; triggers.forEach(t => triggerByPart[t] = [0, 0, 0, 0]);
@@ -618,8 +575,6 @@ function renderHeatMap(containerId, activeLogs) {
 
   const isModal = containerId === 'mapModalContainer';
   let m = isModal ? modalMapInstance : mapInstance;
-  // Only tear down and recreate (which re-downloads map tiles) if there's no map yet
-  // for this container, or the theme changed and the tile layer needs to switch.
   const needsRebuild = !m || m._smokegapTheme !== settings.theme;
 
   try {
