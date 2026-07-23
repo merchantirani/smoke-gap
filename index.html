@@ -69,7 +69,6 @@
 </head>
 <body>
 
-  <!-- Lock Screen -->
   <div id="lockScreen" class="fixed inset-0 flex flex-col items-center justify-center hidden" style="z-index: 10000; background-color: var(--bg-body);">
     <div class="text-center space-y-8">
       <i data-lucide="lock" class="w-12 h-12 mx-auto" style="color: var(--text-muted);"></i>
@@ -88,7 +87,6 @@
   </div>
 
   <div class="app-container max-w-md mx-auto">
-    <!-- Header -->
     <header class="p-5 sticky top-0 z-40 flex justify-between items-center" style="background: linear-gradient(to bottom, var(--bg-body) 70%, transparent);">
       <div>
         <h1 class="text-xl font-bold tracking-tight" style="color: var(--text-main);">SmokeGap</h1>
@@ -121,7 +119,6 @@
             </div>
             <p id="todaySpend" class="text-xl font-bold" style="color: var(--text-main);">AED 0</p>
           </div>
-          
           <div onclick="window.showStatDetail('count')" class="premium-card p-4 active:scale-95 transition-transform cursor-pointer">
             <div class="flex items-center gap-2 mb-2">
               <div class="w-6 h-6 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500"><i data-lucide="activity" class="w-3 h-3"></i></div>
@@ -129,7 +126,6 @@
             </div>
             <p id="todayCount" class="text-xl font-bold" style="color: var(--text-main);">0 / 15</p>
           </div>
-
           <div onclick="window.showStatDetail('prevGap')" class="premium-card p-4 active:scale-95 transition-transform cursor-pointer">
             <div class="flex items-center gap-2 mb-2">
               <div class="w-6 h-6 rounded-full bg-sky-500/10 flex items-center justify-center text-sky-500"><i data-lucide="history" class="w-3 h-3"></i></div>
@@ -137,7 +133,6 @@
             </div>
             <p id="prevGapCard" class="text-xl font-bold" style="color: var(--text-main);">--</p>
           </div>
-
           <div onclick="window.showStatDetail('bestGap')" class="premium-card p-4 active:scale-95 transition-transform cursor-pointer">
             <div class="flex items-center gap-2 mb-2">
               <div class="w-6 h-6 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500"><i data-lucide="trophy" class="w-3 h-3"></i></div>
@@ -194,34 +189,28 @@
             <div class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2" style="color: var(--text-muted);"><i data-lucide="clock" class="w-3 h-3 text-sky-500"></i> Avg Gap</div>
             <div id="insightAvgGap" class="text-xl font-bold" style="color: var(--text-main);">--</div>
           </div>
-          
           <div class="premium-card p-4 min-w-[140px] snap-start shrink-0">
             <div class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2" style="color: var(--text-muted);"><i data-lucide="shield-alert" class="w-3 h-3 text-emerald-500"></i> Defeated</div>
             <div id="insightShields" class="text-xl font-bold" style="color: var(--text-main);">0 Waves</div>
           </div>
-
           <div class="premium-card p-4 min-w-[140px] snap-start shrink-0">
             <div class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2" style="color: var(--text-muted);"><i data-lucide="alert-triangle" class="w-3 h-3 text-orange-500"></i> Peak Hour</div>
             <div id="insightPeakHour" class="text-xl font-bold" style="color: var(--text-main);">--</div>
           </div>
-
           <div class="premium-card p-4 min-w-[140px] snap-start shrink-0">
             <div class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2" style="color: var(--text-muted);"><i data-lucide="brain-circuit" class="w-3 h-3 text-purple-500"></i> Top Trigger</div>
             <div id="insightTopTrigger" class="text-lg font-bold truncate" style="color: var(--text-main);">--</div>
           </div>
-
           <div class="premium-card p-4 min-w-[140px] snap-start shrink-0">
             <div class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2" style="color: var(--text-muted);"><i data-lucide="flame" class="w-3 h-3 text-red-500"></i> Heaviest Day</div>
             <div id="insightHeaviestDay" class="text-lg font-bold" style="color: var(--text-main);">--</div>
           </div>
-
           <div class="premium-card p-4 min-w-[140px] snap-start shrink-0">
             <div class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2" style="color: var(--text-muted);"><i data-lucide="package" class="w-3 h-3 text-amber-500"></i> Pack Equiv.</div>
             <div id="insightPackEq" class="text-xl font-bold" style="color: var(--text-main);">0.0</div>
           </div>
         </div>
 
-        <!-- NEW 2X SPAN DYNAMIC PERIOD EXPENSE CARD (FIXED LAYOUT) -->
         <div class="premium-card p-5 relative overflow-hidden">
           <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-red-500"></div>
           <div class="flex justify-between items-start gap-2 mb-2">
@@ -246,7 +235,6 @@
                 <div class="drag-handle"><i data-lucide="grip-horizontal" class="w-4 h-4"></i></div>
               </div>
             </div>
-            <p class="text-[10px] mb-3 -mt-1" style="color: var(--text-muted);">How long you wait between cigarettes, over time. Line going up = gaps getting longer.</p>
             <div class="chart-wrapper"><canvas id="chart1"></canvas></div>
           </div>
           
@@ -261,7 +249,6 @@
                 <div class="drag-handle"><i data-lucide="grip-horizontal" class="w-4 h-4"></i></div>
               </div>
             </div>
-            <p class="text-[10px] mb-3 -mt-1" style="color: var(--text-muted);">Cigarettes per day, bars above the dashed line mean you went over your own daily goal.</p>
             <div class="chart-wrapper"><canvas id="chart2"></canvas></div>
           </div>
 
@@ -276,7 +263,6 @@
                 <div class="drag-handle"><i data-lucide="grip-horizontal" class="w-4 h-4"></i></div>
               </div>
             </div>
-            <p class="text-[10px] mb-3 -mt-1" style="color: var(--text-muted);">Running total of money spent in the selected period — climbs with every cigarette logged.</p>
             <div class="chart-wrapper"><canvas id="chart3"></canvas></div>
           </div>
           
@@ -291,7 +277,6 @@
                 <div class="drag-handle"><i data-lucide="grip-horizontal" class="w-4 h-4"></i></div>
               </div>
             </div>
-            <p class="text-[10px] mb-3 -mt-1" style="color: var(--text-muted);">Which reasons you tag most often as "why" — the bigger the slice, the more it drives you to smoke.</p>
             <div class="chart-wrapper" style="height: 210px;"><canvas id="chart5"></canvas></div>
           </div>
 
@@ -306,7 +291,6 @@
                 <div class="drag-handle"><i data-lucide="grip-horizontal" class="w-4 h-4"></i></div>
               </div>
             </div>
-            <p class="text-[10px] mb-3 -mt-1" style="color: var(--text-muted);">Which trigger hits hardest at which time of day — e.g. stress in the afternoon, boredom at night.</p>
             <div class="chart-wrapper" style="height: 220px;"><canvas id="chart6"></canvas></div>
           </div>
           
@@ -321,7 +305,6 @@
                 <div class="drag-handle"><i data-lucide="grip-horizontal" class="w-4 h-4"></i></div>
               </div>
             </div>
-            <p class="text-[10px] mb-3 -mt-1" style="color: var(--text-muted);">Where you tend to smoke most, based on logged locations. Brighter = more cigarettes there.</p>
             <div id="mapContainer" class="w-full h-48 rounded-2xl z-10 overflow-hidden border border-gray-500/10"></div>
           </div>
         </div>
@@ -338,10 +321,22 @@
         <h2 class="text-xl font-bold px-1" style="color: var(--text-main);">Preferences</h2>
         
         <div class="premium-card p-5 space-y-4">
-          <h3 class="text-[10px] font-bold uppercase tracking-widest border-b border-gray-500/10 pb-2 flex items-center gap-2" style="color: var(--text-muted);"><i data-lucide="palette" class="w-3 h-3"></i> Appearance</h3>
+          <h3 class="text-[10px] font-bold uppercase tracking-widest border-b border-gray-500/10 pb-2 flex items-center gap-2" style="color: var(--text-muted);"><i data-lucide="palette" class="w-3 h-3"></i> Appearance & App</h3>
           <div class="flex justify-between items-center">
             <label class="text-xs font-semibold" style="color: var(--text-main);">Theme Mode</label>
-            <select id="themeSelect" onchange="window.updateSettings()" class="bg-gray-500/10 text-xs p-2 rounded-xl text-white font-semibold border border-gray-500/20 outline-none" style="color: var(--text-main);"><option value="default">Amber Glow</option><option value="carbon">Carbon Matrix</option><option value="white">Clean White & Blue</option></select>
+            <select id="themeSelect" onchange="window.updateSettings()" class="bg-gray-500/10 text-xs p-2 rounded-xl font-semibold border border-gray-500/20 outline-none" style="color: var(--text-main);"><option value="default">Amber Glow</option><option value="carbon">Carbon Matrix</option><option value="white">Clean White & Blue</option></select>
+          </div>
+          <div class="flex justify-between items-center pt-2 border-t border-gray-500/10">
+            <label class="text-xs font-semibold" style="color: var(--text-main);">Lock Duration</label>
+            <select id="lockSecsInput" onchange="window.updateSettings()" class="bg-gray-500/10 text-xs p-2 rounded-xl font-semibold border border-gray-500/20 outline-none" style="color: var(--text-main);">
+              <option value="60">1 Minute</option>
+              <option value="300">5 Minutes</option>
+              <option value="600">10 Minutes</option>
+            </select>
+          </div>
+          <div class="flex justify-between items-center pt-2 border-t border-gray-500/10">
+            <label class="text-xs font-semibold" style="color: var(--text-main);">Haptic Feedback</label>
+            <input type="checkbox" id="hapticsInput" onchange="window.updateSettings()" class="w-4 h-4 rounded border-gray-500/20 accent-sky-500">
           </div>
         </div>
 
@@ -354,21 +349,18 @@
           <div class="flex justify-between items-center">
             <div class="pr-3">
               <label class="text-xs font-semibold block" style="color: var(--text-main);">Daily Cigarette Goal</label>
-              <p class="text-[9px] leading-snug mt-0.5" style="color: var(--text-muted);">How many cigarettes/day you're aiming to stay under. Just a count — not money.</p>
             </div>
             <input type="number" id="dailyLimitInput" onchange="window.updateSettings()" class="w-16 bg-gray-500/10 p-2 rounded-xl border border-gray-500/20 text-center text-xs font-bold shrink-0" style="color: var(--text-main);" value="15">
           </div>
           <div class="flex justify-between items-center">
             <div class="pr-3">
               <label class="text-xs font-semibold block" style="color: var(--text-main);">Pack Price</label>
-              <p class="text-[9px] leading-snug mt-0.5" style="color: var(--text-muted);">What one full pack costs you.</p>
             </div>
             <input type="number" id="packPriceInput" onchange="window.updateSettings()" class="w-20 bg-gray-500/10 p-2 rounded-xl border border-gray-500/20 text-center text-xs font-bold shrink-0" style="color: var(--text-main);" value="20">
           </div>
           <div class="flex justify-between items-center">
             <div class="pr-3">
-              <label class="text-xs font-semibold block" style="color: var(--text-main);">Cigarettes Per Pack</label>
-              <p class="text-[9px] leading-snug mt-0.5" style="color: var(--text-muted);">How many sticks come in one pack.</p>
+              <label class="text-xs font-semibold block" style="color: var(--text-main);">Sticks Per Pack</label>
             </div>
             <input type="number" id="packSizeInput" onchange="window.updateSettings()" class="w-16 bg-gray-500/10 p-2 rounded-xl border border-gray-500/20 text-center text-xs font-bold shrink-0" style="color: var(--text-main);" value="20">
           </div>
@@ -376,21 +368,20 @@
             <label class="text-xs font-bold" style="color: var(--text-main);">Cost Per Cigarette</label>
             <span id="costPerCigDisplay" class="text-xs font-bold px-3 py-1.5 rounded-lg bg-gray-500/10" style="color: var(--accent);">--</span>
           </div>
-          <p class="text-[9px] leading-snug" style="color: var(--text-muted);">Calculated automatically from Pack Price ÷ Cigarettes Per Pack — no need to work it out yourself.</p>
         </div>
 
         <div class="premium-card p-5 space-y-4">
-          <h3 class="text-[10px] font-bold uppercase tracking-widest border-b border-gray-500/10 pb-2 flex items-center gap-2" style="color: var(--text-muted);"><i data-lucide="tag" class="w-3 h-3"></i> Custom Triggers / Tags</h3>
+          <h3 class="text-[10px] font-bold uppercase tracking-widest border-b border-gray-500/10 pb-2 flex items-center gap-2" style="color: var(--text-muted);"><i data-lucide="tag" class="w-3 h-3"></i> Custom Tags</h3>
           <div class="flex gap-2">
-            <input type="text" id="newTriggerInput" placeholder="New trigger name..." class="w-full bg-gray-500/10 p-2.5 rounded-xl border border-gray-500/20 text-xs font-semibold outline-none" style="color: var(--text-main);">
+            <input type="text" id="newTriggerInput" placeholder="New tag name..." class="w-full bg-gray-500/10 p-2.5 rounded-xl border border-gray-500/20 text-xs font-semibold outline-none" style="color: var(--text-main);">
             <button onclick="window.addCustomTrigger()" class="px-4 bg-amber-500/20 text-amber-500 font-bold text-xs rounded-xl hover:bg-amber-500/30">Add</button>
           </div>
           <div id="triggerListSettings" class="flex flex-wrap gap-2 pt-1"></div>
         </div>
 
         <div class="premium-card p-5 space-y-3">
-          <h3 class="text-[10px] font-bold uppercase tracking-widest border-b border-gray-500/10 pb-2 flex items-center gap-2" style="color: var(--text-muted);"><i data-lucide="database" class="w-3 h-3"></i> Data & Backup</h3>
-          <button onclick="window.exportLogsCSV()" class="w-full py-3 bg-sky-500/10 text-sky-500 font-bold text-xs rounded-xl text-center active:scale-95 transition-transform border border-sky-500/20 flex items-center justify-center gap-2"><i data-lucide="download" class="w-4 h-4"></i> Export Logs (CSV / Excel)</button>
+          <h3 class="text-[10px] font-bold uppercase tracking-widest border-b border-gray-500/10 pb-2 flex items-center gap-2" style="color: var(--text-muted);"><i data-lucide="database" class="w-3 h-3"></i> Data & Security</h3>
+          <button onclick="window.exportLogsCSV()" class="w-full py-3 bg-sky-500/10 text-sky-500 font-bold text-xs rounded-xl text-center active:scale-95 transition-transform border border-sky-500/20 flex items-center justify-center gap-2"><i data-lucide="download" class="w-4 h-4"></i> Export Logs (CSV)</button>
           <button onclick="window.setupPin()" id="pinStatusBtn" class="w-full py-3 bg-indigo-500/10 text-indigo-500 font-bold text-xs rounded-xl text-center active:scale-95 transition-transform">Set App PIN</button>
           <div class="pt-2 grid grid-cols-2 gap-2">
             <button onclick="window.resetData('24h')" class="py-3 bg-orange-500/10 text-orange-500 font-bold text-[11px] rounded-xl text-center active:scale-95 transition-transform border border-orange-500/20">Wipe 24h Logs</button>
@@ -401,7 +392,6 @@
     </div>
   </div>
 
-  <!-- FIXED Native Bottom Dock (Updated to SETTINGS) -->
   <div class="fixed bottom-0 left-0 right-0 z-50 dock-bar pb-6 pt-2 px-4 shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
     <nav class="flex justify-between items-center max-w-md mx-auto">
       <button onclick="window.switchTab('tracker')" id="tab-tracker" class="nav-btn nav-active flex flex-col items-center p-2 w-full">
@@ -436,14 +426,12 @@
     </div>
   </div>
 
-  <!-- Shield Gamification Dashboard Modal -->
   <div id="shieldDashboardModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex flex-col justify-end transition-opacity" onclick="if(event.target===this) window.closeShieldDashboard()">
     <div class="premium-card p-6 rounded-b-none space-y-6 max-w-md mx-auto w-full border-t border-sky-500/30">
       <div class="flex justify-between items-center mb-2">
         <h3 class="text-sm font-bold uppercase tracking-widest text-sky-500"><i data-lucide="shield-check" class="w-4 h-4 inline-block mr-1 -mt-0.5"></i> Wave Dashboard</h3>
         <button onclick="window.closeShieldDashboard()" class="w-8 h-8 rounded-full bg-gray-500/10 flex items-center justify-center shrink-0"><i data-lucide="x" class="w-4 h-4" style="color: var(--text-muted);"></i></button>
       </div>
-      
       <div class="flex flex-col items-center justify-center py-4">
         <div class="relative flex justify-center items-center w-32 h-32 rounded-full bg-gray-500/10 shadow-[0_0_30px_rgba(14,165,233,0.2)] border-4 border-sky-500/20">
           <div class="absolute inset-0 rounded-full border-4 border-sky-500 border-t-transparent animate-spin opacity-50" style="animation-duration: 3s;"></div>
@@ -454,34 +442,32 @@
         </div>
         <p id="modalShieldMins" class="mt-4 text-xs font-bold px-3 py-1 bg-sky-500/10 text-sky-500 rounded-full border border-sky-500/20">0 Mins Resisted</p>
       </div>
-
       <div class="space-y-3 pt-2 border-t border-gray-500/10">
         <h4 class="text-[10px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Milestones & Badges</h4>
         <div class="grid grid-cols-3 gap-3">
           <div id="badge1" class="flex flex-col items-center p-3 rounded-2xl bg-gray-500/10 opacity-30 grayscale transition-all duration-500 border border-gray-500/20">
             <i data-lucide="medal" class="w-8 h-8 text-amber-600 mb-1"></i>
             <span class="text-[9px] font-bold text-center mt-1" style="color: var(--text-main);">First Win</span>
-            <span class="text-[8px]" style="color: var(--text-muted);">1 Shield</span>
           </div>
           <div id="badge10" class="flex flex-col items-center p-3 rounded-2xl bg-gray-500/10 opacity-30 grayscale transition-all duration-500 border border-gray-500/20">
             <i data-lucide="award" class="w-8 h-8 text-gray-300 mb-1"></i>
             <span class="text-[9px] font-bold text-center mt-1" style="color: var(--text-main);">Iron Will</span>
-            <span class="text-[8px]" style="color: var(--text-muted);">10 Shields</span>
           </div>
           <div id="badge50" class="flex flex-col items-center p-3 rounded-2xl bg-gray-500/10 opacity-30 grayscale transition-all duration-500 border border-gray-500/20">
             <i data-lucide="trophy" class="w-8 h-8 text-amber-400 mb-1"></i>
             <span class="text-[9px] font-bold text-center mt-1" style="color: var(--text-main);">Unshakable</span>
-            <span class="text-[8px]" style="color: var(--text-muted);">50 Shields</span>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Modals -->
   <div id="triggerModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex flex-col justify-end transition-opacity">
     <div class="premium-card p-6 rounded-b-none space-y-4 max-w-md mx-auto w-full">
-      <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest text-center">Select Trigger</h3>
+      <div class="flex justify-between items-center">
+        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest text-center">Select Tags</h3>
+        <button onclick="window.saveTags()" class="text-xs font-bold text-white px-4 py-1.5 rounded-full shadow-lg active:scale-95 transition-all" style="background: var(--accent);">Save</button>
+      </div>
       <div id="modalTriggerGrid" class="grid grid-cols-2 gap-3 text-xs font-bold"></div>
     </div>
   </div>

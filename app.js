@@ -6,58 +6,22 @@ let triggers = JSON.parse(localStorage.getItem('smoke_triggers')) || ['💼 Work
 let shields = parseInt(localStorage.getItem('smoke_shields')) || 0;
 let lockEndTime = parseInt(localStorage.getItem('smoke_lock_end')) || 0;
 let waveEndTime = parseInt(localStorage.getItem('smoke_wave_end')) || 0;
-let appPin = localStorage.getItem('smoke_pin');
+
+let storedPin = localStorage.getItem('smoke_pin');
+let appPin = storedPin ? atob(storedPin) : null;
 let enteredPin = "";
 
 let myChartInstances = {};
 let mapInstance = null, modalMapInstance = null;
 let mainTimer = null, waveTimer = null, cooldownTimer = null;
+let editingLogIdx = null;
+let currentSelectedTags = [];
 
 Chart.defaults.color = '#64748B';
 Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif';
 
-const crosshairPlugin = {
-  id: 'crosshair',
-  afterDraw: chart => {
-    if (chart.tooltip?._active?.length && (chart.config.type === 'line' || chart.config.type === 'bar')) {
-      const activePoint = chart.tooltip._active[0];
-      const ctx = chart.ctx;
-      const x = activePoint.element.x;
-      const topY = chart.scales.y.top;
-      const bottomY = chart.scales.y.bottom;
-      ctx.save();
-      ctx.beginPath();
-      ctx.moveTo(x, topY);
-      ctx.lineTo(x, bottomY);
-      ctx.lineWidth = 1.5;
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-      ctx.setLineDash([4, 4]);
-      ctx.stroke();
-      ctx.restore();
-    }
-  }
-};
-
-const centerTextPlugin = {
-  id: 'centerText',
-  beforeDraw: chart => {
-    if (chart.config.type === 'doughnut') {
-      const ctx = chart.ctx;
-      const width = chart.width;
-      const height = chart.height;
-      ctx.restore();
-      const total = chart.data.datasets[0].data.reduce((a,b)=>a+b, 0);
-      const text = total > 0 ? total + " Logs" : "No Data";
-      ctx.font = "bold 16px sans-serif";
-      ctx.textBaseline = "middle";
-      ctx.fillStyle = "#F3F4F6";
-      const textX = Math.round((width - ctx.measureText(text).width) / 2);
-      const textY = height / 2;
-      ctx.fillText(text, textX, textY);
-      ctx.save();
-    }
-  }
-};
+const crosshairPlugin = { id: 'crosshair', afterDraw: chart => { if (chart.tooltip?._active?.length && (chart.config.type === 'line' || chart.config.type === 'bar')) { const activePoint = chart.tooltip._active[0]; const ctx = chart.ctx; const x = activePoint.element.x; ctx.save(); ctx.beginPath(); ctx.moveTo(x, chart.scales.y.top); ctx.lineTo(x, chart.scales.y.bottom); ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)'; ctx.setLineDash([4, 4]); ctx.stroke(); ctx.restore(); } } };
+const centerTextPlugin = { id: 'centerText', beforeDraw: chart => { if (chart.config.type === 'doughnut') { const ctx = chart.ctx; ctx.restore(); const total = chart.data.datasets[0].data.reduce((a,b)=>a+b, 0); const text = total > 0 ? total + " Logs" : "No Data"; ctx.font = "bold 16px sans-serif"; ctx.textBaseline = "middle"; ctx.fillStyle = "#F3F4F6"; ctx.fillText(text, Math.round((chart.width - ctx.measureText(text).width) / 2), chart.height / 2); ctx.save(); } } };
 
 window.onload = () => {
   applyTheme(settings.theme);
@@ -66,33 +30,35 @@ window.onload = () => {
   document.getElementById('packSizeInput').value = settings.packSize;
   document.getElementById('themeSelect').value = settings.theme;
   document.getElementById('currencySelect').value = settings.currency || 'AED';
+  document.getElementById('lockSecsInput').value = settings.lockSecs;
+  document.getElementById('hapticsInput').checked = settings.haptics;
   updateCostPerCigDisplay();
   
-  loadChartOrder();
-  initDragAndDrop();
-  renderTriggerSettingsList();
+  loadChartOrder(); initDragAndDrop(); renderTriggerSettingsList();
   if(window.lucide) window.lucide.createIcons();
 
-  if(appPin) {
-    document.getElementById('lockScreen').classList.remove('hidden');
-    document.getElementById('pinStatusBtn').innerText = "Remove PIN";
-  } else {
-    bootCore();
-  }
+  if(appPin) { document.getElementById('lockScreen').classList.remove('hidden'); document.getElementById('pinStatusBtn').innerText = "Remove PIN"; } 
+  else { bootCore(); }
 };
 
 function bootCore() {
   updateUI(); checkLock(); checkWave();
   if(mainTimer) clearInterval(mainTimer);
   mainTimer = setInterval(() => {
-    if(logs.length === 0) return;
+    if(logs.length === 0 || document.getElementById('page-tracker').classList.contains('hidden')) return;
     const diff = new Date().getTime() - logs[logs.length-1].timestamp;
     document.getElementById('stopwatch').innerText = `${Math.floor(diff/3600000).toString().padStart(2,'0')}:${Math.floor((diff%3600000)/60000).toString().padStart(2,'0')}:${Math.floor((diff%60000)/1000).toString().padStart(2,'0')}`;
   }, 1000);
 }
 
 function enterPin(n) {
-  if(enteredPin.length < 4) { enteredPin += n; document.querySelectorAll('.pin-dot').forEach((el, i) => el.classList.toggle('bg-gray-400', i < enteredPin.length)); }
+  if(enteredPin.length < 4) { 
+    enteredPin += n; 
+    document.querySelectorAll('.pin-dot').forEach((el, i) => {
+      el.classList.toggle('bg-gray-400', i < enteredPin.length);
+      el.classList.toggle('bg-gray-500', i >= enteredPin.length);
+    }); 
+  }
   if(enteredPin.length === 4) {
     setTimeout(() => {
       if(enteredPin === appPin) { document.getElementById('lockScreen').classList.add('hidden'); bootCore(); } 
@@ -100,10 +66,15 @@ function enterPin(n) {
     }, 200);
   }
 }
-function clearPin() { enteredPin = ""; document.querySelectorAll('.pin-dot').forEach(el => el.classList.remove('bg-gray-400')); }
+function clearPin() { enteredPin = ""; document.querySelectorAll('.pin-dot').forEach(el => { el.classList.remove('bg-gray-400'); el.classList.add('bg-gray-500'); }); }
 function setupPin() {
-  if(appPin) { if(confirm("Remove PIN?")) { localStorage.removeItem('smoke_pin'); appPin=null; location.reload(); } }
-  else { let p = prompt("New 4-digit PIN:"); if(p && p.length===4) { localStorage.setItem('smoke_pin',p); appPin=p; alert("Saved!"); location.reload(); } }
+  if(appPin) { 
+    if(confirm("Remove PIN?")) { localStorage.removeItem('smoke_pin'); appPin=null; location.reload(); } 
+  } else { 
+    let p = prompt("New 4-digit PIN (e.g., 1234):"); 
+    if(p && /^\d{4}$/.test(p)) { localStorage.setItem('smoke_pin', btoa(p)); appPin=p; alert("PIN Saved!"); location.reload(); }
+    else if(p) { alert("Invalid format. Must be exactly 4 digits."); }
+  }
 }
 
 function handleLogClick() {
@@ -111,26 +82,28 @@ function handleLogClick() {
   if(settings.haptics && navigator.vibrate) navigator.vibrate(50);
   if(waveEndTime>0) { localStorage.removeItem('smoke_wave_end'); waveEndTime=0; clearInterval(waveTimer); document.getElementById('waveOverlay').classList.add('hidden'); }
   
-  if(navigator.geolocation) {
-    // FIX: Removed enableHighAccuracy and set maximumAge to 60000 to prevent iOS from re-prompting every click
-    navigator.geolocation.getCurrentPosition(p => {
-      saveLog(p.coords.latitude, p.coords.longitude);
-    }, () => {
-      saveLog(null, null);
-    }, {timeout: 10000, maximumAge: 60000});
-  } else {
-    saveLog(null, null);
-  }
-}
-
-function saveLog(lat, lng) {
   const now = new Date().getTime();
   let gap = logs.length > 0 ? Math.round((now - logs[logs.length-1].timestamp)/60000) : null;
-  logs.push({timestamp: now, gap: gap, trigger: '', lat, lng});
+  
+  // Optimistic Save
+  logs.push({timestamp: now, gap: gap, tags: [], trigger: '', lat: null, lng: null});
+  const newLogIdx = logs.length - 1;
   localStorage.setItem('smoke_logs', JSON.stringify(logs));
   lockEndTime = now + (settings.lockSecs * 1000);
   localStorage.setItem('smoke_lock_end', lockEndTime);
-  updateUI(); openTriggerModal(); checkLock();
+  updateUI(); checkLock(); openTriggerModal(newLogIdx);
+
+  // Background Geo Fetch
+  if(navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(p => {
+      if(logs[newLogIdx]) {
+        logs[newLogIdx].lat = p.coords.latitude;
+        logs[newLogIdx].lng = p.coords.longitude;
+        localStorage.setItem('smoke_logs', JSON.stringify(logs));
+        if(!document.getElementById('page-insights').classList.contains('hidden')) renderHeatMap('mapContainer', getFilteredLogs());
+      }
+    }, () => {}, {timeout: 10000, maximumAge: 60000});
+  }
 }
 
 function checkLock() {
@@ -167,25 +140,14 @@ function checkWave() {
 
 function switchTab(t) {
   if(settings.haptics && navigator.vibrate) navigator.vibrate(20);
-  ['tracker','insights','history','settings'].forEach(x => { 
-    let p = document.getElementById(`page-${x}`);
-    let tab = document.getElementById(`tab-${x}`);
-    if(p) p.classList.add('hidden'); 
-    if(tab) tab.classList.remove('nav-active'); 
-  });
-  let cp = document.getElementById(`page-${t}`);
-  let ct = document.getElementById(`tab-${t}`);
-  if(cp) cp.classList.remove('hidden'); 
-  if(ct) ct.classList.add('nav-active');
+  ['tracker','insights','history','settings'].forEach(x => { document.getElementById(`page-${x}`)?.classList.add('hidden'); document.getElementById(`tab-${x}`)?.classList.remove('nav-active'); });
+  document.getElementById(`page-${t}`)?.classList.remove('hidden'); document.getElementById(`tab-${t}`)?.classList.add('nav-active');
   if(t==='history') renderHistory();
-  if(t==='insights') { requestAnimationFrame(() => renderAllCharts()); }
+  if(t==='insights') requestAnimationFrame(() => renderAllCharts());
   if(window.lucide) window.lucide.createIcons();
 }
 
-function applyTheme(t) {
-  document.body.className = document.body.className.replace(/theme-\w+/g, '').trim();
-  if(t!=='default') document.body.classList.add(`theme-${t}`);
-}
+function applyTheme(t) { document.body.className = document.body.className.replace(/theme-\w+/g, '').trim(); if(t!=='default') document.body.classList.add(`theme-${t}`); }
 
 function updateSettings() {
   settings.theme = document.getElementById('themeSelect').value;
@@ -193,170 +155,134 @@ function updateSettings() {
   settings.dailyLimit = parseInt(document.getElementById('dailyLimitInput').value) || 15;
   settings.packPrice = parseFloat(document.getElementById('packPriceInput').value) || 20;
   settings.packSize = parseInt(document.getElementById('packSizeInput').value) || 20;
+  settings.lockSecs = parseInt(document.getElementById('lockSecsInput').value) || 300;
+  settings.haptics = document.getElementById('hapticsInput').checked;
   if (settings.packSize <= 0) settings.packSize = 20;
   localStorage.setItem('smoke_settings', JSON.stringify(settings)); 
-  applyTheme(settings.theme); 
-  updateCostPerCigDisplay();
-  updateUI();
+  applyTheme(settings.theme); updateCostPerCigDisplay(); updateUI();
   if(!document.getElementById('page-insights').classList.contains('hidden')) renderAllCharts();
 }
 
-function updateCostPerCigDisplay() {
-  const el = document.getElementById('costPerCigDisplay');
-  if (el) el.innerText = `${settings.currency} ${(settings.packPrice / settings.packSize).toFixed(2)}`;
-}
+function updateCostPerCigDisplay() { const el = document.getElementById('costPerCigDisplay'); if (el) el.innerText = `${settings.currency} ${(settings.packPrice / settings.packSize).toFixed(2)}`; }
 
 function updateUI() {
   document.getElementById('shieldCount').innerText = shields;
   const today = logs.filter(l => new Date(l.timestamp).toDateString() === new Date().toDateString());
   document.getElementById('todayCount').innerText = `${today.length} / ${settings.dailyLimit}`;
-  let spendRaw = (today.length * (settings.packPrice/settings.packSize)).toFixed(1);
-  document.getElementById('todaySpend').innerText = `${settings.currency} ${spendRaw}`;
+  document.getElementById('todaySpend').innerText = `${settings.currency} ${(today.length * (settings.packPrice/settings.packSize)).toFixed(1)}`;
   document.getElementById('prevGapCard').innerText = logs.length > 1 ? formatGap(logs[logs.length-1].gap) : '--';
   const todayGaps = today.map(l => l.gap).filter(g => g !== null && g !== undefined);
   document.getElementById('bestGapCard').innerText = todayGaps.length > 0 ? formatGap(Math.max(...todayGaps)) : '--';
   renderHistory('homeRecentLogs', 3);
 }
 
-function formatGap(m) {
-  if (m === null || m === undefined || isNaN(m)) return '—';
-  if (m < 60) return `${m}m`;
-  const h = Math.floor(m / 60), rem = m % 60;
-  return rem > 0 ? `${h}h ${rem}m` : `${h}h`;
-}
+function formatGap(m) { if (m === null || m === undefined || isNaN(m)) return '—'; if (m < 60) return `${m}m`; return `${Math.floor(m / 60)}h ${m % 60 > 0 ? (m % 60) + 'm' : ''}`.trim(); }
 
 function showStatDetail(type) {
   const today = logs.filter(l => new Date(l.timestamp).toDateString() === new Date().toDateString());
   const pricePerStick = settings.packPrice / settings.packSize;
-  const icon = document.getElementById('statDetailIcon');
-  const title = document.getElementById('statDetailTitle');
-  const value = document.getElementById('statDetailValue');
-  const desc = document.getElementById('statDetailDesc');
-  const extra = document.getElementById('statDetailExtra');
+  const icon = document.getElementById('statDetailIcon'), title = document.getElementById('statDetailTitle'), value = document.getElementById('statDetailValue'), desc = document.getElementById('statDetailDesc'), extra = document.getElementById('statDetailExtra');
   const row = (label, val) => `<div class="flex justify-between border-t pt-2" style="border-color: var(--text-muted); border-opacity: 0.1;"><span style="color: var(--text-muted);">${label}</span><span class="font-bold" style="color: var(--text-main);">${val}</span></div>`;
   let iconClass = 'bg-gray-500/10 text-gray-400', iconName = 'info';
 
   if (type === 'spend') {
-    iconClass = 'bg-red-500/10 text-red-500'; iconName = 'wallet';
-    title.innerText = "Today's Spend";
-    value.innerText = `${settings.currency} ${(today.length * pricePerStick).toFixed(1)}`;
-    desc.innerText = `Based on ${today.length} cigarette${today.length===1?'':'s'} logged today at ${settings.currency} ${pricePerStick.toFixed(2)} per stick.`;
+    iconClass = 'bg-red-500/10 text-red-500'; iconName = 'wallet'; title.innerText = "Today's Spend"; value.innerText = `${settings.currency} ${(today.length * pricePerStick).toFixed(1)}`; desc.innerText = `Based on ${today.length} cigarette${today.length===1?'':'s'} logged today at ${settings.currency} ${pricePerStick.toFixed(2)} per stick.`;
     const monthLogs = logs.filter(l => (new Date().getTime() - l.timestamp) < 30*86400000);
     extra.innerHTML = row('Cost per cigarette', `${settings.currency} ${pricePerStick.toFixed(2)}`) + row('Last 30 days', `${settings.currency} ${(monthLogs.length * pricePerStick).toFixed(1)}`);
   } else if (type === 'count') {
-    const over = today.length > settings.dailyLimit;
-    iconClass = over ? 'bg-red-500/10 text-red-500' : 'bg-amber-500/10 text-amber-500'; iconName = 'activity';
-    title.innerText = "Today's Sticks";
-    value.innerText = `${today.length} / ${settings.dailyLimit}`;
-    desc.innerText = over ? `You're ${today.length - settings.dailyLimit} over your own daily goal of ${settings.dailyLimit} — just information, not a judgement.` : `You're ${settings.dailyLimit - today.length} away from the daily goal you set yourself.`;
-    extra.innerHTML = row('Your daily goal', `${settings.dailyLimit} cigarettes`);
+    const over = today.length > settings.dailyLimit; iconClass = over ? 'bg-red-500/10 text-red-500' : 'bg-amber-500/10 text-amber-500'; iconName = 'activity'; title.innerText = "Today's Sticks"; value.innerText = `${today.length} / ${settings.dailyLimit}`; desc.innerText = over ? `You're ${today.length - settings.dailyLimit} over your daily goal.` : `You're ${settings.dailyLimit - today.length} away from your goal.`; extra.innerHTML = row('Your daily goal', `${settings.dailyLimit} cigarettes`);
   } else if (type === 'prevGap') {
-    iconClass = 'bg-sky-500/10 text-sky-500'; iconName = 'history';
-    title.innerText = "Previous Gap";
-    const g = logs.length > 1 ? logs[logs.length-1].gap : null;
-    value.innerText = formatGap(g);
-    desc.innerText = logs.length > 1 ? `Time between your last two logged cigarettes.` : `Log at least 2 cigarettes to see a gap here.`;
+    iconClass = 'bg-sky-500/10 text-sky-500'; iconName = 'history'; title.innerText = "Previous Gap"; const g = logs.length > 1 ? logs[logs.length-1].gap : null; value.innerText = formatGap(g); desc.innerText = `Time between your last two logs.`;
     const gappedAll = logs.map(l => l.gap).filter(g => g !== null && g !== undefined);
-    const avgAll = gappedAll.length ? Math.round(gappedAll.reduce((a,b)=>a+b,0)/gappedAll.length) : null;
-    extra.innerHTML = avgAll !== null ? row('Your all-time average gap', formatGap(avgAll)) : '';
+    extra.innerHTML = gappedAll.length ? row('Your all-time average gap', formatGap(Math.round(gappedAll.reduce((a,b)=>a+b,0)/gappedAll.length))) : '';
   } else if (type === 'bestGap') {
-    iconClass = 'bg-emerald-500/10 text-emerald-500'; iconName = 'trophy';
-    title.innerText = "Best Gap Today";
-    const todayGaps = today.map(l => l.gap).filter(g => g !== null && g !== undefined);
-    const best = todayGaps.length ? Math.max(...todayGaps) : null;
-    value.innerText = formatGap(best);
-    desc.innerText = best !== null ? `The longest you've gone between cigarettes today.` : `No gap data for today yet.`;
+    iconClass = 'bg-emerald-500/10 text-emerald-500'; iconName = 'trophy'; title.innerText = "Best Gap Today"; const todayGaps = today.map(l => l.gap).filter(g => g !== null && g !== undefined); const best = todayGaps.length ? Math.max(...todayGaps) : null; value.innerText = formatGap(best); desc.innerText = `The longest you've gone between cigarettes today.`;
     const allGaps = logs.map(l => l.gap).filter(g => g !== null && g !== undefined);
-    const allBest = allGaps.length ? Math.max(...allGaps) : null;
-    extra.innerHTML = allBest !== null ? row('Your all-time best gap', formatGap(allBest)) : '';
+    extra.innerHTML = allGaps.length ? row('Your all-time best gap', formatGap(Math.max(...allGaps))) : '';
   }
-
-  icon.className = `w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${iconClass}`;
-  icon.innerHTML = `<i data-lucide="${iconName}" class="w-4 h-4"></i>`;
-  document.getElementById('statDetailModal').classList.remove('hidden');
-  if(window.lucide) window.lucide.createIcons();
+  icon.className = `w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${iconClass}`; icon.innerHTML = `<i data-lucide="${iconName}" class="w-4 h-4"></i>`;
+  document.getElementById('statDetailModal').classList.remove('hidden'); if(window.lucide) window.lucide.createIcons();
 }
 function closeStatDetail() { document.getElementById('statDetailModal').classList.add('hidden'); }
 
-// NEW: Gamification Dashboard Logic
 function showShieldDashboard() {
-  document.getElementById('modalShieldCount').innerText = shields;
-  document.getElementById('modalShieldMins').innerText = (shields * 10) + " Mins Resisted";
-  
-  const b1 = document.getElementById('badge1');
-  const b10 = document.getElementById('badge10');
-  const b50 = document.getElementById('badge50');
-  
-  if(shields >= 1) { b1.classList.remove('opacity-30', 'grayscale'); b1.classList.add('shadow-[0_0_15px_rgba(245,158,11,0.15)]'); }
-  if(shields >= 10) { b10.classList.remove('opacity-30', 'grayscale'); b10.classList.add('shadow-[0_0_15px_rgba(245,158,11,0.15)]'); b10.querySelector('i').classList.replace('text-gray-300', 'text-sky-400'); }
-  if(shields >= 50) { b50.classList.remove('opacity-30', 'grayscale'); b50.classList.add('shadow-[0_0_15px_rgba(245,158,11,0.15)]'); }
-  
-  document.getElementById('shieldDashboardModal').classList.remove('hidden');
-  if(window.lucide) window.lucide.createIcons();
+  document.getElementById('modalShieldCount').innerText = shields; document.getElementById('modalShieldMins').innerText = (shields * 10) + " Mins Resisted";
+  ['badge1', 'badge10', 'badge50'].forEach(id => document.getElementById(id).className = "flex flex-col items-center p-3 rounded-2xl bg-gray-500/10 opacity-30 grayscale transition-all duration-500 border border-gray-500/20");
+  if(shields >= 1) { document.getElementById('badge1').classList.remove('opacity-30', 'grayscale'); document.getElementById('badge1').classList.add('shadow-[0_0_15px_rgba(245,158,11,0.15)]'); }
+  if(shields >= 10) { document.getElementById('badge10').classList.remove('opacity-30', 'grayscale'); document.getElementById('badge10').classList.add('shadow-[0_0_15px_rgba(245,158,11,0.15)]'); document.getElementById('badge10').querySelector('i').classList.replace('text-gray-300', 'text-sky-400'); }
+  if(shields >= 50) { document.getElementById('badge50').classList.remove('opacity-30', 'grayscale'); document.getElementById('badge50').classList.add('shadow-[0_0_15px_rgba(245,158,11,0.15)]'); }
+  document.getElementById('shieldDashboardModal').classList.remove('hidden'); if(window.lucide) window.lucide.createIcons();
 }
 function closeShieldDashboard() { document.getElementById('shieldDashboardModal').classList.add('hidden'); }
 
 function resetData(type) { 
-  if(type === '24h') {
-    if(confirm("Delete logs from the last 24 hours?")) {
-      const now = new Date().getTime();
-      logs = logs.filter(l => (now - l.timestamp) > 86400000);
-      localStorage.setItem('smoke_logs', JSON.stringify(logs));
-      location.reload();
-    }
-  } else {
-    if(confirm("Wipe ALL data? This action cannot be undone.")) { 
-      localStorage.clear(); 
-      location.reload(); 
-    } 
-  }
+  if(type === '24h') { if(confirm("Delete logs from the last 24 hours?")) { const now = new Date().getTime(); logs = logs.filter(l => (now - l.timestamp) > 86400000); localStorage.setItem('smoke_logs', JSON.stringify(logs)); location.reload(); } } 
+  else { if(confirm("Wipe ALL data? This action cannot be undone.")) { localStorage.clear(); location.reload(); } }
 }
 
 function exportLogsCSV() {
   if(logs.length === 0) { alert("No logs to export!"); return; }
-  let csvContent = "data:text/csv;charset=utf-8,Timestamp,Date,Time,Gap_Minutes,Trigger,Latitude,Longitude\n";
+  let csvContent = "Timestamp,Date,Time,Gap_Minutes,Tags,Latitude,Longitude\n";
   logs.forEach(l => {
     let d = new Date(l.timestamp);
-    csvContent += `${l.timestamp},"${d.toLocaleDateString()}","${d.toLocaleTimeString()}",${l.gap ?? ''},"${l.trigger||''}",${l.lat||''},${l.lng||''}\n`;
+    let tagsStr = l.tags && l.tags.length ? l.tags.join(' | ') : (l.trigger || '');
+    csvContent += `${l.timestamp},"${d.toLocaleDateString()}","${d.toLocaleTimeString()}",${l.gap ?? ''},"${tagsStr}",${l.lat||''},${l.lng||''}\n`;
   });
-  let encodedUri = encodeURI(csvContent);
+  let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  let url = URL.createObjectURL(blob);
   let link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
+  link.setAttribute("href", url);
   link.setAttribute("download", `SmokeGap_Logs_${new Date().toISOString().slice(0,10)}.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  document.body.appendChild(link); link.click(); document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 function addCustomTrigger() {
   let val = document.getElementById('newTriggerInput').value.trim();
-  if(val && !triggers.includes(val)) {
-    triggers.push(val);
-    localStorage.setItem('smoke_triggers', JSON.stringify(triggers));
-    document.getElementById('newTriggerInput').value = '';
-    renderTriggerSettingsList();
-  }
+  if(val && !triggers.includes(val)) { triggers.push(val); localStorage.setItem('smoke_triggers', JSON.stringify(triggers)); document.getElementById('newTriggerInput').value = ''; renderTriggerSettingsList(); }
 }
-
-function removeCustomTrigger(idx) {
-  triggers.splice(idx, 1);
-  localStorage.setItem('smoke_triggers', JSON.stringify(triggers));
-  renderTriggerSettingsList();
-}
-
+function removeCustomTrigger(idx) { triggers.splice(idx, 1); localStorage.setItem('smoke_triggers', JSON.stringify(triggers)); renderTriggerSettingsList(); }
 function renderTriggerSettingsList() {
-  const c = document.getElementById('triggerListSettings');
-  if(!c) return;
-  c.innerHTML = triggers.map((t, idx) => `
-    <span class="bg-gray-500/10 text-xs px-3 py-1.5 rounded-xl border border-gray-500/20 flex items-center gap-1.5 font-medium" style="color: var(--text-main);">
-      ${t} <button onclick="window.removeCustomTrigger(${idx})" class="text-red-500 font-bold hover:opacity-80">✕</button>
-    </span>
-  `).join('');
+  const c = document.getElementById('triggerListSettings'); if(!c) return;
+  c.innerHTML = triggers.map((t, idx) => `<span class="bg-gray-500/10 text-xs px-3 py-1.5 rounded-xl border border-gray-500/20 flex items-center gap-1.5 font-medium" style="color: var(--text-main);">${t} <button onclick="window.removeCustomTrigger(${idx})" class="text-red-500 font-bold hover:opacity-80">✕</button></span>`).join('');
 }
 
-function openTriggerModal() { document.getElementById('modalTriggerGrid').innerHTML=triggers.map(t=>`<button onclick="window.assignTag('${t}')" class="py-4 px-2 bg-gray-500/10 rounded-xl text-center active:scale-95 transition-transform" style="color: var(--text-main);">${t}</button>`).join(''); document.getElementById('triggerModal').classList.remove('hidden'); }
-function assignTag(tag) { if(logs.length>0) { logs[logs.length-1].trigger=tag; localStorage.setItem('smoke_logs', JSON.stringify(logs)); renderHistory('homeRecentLogs',3); } closeTriggerModal(); }
-function closeTriggerModal() { document.getElementById('triggerModal').classList.add('hidden'); }
+function openTriggerModal(logIdx = null) {
+  editingLogIdx = logIdx !== null ? logIdx : logs.length - 1;
+  const log = logs[editingLogIdx];
+  currentSelectedTags = log.tags && log.tags.length ? [...log.tags] : (log.trigger ? [log.trigger] : []);
+  renderModalTriggerGrid();
+  document.getElementById('triggerModal').classList.remove('hidden');
+}
+
+function renderModalTriggerGrid() {
+  const grid = document.getElementById('modalTriggerGrid');
+  grid.innerHTML = triggers.map((t, idx) => {
+    const isSelected = currentSelectedTags.includes(t);
+    const bgClass = isSelected ? 'text-white border border-sky-400' : 'bg-gray-500/10';
+    const inlineStyle = isSelected ? `style="background: var(--accent); box-shadow: 0 4px 15px var(--accent-glow);"` : `style="color: var(--text-main);"`;
+    return `<button onclick="window.toggleTag(${idx})" class="py-4 px-2 rounded-xl text-center active:scale-95 transition-all ${bgClass}" ${inlineStyle}>${t}</button>`;
+  }).join('');
+}
+
+function toggleTag(idx) {
+  const t = triggers[idx];
+  if(currentSelectedTags.includes(t)) currentSelectedTags = currentSelectedTags.filter(tag => tag !== t);
+  else currentSelectedTags.push(t);
+  renderModalTriggerGrid();
+}
+
+function saveTags() {
+  if(editingLogIdx !== null && logs[editingLogIdx]) {
+    logs[editingLogIdx].tags = [...currentSelectedTags];
+    logs[editingLogIdx].trigger = currentSelectedTags.length > 0 ? currentSelectedTags[0] : '';
+    localStorage.setItem('smoke_logs', JSON.stringify(logs));
+    renderHistory('homeRecentLogs', 3);
+    if(!document.getElementById('page-history').classList.contains('hidden')) renderHistory('fullHistoryList');
+    if(!document.getElementById('page-insights').classList.contains('hidden')) requestAnimationFrame(() => renderAllCharts());
+  }
+  document.getElementById('triggerModal').classList.add('hidden');
+}
 
 function renderHistory(tId='fullHistoryList', limit=null) {
   const c = document.getElementById(tId); if(!c) return;
@@ -370,6 +296,7 @@ function renderHistory(tId='fullHistoryList', limit=null) {
       if (l.gap > prev.gap) { trendClass = 'bg-emerald-500/10 text-emerald-500'; trendIcon = 'trending-up'; valueColor = '#10B981'; }
       else if (l.gap < prev.gap) { trendClass = 'bg-red-500/10 text-red-500'; trendIcon = 'trending-down'; valueColor = '#EF4444'; }
     }
+    const tagsDisplay = l.tags && l.tags.length ? l.tags.join(', ') : (l.trigger || 'Uncategorized');
     return `
     <div class="premium-card p-4 flex justify-between items-center relative overflow-hidden">
       <div class="absolute left-0 top-0 bottom-0 w-1" style="background: var(--accent);"></div>
@@ -377,7 +304,10 @@ function renderHistory(tId='fullHistoryList', limit=null) {
         <div class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${trendClass}"><i data-lucide="${trendIcon}" class="w-3.5 h-3.5"></i></div>
         <div>
           <div class="font-bold tracking-wide" style="color: var(--text-main);">${new Date(l.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
-          <div class="text-[10px] font-bold uppercase mt-0.5 flex items-center gap-1" style="color: var(--text-muted);"><i data-lucide="tag" class="w-3 h-3"></i> ${l.trigger||'Uncategorized'}</div>
+          <div class="text-[10px] font-bold uppercase mt-0.5 flex items-center gap-1" style="color: var(--text-muted);">
+            <i data-lucide="tag" class="w-3 h-3"></i> <span class="truncate max-w-[120px]">${tagsDisplay}</span>
+            <button onclick="window.openTriggerModal(${origIdx})" class="ml-1 opacity-60 hover:opacity-100 p-1"><i data-lucide="edit-2" class="w-3 h-3 text-sky-400"></i></button>
+          </div>
         </div>
       </div>
       <div class="font-bold text-base" style="color: ${valueColor};">${formatGap(l.gap)}</div>
@@ -388,62 +318,39 @@ function renderHistory(tId='fullHistoryList', limit=null) {
 }
 
 function getFilteredLogs() {
-  const filter = document.getElementById('insightsDateFilter').value;
-  const now = new Date();
-  if(filter === 'today') {
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    return logs.filter(l => l.timestamp >= startOfToday);
-  } else if(filter === '7days') {
-    const sevenDaysAgo = new Date(now.getTime() - (7 * 86400000)).getTime();
-    return logs.filter(l => l.timestamp >= sevenDaysAgo);
-  } else if(filter === '1month') {
-    const thirtyDaysAgo = new Date(now.getTime() - (30 * 86400000)).getTime();
-    return logs.filter(l => l.timestamp >= thirtyDaysAgo);
-  }
+  const filter = document.getElementById('insightsDateFilter').value, now = new Date();
+  if(filter === 'today') return logs.filter(l => l.timestamp >= new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime());
+  if(filter === '7days') return logs.filter(l => l.timestamp >= new Date(now.getTime() - (7 * 86400000)).getTime());
+  if(filter === '1month') return logs.filter(l => l.timestamp >= new Date(now.getTime() - (30 * 86400000)).getTime());
   return logs;
 }
-
-function setBadge(id, text, colorClass) {
-  const b = document.getElementById(id);
-  if(b) {
-    if(text) {
-      b.innerText = text;
-      b.className = `text-[9px] font-bold px-2 py-0.5 rounded border ${colorClass}`;
-      b.classList.remove('hidden');
-    } else {
-      b.classList.add('hidden');
-    }
-  }
-}
+function setBadge(id, text, colorClass) { const b = document.getElementById(id); if(b) { if(text) { b.innerText = text; b.className = `text-[9px] font-bold px-2 py-0.5 rounded border ${colorClass}`; b.classList.remove('hidden'); } else b.classList.add('hidden'); } }
 
 function renderAllCharts() {
   const activeLogs = getFilteredLogs();
-  const filter = document.getElementById('insightsDateFilter').value;
-  
-  const filterLabels = { today: 'Today', '7days': 'Last 7 Days', '1month': '1 Month', all: 'All Time' };
   const filterEl = document.getElementById('selectedFilterLabel');
-  if(filterEl) filterEl.innerText = filterLabels[filter] || 'Selected Period';
+  if(filterEl) filterEl.innerText = { today: 'Today', '7days': 'Last 7 Days', '1month': '1 Month', all: 'All Time' }[document.getElementById('insightsDateFilter').value] || 'Selected Period';
 
   let totalSpend = (activeLogs.length * (settings.packPrice/settings.packSize)).toFixed(1);
-  
   document.getElementById('insightPeriodSpend').innerText = `${settings.currency} ${totalSpend}`;
   document.getElementById('insightPeriodCount').innerText = `${activeLogs.length} Sticks`;
 
   const gappedLogs = activeLogs.filter(l => l.gap !== null && l.gap !== undefined);
-  let avgGapVal = gappedLogs.length > 0 ? Math.round(gappedLogs.reduce((a, b) => a + b.gap, 0) / gappedLogs.length) : 0;
-  
-  document.getElementById('insightAvgGap').innerText = gappedLogs.length > 0 ? formatGap(avgGapVal) : '--';
+  document.getElementById('insightAvgGap').innerText = gappedLogs.length > 0 ? formatGap(Math.round(gappedLogs.reduce((a, b) => a + b.gap, 0) / gappedLogs.length)) : '--';
   document.getElementById('insightShields').innerText = `${shields} Defeats`;
 
   if(activeLogs.length > 0) {
     let hours = {}; activeLogs.forEach(l => { let h = new Date(l.timestamp).getHours(); hours[h] = (hours[h]||0)+1; });
-    let peak = Object.keys(hours).reduce((a,b) => hours[a] > hours[b] ? a : b);
-    document.getElementById('insightPeakHour').innerText = `${peak}:00`;
+    document.getElementById('insightPeakHour').innerText = `${Object.keys(hours).reduce((a,b) => hours[a] > hours[b] ? a : b)}:00`;
   } else document.getElementById('insightPeakHour').innerText = '--';
 
   if(activeLogs.length > 0) {
-    let trigs = {}; activeLogs.forEach(l => { let t = l.trigger||'Uncategorized'; trigs[t] = (trigs[t]||0)+1; });
-    let topT = Object.keys(trigs).reduce((a,b) => trigs[a] > trigs[b] ? a : b);
+    let trigs = {}; 
+    activeLogs.forEach(l => { 
+      let tg = l.tags && l.tags.length ? l.tags : (l.trigger ? [l.trigger] : ['Uncategorized']);
+      tg.forEach(t => trigs[t] = (trigs[t]||0)+1);
+    });
+    let topT = Object.keys(trigs).length > 0 ? Object.keys(trigs).reduce((a,b) => trigs[a] > trigs[b] ? a : b) : '--';
     document.getElementById('insightTopTrigger').innerText = topT.length > 15 ? topT.substring(0,12)+'..' : topT;
   } else document.getElementById('insightTopTrigger').innerText = '--';
 
@@ -452,16 +359,13 @@ function renderAllCharts() {
   const heaviestDayEl = document.getElementById('insightHeaviestDay');
   if (heaviestDayEl) {
     if (activeLogs.length > 0) {
-      let perDay = {};
-      activeLogs.forEach(l => { const k = new Date(l.timestamp).toLocaleDateString([], {month:'short', day:'numeric'}); perDay[k] = (perDay[k]||0)+1; });
+      let perDay = {}; activeLogs.forEach(l => { const k = new Date(l.timestamp).toLocaleDateString([], {month:'short', day:'numeric'}); perDay[k] = (perDay[k]||0)+1; });
       let topDay = Object.keys(perDay).reduce((a,b) => perDay[a] > perDay[b] ? a : b);
       heaviestDayEl.innerText = `${topDay} (${perDay[topDay]})`;
-    } else {
-      heaviestDayEl.innerText = '--';
-    }
+    } else heaviestDayEl.innerText = '--';
   }
 
-  setBadge('badge-chart1', gappedLogs.length > 0 ? `Avg ${formatGap(avgGapVal)}` : '', 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20');
+  setBadge('badge-chart1', gappedLogs.length > 0 ? `Avg ${formatGap(Math.round(gappedLogs.reduce((a, b) => a + b.gap, 0) / gappedLogs.length))}` : '', 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20');
   setBadge('badge-chart2', activeLogs.length > 0 ? `${activeLogs.length} Total` : '', 'bg-amber-500/10 text-amber-500 border-amber-500/20');
   setBadge('badge-chart3', activeLogs.length > 0 ? `${settings.currency} ${totalSpend}` : '', 'bg-red-500/10 text-red-500 border-red-500/20');
 
@@ -469,191 +373,74 @@ function renderAllCharts() {
   const gaps = activeLogs.length > 0 ? activeLogs.map(l => l.gap) : [0];
   const chartTextColor = settings.theme === 'white' ? '#64748B' : '#9CA3AF';
 
-  const proOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    animation: { duration: 600, easing: 'easeOutQuart' },
-    interaction: { mode: 'index', intersect: false },
-    layout: { padding: { left: -5, right: 5, top: 10, bottom: 0 } },
-    plugins: {
-      legend: { display: false },
-      tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.95)', titleColor: '#FFFFFF', bodyColor: '#10B981', padding: 12, cornerRadius: 12, displayColors: false }
-    },
-    scales: {
-      x: { grid: { display: false }, ticks: { color: chartTextColor, font: { size: 9, weight: '600' }, maxTicksLimit: 4 } },
-      y: { beginAtZero: true, grid: { color: 'rgba(156, 163, 175, 0.05)', drawBorder: false }, ticks: { color: chartTextColor, font: { size: 9, weight: '600' }, padding: 6 } }
-    }
-  };
-
-  const createGradient = (ctx, colorHex) => {
-    let gradient = ctx.createLinearGradient(0, 0, 0, 180);
-    gradient.addColorStop(0, colorHex);
-    gradient.addColorStop(1, 'rgba(0,0,0,0)');
-    return gradient;
-  };
-
-  function upsertChart(key, ctx, config) {
-    const existing = myChartInstances[key];
-    if (existing && existing.config.type === config.type) {
-      existing.data = config.data;
-      if (config.options) existing.options = config.options;
-      existing.update();
-    } else {
-      if (existing) existing.destroy();
-      myChartInstances[key] = new Chart(ctx, config);
-    }
-  }
+  const proOptions = { responsive: true, maintainAspectRatio: false, animation: { duration: 600, easing: 'easeOutQuart' }, interaction: { mode: 'index', intersect: false }, layout: { padding: { left: -5, right: 5, top: 10, bottom: 0 } }, plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.95)', titleColor: '#FFFFFF', bodyColor: '#10B981', padding: 12, cornerRadius: 12, displayColors: false } }, scales: { x: { grid: { display: false }, ticks: { color: chartTextColor, font: { size: 9, weight: '600' }, maxTicksLimit: 4 } }, y: { beginAtZero: true, grid: { color: 'rgba(156, 163, 175, 0.05)', drawBorder: false }, ticks: { color: chartTextColor, font: { size: 9, weight: '600' }, padding: 6 } } } };
+  const createGradient = (ctx, colorHex) => { let g = ctx.createLinearGradient(0, 0, 0, 180); g.addColorStop(0, colorHex); g.addColorStop(1, 'rgba(0,0,0,0)'); return g; };
+  function upsertChart(key, ctx, config) { const existing = myChartInstances[key]; if (existing && existing.config.type === config.type) { existing.data = config.data; if (config.options) existing.options = config.options; existing.update(); } else { if (existing) existing.destroy(); myChartInstances[key] = new Chart(ctx, config); } }
 
   const ctx1 = document.getElementById('chart1').getContext('2d');
-  upsertChart(1, ctx1, {
-    type: 'line',
-    data: { labels: labels, datasets: [{ label: 'Gap (mins)', data: gaps, borderColor: '#10B981', backgroundColor: createGradient(ctx1, 'rgba(16, 185, 129, 0.25)'), borderWidth: 3, tension: 0.4, fill: true, pointRadius: 0, pointHitRadius: 15 }] },
-    options: proOptions,
-    plugins: [crosshairPlugin]
-  });
+  upsertChart(1, ctx1, { type: 'line', data: { labels: labels, datasets: [{ label: 'Gap (mins)', data: gaps, borderColor: '#10B981', backgroundColor: createGradient(ctx1, 'rgba(16, 185, 129, 0.25)'), borderWidth: 3, tension: 0.4, fill: true, pointRadius: 0, pointHitRadius: 15 }] }, options: proOptions, plugins: [crosshairPlugin] });
 
-  let dayMap = {};
-  activeLogs.forEach(l => {
-    const dt = new Date(l.timestamp);
-    let d = filter === '7days' ? dt.toLocaleDateString([], {weekday:'short'}) : dt.toLocaleDateString([], {month:'short', day:'numeric'});
-    dayMap[d] = (dayMap[d] || 0) + 1;
-  });
-  let dayLabels = Object.keys(dayMap); let dayCounts = Object.values(dayMap);
-  if(dayLabels.length === 0) { dayLabels = ['Today']; dayCounts = [0]; }
-
+  let dayMap = {}; activeLogs.forEach(l => { let d = document.getElementById('insightsDateFilter').value === '7days' ? new Date(l.timestamp).toLocaleDateString([], {weekday:'short'}) : new Date(l.timestamp).toLocaleDateString([], {month:'short', day:'numeric'}); dayMap[d] = (dayMap[d] || 0) + 1; });
+  let dayLabels = Object.keys(dayMap), dayCounts = Object.values(dayMap); if(dayLabels.length === 0) { dayLabels = ['Today']; dayCounts = [0]; }
   const ctx2 = document.getElementById('chart2').getContext('2d');
-  upsertChart(2, ctx2, {
-    type: 'bar',
-    data: { 
-      labels: dayLabels, 
-      datasets: [
-        { label: 'Count', data: dayCounts, backgroundColor: settings.theme === 'white' ? '#2563EB' : '#F59E0B', borderRadius: Number.MAX_VALUE, borderSkipped: false, barThickness: 16 },
-        { label: 'Limit', data: dayLabels.map(() => settings.dailyLimit), type: 'line', borderColor: '#EF4444', borderWidth: 2, borderDash: [4,4], pointRadius: 0 }
-      ] 
-    },
-    options: proOptions,
-    plugins: [crosshairPlugin]
-  });
+  upsertChart(2, ctx2, { type: 'bar', data: { labels: dayLabels, datasets: [{ label: 'Count', data: dayCounts, backgroundColor: settings.theme === 'white' ? '#2563EB' : '#F59E0B', borderRadius: Number.MAX_VALUE, borderSkipped: false, barThickness: 16 }, { label: 'Limit', data: dayLabels.map(() => settings.dailyLimit), type: 'line', borderColor: '#EF4444', borderWidth: 2, borderDash: [4,4], pointRadius: 0 }] }, options: proOptions, plugins: [crosshairPlugin] });
 
   let cumulativeSpend = 0; let spendData = gaps.map(() => { cumulativeSpend += (settings.packPrice / settings.packSize); return cumulativeSpend.toFixed(1); });
   const ctx3 = document.getElementById('chart3').getContext('2d');
-  upsertChart(3, ctx3, {
-    type: 'line',
-    data: { labels: labels, datasets: [{ label: 'Spend', data: spendData, borderColor: '#EF4444', backgroundColor: createGradient(ctx3, 'rgba(239, 68, 68, 0.2)'), fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0, pointHitRadius: 15 }] },
-    options: proOptions,
-    plugins: [crosshairPlugin]
-  });
+  upsertChart(3, ctx3, { type: 'line', data: { labels: labels, datasets: [{ label: 'Spend', data: spendData, borderColor: '#EF4444', backgroundColor: createGradient(ctx3, 'rgba(239, 68, 68, 0.2)'), fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0, pointHitRadius: 15 }] }, options: proOptions, plugins: [crosshairPlugin] });
 
   const ctx5 = document.getElementById('chart5').getContext('2d');
-  const triggerCounts = triggers.map(t => activeLogs.filter(l => l.trigger === t).length);
+  const triggerCounts = triggers.map(t => activeLogs.filter(l => (l.tags && l.tags.includes(t)) || l.trigger === t).length);
   const topTriggerIdx = triggerCounts.length ? triggerCounts.indexOf(Math.max(...triggerCounts)) : -1;
   setBadge('badge-chart5', (topTriggerIdx >= 0 && triggerCounts[topTriggerIdx] > 0) ? `Top: ${triggers[topTriggerIdx]}` : '', 'bg-purple-500/10 text-purple-500 border-purple-500/20');
-  upsertChart(5, ctx5, {
-    type: 'doughnut',
-    data: { labels: triggers, datasets: [{ data: triggerCounts, backgroundColor: ['#F59E0B','#10B981','#6366F1','#EF4444','#2563EB','#A855F7'], borderWidth: 0, cutout: '76%' }] },
-    options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12, font: { size: 10 }, color: chartTextColor } } } },
-    plugins: [centerTextPlugin]
-  });
+  upsertChart(5, ctx5, { type: 'doughnut', data: { labels: triggers, datasets: [{ data: triggerCounts, backgroundColor: ['#F59E0B','#10B981','#6366F1','#EF4444','#2563EB','#A855F7'], borderWidth: 0, cutout: '76%' }] }, options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12, font: { size: 10 }, color: chartTextColor } } } }, plugins: [centerTextPlugin] });
 
-  const dayParts = ['Morning', 'Afternoon', 'Evening', 'Night'];
-  const partOf = (hr) => hr >= 5 && hr < 12 ? 0 : hr >= 12 && hr < 17 ? 1 : hr >= 17 && hr < 21 ? 2 : 3;
+  const dayParts = ['Morning', 'Afternoon', 'Evening', 'Night']; const partOf = (hr) => hr >= 5 && hr < 12 ? 0 : hr >= 12 && hr < 17 ? 1 : hr >= 17 && hr < 21 ? 2 : 3;
   let triggerByPart = {}; triggers.forEach(t => triggerByPart[t] = [0, 0, 0, 0]);
-  activeLogs.forEach(l => { if (l.trigger && triggerByPart[l.trigger]) triggerByPart[l.trigger][partOf(new Date(l.timestamp).getHours())]++; });
+  activeLogs.forEach(l => { 
+    let tArr = l.tags && l.tags.length ? l.tags : (l.trigger ? [l.trigger] : []);
+    tArr.forEach(tg => { if (triggerByPart[tg]) triggerByPart[tg][partOf(new Date(l.timestamp).getHours())]++; }); 
+  });
   const palette = ['#F59E0B', '#10B981', '#6366F1', '#EF4444', '#2563EB', '#A855F7'];
   const partTotals = dayParts.map((_, i) => triggers.reduce((sum, t) => sum + triggerByPart[t][i], 0));
   const peakPartIdx = partTotals.some(v => v > 0) ? partTotals.indexOf(Math.max(...partTotals)) : -1;
   setBadge('badge-chart6', peakPartIdx >= 0 ? `Peak: ${dayParts[peakPartIdx]}` : '', 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20');
   const chart6El = document.getElementById('chart6');
   if (chart6El) {
-    const ctx6 = chart6El.getContext('2d');
-    upsertChart(6, ctx6, {
-      type: 'bar',
-      data: { labels: dayParts, datasets: triggers.map((t, i) => ({ label: t, data: triggerByPart[t], backgroundColor: palette[i % palette.length], borderRadius: 4, stack: 'triggers' })) },
-      options: {
-        ...proOptions,
-        scales: {
-          x: { ...proOptions.scales.x, stacked: true },
-          y: { ...proOptions.scales.y, stacked: true, ticks: { ...proOptions.scales.y.ticks, precision: 0 } }
-        },
-        plugins: { ...proOptions.plugins, legend: { display: true, position: 'bottom', labels: { boxWidth: 8, padding: 10, font: { size: 9 }, color: chartTextColor } } }
-      }
-    });
+    upsertChart(6, chart6El.getContext('2d'), { type: 'bar', data: { labels: dayParts, datasets: triggers.map((t, i) => ({ label: t, data: triggerByPart[t], backgroundColor: palette[i % palette.length], borderRadius: 4, stack: 'triggers' })) }, options: { ...proOptions, scales: { x: { ...proOptions.scales.x, stacked: true }, y: { ...proOptions.scales.y, stacked: true, ticks: { ...proOptions.scales.y.ticks, precision: 0 } } }, plugins: { ...proOptions.plugins, legend: { display: true, position: 'bottom', labels: { boxWidth: 8, padding: 10, font: { size: 9 }, color: chartTextColor } } } } });
   }
 
   renderHeatMap('mapContainer', activeLogs);
 }
 
 function renderHeatMap(containerId, activeLogs) {
-  const mapEl = document.getElementById(containerId);
-  if(!mapEl) return;
-
-  let lastWithLoc = activeLogs.slice().reverse().find(l => l.lat && l.lng);
-  let lat = lastWithLoc ? lastWithLoc.lat : 25.2048;
-  let lng = lastWithLoc ? lastWithLoc.lng : 55.2708;
+  const mapEl = document.getElementById(containerId); if(!mapEl) return;
+  let lastWithLoc = activeLogs.slice().reverse().find(l => l.lat && l.lng), lat = lastWithLoc ? lastWithLoc.lat : 25.2048, lng = lastWithLoc ? lastWithLoc.lng : 55.2708;
   let heatPoints = activeLogs.filter(l => l.lat && l.lng).map(l => [l.lat, l.lng, 1.0]);
-
-  const isModal = containerId === 'mapModalContainer';
-  let m = isModal ? modalMapInstance : mapInstance;
-  const needsRebuild = !m || m._smokegapTheme !== settings.theme;
-
+  const isModal = containerId === 'mapModalContainer'; let m = isModal ? modalMapInstance : mapInstance;
   try {
-    if (needsRebuild) {
+    if (!m || m._smokegapTheme !== settings.theme) {
       if (m) { try { m.remove(); } catch(e) {} }
       m = L.map(containerId, {zoomControl: false, attributionControl: false}).setView([lat, lng], 13);
-      let tileUrl = settings.theme === 'white' ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png' : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-      L.tileLayer(tileUrl, {maxZoom: 19}).addTo(m);
-      m._smokegapTheme = settings.theme;
-      if (isModal) modalMapInstance = m; else mapInstance = m;
+      L.tileLayer(settings.theme === 'white' ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png' : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {maxZoom: 19}).addTo(m);
+      m._smokegapTheme = settings.theme; if (isModal) modalMapInstance = m; else mapInstance = m;
       setTimeout(() => { m.invalidateSize(); }, 250);
-    } else {
-      m.setView([lat, lng], m.getZoom());
-      setTimeout(() => { m.invalidateSize(); }, 50);
-    }
-
+    } else { m.setView([lat, lng], m.getZoom()); setTimeout(() => { m.invalidateSize(); }, 50); }
     if (m._smokegapHeat) { m.removeLayer(m._smokegapHeat); m._smokegapHeat = null; }
     if (m._smokegapMarker) { m.removeLayer(m._smokegapMarker); m._smokegapMarker = null; }
-    if(heatPoints.length > 0 && window.L.heatLayer) {
-      m._smokegapHeat = L.heatLayer(heatPoints, {radius: 28, blur: 18, maxZoom: 17, minOpacity: 0.4}).addTo(m);
-    } else {
-      m._smokegapMarker = L.marker([lat, lng]).addTo(m);
-    }
+    if(heatPoints.length > 0 && window.L.heatLayer) m._smokegapHeat = L.heatLayer(heatPoints, {radius: 28, blur: 18, maxZoom: 17, minOpacity: 0.4}).addTo(m);
+    else m._smokegapMarker = L.marker([lat, lng]).addTo(m);
   } catch(e) {}
 }
 
-function openMapModal() {
-  document.getElementById('mapModal').classList.remove('hidden');
-  setTimeout(() => { renderHeatMap('mapModalContainer', getFilteredLogs()); }, 200);
-}
-function closeMapModal() {
-  document.getElementById('mapModal').classList.add('hidden');
-  if(modalMapInstance) { modalMapInstance.remove(); modalMapInstance = null; }
-}
-
-function initDragAndDrop() {
-  const container = document.getElementById('chartContainer');
-  if(!container || !window.Sortable) return;
-  new Sortable(container, { handle: '.drag-handle', animation: 200, ghostClass: 'sortable-ghost', onEnd: function () { saveChartOrder(); } });
-}
-
-function saveChartOrder() {
-  const container = document.getElementById('chartContainer');
-  const cards = [...container.children];
-  const order = cards.map(c => c.id);
-  localStorage.setItem('smoke_chart_order', JSON.stringify(order));
-}
-
-function loadChartOrder() {
-  const savedOrder = JSON.parse(localStorage.getItem('smoke_chart_order'));
-  if(!savedOrder) return;
-  const container = document.getElementById('chartContainer');
-  savedOrder.forEach(id => { const card = document.getElementById(id); if(card) container.appendChild(card); });
-}
+function openMapModal() { document.getElementById('mapModal').classList.remove('hidden'); setTimeout(() => { renderHeatMap('mapModalContainer', getFilteredLogs()); }, 200); }
+function closeMapModal() { document.getElementById('mapModal').classList.add('hidden'); if(modalMapInstance) { modalMapInstance.remove(); modalMapInstance = null; } }
+function initDragAndDrop() { const container = document.getElementById('chartContainer'); if(!container || !window.Sortable) return; new Sortable(container, { handle: '.drag-handle', animation: 200, ghostClass: 'sortable-ghost', onEnd: function () { localStorage.setItem('smoke_chart_order', JSON.stringify([...container.children].map(c => c.id))); } }); }
+function loadChartOrder() { const savedOrder = JSON.parse(localStorage.getItem('smoke_chart_order')); if(!savedOrder) return; const container = document.getElementById('chartContainer'); savedOrder.forEach(id => { const card = document.getElementById(id); if(card) container.appendChild(card); }); }
 
 window.enterPin = enterPin; window.clearPin = clearPin; window.setupPin = setupPin;
-window.handleLogClick = handleLogClick; window.toggleWaveMode = toggleWaveMode; window.switchTab = switchTab;
-window.updateSettings = updateSettings; window.resetData = resetData; window.assignTag = assignTag;
-window.closeTriggerModal = closeTriggerModal; window.renderAllCharts = renderAllCharts;
-window.openMapModal = openMapModal; window.closeMapModal = closeMapModal;
-window.showStatDetail = showStatDetail; window.closeStatDetail = closeStatDetail;
-window.showShieldDashboard = showShieldDashboard; window.closeShieldDashboard = closeShieldDashboard;
+window.handleLogClick = handleLogClick; window.toggleWaveMode = toggleWaveMode; window.switchTab = switchTab; window.updateSettings = updateSettings; window.resetData = resetData; 
+window.openTriggerModal = openTriggerModal; window.toggleTag = toggleTag; window.saveTags = saveTags;
+window.renderAllCharts = renderAllCharts; window.openMapModal = openMapModal; window.closeMapModal = closeMapModal;
+window.showStatDetail = showStatDetail; window.closeStatDetail = closeStatDetail; window.showShieldDashboard = showShieldDashboard; window.closeShieldDashboard = closeShieldDashboard;
 window.exportLogsCSV = exportLogsCSV; window.addCustomTrigger = addCustomTrigger; window.removeCustomTrigger = removeCustomTrigger;
