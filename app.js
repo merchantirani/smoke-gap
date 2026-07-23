@@ -112,11 +112,12 @@ function handleLogClick() {
   if(waveEndTime>0) { localStorage.removeItem('smoke_wave_end'); waveEndTime=0; clearInterval(waveTimer); document.getElementById('waveOverlay').classList.add('hidden'); }
   
   if(navigator.geolocation) {
+    // FIX: Removed enableHighAccuracy and set maximumAge to 60000 to prevent iOS from re-prompting every click
     navigator.geolocation.getCurrentPosition(p => {
       saveLog(p.coords.latitude, p.coords.longitude);
     }, () => {
       saveLog(null, null);
-    }, {timeout: 5000, maximumAge: 0, enableHighAccuracy: true});
+    }, {timeout: 10000, maximumAge: 60000});
   } else {
     saveLog(null, null);
   }
@@ -276,6 +277,24 @@ function showStatDetail(type) {
   if(window.lucide) window.lucide.createIcons();
 }
 function closeStatDetail() { document.getElementById('statDetailModal').classList.add('hidden'); }
+
+// NEW: Gamification Dashboard Logic
+function showShieldDashboard() {
+  document.getElementById('modalShieldCount').innerText = shields;
+  document.getElementById('modalShieldMins').innerText = (shields * 10) + " Mins Resisted";
+  
+  const b1 = document.getElementById('badge1');
+  const b10 = document.getElementById('badge10');
+  const b50 = document.getElementById('badge50');
+  
+  if(shields >= 1) { b1.classList.remove('opacity-30', 'grayscale'); b1.classList.add('shadow-[0_0_15px_rgba(245,158,11,0.15)]'); }
+  if(shields >= 10) { b10.classList.remove('opacity-30', 'grayscale'); b10.classList.add('shadow-[0_0_15px_rgba(245,158,11,0.15)]'); b10.querySelector('i').classList.replace('text-gray-300', 'text-sky-400'); }
+  if(shields >= 50) { b50.classList.remove('opacity-30', 'grayscale'); b50.classList.add('shadow-[0_0_15px_rgba(245,158,11,0.15)]'); }
+  
+  document.getElementById('shieldDashboardModal').classList.remove('hidden');
+  if(window.lucide) window.lucide.createIcons();
+}
+function closeShieldDashboard() { document.getElementById('shieldDashboardModal').classList.add('hidden'); }
 
 function resetData(type) { 
   if(type === '24h') {
@@ -636,4 +655,5 @@ window.updateSettings = updateSettings; window.resetData = resetData; window.ass
 window.closeTriggerModal = closeTriggerModal; window.renderAllCharts = renderAllCharts;
 window.openMapModal = openMapModal; window.closeMapModal = closeMapModal;
 window.showStatDetail = showStatDetail; window.closeStatDetail = closeStatDetail;
+window.showShieldDashboard = showShieldDashboard; window.closeShieldDashboard = closeShieldDashboard;
 window.exportLogsCSV = exportLogsCSV; window.addCustomTrigger = addCustomTrigger; window.removeCustomTrigger = removeCustomTrigger;
