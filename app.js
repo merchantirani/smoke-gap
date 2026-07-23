@@ -282,12 +282,16 @@ function saveTags() {
   document.getElementById('triggerModal').classList.add('hidden');
 }
 
+function closeTriggerModal() {
+  document.getElementById('triggerModal').classList.add('hidden');
+}
+
 function renderHistory(tId='fullHistoryList', limit=null) {
   const c = document.getElementById(tId); if(!c) return;
   if(logs.length===0) { c.innerHTML="<p class='text-center py-6 text-xs flex flex-col items-center gap-2' style='color: var(--text-muted);'><i data-lucide='inbox' class='w-6 h-6 opacity-50'></i> No logs recorded yet.</p>"; if(window.lucide) window.lucide.createIcons(); return; }
   let items = logs.slice().reverse(); if(limit) items = items.slice(0,limit);
   
-  // FIX: Make entire card clickable, remove edit button, allow tags to wrap dynamically
+  // FIXED: Removed the left absolute line for cleaner design
   c.innerHTML = items.map((l, j) => {
     const origIdx = logs.length - 1 - j;
     const prev = origIdx > 0 ? logs[origIdx - 1] : null;
@@ -299,7 +303,6 @@ function renderHistory(tId='fullHistoryList', limit=null) {
     const tagsDisplay = l.tags && l.tags.length ? l.tags.join(', ') : (l.trigger || 'Uncategorized');
     return `
     <div onclick="window.openTriggerModal(${origIdx})" class="premium-card p-4 flex justify-between items-center relative overflow-hidden cursor-pointer active:scale-[0.98] transition-transform hover:bg-gray-500/5">
-      <div class="absolute left-0 top-0 bottom-0 w-1" style="background: var(--accent);"></div>
       <div class="flex items-start gap-3 flex-1 min-w-0 pr-3">
         <div class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${trendClass}"><i data-lucide="${trendIcon}" class="w-3.5 h-3.5"></i></div>
         <div class="flex-1 min-w-0">
@@ -440,7 +443,7 @@ function loadChartOrder() { const savedOrder = JSON.parse(localStorage.getItem('
 
 window.enterPin = enterPin; window.clearPin = clearPin; window.setupPin = setupPin;
 window.handleLogClick = handleLogClick; window.toggleWaveMode = toggleWaveMode; window.switchTab = switchTab; window.updateSettings = updateSettings; window.resetData = resetData; 
-window.openTriggerModal = openTriggerModal; window.toggleTag = toggleTag; window.saveTags = saveTags;
+window.openTriggerModal = openTriggerModal; window.closeTriggerModal = closeTriggerModal; window.toggleTag = toggleTag; window.saveTags = saveTags;
 window.renderAllCharts = renderAllCharts; window.openMapModal = openMapModal; window.closeMapModal = closeMapModal;
 window.showStatDetail = showStatDetail; window.closeStatDetail = closeStatDetail; window.showShieldDashboard = showShieldDashboard; window.closeShieldDashboard = closeShieldDashboard;
 window.exportLogsCSV = exportLogsCSV; window.addCustomTrigger = addCustomTrigger; window.removeCustomTrigger = removeCustomTrigger;
