@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+  <!-- FIX 3: Dynamic Theme Color for Status Bar blending -->
+  <meta name="theme-color" id="theme-color-meta" content="#090A0F" />
   <title>pause — Widen the gap.</title>
   
   <!-- Favicons & App Icons -->
@@ -46,7 +48,8 @@
       --bg-body: #F8FAFC; 
       --text-main: #0F172A; 
       --text-muted: #64748B; 
-      --card-bg: #FFFFFF; 
+      /* FIX 1: Restored transparent white for glassmorphism */
+      --card-bg: rgba(255, 255, 255, 0.85); 
       --card-border: rgba(203, 213, 225, 0.6); 
       --accent: #2563EB; 
       --accent-glow: rgba(37, 99, 235, 0.15); 
@@ -98,10 +101,12 @@
     }
     .live-dot { animation: live-pulse 2s infinite ease-in-out; }
 
-    /* New CSS for Takeover Background Glow */
     .takeover-bg {
       background: radial-gradient(circle at center, var(--accent-glow) 0%, var(--bg-body) 80%);
     }
+    
+    /* Input formatting for date/time overrides */
+    input[type="date"]::-webkit-calendar-picker-indicator, input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(0.5); cursor: pointer; }
   </style>
 </head>
 <body>
@@ -138,12 +143,12 @@
       </button>
     </header>
 
-    <div class="p-5 space-y-6 pt-0">
+    <div class="p-5 space-y-4 pt-0">
       
-      <!-- 1. TRACKER TAB -->
-      <section id="page-tracker" class="page-section space-y-6">
+      <!-- 1. TRACKER TAB - COMPACT SPACING -->
+      <section id="page-tracker" class="page-section space-y-4">
         
-        <div class="flex flex-col items-center justify-center pt-2 pb-4">
+        <div class="flex flex-col items-center justify-center pt-2 pb-2">
           <div class="relative flex justify-center items-center w-64 h-64 mx-auto mb-5">
             <svg class="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 100 100">
               <circle cx="50" cy="50" r="46" fill="transparent" stroke="var(--card-border)" stroke-width="2.5"></circle>
@@ -162,7 +167,19 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
+        <!-- FIX 4: Above The Fold. Action Buttons moved ABOVE Stats Cards -->
+        <div class="grid grid-cols-3 gap-3">
+          <button onclick="window.openWaveModal()" class="col-span-1 premium-card flex flex-col items-center justify-center py-4 active:scale-95 transition-transform text-sky-500">
+            <i data-lucide="shield-check" class="w-6 h-6 mb-1"></i>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-center leading-tight">Ride<br>It Out</span>
+          </button>
+          <button id="mainLogBtn" onclick="window.handleLogClick()" class="col-span-2 py-4 rounded-2xl font-bold text-sm tracking-wide active:scale-95 transition-all text-white" style="background: var(--accent); box-shadow: 0 10px 25px var(--accent-glow);">
+            START SMOKING
+          </button>
+        </div>
+
+        <!-- 4 Stats Cards moved below -->
+        <div class="grid grid-cols-2 gap-3">
           <div onclick="window.showStatDetail('spend')" class="premium-card p-4 active:scale-95 transition-transform cursor-pointer">
             <div class="flex items-center gap-2 mb-2">
               <div class="w-6 h-6 rounded-full bg-red-500/10 flex items-center justify-center text-red-500"><i data-lucide="wallet" class="w-3 h-3"></i></div>
@@ -170,13 +187,16 @@
             </div>
             <p id="todaySpend" class="numeric-display text-xl font-bold" style="color: var(--text-main);">AED 0</p>
           </div>
+          
+          <!-- Limit Breach ID's added -->
           <div onclick="window.showStatDetail('count')" class="premium-card p-4 active:scale-95 transition-transform cursor-pointer">
             <div class="flex items-center gap-2 mb-2">
-              <div class="w-6 h-6 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500"><i data-lucide="activity" class="w-3 h-3"></i></div>
+              <div id="todaySticksIcon" class="w-6 h-6 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500"><i data-lucide="activity" class="w-3 h-3"></i></div>
               <p class="text-[9px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Today's Sticks</p>
             </div>
             <p id="todayCount" class="numeric-display text-xl font-bold" style="color: var(--text-main);">0 / 15</p>
           </div>
+
           <div onclick="window.showStatDetail('prevGap')" class="premium-card p-4 active:scale-95 transition-transform cursor-pointer">
             <div class="flex items-center gap-2 mb-2">
               <div class="w-6 h-6 rounded-full bg-sky-500/10 flex items-center justify-center text-sky-500"><i data-lucide="history" class="w-3 h-3"></i></div>
@@ -206,16 +226,6 @@
             <span id="waveCountdown" class="numeric-display text-3xl font-bold tabular-nums" style="color: var(--text-main);">--:--</span>
           </div>
           <div class="w-full bg-gray-500/20 rounded-full h-1.5 relative z-10"><div id="waveProgressBar" class="bg-sky-500 h-full rounded-full transition-all duration-1000 ease-linear" style="width: 100%"></div></div>
-        </div>
-
-        <div class="grid grid-cols-3 gap-4">
-          <button onclick="window.openWaveModal()" class="col-span-1 premium-card flex flex-col items-center justify-center py-4 active:scale-95 transition-transform text-sky-500">
-            <i data-lucide="shield-check" class="w-6 h-6 mb-1"></i>
-            <span class="text-[10px] font-bold uppercase tracking-wider text-center leading-tight">Ride<br>It Out</span>
-          </button>
-          <button id="mainLogBtn" onclick="window.handleLogClick()" class="col-span-2 py-4 rounded-2xl font-bold text-sm tracking-wide active:scale-95 transition-all text-white" style="background: var(--accent); box-shadow: 0 10px 25px var(--accent-glow);">
-            START SMOKING
-          </button>
         </div>
 
         <div class="space-y-3 pt-2">
@@ -386,9 +396,9 @@
       </section>
 
       <!-- 3. HISTORY TAB -->
-      <section id="page-history" class="page-section space-y-6 hidden">
-        <h2 class="text-xl font-bold px-1" style="color: var(--text-main);">Full History Log</h2>
-        <div id="fullHistoryList" class="space-y-3"></div>
+      <section id="page-history" class="page-section space-y-4 hidden">
+        <h2 class="text-xl font-bold px-1" style="color: var(--text-main);">History Log</h2>
+        <div id="fullHistoryList" class="space-y-4"></div>
       </section>
       
       <!-- 4. SETTINGS TAB -->
@@ -431,7 +441,7 @@
           <div class="flex justify-between items-center">
             <div class="pr-3">
               <label class="text-xs font-semibold block" style="color: var(--text-main);">Daily Cigarette Goal</label>
-              <p class="text-[9px] leading-snug mt-0.5" style="color: var(--text-muted);">How many cigarettes/day you're aiming to stay under. Just a count — not money.</p>
+              <p class="text-[9px] leading-snug mt-0.5" style="color: var(--text-muted);">How many cigarettes/day you're aiming to stay under.</p>
             </div>
             <input type="number" id="dailyLimitInput" onchange="window.updateSettings()" class="numeric-display w-16 bg-gray-500/10 p-2 rounded-xl border border-gray-500/20 text-center text-xs font-bold shrink-0" style="color: var(--text-main);" value="15">
           </div>
@@ -453,7 +463,6 @@
             <label class="text-xs font-bold" style="color: var(--text-main);">Cost Per Cigarette</label>
             <span id="costPerCigDisplay" class="numeric-display text-xs font-bold px-3 py-1.5 rounded-lg bg-gray-500/10" style="color: var(--accent);">--</span>
           </div>
-          <p class="text-[9px] leading-snug" style="color: var(--text-muted);">Calculated automatically from Pack Price ÷ Sticks Per Pack — no need to work it out yourself.</p>
         </div>
 
         <div class="premium-card p-5 space-y-4">
@@ -495,52 +504,55 @@
     </nav>
   </div>
 
-  <!-- History Log Edit Modal -->
+  <!-- FIX 6: Edit Modal Date/Time Input -->
   <div id="triggerModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex flex-col justify-end transition-opacity" onclick="if(event.target===this) window.saveTags()">
     <div class="premium-card p-6 rounded-b-none space-y-4 max-w-md mx-auto w-full">
-      <div class="flex justify-between items-center">
-        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest text-center">Edit Tags</h3>
+      <div class="flex justify-between items-center mb-1">
+        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest text-center">Edit Log</h3>
         <button onclick="window.saveTags()" class="text-xs font-bold text-white px-4 py-1.5 rounded-full shadow-lg active:scale-95 transition-all" style="background: var(--accent);">Save</button>
       </div>
+      <!-- Date & Time Override -->
+      <div class="flex gap-3 border-b border-gray-500/20 pb-4 mb-2">
+        <div class="flex-1">
+          <label class="text-[9px] uppercase tracking-widest text-gray-500 mb-1 block font-bold">Date</label>
+          <input type="date" id="editLogDate" class="w-full bg-gray-500/10 p-2.5 rounded-xl text-xs font-semibold outline-none border border-gray-500/10" style="color: var(--text-main);">
+        </div>
+        <div class="flex-1">
+          <label class="text-[9px] uppercase tracking-widest text-gray-500 mb-1 block font-bold">Time</label>
+          <input type="time" id="editLogTime" class="w-full bg-gray-500/10 p-2.5 rounded-xl text-xs font-semibold outline-none border border-gray-500/10" style="color: var(--text-main);">
+        </div>
+      </div>
+      <p class="text-[9px] uppercase tracking-widest text-gray-500 font-bold -mb-1">Tags</p>
       <div id="modalTriggerGrid" class="grid grid-cols-2 gap-3 text-xs font-bold"></div>
     </div>
   </div>
 
-  <!-- NEW 6-SECOND PRE-SMOKE TAKEOVER OVERLAY -->
+  <!-- 6-SECOND PRE-SMOKE TAKEOVER OVERLAY with FIX 5: EXPLICIT CANCEL -->
   <div id="smokeTakeover" class="hidden fixed inset-0 z-[20000] opacity-0 transition-opacity duration-500">
-    <!-- Clickable blurred background -->
     <div class="absolute inset-0 takeover-bg backdrop-blur-2xl cursor-pointer" onclick="window.closeSmokeTakeover()"></div>
     
-    <!-- Content wrapper -->
+    <!-- Explicit Cancel Button -->
+    <button onclick="window.cancelSmokeTakeover(event)" class="absolute top-14 right-6 z-[20001] px-4 py-2 bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-bold uppercase tracking-wider rounded-full backdrop-blur-md flex items-center gap-1.5 active:scale-95 transition-all"><i data-lucide="x" class="w-3 h-3"></i> Cancel</button>
+    
     <div class="absolute inset-0 flex flex-col justify-between pointer-events-none">
-      
-      <!-- Top / Center Area -->
       <div class="flex-1 flex flex-col items-center justify-center p-6 space-y-8">
-        <p class="text-[var(--text-main)] font-bold tracking-widest uppercase text-xs opacity-90">Light your cigarette.</p>
+        <p class="text-[var(--text-main)] font-bold tracking-widest uppercase text-xs opacity-90 mt-12">Light your cigarette.</p>
 
-        <!-- Big Countdown Ring -->
         <div class="relative flex justify-center items-center w-48 h-48">
           <svg class="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 120 120">
             <circle cx="60" cy="60" r="54" fill="transparent" stroke="var(--card-border)" stroke-width="4"></circle>
-            <!-- Circumference is ~339.29 -->
             <circle id="takeoverRing" cx="60" cy="60" r="54" fill="transparent" stroke="var(--accent)" stroke-width="6" stroke-dasharray="339.29" stroke-dashoffset="0" stroke-linecap="round" style="transition: stroke-dashoffset 1s linear; filter: drop-shadow(0 0 12px var(--accent-glow));"></circle>
           </svg>
           <span id="takeoverNumber" class="numeric-display text-7xl font-light z-10" style="color: var(--text-main);">6</span>
         </div>
-
-        <!-- Fading Live Fact -->
         <p id="takeoverFact" class="text-[11px] font-medium text-center text-gray-400 opacity-0 transition-opacity duration-1000 max-w-[200px] leading-relaxed">It's been -- since your last one.</p>
       </div>
 
-      <!-- Bottom Tags Grid (Pointer events enabled for tapping) -->
       <div class="p-6 pb-12 w-full max-w-md mx-auto pointer-events-auto">
         <p class="text-[10px] uppercase tracking-widest text-center text-gray-500 font-bold mb-4">Tap to tag (optional)</p>
-        <div id="takeoverTagsGrid" class="flex flex-wrap justify-center gap-2.5">
-          <!-- JS will populate tags here -->
-        </div>
+        <div id="takeoverTagsGrid" class="flex flex-wrap justify-center gap-2.5"></div>
         <p class="text-[9px] text-center text-gray-500 mt-6 opacity-60">Tap anywhere outside to skip</p>
       </div>
-      
     </div>
   </div>
 

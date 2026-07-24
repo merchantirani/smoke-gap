@@ -37,8 +37,6 @@ let mapInstance = null, modalMapInstance = null;
 let mainTimer = null, waveTimer = null, cooldownTimer = null;
 let editingLogIdx = null;
 let currentSelectedTags = [];
-
-// Takeover specifics
 let takeoverTimer = null;
 let takeoverCountdown = 6;
 
@@ -196,7 +194,7 @@ function savePinSetup() {
   }
 }
 
-// MAIN LOG CLICK - Updated with Takeover
+// TAKEOVER LOGIC & ACTIONS
 function handleLogClick() {
   if(new Date().getTime() < lockEndTime) return;
   
@@ -213,7 +211,6 @@ function handleLogClick() {
   const now = new Date().getTime();
   let gap = logs.length > 0 ? Math.round((now - logs[logs.length-1].timestamp)/60000) : null;
   
-  // Save silently in background
   logs.push({timestamp: now, gap: gap, tags: [], lat: null, lng: null});
   const newLogIdx = logs.length - 1;
   localStorage.setItem('smoke_logs', JSON.stringify(logs));
@@ -222,11 +219,8 @@ function handleLogClick() {
   
   updateUI(); 
   checkLock(); 
-  
-  // Trigger 6-second Takeover instead of old modal
   startSmokeTakeover(newLogIdx, gap);
 
-  // Silently fetch GPS
   if(navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(p => {
       if(logs[newLogIdx]) {
@@ -239,7 +233,6 @@ function handleLogClick() {
   }
 }
 
-// --- 6-SECOND PRE-SMOKE TAKEOVER LOGIC ---
 function startSmokeTakeover(logIdx, gap) {
   editingLogIdx = logIdx;
   currentSelectedTags = [];
@@ -272,16 +265,10 @@ function startSmokeTakeover(logIdx, gap) {
   takeoverTimer = setInterval(() => {
     takeoverCountdown--;
     numberEl.innerText = takeoverCountdown;
-    
-    // Smooth Ring Drain (Circumference 339.29)
     const offset = 339.29 - (339.29 * (takeoverCountdown / 6));
     ringEl.style.strokeDashoffset = offset;
 
-    // Fade in fact at ~3 seconds
-    if (takeoverCountdown === 3) {
-      factEl.style.opacity = 1;
-    }
-
+    if (takeoverCountdown === 3) factEl.style.opacity = 1;
     if (takeoverCountdown <= 0) {
       clearInterval(takeoverTimer);
       closeSmokeTakeover();
@@ -306,6 +293,25 @@ function toggleTakeoverTag(t) {
   renderTakeoverTags();
 }
 
+// FIX 5: EXPLICIT CANCEL DURING OVERLAY
+function cancelSmokeTakeover(e) {
+  if(e) e.stopPropagation();
+  if(takeoverTimer) clearInterval(takeoverTimer);
+  const overlay = document.getElementById('smokeTakeover');
+  overlay.classList.remove('opacity-100');
+  overlay.classList.add('opacity-0');
+
+  if (editingLogIdx === logs.length - 1) {
+    logs.pop();
+    localStorage.setItem('smoke_logs', JSON.stringify(logs));
+    lockEndTime = 0; 
+    localStorage.setItem('smoke_lock_end', lockEndTime);
+    updateUI();
+    checkLock();
+  }
+  setTimeout(() => { overlay.classList.add('hidden'); }, 500);
+}
+
 function closeSmokeTakeover() {
   if(takeoverTimer) clearInterval(takeoverTimer);
   const overlay = document.getElementById('smokeTakeover');
@@ -313,7 +319,6 @@ function closeSmokeTakeover() {
   overlay.classList.remove('opacity-100');
   overlay.classList.add('opacity-0');
   
-  // Save selected tags to background log silently
   if(editingLogIdx !== null && logs[editingLogIdx]) {
     logs[editingLogIdx].tags = [...currentSelectedTags];
     localStorage.setItem('smoke_logs', JSON.stringify(logs));
@@ -321,12 +326,56 @@ function closeSmokeTakeover() {
     if(!document.getElementById('page-insights').classList.contains('hidden')) renderAllCharts();
   }
 
-  // Wait for fade out to hide
   setTimeout(() => {
     overlay.classList.add('hidden');
+    showUndoToast(editingLogIdx);
   }, 500);
 }
-// --- END TAKEOVER LOGIC ---
+
+// FIX 5: UNDO TOAST LOGIC
+function showUndoToast(logIdx) {
+  const c = document.getElementById('toastContainer');
+  if(!c) return;
+  const t = document.createElement('div');
+  t.className = 'premium-card px-4 py-3 rounded-full text-xs font-bold shadow-lg pointer-events-auto transition-all duration-300 flex items-center gap-3 border border-gray-500/20';
+  t.style.background = 'var(--card-bg)';
+  t.innerHTML = `
+    <span class="flex items-center gap-1.5" style="color: var(--text-main);"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-500"></i> Logged</span>
+    <div class="w-px h-3 bg-gray-500/30"></div>
+    <button onclick="window.undoLog(${logIdx}, this.parentElement)" class="text-sky-500 active:scale-95 transition-transform uppercase tracking-wider">Undo</button>
+  `;
+  c.appendChild(t);
+  if(window.lucide) window.lucide.createIcons();
+  
+  requestAnimationFrame(() => { t.style.opacity = '1'; t.style.transform = 'translateY(0)'; });
+  
+  const autoHide = setTimeout(() => {
+    t.style.opacity = '0'; t.style.transform = 'translateY(10px)';
+    setTimeout(() => t.remove(), 300);
+  }, 5000);
+  t.dataset.timerId = autoHide;
+}
+
+window.undoLog = function(idx, element) {
+  clearTimeout(element.dataset.timerId);
+  element.style.opacity = '0';
+  setTimeout(() => element.remove(), 300);
+
+  if (logs[idx]) {
+    logs.splice(idx, 1);
+    for (let i = 1; i < logs.length; i++) { logs[i].gap = Math.round((logs[i].timestamp - logs[i-1].timestamp)/60000); }
+    if (logs.length > 0) logs[0].gap = null;
+    
+    localStorage.setItem('smoke_logs', JSON.stringify(logs));
+    lockEndTime = 0;
+    localStorage.setItem('smoke_lock_end', lockEndTime);
+    
+    updateUI();
+    checkLock();
+    if(!document.getElementById('page-insights').classList.contains('hidden')) renderAllCharts();
+    showToast("Log removed.");
+  }
+}
 
 function checkLock() {
   const btn = document.getElementById('mainLogBtn');
@@ -423,7 +472,18 @@ function showConfirm(title, message, onConfirm) {
 function closeConfirmModal() { document.getElementById('confirmModal').classList.add('hidden'); pendingConfirmCallback = null; }
 function confirmYes() { const cb = pendingConfirmCallback; closeConfirmModal(); if(cb) cb(); }
 
-function applyTheme(t) { document.body.className = document.body.className.replace(/theme-\w+/g, '').trim(); if(t!=='default') document.body.classList.add(`theme-${t}`); }
+// FIX 3: Dynamic Theme Color Meta Update
+function applyTheme(t) { 
+  document.body.className = document.body.className.replace(/theme-\w+/g, '').trim(); 
+  if(t!=='default') document.body.classList.add(`theme-${t}`); 
+  
+  const metaTheme = document.getElementById('theme-color-meta');
+  if(metaTheme) {
+    if(t === 'white') metaTheme.setAttribute('content', '#F8FAFC');
+    else if (t === 'carbon') metaTheme.setAttribute('content', '#000000');
+    else metaTheme.setAttribute('content', '#090A0F');
+  }
+}
 
 function updateSettings() {
   settings.theme = document.getElementById('themeSelect').value;
@@ -455,11 +515,28 @@ function updateUI() {
   document.getElementById('homeStreak').innerText = `🔥 ${currentStreak} Streak`;
 
   const today = logs.filter(l => new Date(l.timestamp).toDateString() === new Date().toDateString());
+  
+  // FIX 2: Limit Breach UI logic
+  const overLimit = today.length > settings.dailyLimit;
   document.getElementById('todayCount').innerText = `${today.length} / ${settings.dailyLimit}`;
+  
+  const stickIconEl = document.getElementById('todaySticksIcon');
+  const stickTextEl = document.getElementById('todayCount');
+  if(stickIconEl && stickTextEl) {
+    if(overLimit) {
+      stickIconEl.className = 'w-6 h-6 rounded-full bg-red-500/10 flex items-center justify-center text-red-500';
+      stickTextEl.style.color = '#EF4444';
+    } else {
+      stickIconEl.className = 'w-6 h-6 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500';
+      stickTextEl.style.color = 'var(--text-main)';
+    }
+  }
+
   document.getElementById('todaySpend').innerText = `${settings.currency} ${(today.length * (settings.packPrice/settings.packSize)).toFixed(1)}`;
   document.getElementById('prevGapCard').innerText = logs.length > 1 ? formatGap(logs[logs.length-1].gap) : '--';
   const todayGaps = today.map(l => l.gap).filter(g => g !== null && g !== undefined);
   document.getElementById('bestGapCard').innerText = todayGaps.length > 0 ? formatGap(Math.max(...todayGaps)) : '--';
+  
   renderHistory('homeRecentLogs', 3);
 }
 
@@ -547,11 +624,16 @@ function renderTriggerSettingsList() {
   c.innerHTML = triggers.map((t, idx) => `<span class="bg-gray-500/10 text-xs px-3 py-1.5 rounded-xl border border-gray-500/20 flex items-center gap-1.5 font-medium" style="color: var(--text-main);">${esc(t)} <button onclick="window.removeCustomTrigger(${idx})" class="text-red-500 font-bold hover:opacity-80">✕</button></span>`).join('');
 }
 
-// Old History Modal Logic (Keep for editing old logs)
+// FIX 6: EDIT MODAL LOGIC (INCLUDES DATE/TIME)
 function openTriggerModal(logIdx = null) {
   editingLogIdx = logIdx !== null ? logIdx : logs.length - 1;
   const log = logs[editingLogIdx];
   currentSelectedTags = log.tags && log.tags.length ? [...log.tags] : (log.trigger ? [log.trigger] : []);
+  
+  const d = new Date(log.timestamp);
+  document.getElementById('editLogDate').value = `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`;
+  document.getElementById('editLogTime').value = `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+
   renderModalTriggerGrid();
   document.getElementById('triggerModal').classList.remove('hidden');
 }
@@ -575,49 +657,96 @@ function toggleTag(idx) {
 
 function saveTags() {
   if(editingLogIdx !== null && logs[editingLogIdx]) {
+    const dateVal = document.getElementById('editLogDate').value;
+    const timeVal = document.getElementById('editLogTime').value;
+    if(dateVal && timeVal) {
+      const dt = new Date(`${dateVal}T${timeVal}`);
+      if(!isNaN(dt.getTime())) logs[editingLogIdx].timestamp = dt.getTime();
+    }
     logs[editingLogIdx].tags = [...currentSelectedTags];
+    
+    // Sort & recalculate gaps
+    logs.sort((a,b) => a.timestamp - b.timestamp);
+    for (let i = 0; i < logs.length; i++) {
+        logs[i].gap = i > 0 ? Math.round((logs[i].timestamp - logs[i-1].timestamp)/60000) : null;
+    }
+    
     localStorage.setItem('smoke_logs', JSON.stringify(logs));
-    renderHistory('homeRecentLogs', 3);
+    updateUI();
     if(!document.getElementById('page-history').classList.contains('hidden')) renderHistory('fullHistoryList');
     if(!document.getElementById('page-insights').classList.contains('hidden')) requestAnimationFrame(() => renderAllCharts());
   }
   document.getElementById('triggerModal').classList.add('hidden');
 }
 
+function closeTriggerModal() {
+  document.getElementById('triggerModal').classList.add('hidden');
+}
+
+// FIX 7: DATE-GROUPED HISTORY LIST
 function renderHistory(tId='fullHistoryList', limit=null) {
   const c = document.getElementById(tId); if(!c) return;
   if(logs.length===0) { c.innerHTML="<p class='text-center py-6 text-xs flex flex-col items-center gap-2' style='color: var(--text-muted);'><i data-lucide='inbox' class='w-6 h-6 opacity-50'></i> No logs recorded yet.</p>"; if(window.lucide) window.lucide.createIcons(); return; }
-  let items = logs.slice().reverse(); if(limit) items = items.slice(0,limit);
   
-  c.innerHTML = items.map((l, j) => {
-    const origIdx = logs.length - 1 - j;
-    const prev = origIdx > 0 ? logs[origIdx - 1] : null;
-    let trendClass = 'bg-gray-500/10 text-gray-400', trendIcon = 'minus', valueColor = 'var(--accent)';
-    if (l.gap !== null && l.gap !== undefined && prev && prev.gap !== null && prev.gap !== undefined) {
-      if (l.gap > prev.gap) { trendClass = 'bg-emerald-500/10 text-emerald-500'; trendIcon = 'trending-up'; valueColor = '#10B981'; }
-      else if (l.gap < prev.gap) { trendClass = 'bg-red-500/10 text-red-500'; trendIcon = 'trending-down'; valueColor = '#EF4444'; }
+  let mappedLogs = logs.map((l, i) => ({ ...l, origIdx: i })).reverse();
+  if(limit) mappedLogs = mappedLogs.slice(0, limit);
+
+  if (tId === 'homeRecentLogs') {
+    c.innerHTML = mappedLogs.map(l => renderHistoryItem(l)).join('');
+  } else {
+    let groups = {};
+    mappedLogs.forEach(l => {
+      const k = new Date(l.timestamp).toDateString();
+      if(!groups[k]) groups[k] = [];
+      groups[k].push(l);
+    });
+
+    const todayStr = new Date().toDateString();
+    let yest = new Date(); yest.setDate(yest.getDate() - 1);
+    const yestStr = yest.toDateString();
+
+    let html = '';
+    for (let k in groups) {
+      let headerLabel = k;
+      if (k === todayStr) headerLabel = 'TODAY';
+      else if (k === yestStr) headerLabel = 'YESTERDAY';
+      else {
+        const d = new Date(k);
+        headerLabel = `${d.toLocaleDateString('en-US', {weekday:'short'}).toUpperCase()}, ${d.toLocaleDateString('en-US', {month:'short', day:'numeric'}).toUpperCase()}`;
+      }
+      html += `<div class="pt-4 pb-1"><h4 class="text-[10px] font-bold uppercase tracking-widest text-gray-500">${headerLabel}</h4></div>`;
+      html += `<div class="space-y-3">` + groups[k].map(l => renderHistoryItem(l)).join('') + `</div>`;
     }
-    const tagsArr = l.tags && l.tags.length ? l.tags : (l.trigger ? [l.trigger] : ['Uncategorized']);
-    const visibleTags = tagsArr.slice(0, 2).map(esc).join(', ');
-    const extraCount = tagsArr.length - 2;
-    const tagsDisplay = extraCount > 0 ? `${visibleTags} <span class="opacity-60">+${extraCount} more</span>` : visibleTags;
-    return `
-    <div onclick="window.openTriggerModal(${origIdx})" class="premium-card p-4 flex justify-between items-center relative overflow-hidden cursor-pointer active:scale-[0.98] transition-transform hover:bg-gray-500/5">
-      <div class="flex items-start gap-3 flex-1 min-w-0 pr-3">
-        <div class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${trendClass}"><i data-lucide="${trendIcon}" class="w-3.5 h-3.5"></i></div>
-        <div class="flex-1 min-w-0">
-          <div class="font-bold tracking-wide" style="color: var(--text-main);">${formatAppTime(new Date(l.timestamp))}</div>
-          <div class="text-[10px] font-bold uppercase mt-0.5 flex items-start gap-1" style="color: var(--text-muted);">
-            <i data-lucide="tag" class="w-3 h-3 shrink-0 mt-0.5"></i>
-            <span class="leading-relaxed whitespace-normal break-words">${tagsDisplay}</span>
-          </div>
+    c.innerHTML = html;
+  }
+  if(window.lucide) window.lucide.createIcons();
+}
+
+function renderHistoryItem(l) {
+  const prev = l.origIdx > 0 ? logs[l.origIdx - 1] : null;
+  let trendClass = 'bg-gray-500/10 text-gray-400', trendIcon = 'minus', valueColor = 'var(--accent)';
+  if (l.gap !== null && l.gap !== undefined && prev && prev.gap !== null && prev.gap !== undefined) {
+    if (l.gap > prev.gap) { trendClass = 'bg-emerald-500/10 text-emerald-500'; trendIcon = 'trending-up'; valueColor = '#10B981'; }
+    else if (l.gap < prev.gap) { trendClass = 'bg-red-500/10 text-red-500'; trendIcon = 'trending-down'; valueColor = '#EF4444'; }
+  }
+  const tagsArr = l.tags && l.tags.length ? l.tags : (l.trigger ? [l.trigger] : ['Uncategorized']);
+  const visibleTags = tagsArr.slice(0, 2).map(esc).join(', ');
+  const extraCount = tagsArr.length - 2;
+  const tagsDisplay = extraCount > 0 ? `${visibleTags} <span class="opacity-60">+${extraCount} more</span>` : visibleTags;
+  return `
+  <div onclick="window.openTriggerModal(${l.origIdx})" class="premium-card p-4 flex justify-between items-center relative overflow-hidden cursor-pointer active:scale-[0.98] transition-transform hover:bg-gray-500/5">
+    <div class="flex items-start gap-3 flex-1 min-w-0 pr-3">
+      <div class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${trendClass}"><i data-lucide="${trendIcon}" class="w-3.5 h-3.5"></i></div>
+      <div class="flex-1 min-w-0">
+        <div class="font-bold tracking-wide" style="color: var(--text-main);">${formatAppTime(new Date(l.timestamp))}</div>
+        <div class="text-[10px] font-bold uppercase mt-0.5 flex items-start gap-1" style="color: var(--text-muted);">
+          <i data-lucide="tag" class="w-3 h-3 shrink-0 mt-0.5"></i>
+          <span class="leading-relaxed whitespace-normal break-words">${tagsDisplay}</span>
         </div>
       </div>
-      <div class="numeric-display font-bold text-base shrink-0" style="color: ${valueColor};">${formatGap(l.gap)}</div>
     </div>
-  `;
-  }).join('');
-  if(window.lucide) window.lucide.createIcons();
+    <div class="numeric-display font-bold text-base shrink-0" style="color: ${valueColor};">${formatGap(l.gap)}</div>
+  </div>`;
 }
 
 function getFilteredLogs() {
@@ -775,10 +904,7 @@ function loadChartOrder() { const savedOrder = JSON.parse(localStorage.getItem('
 
 window.enterPin = enterPin; window.clearPin = clearPin; window.setupPin = setupPin;
 window.handleLogClick = handleLogClick; window.switchTab = switchTab; window.updateSettings = updateSettings; window.resetData = resetData; 
-
-// New Takeover Exports
-window.startSmokeTakeover = startSmokeTakeover; window.closeSmokeTakeover = closeSmokeTakeover; window.toggleTakeoverTag = toggleTakeoverTag;
-
+window.startSmokeTakeover = startSmokeTakeover; window.closeSmokeTakeover = closeSmokeTakeover; window.toggleTakeoverTag = toggleTakeoverTag; window.cancelSmokeTakeover = cancelSmokeTakeover;
 window.openTriggerModal = openTriggerModal; window.closeTriggerModal = closeTriggerModal; window.toggleTag = toggleTag; window.saveTags = saveTags;
 window.openWaveModal = openWaveModal; window.closeWaveModal = closeWaveModal; window.startWave = startWave;
 window.renderAllCharts = renderAllCharts; window.openMapModal = openMapModal; window.closeMapModal = closeMapModal;
