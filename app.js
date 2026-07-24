@@ -194,7 +194,7 @@ function savePinSetup() {
   }
 }
 
-// TAKEOVER LOGIC & ACTIONS
+// LOG CLICK WITH IGNITION TAKEOVER
 function handleLogClick() {
   if(new Date().getTime() < lockEndTime) return;
   
@@ -242,11 +242,19 @@ function startSmokeTakeover(logIdx, gap) {
   const numberEl = document.getElementById('takeoverNumber');
   const ringEl = document.getElementById('takeoverRing');
   const factEl = document.getElementById('takeoverFact');
+  const flashEl = document.getElementById('takeoverFlash');
   
   numberEl.innerText = takeoverCountdown;
   ringEl.style.strokeDashoffset = 0;
   factEl.style.opacity = 0;
   
+  // Reset & Re-trigger flash animation
+  if(flashEl) {
+    flashEl.style.animation = 'none';
+    void flashEl.offsetWidth;
+    flashEl.style.animation = 'flashOut 0.5s ease-out forwards';
+  }
+
   let factText = "";
   if (gap === null || gap === undefined) factText = "Setting your first baseline.";
   else if (gap < 60) factText = `It's been ${gap}m since your last one.`;
@@ -293,7 +301,6 @@ function toggleTakeoverTag(t) {
   renderTakeoverTags();
 }
 
-// FIX 5: EXPLICIT CANCEL DURING OVERLAY
 function cancelSmokeTakeover(e) {
   if(e) e.stopPropagation();
   if(takeoverTimer) clearInterval(takeoverTimer);
@@ -332,7 +339,6 @@ function closeSmokeTakeover() {
   }, 500);
 }
 
-// FIX 5: UNDO TOAST LOGIC
 function showUndoToast(logIdx) {
   const c = document.getElementById('toastContainer');
   if(!c) return;
@@ -472,7 +478,7 @@ function showConfirm(title, message, onConfirm) {
 function closeConfirmModal() { document.getElementById('confirmModal').classList.add('hidden'); pendingConfirmCallback = null; }
 function confirmYes() { const cb = pendingConfirmCallback; closeConfirmModal(); if(cb) cb(); }
 
-// FIX 3: Dynamic Theme Color Meta Update
+// RELIABLE THEME COLOR META SWITCHER
 function applyTheme(t) { 
   document.body.className = document.body.className.replace(/theme-\w+/g, '').trim(); 
   if(t!=='default') document.body.classList.add(`theme-${t}`); 
@@ -516,7 +522,6 @@ function updateUI() {
 
   const today = logs.filter(l => new Date(l.timestamp).toDateString() === new Date().toDateString());
   
-  // FIX 2: Limit Breach UI logic
   const overLimit = today.length > settings.dailyLimit;
   document.getElementById('todayCount').innerText = `${today.length} / ${settings.dailyLimit}`;
   
@@ -624,7 +629,7 @@ function renderTriggerSettingsList() {
   c.innerHTML = triggers.map((t, idx) => `<span class="bg-gray-500/10 text-xs px-3 py-1.5 rounded-xl border border-gray-500/20 flex items-center gap-1.5 font-medium" style="color: var(--text-main);">${esc(t)} <button onclick="window.removeCustomTrigger(${idx})" class="text-red-500 font-bold hover:opacity-80">✕</button></span>`).join('');
 }
 
-// FIX 6: EDIT MODAL LOGIC (INCLUDES DATE/TIME)
+// OPEN EDIT LOG MODAL WITH PROPER DATE/TIME FORMATTING
 function openTriggerModal(logIdx = null) {
   editingLogIdx = logIdx !== null ? logIdx : logs.length - 1;
   const log = logs[editingLogIdx];
@@ -665,7 +670,6 @@ function saveTags() {
     }
     logs[editingLogIdx].tags = [...currentSelectedTags];
     
-    // Sort & recalculate gaps
     logs.sort((a,b) => a.timestamp - b.timestamp);
     for (let i = 0; i < logs.length; i++) {
         logs[i].gap = i > 0 ? Math.round((logs[i].timestamp - logs[i-1].timestamp)/60000) : null;
@@ -683,7 +687,6 @@ function closeTriggerModal() {
   document.getElementById('triggerModal').classList.add('hidden');
 }
 
-// FIX 7: DATE-GROUPED HISTORY LIST
 function renderHistory(tId='fullHistoryList', limit=null) {
   const c = document.getElementById(tId); if(!c) return;
   if(logs.length===0) { c.innerHTML="<p class='text-center py-6 text-xs flex flex-col items-center gap-2' style='color: var(--text-muted);'><i data-lucide='inbox' class='w-6 h-6 opacity-50'></i> No logs recorded yet.</p>"; if(window.lucide) window.lucide.createIcons(); return; }
@@ -714,7 +717,7 @@ function renderHistory(tId='fullHistoryList', limit=null) {
         const d = new Date(k);
         headerLabel = `${d.toLocaleDateString('en-US', {weekday:'short'}).toUpperCase()}, ${d.toLocaleDateString('en-US', {month:'short', day:'numeric'}).toUpperCase()}`;
       }
-      html += `<div class="pt-4 pb-1"><h4 class="text-[10px] font-bold uppercase tracking-widest text-gray-500">${headerLabel}</h4></div>`;
+      html += `<div class="pt-4 pb-1"><h4 class="text-[10px] font-bold uppercase tracking-widest text-gray-400">${headerLabel}</h4></div>`;
       html += `<div class="space-y-3">` + groups[k].map(l => renderHistoryItem(l)).join('') + `</div>`;
     }
     c.innerHTML = html;
