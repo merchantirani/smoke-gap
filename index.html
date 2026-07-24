@@ -6,7 +6,6 @@
   <meta name="theme-color" id="theme-color-meta" content="#090A0F" />
   <title>pause — Widen the gap.</title>
 
-  <!-- FIX 2: Instant Theme Script (Pre-paint execution to prevent black header flash) -->
   <script>
     (function() {
       try {
@@ -72,7 +71,6 @@
     
     html, body { background-color: var(--bg-body); color: var(--text-main); font-family: 'General Sans', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-tap-highlight-color: transparent; }
     
-    /* Selective non-selectable for UI controls only */
     button, .nav-btn, .drag-handle, .dock-bar { user-select: none; -webkit-user-select: none; }
     
     .brand-title { 
@@ -121,6 +119,35 @@
 
     .takeover-bg {
       background: radial-gradient(circle at center, var(--accent-glow) 0%, var(--bg-body) 80%);
+    }
+
+    /* Cleaned up date/time native inputs to prevent icon overlap and center misalignment */
+    .custom-input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+    .custom-input-wrapper input[type="date"],
+    .custom-input-wrapper input[type="time"] {
+      width: 100%;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-main);
+      font-weight: 700;
+      font-size: 0.95rem;
+      padding-right: 32px;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    .custom-input-wrapper input::-webkit-calendar-picker-indicator {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      opacity: 0.6;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -516,28 +543,40 @@
     </nav>
   </div>
 
-  <!-- FIX 3: Edit Modal Date/Time Input Padding Fix -->
-  <div id="triggerModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex flex-col justify-end transition-opacity" onclick="if(event.target===this) window.saveTags()">
-    <div class="premium-card p-6 rounded-b-none space-y-4 max-w-md mx-auto w-full">
+  <!-- POLISHED EDIT LOG ENTRY MODAL -->
+  <div id="triggerModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex flex-col justify-end transition-opacity" onclick="if(event.target===this) window.closeTriggerModal()">
+    <div class="premium-card p-6 rounded-b-none space-y-4 max-w-md mx-auto w-full border-t border-white/10">
+      
+      <!-- Header with Close (✕) and Save Buttons -->
       <div class="flex justify-between items-center mb-1">
+        <button onclick="window.closeTriggerModal()" class="w-8 h-8 rounded-full bg-gray-500/10 flex items-center justify-center shrink-0 active:scale-95 transition-transform" style="color: var(--text-muted);">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
         <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest text-center">Edit Log Entry</h3>
-        <button onclick="window.saveTags()" class="text-xs font-bold text-white px-4 py-1.5 rounded-full shadow-lg active:scale-95 transition-all" style="background: var(--accent);">Save</button>
+        <button onclick="window.saveTags()" class="text-xs font-bold text-white px-5 py-2 rounded-full shadow-lg active:scale-95 transition-all" style="background: var(--accent);">Save</button>
       </div>
       
-      <!-- Roomy Date & Time Picker inputs -->
-      <div class="space-y-3 border-b border-gray-500/20 pb-4 mb-2">
+      <!-- Symmetrical Left-Aligned Date & Time Pickers with Icons -->
+      <div class="space-y-3 border-b border-gray-500/10 pb-4 mb-2">
         <div>
-          <label class="text-[10px] uppercase tracking-widest text-gray-400 mb-1 block font-bold">Date</label>
-          <input type="date" id="editLogDate" class="w-full bg-gray-500/10 p-3 rounded-xl text-sm font-bold outline-none border border-gray-500/20" style="color: var(--text-main);">
+          <label class="text-[10px] uppercase tracking-widest text-gray-400 mb-1.5 block font-bold">Date</label>
+          <div class="custom-input-wrapper bg-gray-500/10 border border-gray-500/20 rounded-xl px-3.5 py-3">
+            <input type="date" id="editLogDate" class="text-left font-bold">
+            <i data-lucide="calendar" class="w-4 h-4 text-gray-400 absolute right-3.5 pointer-events-none"></i>
+          </div>
         </div>
         <div>
-          <label class="text-[10px] uppercase tracking-widest text-gray-400 mb-1 block font-bold">Time</label>
-          <input type="time" id="editLogTime" class="w-full bg-gray-500/10 p-3 rounded-xl text-sm font-bold outline-none border border-gray-500/20" style="color: var(--text-main);">
+          <label class="text-[10px] uppercase tracking-widest text-gray-400 mb-1.5 block font-bold">Time</label>
+          <div class="custom-input-wrapper bg-gray-500/10 border border-gray-500/20 rounded-xl px-3.5 py-3">
+            <input type="time" id="editLogTime" class="text-left font-bold">
+            <i data-lucide="clock" class="w-4 h-4 text-gray-400 absolute right-3.5 pointer-events-none"></i>
+          </div>
         </div>
       </div>
       
+      <!-- Flowing Flexible Tag Chips (Prevents odd Solo tag orphan look) -->
       <p class="text-[10px] uppercase tracking-widest text-gray-400 font-bold -mb-1">Tags</p>
-      <div id="modalTriggerGrid" class="grid grid-cols-2 gap-3 text-xs font-bold"></div>
+      <div id="modalTriggerGrid" class="flex flex-wrap gap-2.5 pt-1"></div>
     </div>
   </div>
 
@@ -554,7 +593,6 @@
         <div class="relative flex justify-center items-center w-48 h-48">
           <svg class="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 120 120">
             <circle cx="60" cy="60" r="54" fill="transparent" stroke="var(--card-border)" stroke-width="4"></circle>
-            <!-- FIX 1: Default to fully offset (339.29) so it starts empty -->
             <circle id="takeoverRing" cx="60" cy="60" r="54" fill="transparent" stroke="var(--accent)" stroke-width="6" stroke-dasharray="339.29" stroke-dashoffset="339.29" stroke-linecap="round" style="transition: stroke-dashoffset 1s linear; filter: drop-shadow(0 0 12px var(--accent-glow));"></circle>
           </svg>
           <span id="takeoverNumber" class="numeric-display text-7xl font-light z-10" style="color: var(--text-main);">6</span>

@@ -194,7 +194,6 @@ function savePinSetup() {
   }
 }
 
-// LOG CLICK & SMOOTH RING TAKEOVER
 function handleLogClick() {
   if(new Date().getTime() < lockEndTime) return;
   
@@ -233,7 +232,6 @@ function handleLogClick() {
   }
 }
 
-// FIX 1: Instantaneous initial tick for 0ms Ring Drain (No jump/delay)
 function startSmokeTakeover(logIdx, gap) {
   editingLogIdx = logIdx;
   currentSelectedTags = [];
@@ -252,7 +250,6 @@ function startSmokeTakeover(logIdx, gap) {
 
   renderTakeoverTags();
 
-  // Instant tick update (0ms execution)
   const updateTick = () => {
     numberEl.innerText = takeoverCountdown;
     const offset = 339.29 - (339.29 * (takeoverCountdown / 6));
@@ -260,7 +257,7 @@ function startSmokeTakeover(logIdx, gap) {
     if (takeoverCountdown === 3) factEl.style.opacity = 1;
   };
 
-  updateTick(); // Call immediately
+  updateTick();
 
   overlay.classList.remove('hidden');
   requestAnimationFrame(() => {
@@ -474,7 +471,6 @@ function showConfirm(title, message, onConfirm) {
 function closeConfirmModal() { document.getElementById('confirmModal').classList.add('hidden'); pendingConfirmCallback = null; }
 function confirmYes() { const cb = pendingConfirmCallback; closeConfirmModal(); if(cb) cb(); }
 
-// FIX 2: Instant Theme applying both to DocumentElement and Meta Theme
 function applyTheme(t) { 
   document.body.className = document.body.className.replace(/theme-\w+/g, '').trim(); 
   document.documentElement.className = document.documentElement.className.replace(/theme-\w+/g, '').trim(); 
@@ -523,7 +519,6 @@ function updateUI() {
 
   const today = logs.filter(l => new Date(l.timestamp).toDateString() === new Date().toDateString());
   
-  // FIX 4: Limit Breach triggers at >= Goal (e.g. 15/15)
   const overLimit = today.length >= settings.dailyLimit;
   document.getElementById('todayCount').innerText = `${today.length} / ${settings.dailyLimit}`;
   
@@ -642,15 +637,17 @@ function openTriggerModal(logIdx = null) {
 
   renderModalTriggerGrid();
   document.getElementById('triggerModal').classList.remove('hidden');
+  if(window.lucide) window.lucide.createIcons();
 }
 
+// Flowing Tag Chips Rendering
 function renderModalTriggerGrid() {
   const grid = document.getElementById('modalTriggerGrid');
   grid.innerHTML = triggers.map((t, idx) => {
     const isSelected = currentSelectedTags.includes(t);
-    const bgClass = isSelected ? 'text-white border border-sky-400' : 'bg-gray-500/10';
+    const bgClass = isSelected ? 'text-white border border-sky-400' : 'bg-gray-500/10 border border-gray-500/15';
     const inlineStyle = isSelected ? `style="background: var(--accent); box-shadow: 0 4px 15px var(--accent-glow);"` : `style="color: var(--text-main);"`;
-    return `<button onclick="window.toggleTag(${idx})" class="py-4 px-2 rounded-xl text-center active:scale-95 transition-all ${bgClass}" ${inlineStyle}>${esc(t)}</button>`;
+    return `<button onclick="window.toggleTag(${idx})" class="px-4 py-2.5 rounded-full text-xs font-semibold active:scale-95 transition-all ${bgClass}" ${inlineStyle}>${esc(t)}</button>`;
   }).join('');
 }
 
