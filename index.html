@@ -4,6 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
   <title>pause — Widen the gap.</title>
+  
+  <!-- Favicons & App Icons -->
+  <link rel="icon" type="image/x-icon" href="icons/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="icons/pause_favicon_16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/pause_favicon_32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/pause_icon_180.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/pause_icon_192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icons/pause_icon_512.png">
+
   <link href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700&f[]=general-sans@400,500,600,700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   
@@ -49,7 +58,6 @@
       font-family: 'Clash Display', sans-serif; 
       font-weight: 700; 
       letter-spacing: -0.03em; 
-      /* Fix 1: Theme-aware gradient from accent to text-main */
       background: linear-gradient(135deg, var(--accent), var(--text-main));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -115,7 +123,6 @@
       <div>
         <div class="flex items-center gap-2">
           <h1 class="brand-title text-2xl tracking-tight">pause</h1>
-          <!-- Fix 2: Contextual Live Indicator Dot mirrored from Hero Ring logic -->
           <span id="headerLiveDot" class="w-2 h-2 rounded-full bg-gray-400 live-dot mt-1"></span>
         </div>
         <p class="text-[9px] font-bold uppercase tracking-[0.2em] mt-0.5" style="color: var(--text-muted);">Widen the gap.</p>
