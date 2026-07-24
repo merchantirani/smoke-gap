@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
   <title>pause — Widen the gap.</title>
-  <!-- Fontshare & Google Fonts -->
   <link href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700&f[]=general-sans@400,500,600,700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   
@@ -46,7 +45,15 @@
     
     html, body { background-color: var(--bg-body); color: var(--text-main); font-family: 'General Sans', -apple-system, BlinkMacSystemFont, sans-serif; user-select: none; -webkit-tap-highlight-color: transparent; }
     
-    .brand-title { font-family: 'Clash Display', sans-serif; font-weight: 700; letter-spacing: -0.03em; }
+    .brand-title { 
+      font-family: 'Clash Display', sans-serif; 
+      font-weight: 700; 
+      letter-spacing: -0.03em; 
+      /* Fix 1: Theme-aware gradient from accent to text-main */
+      background: linear-gradient(135deg, var(--accent), var(--text-main));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
     .numeric-display { font-family: 'Space Grotesk', monospace; font-variant-numeric: tabular-nums; }
     
     .app-container { padding-bottom: 96px; min-height: 100vh; }
@@ -107,8 +114,9 @@
     <header class="p-5 sticky top-0 z-40 flex justify-between items-center" style="background: linear-gradient(to bottom, var(--bg-body) 70%, transparent);">
       <div>
         <div class="flex items-center gap-2">
-          <h1 class="brand-title text-2xl tracking-tight bg-gradient-to-r from-amber-400 to-amber-200 bg-clip-text text-transparent">pause</h1>
-          <span class="w-2 h-2 rounded-full bg-amber-500 live-dot mt-1"></span>
+          <h1 class="brand-title text-2xl tracking-tight">pause</h1>
+          <!-- Fix 2: Contextual Live Indicator Dot mirrored from Hero Ring logic -->
+          <span id="headerLiveDot" class="w-2 h-2 rounded-full bg-gray-400 live-dot mt-1"></span>
         </div>
         <p class="text-[9px] font-bold uppercase tracking-[0.2em] mt-0.5" style="color: var(--text-muted);">Widen the gap.</p>
       </div>

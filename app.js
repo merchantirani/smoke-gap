@@ -5,7 +5,6 @@ if (!settings.packSize || settings.packSize <= 0) settings.packSize = 20;
 if (!settings.timeFormat) settings.timeFormat = '12h';
 let triggers = JSON.parse(localStorage.getItem('smoke_triggers')) || ['💼 Work Stress', '🍽️ After Meal', '☕ Chai / Coffee', '🚗 Driving', '📱 Boredom', '👥 Social'];
 
-// Legacy Migration: Convert old integer shields to array of timestamps for analytics
 let waves = JSON.parse(localStorage.getItem('smoke_waves'));
 if (!waves) {
   waves = [];
@@ -44,7 +43,6 @@ Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "SF Pro Display
 
 const crosshairPlugin = { id: 'crosshair', afterDraw: chart => { if (chart.tooltip?._active?.length && (chart.config.type === 'line' || chart.config.type === 'bar')) { const activePoint = chart.tooltip._active[0]; const ctx = chart.ctx; const x = activePoint.element.x; ctx.save(); ctx.beginPath(); ctx.moveTo(x, chart.scales.y.top); ctx.lineTo(x, chart.scales.y.bottom); ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)'; ctx.setLineDash([4, 4]); ctx.stroke(); ctx.restore(); } } };
 
-// Updated Center Text Plugin to handle both Donut charts dynamically
 const centerTextPlugin = {
   id: 'centerText',
   beforeDraw: chart => {
@@ -96,41 +94,52 @@ function bootCore() {
   updateUI(); checkLock(); checkWave();
   if(mainTimer) clearInterval(mainTimer);
   mainTimer = setInterval(() => {
-    if(logs.length === 0 || document.hidden || document.getElementById('page-tracker').classList.contains('hidden')) return;
+    if(logs.length === 0 || document.hidden) return;
     const diff = new Date().getTime() - logs[logs.length-1].timestamp;
     
-    document.getElementById('stopwatch').innerText = `${Math.floor(diff/3600000).toString().padStart(2,'0')}:${Math.floor((diff%3600000)/60000).toString().padStart(2,'0')}:${Math.floor((diff%60000)/1000).toString().padStart(2,'0')}`;
+    const stopwatchEl = document.getElementById('stopwatch');
+    if(stopwatchEl) stopwatchEl.innerText = `${Math.floor(diff/3600000).toString().padStart(2,'0')}:${Math.floor((diff%3600000)/60000).toString().padStart(2,'0')}:${Math.floor((diff%60000)/1000).toString().padStart(2,'0')}`;
     
     const prevLog = logs[logs.length-1];
     const prevGapMs = prevLog.gap ? prevLog.gap * 60000 : 0;
     const circle = document.getElementById('heroProgressCircle');
     const statusWrapper = document.getElementById('smartStatusWrapper');
     const statusText = document.getElementById('smartStatusText');
+    const liveDot = document.getElementById('headerLiveDot');
     const dashMax = 289.02;
     
     let newClass = '';
     let newHtml = '';
+    let dotColor = '#9CA3AF'; // Gray / Muted
     
     if (prevGapMs > 0) {
       let percent = diff / prevGapMs;
       if (percent < 1) {
-        circle.style.stroke = '#F59E0B'; circle.style.strokeDashoffset = dashMax - (dashMax * percent); circle.style.filter = 'none';
+        if(circle) { circle.style.stroke = '#F59E0B'; circle.style.strokeDashoffset = dashMax - (dashMax * percent); circle.style.filter = 'none'; }
         let remMins = Math.ceil((prevGapMs - diff) / 60000);
         newClass = 'px-5 py-2.5 rounded-full border transition-all duration-500 bg-amber-500/10 border-amber-500/20';
         newHtml = `<i data-lucide="alert-circle" class="w-3.5 h-3.5 text-amber-500"></i><span class="text-amber-500">${remMins} min${remMins>1?'s':''} left to beat previous gap</span>`;
+        dotColor = '#F59E0B'; // Amber
       } else {
-        circle.style.stroke = '#10B981'; circle.style.strokeDashoffset = 0; circle.style.filter = 'drop-shadow(0 0 8px rgba(16,185,129,0.5))';
+        if(circle) { circle.style.stroke = '#10B981'; circle.style.strokeDashoffset = 0; circle.style.filter = 'drop-shadow(0 0 8px rgba(16,185,129,0.5))'; }
         let extraMins = Math.floor((diff - prevGapMs) / 60000);
         newClass = 'px-5 py-2.5 rounded-full border transition-all duration-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.15)]';
         newHtml = `<i data-lucide="trophy" class="w-3.5 h-3.5 text-emerald-500"></i><span class="text-emerald-500">Widened the gap by +${extraMins} min${extraMins!==1?'s':''}</span>`;
+        dotColor = '#10B981'; // Green
       }
     } else {
-      circle.style.strokeDashoffset = dashMax; circle.style.stroke = 'var(--card-border)'; circle.style.filter = 'none';
+      if(circle) { circle.style.strokeDashoffset = dashMax; circle.style.stroke = 'var(--card-border)'; circle.style.filter = 'none'; }
       newClass = 'px-5 py-2.5 rounded-full border transition-all duration-500 bg-sky-500/10 border-sky-500/20';
       newHtml = `<i data-lucide="rocket" class="w-3.5 h-3.5 text-sky-500"></i><span class="text-sky-500">Setting your first baseline gap</span>`;
+      dotColor = '#0EA5E9'; // Sky/Amber baseline active
     }
     
-    if (statusText.dataset.rawHtml !== newHtml) {
+    if(liveDot) {
+      liveDot.style.backgroundColor = dotColor;
+      liveDot.style.boxShadow = `0 0 8px ${dotColor}`;
+    }
+
+    if (statusText && statusText.dataset.rawHtml !== newHtml) {
       statusWrapper.className = newClass;
       statusText.innerHTML = newHtml;
       statusText.dataset.rawHtml = newHtml;
@@ -186,7 +195,6 @@ function savePinSetup() {
 function handleLogClick() {
   if(new Date().getTime() < lockEndTime) return;
   
-  // Non-Judgmental Failure Handling
   if(waveEndTime > 0) { 
     localStorage.removeItem('smoke_wave_end'); 
     waveEndTime = 0; 
@@ -264,7 +272,6 @@ function checkWave() {
         localStorage.removeItem('smoke_wave_end'); 
         o.classList.add('hidden'); 
         
-        // Instant Gratification: Push Wave & Show Toast
         waves.push(Date.now()); 
         localStorage.setItem('smoke_waves', JSON.stringify(waves)); 
         showToast("🛡️ Craving Defeated! +1 Shield");
@@ -338,7 +345,6 @@ function updateCostPerCigDisplay() { const el = document.getElementById('costPer
 function updateUI() {
   document.getElementById('shieldCount').innerText = waves.length;
   
-  // Home Screen Metrics: Streak & Today's Waves
   const todayWaves = waves.filter(w => new Date(w).toDateString() === new Date().toDateString());
   document.getElementById('homeTodayBeaten').innerText = `${todayWaves.length} Defeated`;
   
@@ -509,7 +515,7 @@ function renderHistory(tId='fullHistoryList', limit=null) {
           </div>
         </div>
       </div>
-      <div class="font-bold text-base shrink-0" style="color: ${valueColor};">${formatGap(l.gap)}</div>
+      <div class="numeric-display font-bold text-base shrink-0" style="color: ${valueColor};">${formatGap(l.gap)}</div>
     </div>
   `;
   }).join('');
@@ -531,7 +537,6 @@ function renderAllCharts() {
   const filterEl = document.getElementById('selectedFilterLabel');
   if(filterEl) filterEl.innerText = { today: 'Today', '7days': 'Last 7 Days', '1month': '1 Month', all: 'All Time' }[filter] || 'Selected Period';
 
-  // Analytics Engine: Win Rate Calculation
   let activeWaves = waves;
   const now = new Date();
   if(filter === 'today') activeWaves = waves.filter(w => w >= new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime());
@@ -610,7 +615,6 @@ function renderAllCharts() {
   const ctx3 = document.getElementById('chart3').getContext('2d');
   upsertChart(3, ctx3, { type: 'line', data: { labels: labels, datasets: [{ label: 'Spend', data: spendData, borderColor: '#EF4444', backgroundColor: createGradient(ctx3, 'rgba(239, 68, 68, 0.2)'), fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0, pointHitRadius: 15 }] }, options: { ...proOptions, scales: { ...proOptions.scales, x: { ...proOptions.scales.x, offset: true } } }, plugins: [crosshairPlugin] });
 
-  // Chart 4: Urge Win Rate (Donut)
   const ctx4 = document.getElementById('chart4').getContext('2d');
   upsertChart(4, ctx4, { type: 'doughnut', data: { labels: ['Smoked', 'Resisted'], datasets: [{ data: [activeLogs.length, activeWaves.length], backgroundColor: ['#EF4444', '#0EA5E9'], borderWidth: 0, cutout: '76%' }] }, options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12, font: { size: 10 }, color: chartTextColor } } } }, plugins: [centerTextPlugin] });
 
@@ -627,7 +631,6 @@ function renderAllCharts() {
     tArr.forEach(tg => { if (triggerByPart[tg]) triggerByPart[tg][partOf(new Date(l.timestamp).getHours())]++; }); 
   });
   
-  // Waves (Resisted) by part of day for the overlay chart
   let wavesByPart = [0, 0, 0, 0];
   activeWaves.forEach(w => wavesByPart[partOf(new Date(w).getHours())]++);
 
@@ -639,8 +642,6 @@ function renderAllCharts() {
   const chart6El = document.getElementById('chart6');
   if (chart6El) {
     let datasets = triggers.map((t, i) => ({ label: t, data: triggerByPart[t], backgroundColor: palette[i % palette.length], borderRadius: 0, maxBarThickness: 32, stack: 'triggers' }));
-    
-    // Add Resisted (Shield) Bar parallel to Triggers
     datasets.push({ label: 'Resisted', data: wavesByPart, backgroundColor: '#0EA5E9', borderRadius: 0, maxBarThickness: 32, stack: 'resisted' });
 
     upsertChart(6, chart6El.getContext('2d'), { type: 'bar', data: { labels: dayParts, datasets: datasets }, options: { ...proOptions, scales: { x: { ...proOptions.scales.x, stacked: true, offset: true }, y: { ...proOptions.scales.y, stacked: true, ticks: { ...proOptions.scales.y.ticks, precision: 0 } } }, plugins: { ...proOptions.plugins, legend: { display: true, position: 'bottom', labels: { boxWidth: 8, padding: 10, font: { size: 9 }, color: chartTextColor } } } } });
