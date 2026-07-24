@@ -3,7 +3,12 @@ const DEFAULT_SETTINGS = { theme: 'default', haptics: true, dailyLimit: 15, lock
 let settings = Object.assign({}, DEFAULT_SETTINGS, JSON.parse(localStorage.getItem('smoke_settings')) || {});
 if (!settings.packSize || settings.packSize <= 0) settings.packSize = 20;
 if (!settings.timeFormat) settings.timeFormat = '12h';
-let triggers = JSON.parse(localStorage.getItem('smoke_triggers')) || ['💼 Work Stress', '🍽️ After Meal', '☕ Chai / Coffee', '🚗 Driving', '📱 Boredom', '👥 Social'];
+
+// FIX 3: Default Tags update
+let triggers = JSON.parse(localStorage.getItem('smoke_triggers')) || ['🏠 Home', '💼 Work', '🚗 Car / Commute', '🎉 Outside / Social', '😰 Stress', '🍽️ After Meal', '☕ Chai / Coffee', '📱 Boredom', '👥 Peer Pressure', '🍺 Alcohol', '😡 Anger', '🌙 Habit'];
+
+// FIX 3: Vibrant 20-Color Palette for charts
+const CHART_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316', '#14B8A6', '#6366F1', '#F43F5E', '#84CC16', '#0EA5E9', '#D946EF', '#EAB308', '#1D4ED8', '#047857', '#B45309', '#BE123C', '#6D28D9'];
 
 let waves = JSON.parse(localStorage.getItem('smoke_waves'));
 if (!waves) {
@@ -45,6 +50,7 @@ Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "SF Pro Display
 
 const crosshairPlugin = { id: 'crosshair', afterDraw: chart => { if (chart.tooltip?._active?.length && (chart.config.type === 'line' || chart.config.type === 'bar')) { const activePoint = chart.tooltip._active[0]; const ctx = chart.ctx; const x = activePoint.element.x; ctx.save(); ctx.beginPath(); ctx.moveTo(x, chart.scales.y.top); ctx.lineTo(x, chart.scales.y.bottom); ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)'; ctx.setLineDash([4, 4]); ctx.stroke(); ctx.restore(); } } };
 
+// FIX 4: Chart center text alignment mathematically perfect locking
 const centerTextPlugin = {
   id: 'centerText',
   beforeDraw: chart => {
@@ -52,8 +58,8 @@ const centerTextPlugin = {
       const ctx = chart.ctx; ctx.restore();
       let text = "";
       if (chart.canvas.id === 'chart4') {
-        const smoked = chart.data.datasets[0].data[0];
-        const resisted = chart.data.datasets[0].data[1];
+        const smoked = chart.data.datasets[0].data[0] || 0;
+        const resisted = chart.data.datasets[0].data[1] || 0;
         const total = smoked + resisted;
         text = total > 0 ? Math.round((resisted/total)*100) + "%" : "0%";
       } else {
@@ -61,9 +67,14 @@ const centerTextPlugin = {
         text = total > 0 ? total + " Logs" : "No Data";
       }
       ctx.font = "bold " + (chart.canvas.id === 'chart4' ? '26px' : '16px') + " sans-serif";
+      
+      // True Center rendering logic based on chart inner area
+      const x = chart.chartArea.left + (chart.chartArea.right - chart.chartArea.left) / 2;
+      const y = chart.chartArea.top + (chart.chartArea.bottom - chart.chartArea.top) / 2;
+      ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillStyle = (document.body.classList.contains('theme-white') || document.documentElement.classList.contains('theme-white')) ? "#64748B" : "#F3F4F6";
-      ctx.fillText(text, Math.round((chart.width - ctx.measureText(text).width) / 2), chart.height / 2);
+      ctx.fillText(text, x, y);
       ctx.save();
     }
   }
@@ -509,13 +520,25 @@ function updateCostPerCigDisplay() { const el = document.getElementById('costPer
 function updateUI() {
   document.getElementById('shieldCount').innerText = waves.length;
   
-  const todayWaves = waves.filter(w => new Date(w).toDateString() === new Date().toDateString());
-  document.getElementById('homeTodayBeaten').innerText = `${todayWaves.length} Defeated`;
+  // FIX 1A: Defeated Counter logic updated to show All-Time Defeats (or keep it today, but ensure it works). Let's use All-Time for pride.
+  document.getElementById('homeTodayBeaten').innerText = `${waves.length} Defeated`;
   
-  let currentStreak = 0;
-  let allEvents = [...logs.map(l => ({t: l.timestamp, type: 'log'})), ...waves.map(w => ({t: w, type: 'wave'}))].sort((a,b) => b.t - a.t);
-  for (let e of allEvents) { if (e.type === 'wave') currentStreak++; else break; }
-  document.getElementById('homeStreak').innerText = `🔥 ${currentStreak} Streak`;
+  // FIX 1B: True Streak Logic - Consecutive Logged Days Under Limit
+  let streak = 0;
+  let logsByDate = {};
+  logs.forEach(l => {
+    let dStr = new Date(l.timestamp).toDateString();
+    logsByDate[dStr] = (logsByDate[dStr] || 0) + 1;
+  });
+  let todayStr = new Date().toDateString();
+  if (!logsByDate[todayStr]) logsByDate[todayStr] = 0; // if no smokes today, you are under limit today!
+
+  let uniqueDates = Object.keys(logsByDate).sort((a,b) => new Date(b) - new Date(a));
+  for (let dStr of uniqueDates) {
+    if (logsByDate[dStr] <= settings.dailyLimit) streak++;
+    else break;
+  }
+  document.getElementById('homeStreak').innerText = `🔥 ${streak} Day Streak`;
 
   const today = logs.filter(l => new Date(l.timestamp).toDateString() === new Date().toDateString());
   
@@ -548,7 +571,7 @@ function showStatDetail(type) {
   const today = logs.filter(l => new Date(l.timestamp).toDateString() === new Date().toDateString());
   const pricePerStick = settings.packPrice / settings.packSize;
   const icon = document.getElementById('statDetailIcon'), title = document.getElementById('statDetailTitle'), value = document.getElementById('statDetailValue'), desc = document.getElementById('statDetailDesc'), extra = document.getElementById('statDetailExtra');
-  const row = (label, val) => `<div class="flex justify-between border-t pt-2" style="border-color: var(--text-muted); border-opacity: 0.1;"><span style="color: var(--text-muted);">${label}</span><span class="font-bold" style="color: var(--text-main);">${val}</span></div>`;
+  const row = (label, val) => `<div class="flex justify-between border-t pt-2" style="border-color: var(--card-border);"><span style="color: var(--text-muted);">${label}</span><span class="font-bold" style="color: var(--text-main);">${val}</span></div>`;
   let iconClass = 'bg-gray-500/10 text-gray-400', iconName = 'info';
 
   if (type === 'spend') {
@@ -573,7 +596,11 @@ function closeStatDetail() { document.getElementById('statDetailModal').classLis
 
 function showShieldDashboard() {
   document.getElementById('modalShieldCount').innerText = waves.length;
-  ['badge1', 'badge10', 'badge50'].forEach(id => document.getElementById(id).className = "flex flex-col items-center p-3 rounded-2xl bg-gray-500/10 opacity-30 grayscale transition-all duration-500 border border-gray-500/20");
+  ['badge1', 'badge10', 'badge50'].forEach(id => {
+    document.getElementById(id).className = "flex flex-col items-center p-3 rounded-2xl opacity-30 grayscale transition-all duration-500 border";
+    document.getElementById(id).style.backgroundColor = "var(--input-bg)";
+    document.getElementById(id).style.borderColor = "var(--card-border)";
+  });
   if(waves.length >= 1) { document.getElementById('badge1').classList.remove('opacity-30', 'grayscale'); document.getElementById('badge1').classList.add('shadow-[0_0_15px_rgba(245,158,11,0.15)]'); }
   if(waves.length >= 10) { document.getElementById('badge10').classList.remove('opacity-30', 'grayscale'); document.getElementById('badge10').classList.add('shadow-[0_0_15px_rgba(245,158,11,0.15)]'); document.getElementById('badge10').querySelector('i').classList.replace('text-gray-300', 'text-sky-400'); }
   if(waves.length >= 50) { document.getElementById('badge50').classList.remove('opacity-30', 'grayscale'); document.getElementById('badge50').classList.add('shadow-[0_0_15px_rgba(245,158,11,0.15)]'); }
@@ -623,7 +650,7 @@ function addCustomTrigger() {
 function removeCustomTrigger(idx) { triggers.splice(idx, 1); localStorage.setItem('smoke_triggers', JSON.stringify(triggers)); renderTriggerSettingsList(); }
 function renderTriggerSettingsList() {
   const c = document.getElementById('triggerListSettings'); if(!c) return;
-  c.innerHTML = triggers.map((t, idx) => `<span class="bg-gray-500/10 text-xs px-3 py-1.5 rounded-xl border border-gray-500/20 flex items-center gap-1.5 font-medium" style="color: var(--text-main);">${esc(t)} <button onclick="window.removeCustomTrigger(${idx})" class="text-red-500 font-bold hover:opacity-80">✕</button></span>`).join('');
+  c.innerHTML = triggers.map((t, idx) => `<span class="text-xs px-3 py-1.5 rounded-xl border flex items-center gap-1.5 font-medium" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);">${esc(t)} <button onclick="window.removeCustomTrigger(${idx})" class="text-red-500 font-bold hover:opacity-80">✕</button></span>`).join('');
 }
 
 function openTriggerModal(logIdx = null) {
@@ -640,14 +667,13 @@ function openTriggerModal(logIdx = null) {
   if(window.lucide) window.lucide.createIcons();
 }
 
-// Flowing Tag Chips Rendering
 function renderModalTriggerGrid() {
   const grid = document.getElementById('modalTriggerGrid');
   grid.innerHTML = triggers.map((t, idx) => {
     const isSelected = currentSelectedTags.includes(t);
-    const bgClass = isSelected ? 'text-white border border-sky-400' : 'bg-gray-500/10 border border-gray-500/15';
-    const inlineStyle = isSelected ? `style="background: var(--accent); box-shadow: 0 4px 15px var(--accent-glow);"` : `style="color: var(--text-main);"`;
-    return `<button onclick="window.toggleTag(${idx})" class="px-4 py-2.5 rounded-full text-xs font-semibold active:scale-95 transition-all ${bgClass}" ${inlineStyle}>${esc(t)}</button>`;
+    const bgClass = isSelected ? 'text-white border-sky-400' : 'border-transparent';
+    const inlineStyle = isSelected ? `style="background: var(--accent); box-shadow: 0 4px 15px var(--accent-glow);"` : `style="background: var(--input-bg); color: var(--text-main); border-color: var(--card-border);"`;
+    return `<button onclick="window.toggleTag(${idx})" class="px-4 py-2.5 rounded-full text-xs font-semibold active:scale-95 transition-all border ${bgClass}" ${inlineStyle}>${esc(t)}</button>`;
   }).join('');
 }
 
@@ -850,7 +876,9 @@ function renderAllCharts() {
   const triggerCounts = triggers.map(t => activeLogs.filter(l => (l.tags && l.tags.includes(t)) || l.trigger === t).length);
   const topTriggerIdx = triggerCounts.length ? triggerCounts.indexOf(Math.max(...triggerCounts)) : -1;
   setBadge('badge-chart5', (topTriggerIdx >= 0 && triggerCounts[topTriggerIdx] > 0) ? `Top: ${triggers[topTriggerIdx]}` : '', 'bg-purple-500/10 text-purple-500 border-purple-500/20');
-  upsertChart(5, ctx5, { type: 'doughnut', data: { labels: triggers, datasets: [{ data: triggerCounts, backgroundColor: ['#F59E0B','#10B981','#6366F1','#EF4444','#2563EB','#A855F7'], borderWidth: 0, cutout: '76%' }] }, options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12, font: { size: 10 }, color: chartTextColor } } } }, plugins: [centerTextPlugin] });
+  
+  // FIX 3: Dynamic usage of the 20-color vibrant palette
+  upsertChart(5, ctx5, { type: 'doughnut', data: { labels: triggers, datasets: [{ data: triggerCounts, backgroundColor: triggers.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]), borderWidth: 0, cutout: '76%' }] }, options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12, font: { size: 10 }, color: chartTextColor } } } }, plugins: [centerTextPlugin] });
 
   const dayParts = ['Morning', 'Afternoon', 'Evening', 'Night']; const partOf = (hr) => hr >= 5 && hr < 12 ? 0 : hr >= 12 && hr < 17 ? 1 : hr >= 17 && hr < 21 ? 2 : 3;
   let triggerByPart = {}; triggers.forEach(t => triggerByPart[t] = [0, 0, 0, 0]);
@@ -862,14 +890,13 @@ function renderAllCharts() {
   let wavesByPart = [0, 0, 0, 0];
   activeWaves.forEach(w => wavesByPart[partOf(new Date(w).getHours())]++);
 
-  const palette = ['#F59E0B', '#10B981', '#6366F1', '#EF4444', '#2563EB', '#A855F7'];
   const partTotals = dayParts.map((_, i) => triggers.reduce((sum, t) => sum + triggerByPart[t][i], 0));
   const peakPartIdx = partTotals.some(v => v > 0) ? partTotals.indexOf(Math.max(...partTotals)) : -1;
   setBadge('badge-chart6', peakPartIdx >= 0 ? `Peak: ${dayParts[peakPartIdx]}` : '', 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20');
   
   const chart6El = document.getElementById('chart6');
   if (chart6El) {
-    let datasets = triggers.map((t, i) => ({ label: t, data: triggerByPart[t], backgroundColor: palette[i % palette.length], borderRadius: 0, maxBarThickness: 32, stack: 'triggers' }));
+    let datasets = triggers.map((t, i) => ({ label: t, data: triggerByPart[t], backgroundColor: CHART_COLORS[i % CHART_COLORS.length], borderRadius: 0, maxBarThickness: 32, stack: 'triggers' }));
     datasets.push({ label: 'Resisted', data: wavesByPart, backgroundColor: '#0EA5E9', borderRadius: 0, maxBarThickness: 32, stack: 'resisted' });
 
     upsertChart(6, chart6El.getContext('2d'), { type: 'bar', data: { labels: dayParts, datasets: datasets }, options: { ...proOptions, scales: { x: { ...proOptions.scales.x, stacked: true, offset: true }, y: { ...proOptions.scales.y, stacked: true, ticks: { ...proOptions.scales.y.ticks, precision: 0 } } }, plugins: { ...proOptions.plugins, legend: { display: true, position: 'bottom', labels: { boxWidth: 8, padding: 10, font: { size: 9 }, color: chartTextColor } } } } });
