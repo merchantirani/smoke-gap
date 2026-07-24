@@ -38,6 +38,10 @@ let mainTimer = null, waveTimer = null, cooldownTimer = null;
 let editingLogIdx = null;
 let currentSelectedTags = [];
 
+// Takeover specifics
+let takeoverTimer = null;
+let takeoverCountdown = 6;
+
 Chart.defaults.color = '#64748B';
 Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif';
 
@@ -110,7 +114,7 @@ function bootCore() {
     
     let newClass = '';
     let newHtml = '';
-    let dotColor = '#9CA3AF'; // Gray / Muted
+    let dotColor = '#9CA3AF';
     
     if (prevGapMs > 0) {
       let percent = diff / prevGapMs;
@@ -119,19 +123,19 @@ function bootCore() {
         let remMins = Math.ceil((prevGapMs - diff) / 60000);
         newClass = 'px-5 py-2.5 rounded-full border transition-all duration-500 bg-amber-500/10 border-amber-500/20';
         newHtml = `<i data-lucide="alert-circle" class="w-3.5 h-3.5 text-amber-500"></i><span class="text-amber-500">${remMins} min${remMins>1?'s':''} left to beat previous gap</span>`;
-        dotColor = '#F59E0B'; // Amber
+        dotColor = '#F59E0B';
       } else {
         if(circle) { circle.style.stroke = '#10B981'; circle.style.strokeDashoffset = 0; circle.style.filter = 'drop-shadow(0 0 8px rgba(16,185,129,0.5))'; }
         let extraMins = Math.floor((diff - prevGapMs) / 60000);
         newClass = 'px-5 py-2.5 rounded-full border transition-all duration-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.15)]';
         newHtml = `<i data-lucide="trophy" class="w-3.5 h-3.5 text-emerald-500"></i><span class="text-emerald-500">Widened the gap by +${extraMins} min${extraMins!==1?'s':''}</span>`;
-        dotColor = '#10B981'; // Green
+        dotColor = '#10B981';
       }
     } else {
       if(circle) { circle.style.strokeDashoffset = dashMax; circle.style.stroke = 'var(--card-border)'; circle.style.filter = 'none'; }
       newClass = 'px-5 py-2.5 rounded-full border transition-all duration-500 bg-sky-500/10 border-sky-500/20';
       newHtml = `<i data-lucide="rocket" class="w-3.5 h-3.5 text-sky-500"></i><span class="text-sky-500">Setting your first baseline gap</span>`;
-      dotColor = '#0EA5E9'; // Sky/Amber baseline active
+      dotColor = '#0EA5E9';
     }
     
     if(liveDot) {
@@ -192,6 +196,7 @@ function savePinSetup() {
   }
 }
 
+// MAIN LOG CLICK - Updated with Takeover
 function handleLogClick() {
   if(new Date().getTime() < lockEndTime) return;
   
@@ -208,13 +213,20 @@ function handleLogClick() {
   const now = new Date().getTime();
   let gap = logs.length > 0 ? Math.round((now - logs[logs.length-1].timestamp)/60000) : null;
   
+  // Save silently in background
   logs.push({timestamp: now, gap: gap, tags: [], lat: null, lng: null});
   const newLogIdx = logs.length - 1;
   localStorage.setItem('smoke_logs', JSON.stringify(logs));
   lockEndTime = now + (settings.lockSecs * 1000);
   localStorage.setItem('smoke_lock_end', lockEndTime);
-  updateUI(); checkLock(); openTriggerModal(newLogIdx);
+  
+  updateUI(); 
+  checkLock(); 
+  
+  // Trigger 6-second Takeover instead of old modal
+  startSmokeTakeover(newLogIdx, gap);
 
+  // Silently fetch GPS
   if(navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(p => {
       if(logs[newLogIdx]) {
@@ -226,6 +238,95 @@ function handleLogClick() {
     }, () => {}, {timeout: 10000, maximumAge: 60000});
   }
 }
+
+// --- 6-SECOND PRE-SMOKE TAKEOVER LOGIC ---
+function startSmokeTakeover(logIdx, gap) {
+  editingLogIdx = logIdx;
+  currentSelectedTags = [];
+  takeoverCountdown = 6;
+  
+  const overlay = document.getElementById('smokeTakeover');
+  const numberEl = document.getElementById('takeoverNumber');
+  const ringEl = document.getElementById('takeoverRing');
+  const factEl = document.getElementById('takeoverFact');
+  
+  numberEl.innerText = takeoverCountdown;
+  ringEl.style.strokeDashoffset = 0;
+  factEl.style.opacity = 0;
+  
+  let factText = "";
+  if (gap === null || gap === undefined) factText = "Setting your first baseline.";
+  else if (gap < 60) factText = `It's been ${gap}m since your last one.`;
+  else factText = `It's been ${Math.floor(gap/60)}h ${gap%60}m since your last one.`;
+  factEl.innerText = factText;
+
+  renderTakeoverTags();
+
+  overlay.classList.remove('hidden');
+  requestAnimationFrame(() => {
+    overlay.classList.remove('opacity-0');
+    overlay.classList.add('opacity-100');
+  });
+
+  if (takeoverTimer) clearInterval(takeoverTimer);
+  takeoverTimer = setInterval(() => {
+    takeoverCountdown--;
+    numberEl.innerText = takeoverCountdown;
+    
+    // Smooth Ring Drain (Circumference 339.29)
+    const offset = 339.29 - (339.29 * (takeoverCountdown / 6));
+    ringEl.style.strokeDashoffset = offset;
+
+    // Fade in fact at ~3 seconds
+    if (takeoverCountdown === 3) {
+      factEl.style.opacity = 1;
+    }
+
+    if (takeoverCountdown <= 0) {
+      clearInterval(takeoverTimer);
+      closeSmokeTakeover();
+    }
+  }, 1000);
+}
+
+function renderTakeoverTags() {
+  const grid = document.getElementById('takeoverTagsGrid');
+  grid.innerHTML = triggers.map(t => {
+    const isActive = currentSelectedTags.includes(t);
+    const activeClasses = isActive ? 'bg-amber-500/20 border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)]' : 'bg-white/5 border-white/10';
+    const textStyle = isActive ? 'style="color: var(--accent);"' : 'style="color: var(--text-main);"';
+    return `<button onclick="window.toggleTakeoverTag('${esc(t)}')" class="px-4 py-2.5 rounded-full border text-xs font-semibold backdrop-blur-md transition-all active:scale-95 ${activeClasses}" ${textStyle}>${esc(t)}</button>`;
+  }).join('');
+}
+
+function toggleTakeoverTag(t) {
+  if(settings.haptics && navigator.vibrate) navigator.vibrate(10);
+  if(currentSelectedTags.includes(t)) currentSelectedTags = currentSelectedTags.filter(tag => tag !== t);
+  else currentSelectedTags.push(t);
+  renderTakeoverTags();
+}
+
+function closeSmokeTakeover() {
+  if(takeoverTimer) clearInterval(takeoverTimer);
+  const overlay = document.getElementById('smokeTakeover');
+  
+  overlay.classList.remove('opacity-100');
+  overlay.classList.add('opacity-0');
+  
+  // Save selected tags to background log silently
+  if(editingLogIdx !== null && logs[editingLogIdx]) {
+    logs[editingLogIdx].tags = [...currentSelectedTags];
+    localStorage.setItem('smoke_logs', JSON.stringify(logs));
+    updateUI(); 
+    if(!document.getElementById('page-insights').classList.contains('hidden')) renderAllCharts();
+  }
+
+  // Wait for fade out to hide
+  setTimeout(() => {
+    overlay.classList.add('hidden');
+  }, 500);
+}
+// --- END TAKEOVER LOGIC ---
 
 function checkLock() {
   const btn = document.getElementById('mainLogBtn');
@@ -446,6 +547,7 @@ function renderTriggerSettingsList() {
   c.innerHTML = triggers.map((t, idx) => `<span class="bg-gray-500/10 text-xs px-3 py-1.5 rounded-xl border border-gray-500/20 flex items-center gap-1.5 font-medium" style="color: var(--text-main);">${esc(t)} <button onclick="window.removeCustomTrigger(${idx})" class="text-red-500 font-bold hover:opacity-80">✕</button></span>`).join('');
 }
 
+// Old History Modal Logic (Keep for editing old logs)
 function openTriggerModal(logIdx = null) {
   editingLogIdx = logIdx !== null ? logIdx : logs.length - 1;
   const log = logs[editingLogIdx];
@@ -479,10 +581,6 @@ function saveTags() {
     if(!document.getElementById('page-history').classList.contains('hidden')) renderHistory('fullHistoryList');
     if(!document.getElementById('page-insights').classList.contains('hidden')) requestAnimationFrame(() => renderAllCharts());
   }
-  document.getElementById('triggerModal').classList.add('hidden');
-}
-
-function closeTriggerModal() {
   document.getElementById('triggerModal').classList.add('hidden');
 }
 
@@ -677,6 +775,10 @@ function loadChartOrder() { const savedOrder = JSON.parse(localStorage.getItem('
 
 window.enterPin = enterPin; window.clearPin = clearPin; window.setupPin = setupPin;
 window.handleLogClick = handleLogClick; window.switchTab = switchTab; window.updateSettings = updateSettings; window.resetData = resetData; 
+
+// New Takeover Exports
+window.startSmokeTakeover = startSmokeTakeover; window.closeSmokeTakeover = closeSmokeTakeover; window.toggleTakeoverTag = toggleTakeoverTag;
+
 window.openTriggerModal = openTriggerModal; window.closeTriggerModal = closeTriggerModal; window.toggleTag = toggleTag; window.saveTags = saveTags;
 window.openWaveModal = openWaveModal; window.closeWaveModal = closeWaveModal; window.startWave = startWave;
 window.renderAllCharts = renderAllCharts; window.openMapModal = openMapModal; window.closeMapModal = closeMapModal;
