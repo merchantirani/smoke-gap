@@ -22,9 +22,10 @@ Chart.defaults.color = '#64748B';
 Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif';
 
 const crosshairPlugin = { id: 'crosshair', afterDraw: chart => { if (chart.tooltip?._active?.length && (chart.config.type === 'line' || chart.config.type === 'bar')) { const activePoint = chart.tooltip._active[0]; const ctx = chart.ctx; const x = activePoint.element.x; ctx.save(); ctx.beginPath(); ctx.moveTo(x, chart.scales.y.top); ctx.lineTo(x, chart.scales.y.bottom); ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)'; ctx.setLineDash([4, 4]); ctx.stroke(); ctx.restore(); } } };
-const centerTextPlugin = { id: 'centerText', beforeDraw: chart => { if (chart.config.type === 'doughnut') { const ctx = chart.ctx; ctx.restore(); const total = chart.data.datasets[0].data.reduce((a,b)=>a+b, 0); const text = total > 0 ? total + " Logs" : "No Data"; ctx.font = "bold 16px sans-serif"; ctx.textBaseline = "middle"; ctx.fillStyle = "#F3F4F6"; ctx.fillText(text, Math.round((chart.width - ctx.measureText(text).width) / 2), chart.height / 2); ctx.save(); } } };
 
-// HELPER: Global Time Formatter (12h/24h)
+// FIX: Dynamic color for center text based on theme
+const centerTextPlugin = { id: 'centerText', beforeDraw: chart => { if (chart.config.type === 'doughnut') { const ctx = chart.ctx; ctx.restore(); const total = chart.data.datasets[0].data.reduce((a,b)=>a+b, 0); const text = total > 0 ? total + " Logs" : "No Data"; ctx.font = "bold 16px sans-serif"; ctx.textBaseline = "middle"; ctx.fillStyle = document.body.classList.contains('theme-white') ? "#64748B" : "#F3F4F6"; ctx.fillText(text, Math.round((chart.width - ctx.measureText(text).width) / 2), chart.height / 2); ctx.save(); } } };
+
 function formatAppTime(dateObj) {
   return dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: settings.timeFormat === '12h' });
 }
@@ -55,42 +56,44 @@ function bootCore() {
     if(logs.length === 0 || document.getElementById('page-tracker').classList.contains('hidden')) return;
     const diff = new Date().getTime() - logs[logs.length-1].timestamp;
     
-    // 1. Update Stopwatch
     document.getElementById('stopwatch').innerText = `${Math.floor(diff/3600000).toString().padStart(2,'0')}:${Math.floor((diff%3600000)/60000).toString().padStart(2,'0')}:${Math.floor((diff%60000)/1000).toString().padStart(2,'0')}`;
     
-    // 2. Update Premium Ring & Smart Status
     const prevLog = logs[logs.length-1];
     const prevGapMs = prevLog.gap ? prevLog.gap * 60000 : 0;
     const circle = document.getElementById('heroProgressCircle');
     const statusWrapper = document.getElementById('smartStatusWrapper');
     const statusText = document.getElementById('smartStatusText');
-    const dashMax = 289.02; // Circumference
+    const dashMax = 289.02;
+    
+    let newClass = '';
+    let newHtml = '';
     
     if (prevGapMs > 0) {
       let percent = diff / prevGapMs;
       if (percent < 1) {
-        circle.style.stroke = '#F59E0B'; // Amber while tracking
-        circle.style.strokeDashoffset = dashMax - (dashMax * percent);
-        circle.style.filter = 'none';
-        
+        circle.style.stroke = '#F59E0B'; circle.style.strokeDashoffset = dashMax - (dashMax * percent); circle.style.filter = 'none';
         let remMins = Math.ceil((prevGapMs - diff) / 60000);
-        statusWrapper.className = 'px-5 py-2.5 rounded-full border transition-all duration-500 bg-amber-500/10 border-amber-500/20';
-        statusText.innerHTML = `<i data-lucide="alert-circle" class="w-3.5 h-3.5 text-amber-500"></i><span class="text-amber-500">${remMins} min${remMins>1?'s':''} left to beat previous gap</span>`;
+        newClass = 'px-5 py-2.5 rounded-full border transition-all duration-500 bg-amber-500/10 border-amber-500/20';
+        newHtml = `<i data-lucide="alert-circle" class="w-3.5 h-3.5 text-amber-500"></i><span class="text-amber-500">${remMins} min${remMins>1?'s':''} left to beat previous gap</span>`;
       } else {
-        circle.style.stroke = '#10B981'; // Emerald when beaten
-        circle.style.strokeDashoffset = 0;
-        circle.style.filter = 'drop-shadow(0 0 8px rgba(16,185,129,0.5))'; // Glow effect
-        
+        circle.style.stroke = '#10B981'; circle.style.strokeDashoffset = 0; circle.style.filter = 'drop-shadow(0 0 8px rgba(16,185,129,0.5))';
         let extraMins = Math.floor((diff - prevGapMs) / 60000);
-        statusWrapper.className = 'px-5 py-2.5 rounded-full border transition-all duration-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.15)]';
-        statusText.innerHTML = `<i data-lucide="trophy" class="w-3.5 h-3.5 text-emerald-500"></i><span class="text-emerald-500">Widened the gap by +${extraMins} min${extraMins!==1?'s':''}</span>`;
+        newClass = 'px-5 py-2.5 rounded-full border transition-all duration-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.15)]';
+        newHtml = `<i data-lucide="trophy" class="w-3.5 h-3.5 text-emerald-500"></i><span class="text-emerald-500">Widened the gap by +${extraMins} min${extraMins!==1?'s':''}</span>`;
       }
     } else {
       circle.style.strokeDashoffset = 0; circle.style.stroke = 'var(--accent)'; circle.style.filter = 'none';
-      statusWrapper.className = 'px-5 py-2.5 rounded-full border transition-all duration-500 bg-sky-500/10 border-sky-500/20';
-      statusText.innerHTML = `<i data-lucide="rocket" class="w-3.5 h-3.5 text-sky-500"></i><span class="text-sky-500">Setting your first baseline gap</span>`;
+      newClass = 'px-5 py-2.5 rounded-full border transition-all duration-500 bg-sky-500/10 border-sky-500/20';
+      newHtml = `<i data-lucide="rocket" class="w-3.5 h-3.5 text-sky-500"></i><span class="text-sky-500">Setting your first baseline gap</span>`;
     }
-    if(window.lucide && diff % 60000 < 1000) window.lucide.createIcons(); // rare icon refresh
+    
+    // FIX: Only update innerHTML if it actually changes. Stops icon from blinking/disappearing!
+    if (statusText.dataset.rawHtml !== newHtml) {
+      statusWrapper.className = newClass;
+      statusText.innerHTML = newHtml;
+      statusText.dataset.rawHtml = newHtml;
+      if(window.lucide) window.lucide.createIcons();
+    }
   }, 1000);
 }
 
@@ -375,8 +378,9 @@ function setBadge(id, text, colorClass) { const b = document.getElementById(id);
 
 function renderAllCharts() {
   const activeLogs = getFilteredLogs();
+  const filter = document.getElementById('insightsDateFilter').value;
   const filterEl = document.getElementById('selectedFilterLabel');
-  if(filterEl) filterEl.innerText = { today: 'Today', '7days': 'Last 7 Days', '1month': '1 Month', all: 'All Time' }[document.getElementById('insightsDateFilter').value] || 'Selected Period';
+  if(filterEl) filterEl.innerText = { today: 'Today', '7days': 'Last 7 Days', '1month': '1 Month', all: 'All Time' }[filter] || 'Selected Period';
 
   let totalSpend = (activeLogs.length * (settings.packPrice/settings.packSize)).toFixed(1);
   document.getElementById('insightPeriodSpend').innerText = `${settings.currency} ${totalSpend}`;
@@ -418,7 +422,15 @@ function renderAllCharts() {
   setBadge('badge-chart2', activeLogs.length > 0 ? `${activeLogs.length} Total` : '', 'bg-amber-500/10 text-amber-500 border-amber-500/20');
   setBadge('badge-chart3', activeLogs.length > 0 ? `${settings.currency} ${totalSpend}` : '', 'bg-red-500/10 text-red-500 border-red-500/20');
 
-  const labels = activeLogs.length > 0 ? activeLogs.map(l => formatAppTime(new Date(l.timestamp))) : ['No Data'];
+  // FIX: X-Axis Labels (Date + Time fix)
+  const labels = activeLogs.length > 0 ? activeLogs.map(l => {
+    let d = new Date(l.timestamp);
+    let tStr = formatAppTime(d);
+    if (filter === 'today') return tStr;
+    if (filter === '7days') return d.toLocaleDateString([], {weekday:'short'}) + ' ' + tStr;
+    return d.toLocaleDateString([], {month:'short', day:'numeric'}) + ', ' + tStr;
+  }) : ['No Data'];
+  
   const gaps = activeLogs.length > 0 ? activeLogs.map(l => l.gap) : [0];
   const chartTextColor = settings.theme === 'white' ? '#64748B' : '#9CA3AF';
 
@@ -432,7 +444,9 @@ function renderAllCharts() {
   let dayMap = {}; activeLogs.forEach(l => { let d = document.getElementById('insightsDateFilter').value === '7days' ? new Date(l.timestamp).toLocaleDateString([], {weekday:'short'}) : new Date(l.timestamp).toLocaleDateString([], {month:'short', day:'numeric'}); dayMap[d] = (dayMap[d] || 0) + 1; });
   let dayLabels = Object.keys(dayMap), dayCounts = Object.values(dayMap); if(dayLabels.length === 0) { dayLabels = ['Today']; dayCounts = [0]; }
   const ctx2 = document.getElementById('chart2').getContext('2d');
-  upsertChart(2, ctx2, { type: 'bar', data: { labels: dayLabels, datasets: [{ label: 'Count', data: dayCounts, backgroundColor: settings.theme === 'white' ? '#2563EB' : '#F59E0B', borderRadius: Number.MAX_VALUE, borderSkipped: false, barThickness: 16 }, { label: 'Limit', data: dayLabels.map(() => settings.dailyLimit), type: 'line', borderColor: '#EF4444', borderWidth: 2, borderDash: [4,4], pointRadius: 0 }] }, options: proOptions, plugins: [crosshairPlugin] });
+  
+  // FIX: Daily volume chart bar edge offset issue
+  upsertChart(2, ctx2, { type: 'bar', data: { labels: dayLabels, datasets: [{ label: 'Count', data: dayCounts, backgroundColor: settings.theme === 'white' ? '#2563EB' : '#F59E0B', borderRadius: Number.MAX_VALUE, borderSkipped: false, barThickness: 16 }, { label: 'Limit', data: dayLabels.map(() => settings.dailyLimit), type: 'line', borderColor: '#EF4444', borderWidth: 2, borderDash: [4,4], pointRadius: 0 }] }, options: { ...proOptions, scales: { x: { ...proOptions.scales.x, offset: true }, y: { ...proOptions.scales.y } } }, plugins: [crosshairPlugin] });
 
   let cumulativeSpend = 0; let spendData = gaps.map(() => { cumulativeSpend += (settings.packPrice / settings.packSize); return cumulativeSpend.toFixed(1); });
   const ctx3 = document.getElementById('chart3').getContext('2d');
