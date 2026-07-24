@@ -3,9 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
-  <!-- FIX 3: Dynamic Theme Color for Status Bar blending -->
   <meta name="theme-color" id="theme-color-meta" content="#090A0F" />
   <title>pause — Widen the gap.</title>
+
+  <!-- FIX 2: Instant Theme Script (Pre-paint execution to prevent black header flash) -->
+  <script>
+    (function() {
+      try {
+        var s = JSON.parse(localStorage.getItem('smoke_settings')) || {};
+        var t = s.theme || 'default';
+        if (t !== 'default') document.documentElement.classList.add('theme-' + t);
+        var meta = document.getElementById('theme-color-meta');
+        if (meta) {
+          if (t === 'white') meta.setAttribute('content', '#F8FAFC');
+          else if (t === 'carbon') meta.setAttribute('content', '#000000');
+          else meta.setAttribute('content', '#090A0F');
+        }
+      } catch(e){}
+    })();
+  </script>
   
   <!-- Favicons & App Icons -->
   <link rel="icon" type="image/x-icon" href="icons/favicon.ico">
@@ -35,7 +51,7 @@
       --accent: #F59E0B; 
       --accent-glow: rgba(245, 158, 11, 0.2); 
     }
-    body.theme-carbon { 
+    html.theme-carbon, body.theme-carbon { 
       --bg-body: #000000; 
       --text-main: #FFFFFF; 
       --text-muted: #6B7280; 
@@ -44,18 +60,20 @@
       --accent: #3B82F6; 
       --accent-glow: rgba(59, 130, 246, 0.2); 
     }
-    body.theme-white { 
+    html.theme-white, body.theme-white { 
       --bg-body: #F8FAFC; 
       --text-main: #0F172A; 
       --text-muted: #64748B; 
-      /* FIX 1: Restored transparent white for glassmorphism */
       --card-bg: rgba(255, 255, 255, 0.85); 
       --card-border: rgba(203, 213, 225, 0.6); 
       --accent: #2563EB; 
       --accent-glow: rgba(37, 99, 235, 0.15); 
     }
     
-    html, body { background-color: var(--bg-body); color: var(--text-main); font-family: 'General Sans', -apple-system, BlinkMacSystemFont, sans-serif; user-select: none; -webkit-tap-highlight-color: transparent; }
+    html, body { background-color: var(--bg-body); color: var(--text-main); font-family: 'General Sans', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-tap-highlight-color: transparent; }
+    
+    /* Selective non-selectable for UI controls only */
+    button, .nav-btn, .drag-handle, .dock-bar { user-select: none; -webkit-user-select: none; }
     
     .brand-title { 
       font-family: 'Clash Display', sans-serif; 
@@ -104,9 +122,6 @@
     .takeover-bg {
       background: radial-gradient(circle at center, var(--accent-glow) 0%, var(--bg-body) 80%);
     }
-    
-    /* Input formatting for date/time overrides */
-    input[type="date"]::-webkit-calendar-picker-indicator, input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(0.5); cursor: pointer; }
   </style>
 </head>
 <body>
@@ -145,7 +160,7 @@
 
     <div class="p-5 space-y-4 pt-0">
       
-      <!-- 1. TRACKER TAB - COMPACT SPACING -->
+      <!-- 1. TRACKER TAB -->
       <section id="page-tracker" class="page-section space-y-4">
         
         <div class="flex flex-col items-center justify-center pt-2 pb-2">
@@ -167,7 +182,6 @@
           </div>
         </div>
 
-        <!-- FIX 4: Above The Fold. Action Buttons moved ABOVE Stats Cards -->
         <div class="grid grid-cols-3 gap-3">
           <button onclick="window.openWaveModal()" class="col-span-1 premium-card flex flex-col items-center justify-center py-4 active:scale-95 transition-transform text-sky-500">
             <i data-lucide="shield-check" class="w-6 h-6 mb-1"></i>
@@ -178,7 +192,6 @@
           </button>
         </div>
 
-        <!-- 4 Stats Cards moved below -->
         <div class="grid grid-cols-2 gap-3">
           <div onclick="window.showStatDetail('spend')" class="premium-card p-4 active:scale-95 transition-transform cursor-pointer">
             <div class="flex items-center gap-2 mb-2">
@@ -188,7 +201,6 @@
             <p id="todaySpend" class="numeric-display text-xl font-bold" style="color: var(--text-main);">AED 0</p>
           </div>
           
-          <!-- Limit Breach ID's added -->
           <div onclick="window.showStatDetail('count')" class="premium-card p-4 active:scale-95 transition-transform cursor-pointer">
             <div class="flex items-center gap-2 mb-2">
               <div id="todaySticksIcon" class="w-6 h-6 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500"><i data-lucide="activity" class="w-3 h-3"></i></div>
@@ -504,34 +516,35 @@
     </nav>
   </div>
 
-  <!-- FIX 6: Edit Modal Date/Time Input -->
+  <!-- FIX 3: Edit Modal Date/Time Input Padding Fix -->
   <div id="triggerModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex flex-col justify-end transition-opacity" onclick="if(event.target===this) window.saveTags()">
     <div class="premium-card p-6 rounded-b-none space-y-4 max-w-md mx-auto w-full">
       <div class="flex justify-between items-center mb-1">
-        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest text-center">Edit Log</h3>
+        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest text-center">Edit Log Entry</h3>
         <button onclick="window.saveTags()" class="text-xs font-bold text-white px-4 py-1.5 rounded-full shadow-lg active:scale-95 transition-all" style="background: var(--accent);">Save</button>
       </div>
-      <!-- Date & Time Override -->
-      <div class="flex gap-3 border-b border-gray-500/20 pb-4 mb-2">
-        <div class="flex-1">
-          <label class="text-[9px] uppercase tracking-widest text-gray-500 mb-1 block font-bold">Date</label>
-          <input type="date" id="editLogDate" class="w-full bg-gray-500/10 p-2.5 rounded-xl text-xs font-semibold outline-none border border-gray-500/10" style="color: var(--text-main);">
+      
+      <!-- Roomy Date & Time Picker inputs -->
+      <div class="space-y-3 border-b border-gray-500/20 pb-4 mb-2">
+        <div>
+          <label class="text-[10px] uppercase tracking-widest text-gray-400 mb-1 block font-bold">Date</label>
+          <input type="date" id="editLogDate" class="w-full bg-gray-500/10 p-3 rounded-xl text-sm font-bold outline-none border border-gray-500/20" style="color: var(--text-main);">
         </div>
-        <div class="flex-1">
-          <label class="text-[9px] uppercase tracking-widest text-gray-500 mb-1 block font-bold">Time</label>
-          <input type="time" id="editLogTime" class="w-full bg-gray-500/10 p-2.5 rounded-xl text-xs font-semibold outline-none border border-gray-500/10" style="color: var(--text-main);">
+        <div>
+          <label class="text-[10px] uppercase tracking-widest text-gray-400 mb-1 block font-bold">Time</label>
+          <input type="time" id="editLogTime" class="w-full bg-gray-500/10 p-3 rounded-xl text-sm font-bold outline-none border border-gray-500/20" style="color: var(--text-main);">
         </div>
       </div>
-      <p class="text-[9px] uppercase tracking-widest text-gray-500 font-bold -mb-1">Tags</p>
+      
+      <p class="text-[10px] uppercase tracking-widest text-gray-400 font-bold -mb-1">Tags</p>
       <div id="modalTriggerGrid" class="grid grid-cols-2 gap-3 text-xs font-bold"></div>
     </div>
   </div>
 
-  <!-- 6-SECOND PRE-SMOKE TAKEOVER OVERLAY with FIX 5: EXPLICIT CANCEL -->
+  <!-- 6-SECOND PRE-SMOKE TAKEOVER OVERLAY -->
   <div id="smokeTakeover" class="hidden fixed inset-0 z-[20000] opacity-0 transition-opacity duration-500">
     <div class="absolute inset-0 takeover-bg backdrop-blur-2xl cursor-pointer" onclick="window.closeSmokeTakeover()"></div>
     
-    <!-- Explicit Cancel Button -->
     <button onclick="window.cancelSmokeTakeover(event)" class="absolute top-14 right-6 z-[20001] px-4 py-2 bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-bold uppercase tracking-wider rounded-full backdrop-blur-md flex items-center gap-1.5 active:scale-95 transition-all"><i data-lucide="x" class="w-3 h-3"></i> Cancel</button>
     
     <div class="absolute inset-0 flex flex-col justify-between pointer-events-none">
@@ -541,7 +554,8 @@
         <div class="relative flex justify-center items-center w-48 h-48">
           <svg class="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 120 120">
             <circle cx="60" cy="60" r="54" fill="transparent" stroke="var(--card-border)" stroke-width="4"></circle>
-            <circle id="takeoverRing" cx="60" cy="60" r="54" fill="transparent" stroke="var(--accent)" stroke-width="6" stroke-dasharray="339.29" stroke-dashoffset="0" stroke-linecap="round" style="transition: stroke-dashoffset 1s linear; filter: drop-shadow(0 0 12px var(--accent-glow));"></circle>
+            <!-- FIX 1: Default to fully offset (339.29) so it starts empty -->
+            <circle id="takeoverRing" cx="60" cy="60" r="54" fill="transparent" stroke="var(--accent)" stroke-width="6" stroke-dasharray="339.29" stroke-dashoffset="339.29" stroke-linecap="round" style="transition: stroke-dashoffset 1s linear; filter: drop-shadow(0 0 12px var(--accent-glow));"></circle>
           </svg>
           <span id="takeoverNumber" class="numeric-display text-7xl font-light z-10" style="color: var(--text-main);">6</span>
         </div>

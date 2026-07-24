@@ -62,7 +62,7 @@ const centerTextPlugin = {
       }
       ctx.font = "bold " + (chart.canvas.id === 'chart4' ? '26px' : '16px') + " sans-serif";
       ctx.textBaseline = "middle";
-      ctx.fillStyle = document.body.classList.contains('theme-white') ? "#64748B" : "#F3F4F6";
+      ctx.fillStyle = (document.body.classList.contains('theme-white') || document.documentElement.classList.contains('theme-white')) ? "#64748B" : "#F3F4F6";
       ctx.fillText(text, Math.round((chart.width - ctx.measureText(text).width) / 2), chart.height / 2);
       ctx.save();
     }
@@ -194,7 +194,7 @@ function savePinSetup() {
   }
 }
 
-// TAKEOVER LOGIC & ACTIONS
+// LOG CLICK & SMOOTH RING TAKEOVER
 function handleLogClick() {
   if(new Date().getTime() < lockEndTime) return;
   
@@ -233,6 +233,7 @@ function handleLogClick() {
   }
 }
 
+// FIX 1: Instantaneous initial tick for 0ms Ring Drain (No jump/delay)
 function startSmokeTakeover(logIdx, gap) {
   editingLogIdx = logIdx;
   currentSelectedTags = [];
@@ -243,10 +244,6 @@ function startSmokeTakeover(logIdx, gap) {
   const ringEl = document.getElementById('takeoverRing');
   const factEl = document.getElementById('takeoverFact');
   
-  numberEl.innerText = takeoverCountdown;
-  ringEl.style.strokeDashoffset = 0;
-  factEl.style.opacity = 0;
-  
   let factText = "";
   if (gap === null || gap === undefined) factText = "Setting your first baseline.";
   else if (gap < 60) factText = `It's been ${gap}m since your last one.`;
@@ -254,6 +251,16 @@ function startSmokeTakeover(logIdx, gap) {
   factEl.innerText = factText;
 
   renderTakeoverTags();
+
+  // Instant tick update (0ms execution)
+  const updateTick = () => {
+    numberEl.innerText = takeoverCountdown;
+    const offset = 339.29 - (339.29 * (takeoverCountdown / 6));
+    ringEl.style.strokeDashoffset = offset;
+    if (takeoverCountdown === 3) factEl.style.opacity = 1;
+  };
+
+  updateTick(); // Call immediately
 
   overlay.classList.remove('hidden');
   requestAnimationFrame(() => {
@@ -264,14 +271,11 @@ function startSmokeTakeover(logIdx, gap) {
   if (takeoverTimer) clearInterval(takeoverTimer);
   takeoverTimer = setInterval(() => {
     takeoverCountdown--;
-    numberEl.innerText = takeoverCountdown;
-    const offset = 339.29 - (339.29 * (takeoverCountdown / 6));
-    ringEl.style.strokeDashoffset = offset;
-
-    if (takeoverCountdown === 3) factEl.style.opacity = 1;
     if (takeoverCountdown <= 0) {
       clearInterval(takeoverTimer);
       closeSmokeTakeover();
+    } else {
+      updateTick();
     }
   }, 1000);
 }
@@ -293,7 +297,6 @@ function toggleTakeoverTag(t) {
   renderTakeoverTags();
 }
 
-// FIX 5: EXPLICIT CANCEL DURING OVERLAY
 function cancelSmokeTakeover(e) {
   if(e) e.stopPropagation();
   if(takeoverTimer) clearInterval(takeoverTimer);
@@ -332,7 +335,6 @@ function closeSmokeTakeover() {
   }, 500);
 }
 
-// FIX 5: UNDO TOAST LOGIC
 function showUndoToast(logIdx) {
   const c = document.getElementById('toastContainer');
   if(!c) return;
@@ -472,10 +474,15 @@ function showConfirm(title, message, onConfirm) {
 function closeConfirmModal() { document.getElementById('confirmModal').classList.add('hidden'); pendingConfirmCallback = null; }
 function confirmYes() { const cb = pendingConfirmCallback; closeConfirmModal(); if(cb) cb(); }
 
-// FIX 3: Dynamic Theme Color Meta Update
+// FIX 2: Instant Theme applying both to DocumentElement and Meta Theme
 function applyTheme(t) { 
   document.body.className = document.body.className.replace(/theme-\w+/g, '').trim(); 
-  if(t!=='default') document.body.classList.add(`theme-${t}`); 
+  document.documentElement.className = document.documentElement.className.replace(/theme-\w+/g, '').trim(); 
+  
+  if(t !== 'default') {
+    document.body.classList.add(`theme-${t}`);
+    document.documentElement.classList.add(`theme-${t}`);
+  }
   
   const metaTheme = document.getElementById('theme-color-meta');
   if(metaTheme) {
@@ -516,8 +523,8 @@ function updateUI() {
 
   const today = logs.filter(l => new Date(l.timestamp).toDateString() === new Date().toDateString());
   
-  // FIX 2: Limit Breach UI logic
-  const overLimit = today.length > settings.dailyLimit;
+  // FIX 4: Limit Breach triggers at >= Goal (e.g. 15/15)
+  const overLimit = today.length >= settings.dailyLimit;
   document.getElementById('todayCount').innerText = `${today.length} / ${settings.dailyLimit}`;
   
   const stickIconEl = document.getElementById('todaySticksIcon');
@@ -554,7 +561,7 @@ function showStatDetail(type) {
     const monthLogs = logs.filter(l => (new Date().getTime() - l.timestamp) < 30*86400000);
     extra.innerHTML = row('Cost per cigarette', `${settings.currency} ${pricePerStick.toFixed(2)}`) + row('Last 30 days', `${settings.currency} ${(monthLogs.length * pricePerStick).toFixed(1)}`);
   } else if (type === 'count') {
-    const over = today.length > settings.dailyLimit; iconClass = over ? 'bg-red-500/10 text-red-500' : 'bg-amber-500/10 text-amber-500'; iconName = 'activity'; title.innerText = "Today's Sticks"; value.innerText = `${today.length} / ${settings.dailyLimit}`; desc.innerText = over ? `You're ${today.length - settings.dailyLimit} over your daily goal.` : `You're ${settings.dailyLimit - today.length} away from your goal.`; extra.innerHTML = row('Your daily goal', `${settings.dailyLimit} cigarettes`);
+    const over = today.length >= settings.dailyLimit; iconClass = over ? 'bg-red-500/10 text-red-500' : 'bg-amber-500/10 text-amber-500'; iconName = 'activity'; title.innerText = "Today's Sticks"; value.innerText = `${today.length} / ${settings.dailyLimit}`; desc.innerText = over ? `You've reached/exceeded your daily limit.` : `You're ${settings.dailyLimit - today.length} away from your limit.`; extra.innerHTML = row('Your daily goal', `${settings.dailyLimit} cigarettes`);
   } else if (type === 'prevGap') {
     iconClass = 'bg-sky-500/10 text-sky-500'; iconName = 'history'; title.innerText = "Previous Gap"; const g = logs.length > 1 ? logs[logs.length-1].gap : null; value.innerText = formatGap(g); desc.innerText = logs.length > 1 ? `Time between your last two logged cigarettes.` : `Log at least 2 cigarettes to see a gap here.`;
     const gappedAll = logs.map(l => l.gap).filter(g => g !== null && g !== undefined);
@@ -624,7 +631,6 @@ function renderTriggerSettingsList() {
   c.innerHTML = triggers.map((t, idx) => `<span class="bg-gray-500/10 text-xs px-3 py-1.5 rounded-xl border border-gray-500/20 flex items-center gap-1.5 font-medium" style="color: var(--text-main);">${esc(t)} <button onclick="window.removeCustomTrigger(${idx})" class="text-red-500 font-bold hover:opacity-80">✕</button></span>`).join('');
 }
 
-// FIX 6: EDIT MODAL LOGIC (INCLUDES DATE/TIME)
 function openTriggerModal(logIdx = null) {
   editingLogIdx = logIdx !== null ? logIdx : logs.length - 1;
   const log = logs[editingLogIdx];
@@ -665,7 +671,6 @@ function saveTags() {
     }
     logs[editingLogIdx].tags = [...currentSelectedTags];
     
-    // Sort & recalculate gaps
     logs.sort((a,b) => a.timestamp - b.timestamp);
     for (let i = 0; i < logs.length; i++) {
         logs[i].gap = i > 0 ? Math.round((logs[i].timestamp - logs[i-1].timestamp)/60000) : null;
@@ -683,7 +688,6 @@ function closeTriggerModal() {
   document.getElementById('triggerModal').classList.add('hidden');
 }
 
-// FIX 7: DATE-GROUPED HISTORY LIST
 function renderHistory(tId='fullHistoryList', limit=null) {
   const c = document.getElementById(tId); if(!c) return;
   if(logs.length===0) { c.innerHTML="<p class='text-center py-6 text-xs flex flex-col items-center gap-2' style='color: var(--text-muted);'><i data-lucide='inbox' class='w-6 h-6 opacity-50'></i> No logs recorded yet.</p>"; if(window.lucide) window.lucide.createIcons(); return; }
@@ -823,7 +827,7 @@ function renderAllCharts() {
   }) : ['No Data'];
   
   const gaps = activeLogs.length > 0 ? activeLogs.map(l => l.gap) : [0];
-  const chartTextColor = settings.theme === 'white' ? '#64748B' : '#9CA3AF';
+  const chartTextColor = (document.body.classList.contains('theme-white') || document.documentElement.classList.contains('theme-white')) ? '#64748B' : '#9CA3AF';
 
   const proOptions = { responsive: true, maintainAspectRatio: false, animation: { duration: 600, easing: 'easeOutQuart' }, interaction: { mode: 'index', intersect: false }, layout: { padding: { left: 0, right: 0, top: 10, bottom: 0 } }, plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.95)', titleColor: '#FFFFFF', bodyColor: '#10B981', padding: 12, cornerRadius: 12, displayColors: false } }, scales: { x: { grid: { display: false }, ticks: { color: chartTextColor, font: { size: 9, weight: '600' }, maxTicksLimit: 4 } }, y: { beginAtZero: true, grid: { color: 'rgba(156, 163, 175, 0.05)', drawBorder: false }, ticks: { color: chartTextColor, font: { size: 9, weight: '600' }, padding: 6 } } } };
   const createGradient = (ctx, colorHex) => { let g = ctx.createLinearGradient(0, 0, 0, 180); g.addColorStop(0, colorHex); g.addColorStop(1, 'rgba(0,0,0,0)'); return g; };
@@ -836,7 +840,7 @@ function renderAllCharts() {
   let dayLabels = Object.keys(dayMap), dayCounts = Object.values(dayMap); if(dayLabels.length === 0) { dayLabels = ['Today']; dayCounts = [0]; }
   const ctx2 = document.getElementById('chart2').getContext('2d');
   
-  upsertChart(2, ctx2, { type: 'bar', data: { labels: dayLabels, datasets: [{ label: 'Count', data: dayCounts, backgroundColor: settings.theme === 'white' ? '#2563EB' : '#F59E0B', borderRadius: Number.MAX_VALUE, borderSkipped: false, maxBarThickness: 16 }, { label: 'Limit', data: dayLabels.map(() => settings.dailyLimit), type: 'line', borderColor: '#EF4444', borderWidth: 2, borderDash: [4,4], pointRadius: 0 }] }, options: { ...proOptions, scales: { x: { ...proOptions.scales.x, offset: true }, y: { ...proOptions.scales.y } } }, plugins: [crosshairPlugin] });
+  upsertChart(2, ctx2, { type: 'bar', data: { labels: dayLabels, datasets: [{ label: 'Count', data: dayCounts, backgroundColor: (document.body.classList.contains('theme-white') || document.documentElement.classList.contains('theme-white')) ? '#2563EB' : '#F59E0B', borderRadius: Number.MAX_VALUE, borderSkipped: false, maxBarThickness: 16 }, { label: 'Limit', data: dayLabels.map(() => settings.dailyLimit), type: 'line', borderColor: '#EF4444', borderWidth: 2, borderDash: [4,4], pointRadius: 0 }] }, options: { ...proOptions, scales: { x: { ...proOptions.scales.x, offset: true }, y: { ...proOptions.scales.y } } }, plugins: [crosshairPlugin] });
 
   let cumulativeSpend = 0; let spendData = gaps.map(() => { cumulativeSpend += (settings.packPrice / settings.packSize); return cumulativeSpend.toFixed(1); });
   const ctx3 = document.getElementById('chart3').getContext('2d');
@@ -886,7 +890,7 @@ function renderHeatMap(containerId, activeLogs) {
     if (!m || m._smokegapTheme !== settings.theme) {
       if (m) { try { m.remove(); } catch(e) {} }
       m = L.map(containerId, {zoomControl: false, attributionControl: false}).setView([lat, lng], 13);
-      L.tileLayer(settings.theme === 'white' ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png' : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {maxZoom: 19}).addTo(m);
+      L.tileLayer((settings.theme === 'white' || document.documentElement.classList.contains('theme-white')) ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png' : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {maxZoom: 19}).addTo(m);
       m._smokegapTheme = settings.theme; if (isModal) modalMapInstance = m; else mapInstance = m;
       setTimeout(() => { m.invalidateSize(); }, 250);
     } else { m.setView([lat, lng], m.getZoom()); setTimeout(() => { m.invalidateSize(); }, 50); }
