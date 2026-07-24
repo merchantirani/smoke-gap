@@ -8,21 +8,8 @@ let shields = parseInt(localStorage.getItem('smoke_shields')) || 0;
 let lockEndTime = parseInt(localStorage.getItem('smoke_lock_end')) || 0;
 let waveEndTime = parseInt(localStorage.getItem('smoke_wave_end')) || 0;
 
-function hashPin(p) { let h = 0; for (let i = 0; i < p.length; i++) { h = ((h << 5) - h) + p.charCodeAt(i); h |= 0; } return h.toString(36); }
-function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-
-// One-time migration: old versions stored the PIN as reversible base64 (trivially decodable via atob in devtools).
-// We migrate it to a one-way hash so the raw PIN is never sitting in localStorage.
-(function migratePin() {
-  const legacy = localStorage.getItem('smoke_pin');
-  if (legacy && !localStorage.getItem('smoke_pin_hash')) {
-    try { localStorage.setItem('smoke_pin_hash', hashPin(atob(legacy))); } catch(e) {}
-  }
-  if (legacy) localStorage.removeItem('smoke_pin');
-})();
-
-let storedPinHash = localStorage.getItem('smoke_pin_hash');
-let hasPin = !!storedPinHash;
+let storedPin = localStorage.getItem('smoke_pin');
+let appPin = storedPin ? atob(storedPin) : null;
 let enteredPin = "";
 
 let myChartInstances = {};
@@ -58,7 +45,7 @@ window.onload = () => {
   loadChartOrder(); initDragAndDrop(); renderTriggerSettingsList();
   if(window.lucide) window.lucide.createIcons();
 
-  if(hasPin) { document.getElementById('lockScreen').classList.remove('hidden'); document.getElementById('pinStatusBtn').innerText = "Remove PIN"; } 
+  if(appPin) { document.getElementById('lockScreen').classList.remove('hidden'); document.getElementById('pinStatusBtn').innerText = "Remove PIN"; } 
   else { bootCore(); }
 };
 
@@ -66,7 +53,7 @@ function bootCore() {
   updateUI(); checkLock(); checkWave();
   if(mainTimer) clearInterval(mainTimer);
   mainTimer = setInterval(() => {
-    if(logs.length === 0 || document.hidden || document.getElementById('page-tracker').classList.contains('hidden')) return;
+    if(logs.length === 0 || document.getElementById('page-tracker').classList.contains('hidden')) return;
     const diff = new Date().getTime() - logs[logs.length-1].timestamp;
     
     document.getElementById('stopwatch').innerText = `${Math.floor(diff/3600000).toString().padStart(2,'0')}:${Math.floor((diff%3600000)/60000).toString().padStart(2,'0')}:${Math.floor((diff%60000)/1000).toString().padStart(2,'0')}`;
@@ -95,7 +82,7 @@ function bootCore() {
         newHtml = `<i data-lucide="trophy" class="w-3.5 h-3.5 text-emerald-500"></i><span class="text-emerald-500">Widened the gap by +${extraMins} min${extraMins!==1?'s':''}</span>`;
       }
     } else {
-      circle.style.strokeDashoffset = dashMax; circle.style.stroke = 'var(--card-border)'; circle.style.filter = 'none';
+      circle.style.strokeDashoffset = 0; circle.style.stroke = 'var(--accent)'; circle.style.filter = 'none';
       newClass = 'px-5 py-2.5 rounded-full border transition-all duration-500 bg-sky-500/10 border-sky-500/20';
       newHtml = `<i data-lucide="rocket" class="w-3.5 h-3.5 text-sky-500"></i><span class="text-sky-500">Setting your first baseline gap</span>`;
     }
@@ -120,37 +107,19 @@ function enterPin(n) {
   }
   if(enteredPin.length === 4) {
     setTimeout(() => {
-      if(hashPin(enteredPin) === storedPinHash) { document.getElementById('lockScreen').classList.add('hidden'); bootCore(); } 
-      else { showToast("Wrong PIN"); shakePinDots(); clearPin(); }
+      if(enteredPin === appPin) { document.getElementById('lockScreen').classList.add('hidden'); bootCore(); } 
+      else { alert("Wrong PIN"); clearPin(); }
     }, 200);
   }
 }
 function clearPin() { enteredPin = ""; document.querySelectorAll('.pin-dot').forEach(el => { el.classList.remove('bg-gray-400'); el.classList.add('bg-gray-500'); }); }
-function shakePinDots() { const d = document.getElementById('pinDots'); if(!d) return; d.classList.add('shake-anim'); setTimeout(() => d.classList.remove('shake-anim'), 400); }
-
 function setupPin() {
-  if(hasPin) { 
-    showConfirm("Remove PIN?", "You won't need a PIN to open the app anymore.", () => {
-      localStorage.removeItem('smoke_pin_hash'); hasPin=false; storedPinHash=null; location.reload();
-    });
+  if(appPin) { 
+    if(confirm("Remove PIN?")) { localStorage.removeItem('smoke_pin'); appPin=null; location.reload(); } 
   } else { 
-    document.getElementById('pinSetupInput').value = '';
-    document.getElementById('pinSetupError').classList.add('hidden');
-    document.getElementById('pinSetupModal').classList.remove('hidden');
-    setTimeout(() => document.getElementById('pinSetupInput').focus(), 100);
-  }
-}
-function closePinSetupModal() { document.getElementById('pinSetupModal').classList.add('hidden'); }
-function savePinSetup() {
-  const p = document.getElementById('pinSetupInput').value;
-  if(/^\d{4}$/.test(p)) {
-    localStorage.setItem('smoke_pin_hash', hashPin(p));
-    hasPin = true; storedPinHash = hashPin(p);
-    closePinSetupModal();
-    document.getElementById('pinStatusBtn').innerText = "Remove PIN";
-    showToast("PIN saved");
-  } else {
-    document.getElementById('pinSetupError').classList.remove('hidden');
+    let p = prompt("New 4-digit PIN (e.g., 1234):"); 
+    if(p && /^\d{4}$/.test(p)) { localStorage.setItem('smoke_pin', btoa(p)); appPin=p; alert("PIN Saved!"); location.reload(); }
+    else if(p) { alert("Invalid format. Must be exactly 4 digits."); }
   }
 }
 
@@ -162,7 +131,7 @@ function handleLogClick() {
   const now = new Date().getTime();
   let gap = logs.length > 0 ? Math.round((now - logs[logs.length-1].timestamp)/60000) : null;
   
-  logs.push({timestamp: now, gap: gap, tags: [], lat: null, lng: null});
+  logs.push({timestamp: now, gap: gap, tags: [], trigger: '', lat: null, lng: null});
   const newLogIdx = logs.length - 1;
   localStorage.setItem('smoke_logs', JSON.stringify(logs));
   lockEndTime = now + (settings.lockSecs * 1000);
@@ -222,34 +191,6 @@ function switchTab(t) {
   if(window.lucide) window.lucide.createIcons();
 }
 
-function showToast(msg) {
-  const c = document.getElementById('toastContainer');
-  if(!c) return;
-  const t = document.createElement('div');
-  t.className = 'premium-card px-4 py-2.5 rounded-full text-xs font-bold shadow-lg pointer-events-auto transition-all duration-300';
-  t.style.color = 'var(--text-main)';
-  t.style.opacity = '0';
-  t.style.transform = 'translateY(10px)';
-  t.innerText = msg;
-  c.appendChild(t);
-  requestAnimationFrame(() => { t.style.opacity = '1'; t.style.transform = 'translateY(0)'; });
-  setTimeout(() => {
-    t.style.opacity = '0'; t.style.transform = 'translateY(10px)';
-    setTimeout(() => t.remove(), 300);
-  }, 2200);
-}
-
-let pendingConfirmCallback = null;
-function showConfirm(title, message, onConfirm) {
-  document.getElementById('confirmTitle').innerText = title;
-  document.getElementById('confirmMessage').innerText = message;
-  pendingConfirmCallback = onConfirm;
-  document.getElementById('confirmModal').classList.remove('hidden');
-  if(window.lucide) window.lucide.createIcons();
-}
-function closeConfirmModal() { document.getElementById('confirmModal').classList.add('hidden'); pendingConfirmCallback = null; }
-function confirmYes() { const cb = pendingConfirmCallback; closeConfirmModal(); if(cb) cb(); }
-
 function applyTheme(t) { document.body.className = document.body.className.replace(/theme-\w+/g, '').trim(); if(t!=='default') document.body.classList.add(`theme-${t}`); }
 
 function updateSettings() {
@@ -297,11 +238,11 @@ function showStatDetail(type) {
   } else if (type === 'count') {
     const over = today.length > settings.dailyLimit; iconClass = over ? 'bg-red-500/10 text-red-500' : 'bg-amber-500/10 text-amber-500'; iconName = 'activity'; title.innerText = "Today's Sticks"; value.innerText = `${today.length} / ${settings.dailyLimit}`; desc.innerText = over ? `You're ${today.length - settings.dailyLimit} over your daily goal.` : `You're ${settings.dailyLimit - today.length} away from your goal.`; extra.innerHTML = row('Your daily goal', `${settings.dailyLimit} cigarettes`);
   } else if (type === 'prevGap') {
-    iconClass = 'bg-sky-500/10 text-sky-500'; iconName = 'history'; title.innerText = "Previous Gap"; const g = logs.length > 1 ? logs[logs.length-1].gap : null; value.innerText = formatGap(g); desc.innerText = logs.length > 1 ? `Time between your last two logged cigarettes.` : `Log at least 2 cigarettes to see a gap here.`;
+    iconClass = 'bg-sky-500/10 text-sky-500'; iconName = 'history'; title.innerText = "Previous Gap"; const g = logs.length > 1 ? logs[logs.length-1].gap : null; value.innerText = formatGap(g); desc.innerText = `Time between your last two logs.`;
     const gappedAll = logs.map(l => l.gap).filter(g => g !== null && g !== undefined);
     extra.innerHTML = gappedAll.length ? row('Your all-time average gap', formatGap(Math.round(gappedAll.reduce((a,b)=>a+b,0)/gappedAll.length))) : '';
   } else if (type === 'bestGap') {
-    iconClass = 'bg-emerald-500/10 text-emerald-500'; iconName = 'trophy'; title.innerText = "Best Gap Today"; const todayGaps = today.map(l => l.gap).filter(g => g !== null && g !== undefined); const best = todayGaps.length ? Math.max(...todayGaps) : null; value.innerText = formatGap(best); desc.innerText = best !== null ? `The longest you've gone between cigarettes today.` : `No gap data for today yet.`;
+    iconClass = 'bg-emerald-500/10 text-emerald-500'; iconName = 'trophy'; title.innerText = "Best Gap Today"; const todayGaps = today.map(l => l.gap).filter(g => g !== null && g !== undefined); const best = todayGaps.length ? Math.max(...todayGaps) : null; value.innerText = formatGap(best); desc.innerText = `The longest you've gone between cigarettes today.`;
     const allGaps = logs.map(l => l.gap).filter(g => g !== null && g !== undefined);
     extra.innerHTML = allGaps.length ? row('Your all-time best gap', formatGap(Math.max(...allGaps))) : '';
   }
@@ -321,23 +262,12 @@ function showShieldDashboard() {
 function closeShieldDashboard() { document.getElementById('shieldDashboardModal').classList.add('hidden'); }
 
 function resetData(type) { 
-  if(type === '24h') {
-    showConfirm("Delete last 24h logs?", "This will permanently remove logs from the last 24 hours.", () => {
-      const now = new Date().getTime();
-      logs = logs.filter(l => (now - l.timestamp) > 86400000);
-      localStorage.setItem('smoke_logs', JSON.stringify(logs));
-      location.reload();
-    });
-  } else {
-    showConfirm("Wipe ALL data?", "This cannot be undone. All logs, settings, and tags will be erased.", () => {
-      localStorage.clear();
-      location.reload();
-    });
-  }
+  if(type === '24h') { if(confirm("Delete logs from the last 24 hours?")) { const now = new Date().getTime(); logs = logs.filter(l => (now - l.timestamp) > 86400000); localStorage.setItem('smoke_logs', JSON.stringify(logs)); location.reload(); } } 
+  else { if(confirm("Wipe ALL data? This action cannot be undone.")) { localStorage.clear(); location.reload(); } }
 }
 
 function exportLogsCSV() {
-  if(logs.length === 0) { showToast("No logs to export yet"); return; }
+  if(logs.length === 0) { alert("No logs to export!"); return; }
   let csvContent = "Timestamp,Date,Time,Gap_Minutes,Tags,Latitude,Longitude\n";
   logs.forEach(l => {
     let d = new Date(l.timestamp);
@@ -360,7 +290,7 @@ function addCustomTrigger() {
 function removeCustomTrigger(idx) { triggers.splice(idx, 1); localStorage.setItem('smoke_triggers', JSON.stringify(triggers)); renderTriggerSettingsList(); }
 function renderTriggerSettingsList() {
   const c = document.getElementById('triggerListSettings'); if(!c) return;
-  c.innerHTML = triggers.map((t, idx) => `<span class="bg-gray-500/10 text-xs px-3 py-1.5 rounded-xl border border-gray-500/20 flex items-center gap-1.5 font-medium" style="color: var(--text-main);">${esc(t)} <button onclick="window.removeCustomTrigger(${idx})" class="text-red-500 font-bold hover:opacity-80">✕</button></span>`).join('');
+  c.innerHTML = triggers.map((t, idx) => `<span class="bg-gray-500/10 text-xs px-3 py-1.5 rounded-xl border border-gray-500/20 flex items-center gap-1.5 font-medium" style="color: var(--text-main);">${t} <button onclick="window.removeCustomTrigger(${idx})" class="text-red-500 font-bold hover:opacity-80">✕</button></span>`).join('');
 }
 
 function openTriggerModal(logIdx = null) {
@@ -377,7 +307,7 @@ function renderModalTriggerGrid() {
     const isSelected = currentSelectedTags.includes(t);
     const bgClass = isSelected ? 'text-white border border-sky-400' : 'bg-gray-500/10';
     const inlineStyle = isSelected ? `style="background: var(--accent); box-shadow: 0 4px 15px var(--accent-glow);"` : `style="color: var(--text-main);"`;
-    return `<button onclick="window.toggleTag(${idx})" class="py-4 px-2 rounded-xl text-center active:scale-95 transition-all ${bgClass}" ${inlineStyle}>${esc(t)}</button>`;
+    return `<button onclick="window.toggleTag(${idx})" class="py-4 px-2 rounded-xl text-center active:scale-95 transition-all ${bgClass}" ${inlineStyle}>${t}</button>`;
   }).join('');
 }
 
@@ -391,6 +321,7 @@ function toggleTag(idx) {
 function saveTags() {
   if(editingLogIdx !== null && logs[editingLogIdx]) {
     logs[editingLogIdx].tags = [...currentSelectedTags];
+    logs[editingLogIdx].trigger = currentSelectedTags.length > 0 ? currentSelectedTags[0] : '';
     localStorage.setItem('smoke_logs', JSON.stringify(logs));
     renderHistory('homeRecentLogs', 3);
     if(!document.getElementById('page-history').classList.contains('hidden')) renderHistory('fullHistoryList');
@@ -416,10 +347,7 @@ function renderHistory(tId='fullHistoryList', limit=null) {
       if (l.gap > prev.gap) { trendClass = 'bg-emerald-500/10 text-emerald-500'; trendIcon = 'trending-up'; valueColor = '#10B981'; }
       else if (l.gap < prev.gap) { trendClass = 'bg-red-500/10 text-red-500'; trendIcon = 'trending-down'; valueColor = '#EF4444'; }
     }
-    const tagsArr = l.tags && l.tags.length ? l.tags : (l.trigger ? [l.trigger] : ['Uncategorized']);
-    const visibleTags = tagsArr.slice(0, 2).map(esc).join(', ');
-    const extraCount = tagsArr.length - 2;
-    const tagsDisplay = extraCount > 0 ? `${visibleTags} <span class="opacity-60">+${extraCount} more</span>` : visibleTags;
+    const tagsDisplay = l.tags && l.tags.length ? l.tags.join(', ') : (l.trigger || 'Uncategorized');
     return `
     <div onclick="window.openTriggerModal(${origIdx})" class="premium-card p-4 flex justify-between items-center relative overflow-hidden cursor-pointer active:scale-[0.98] transition-transform hover:bg-gray-500/5">
       <div class="flex items-start gap-3 flex-1 min-w-0 pr-3">
@@ -583,5 +511,3 @@ window.openTriggerModal = openTriggerModal; window.closeTriggerModal = closeTrig
 window.renderAllCharts = renderAllCharts; window.openMapModal = openMapModal; window.closeMapModal = closeMapModal;
 window.showStatDetail = showStatDetail; window.closeStatDetail = closeStatDetail; window.showShieldDashboard = showShieldDashboard; window.closeShieldDashboard = closeShieldDashboard;
 window.exportLogsCSV = exportLogsCSV; window.addCustomTrigger = addCustomTrigger; window.removeCustomTrigger = removeCustomTrigger;
-window.closeConfirmModal = closeConfirmModal; window.confirmYes = confirmYes;
-window.closePinSetupModal = closePinSetupModal; window.savePinSetup = savePinSetup;
