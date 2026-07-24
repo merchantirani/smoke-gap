@@ -23,7 +23,6 @@ Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "SF Pro Display
 
 const crosshairPlugin = { id: 'crosshair', afterDraw: chart => { if (chart.tooltip?._active?.length && (chart.config.type === 'line' || chart.config.type === 'bar')) { const activePoint = chart.tooltip._active[0]; const ctx = chart.ctx; const x = activePoint.element.x; ctx.save(); ctx.beginPath(); ctx.moveTo(x, chart.scales.y.top); ctx.lineTo(x, chart.scales.y.bottom); ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)'; ctx.setLineDash([4, 4]); ctx.stroke(); ctx.restore(); } } };
 
-// FIX: Dynamic color for center text based on theme
 const centerTextPlugin = { id: 'centerText', beforeDraw: chart => { if (chart.config.type === 'doughnut') { const ctx = chart.ctx; ctx.restore(); const total = chart.data.datasets[0].data.reduce((a,b)=>a+b, 0); const text = total > 0 ? total + " Logs" : "No Data"; ctx.font = "bold 16px sans-serif"; ctx.textBaseline = "middle"; ctx.fillStyle = document.body.classList.contains('theme-white') ? "#64748B" : "#F3F4F6"; ctx.fillText(text, Math.round((chart.width - ctx.measureText(text).width) / 2), chart.height / 2); ctx.save(); } } };
 
 function formatAppTime(dateObj) {
@@ -87,7 +86,6 @@ function bootCore() {
       newHtml = `<i data-lucide="rocket" class="w-3.5 h-3.5 text-sky-500"></i><span class="text-sky-500">Setting your first baseline gap</span>`;
     }
     
-    // FIX: Optimized blinking icon issue. DOM is updated only if text actually changed.
     if (statusText.dataset.rawHtml !== newHtml) {
       statusWrapper.className = newClass;
       statusText.innerHTML = newHtml;
@@ -422,7 +420,6 @@ function renderAllCharts() {
   setBadge('badge-chart2', activeLogs.length > 0 ? `${activeLogs.length} Total` : '', 'bg-amber-500/10 text-amber-500 border-amber-500/20');
   setBadge('badge-chart3', activeLogs.length > 0 ? `${settings.currency} ${totalSpend}` : '', 'bg-red-500/10 text-red-500 border-red-500/20');
 
-  // FIX: X-Axis Multi-line Labels (Array format prevents clipping)
   const labels = activeLogs.length > 0 ? activeLogs.map(l => {
     let d = new Date(l.timestamp);
     let tStr = formatAppTime(d);
@@ -434,20 +431,17 @@ function renderAllCharts() {
   const gaps = activeLogs.length > 0 ? activeLogs.map(l => l.gap) : [0];
   const chartTextColor = settings.theme === 'white' ? '#64748B' : '#9CA3AF';
 
-  // FIX: Base options -> Removed negative padding to prevent edge clipping
   const proOptions = { responsive: true, maintainAspectRatio: false, animation: { duration: 600, easing: 'easeOutQuart' }, interaction: { mode: 'index', intersect: false }, layout: { padding: { left: 0, right: 0, top: 10, bottom: 0 } }, plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.95)', titleColor: '#FFFFFF', bodyColor: '#10B981', padding: 12, cornerRadius: 12, displayColors: false } }, scales: { x: { grid: { display: false }, ticks: { color: chartTextColor, font: { size: 9, weight: '600' }, maxTicksLimit: 4 } }, y: { beginAtZero: true, grid: { color: 'rgba(156, 163, 175, 0.05)', drawBorder: false }, ticks: { color: chartTextColor, font: { size: 9, weight: '600' }, padding: 6 } } } };
   const createGradient = (ctx, colorHex) => { let g = ctx.createLinearGradient(0, 0, 0, 180); g.addColorStop(0, colorHex); g.addColorStop(1, 'rgba(0,0,0,0)'); return g; };
   function upsertChart(key, ctx, config) { const existing = myChartInstances[key]; if (existing && existing.config.type === config.type) { existing.data = config.data; if (config.options) existing.options = config.options; existing.update(); } else { if (existing) existing.destroy(); myChartInstances[key] = new Chart(ctx, config); } }
 
   const ctx1 = document.getElementById('chart1').getContext('2d');
-  // FIX: Added offset to X-axis to center the line
   upsertChart(1, ctx1, { type: 'line', data: { labels: labels, datasets: [{ label: 'Gap (mins)', data: gaps, borderColor: '#10B981', backgroundColor: createGradient(ctx1, 'rgba(16, 185, 129, 0.25)'), borderWidth: 3, tension: 0.4, fill: true, pointRadius: 0, pointHitRadius: 15 }] }, options: { ...proOptions, scales: { ...proOptions.scales, x: { ...proOptions.scales.x, offset: true } } }, plugins: [crosshairPlugin] });
 
   let dayMap = {}; activeLogs.forEach(l => { let d = document.getElementById('insightsDateFilter').value === '7days' ? new Date(l.timestamp).toLocaleDateString([], {weekday:'short'}) : new Date(l.timestamp).toLocaleDateString([], {month:'short', day:'numeric'}); dayMap[d] = (dayMap[d] || 0) + 1; });
   let dayLabels = Object.keys(dayMap), dayCounts = Object.values(dayMap); if(dayLabels.length === 0) { dayLabels = ['Today']; dayCounts = [0]; }
   const ctx2 = document.getElementById('chart2').getContext('2d');
   
-  // FIX: Offset true & maxBarThickness to prevent left clipping
   upsertChart(2, ctx2, { type: 'bar', data: { labels: dayLabels, datasets: [{ label: 'Count', data: dayCounts, backgroundColor: settings.theme === 'white' ? '#2563EB' : '#F59E0B', borderRadius: Number.MAX_VALUE, borderSkipped: false, maxBarThickness: 16 }, { label: 'Limit', data: dayLabels.map(() => settings.dailyLimit), type: 'line', borderColor: '#EF4444', borderWidth: 2, borderDash: [4,4], pointRadius: 0 }] }, options: { ...proOptions, scales: { x: { ...proOptions.scales.x, offset: true }, y: { ...proOptions.scales.y } } }, plugins: [crosshairPlugin] });
 
   let cumulativeSpend = 0; let spendData = gaps.map(() => { cumulativeSpend += (settings.packPrice / settings.packSize); return cumulativeSpend.toFixed(1); });
@@ -472,7 +466,6 @@ function renderAllCharts() {
   setBadge('badge-chart6', peakPartIdx >= 0 ? `Peak: ${dayParts[peakPartIdx]}` : '', 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20');
   const chart6El = document.getElementById('chart6');
   
-  // FIX: Trigger Timing chart layout. maxBarThickness controls the extreme width, borderRadius: 0 fixes the stacked gap issue, and offset: true adds padding so left/right bars don't cut.
   if (chart6El) {
     upsertChart(6, chart6El.getContext('2d'), { type: 'bar', data: { labels: dayParts, datasets: triggers.map((t, i) => ({ label: t, data: triggerByPart[t], backgroundColor: palette[i % palette.length], borderRadius: 0, maxBarThickness: 32, stack: 'triggers' })) }, options: { ...proOptions, scales: { x: { ...proOptions.scales.x, stacked: true, offset: true }, y: { ...proOptions.scales.y, stacked: true, ticks: { ...proOptions.scales.y.ticks, precision: 0 } } }, plugins: { ...proOptions.plugins, legend: { display: true, position: 'bottom', labels: { boxWidth: 8, padding: 10, font: { size: 9 }, color: chartTextColor } } } } });
   }

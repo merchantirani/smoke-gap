@@ -2,197 +2,495 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>SmokeGap — Analytics</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+  <title>SmokeGap — Premium Mirror</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
   <style>
-    :root { --bg-body: #0F1115; --text-main: #E0E6ED; --text-muted: #9CA3AF; --bg-glass: rgba(22, 26, 33, 0.85); --border-glass: rgba(255, 255, 255, 0.06); --accent-primary: #F59E0B; --accent-glow: rgba(245, 158, 11, 0.2); --input-bg: rgba(31, 41, 55, 0.5); }
-    body.theme-carbon { --bg-body: #000000; --text-main: #D1D5DB; --text-muted: #6B7280; --bg-glass: rgba(10, 10, 10, 0.95); --border-glass: rgba(16, 185, 129, 0.2); --accent-primary: #10B981; --accent-glow: rgba(16, 185, 129, 0.2); --input-bg: rgba(17, 24, 39, 0.8); }
-    body.theme-white { --bg-body: #F3F4F6; --text-main: #1F2937; --text-muted: #6B7280; --bg-glass: rgba(255, 255, 255, 0.95); --border-glass: rgba(0, 0, 0, 0.1); --accent-primary: #3B82F6; --accent-glow: rgba(59, 130, 246, 0.2); --input-bg: rgba(243, 244, 246, 0.8); }
+    :root { 
+      --bg-body: #090A0F; 
+      --text-main: #F3F4F6; 
+      --text-muted: #9CA3AF; 
+      --card-bg: rgba(22, 25, 35, 0.7); 
+      --card-border: rgba(255, 255, 255, 0.06); 
+      --accent: #F59E0B; 
+      --accent-glow: rgba(245, 158, 11, 0.2); 
+    }
+    body.theme-carbon { 
+      --bg-body: #000000; 
+      --text-main: #FFFFFF; 
+      --text-muted: #6B7280; 
+      --card-bg: rgba(18, 18, 18, 0.85); 
+      --card-border: rgba(255, 255, 255, 0.05); 
+      --accent: #3B82F6; 
+      --accent-glow: rgba(59, 130, 246, 0.2); 
+    }
+    body.theme-white { 
+      --bg-body: #F8FAFC; 
+      --text-main: #0F172A; 
+      --text-muted: #64748B; 
+      --card-bg: #FFFFFF; 
+      --card-border: rgba(203, 213, 225, 0.6); 
+      --accent: #2563EB; 
+      --accent-glow: rgba(37, 99, 235, 0.15); 
+    }
     
-    body { background-color: var(--bg-body); color: var(--text-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; user-select: none; padding-bottom: calc(5rem + env(safe-area-inset-bottom)); padding-top: env(safe-area-inset-top); }
-    .glass-card { background: var(--bg-glass); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--border-glass); }
-    .dynamic-glow { box-shadow: 0 0 25px var(--accent-glow); }
-    .dynamic-bg { background-color: var(--accent-primary); }
-    .dynamic-text { color: var(--accent-primary); }
-    .tab-active { color: var(--accent-primary); border-top: 2px solid var(--accent-primary); }
-    .nav-bar { padding-bottom: env(safe-area-inset-bottom); }
-    #lockScreen { z-index: 10000; background-color: var(--bg-body); }
-    .blur-overlay { backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); background: rgba(0,0,0,0.4); }
-    body.theme-white .blur-overlay { background: rgba(255,255,255,0.4); }
+    html, body { background-color: var(--bg-body); color: var(--text-main); font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif; user-select: none; -webkit-tap-highlight-color: transparent; }
+    
+    .app-container { padding-bottom: 96px; min-height: 100vh; }
+    .premium-card { background: var(--card-bg); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid var(--card-border); box-shadow: 0 10px 30px rgba(0,0,0,0.04); border-radius: 1.5rem; transition: all 0.2s ease; }
+    
+    .hero-ring { position: relative; display: flex; justify-content: center; align-items: center; width: 16rem; height: 16rem; border-radius: 50%; background: var(--card-bg); box-shadow: inset 0 0 0 2px var(--card-border), 0 0 40px var(--accent-glow); }
+    .hero-ring::before { content: ''; position: absolute; inset: -4px; border-radius: 50%; background: conic-gradient(var(--accent), transparent 60%); animation: spin 4s linear infinite; opacity: 0.4; z-index: 0; }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+
+    .dock-bar { background: var(--card-bg); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); border-top: 1px solid var(--card-border); }
+    .nav-btn { color: var(--text-muted); transition: all 0.3s ease; }
+    .nav-active { color: var(--accent); }
+    .nav-active i { stroke-width: 2.5; filter: drop-shadow(0 0 8px var(--accent-glow)); }
+    
+    .drag-handle { touch-action: none; cursor: grab; padding: 8px; opacity: 0.4; }
+    .drag-handle:active { cursor: grabbing; opacity: 1; }
+    .sortable-ghost { opacity: 0.2; transform: scale(0.96); }
+    
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    .chart-wrapper { position: relative; width: 100%; height: 180px; }
+    
+    .page-section { animation: fadeIn 0.3s ease-out forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
 <body>
-  <!-- PIN LOCK SCREEN -->
-  <div id="lockScreen" class="fixed inset-0 flex flex-col items-center justify-center hidden">
-    <div class="text-center space-y-6">
-      <div class="w-16 h-16 bg-gray-800/50 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-700/50"><span class="text-2xl">🔒</span></div>
-      <h2 class="text-xl font-bold tracking-widest font-mono">SmokeGap Locked</h2>
-      <div class="flex gap-3 justify-center mb-6" id="pinDots">
-        <div class="w-4 h-4 rounded-full bg-gray-700/50 pin-dot"></div><div class="w-4 h-4 rounded-full bg-gray-700/50 pin-dot"></div><div class="w-4 h-4 rounded-full bg-gray-700/50 pin-dot"></div><div class="w-4 h-4 rounded-full bg-gray-700/50 pin-dot"></div>
+
+  <div id="lockScreen" class="fixed inset-0 flex flex-col items-center justify-center hidden" style="z-index: 10000; background-color: var(--bg-body);">
+    <div class="text-center space-y-8">
+      <i data-lucide="lock" class="w-12 h-12 mx-auto" style="color: var(--text-muted);"></i>
+      <h2 class="text-2xl font-semibold tracking-widest" style="color: var(--text-main);">Locked</h2>
+      <div class="flex gap-4 justify-center mb-8" id="pinDots">
+        <div class="w-3 h-3 rounded-full bg-gray-500 pin-dot"></div><div class="w-3 h-3 rounded-full bg-gray-500 pin-dot"></div>
+        <div class="w-3 h-3 rounded-full bg-gray-500 pin-dot"></div><div class="w-3 h-3 rounded-full bg-gray-500 pin-dot"></div>
       </div>
-      <div class="grid grid-cols-3 gap-4 max-w-[240px] mx-auto text-xl font-mono">
-        <button onclick="enterPin(1)" class="w-16 h-16 glass-card rounded-full">1</button><button onclick="enterPin(2)" class="w-16 h-16 glass-card rounded-full">2</button><button onclick="enterPin(3)" class="w-16 h-16 glass-card rounded-full">3</button>
-        <button onclick="enterPin(4)" class="w-16 h-16 glass-card rounded-full">4</button><button onclick="enterPin(5)" class="w-16 h-16 glass-card rounded-full">5</button><button onclick="enterPin(6)" class="w-16 h-16 glass-card rounded-full">6</button>
-        <button onclick="enterPin(7)" class="w-16 h-16 glass-card rounded-full">7</button><button onclick="enterPin(8)" class="w-16 h-16 glass-card rounded-full">8</button><button onclick="enterPin(9)" class="w-16 h-16 glass-card rounded-full">9</button>
-        <button class="w-16 h-16"></button><button onclick="enterPin(0)" class="w-16 h-16 glass-card rounded-full">0</button><button onclick="clearPin()" class="w-16 h-16 glass-card rounded-full text-red-500 text-sm">DEL</button>
+      <div class="grid grid-cols-3 gap-6 max-w-[280px] mx-auto text-2xl font-light">
+        <button onclick="window.enterPin(1)" class="w-16 h-16 premium-card rounded-full">1</button><button onclick="window.enterPin(2)" class="w-16 h-16 premium-card rounded-full">2</button><button onclick="window.enterPin(3)" class="w-16 h-16 premium-card rounded-full">3</button>
+        <button onclick="window.enterPin(4)" class="w-16 h-16 premium-card rounded-full">4</button><button onclick="window.enterPin(5)" class="w-16 h-16 premium-card rounded-full">5</button><button onclick="window.enterPin(6)" class="w-16 h-16 premium-card rounded-full">6</button>
+        <button onclick="window.enterPin(7)" class="w-16 h-16 premium-card rounded-full">7</button><button onclick="window.enterPin(8)" class="w-16 h-16 premium-card rounded-full">8</button><button onclick="window.enterPin(9)" class="w-16 h-16 premium-card rounded-full">9</button>
+        <div></div><button onclick="window.enterPin(0)" class="w-16 h-16 premium-card rounded-full">0</button><button onclick="window.clearPin()" class="w-16 h-16 premium-card rounded-full text-red-500 text-sm font-bold">DEL</button>
       </div>
     </div>
   </div>
 
-  <header class="p-4 border-b border-gray-800/20 sticky top-0 glass-card z-40 flex justify-between items-center px-6 !bg-transparent">
-    <div><h1 class="text-base font-black tracking-wider dynamic-text font-mono">SmokeGap</h1><p class="text-[9px] opacity-70 font-semibold tracking-wide">Widen the gap.</p></div>
-    <div class="glass-card text-[10px] px-2.5 py-1 rounded-full flex items-center gap-1 font-mono dynamic-text">🛡️ <span id="shieldCount">0</span></div>
-  </header>
+  <div class="app-container max-w-md mx-auto">
+    <header class="p-5 sticky top-0 z-40 flex justify-between items-center" style="background: linear-gradient(to bottom, var(--bg-body) 70%, transparent);">
+      <div>
+        <h1 class="text-xl font-bold tracking-tight" style="color: var(--text-main);">SmokeGap</h1>
+        <p class="text-[10px] font-semibold uppercase tracking-widest mt-0.5" style="color: var(--text-muted);">Widen the gap.</p>
+      </div>
+      <button onclick="window.showShieldDashboard()" class="premium-card px-4 py-1.5 rounded-full flex items-center gap-2 active:scale-95 transition-transform">
+        <i data-lucide="shield" class="w-3 h-3" style="color: var(--accent);"></i>
+        <span id="shieldCount" class="text-sm font-bold" style="color: var(--text-main);">0</span>
+      </button>
+    </header>
 
-  <!-- CONFETTI TOAST -->
-  <div id="milestoneToast" class="fixed top-20 left-1/2 transform -translate-x-1/2 glass-card p-4 rounded-2xl border border-emerald-500 z-50 text-center shadow-2xl hidden transition-all">
-    <span class="text-2xl block mb-1">🎉</span><h3 class="font-bold text-emerald-500 text-sm">Milestone Unlocked!</h3><p id="milestoneMsg" class="text-xs font-semibold mt-1">1 Full Day Clean!</p>
-  </div>
-
-  <div class="max-w-md mx-auto p-4 space-y-5">
-    <!-- PAGE 1: TRACKER -->
-    <section id="page-tracker" class="space-y-5">
-      <div class="flex flex-col items-center justify-center pt-2">
-        <div class="w-60 h-60 rounded-full border-4 border-gray-500/30 flex flex-col items-center justify-center dynamic-glow glass-card relative" id="timerRingBorder">
-          <span class="text-[9px] opacity-60 uppercase tracking-widest mb-1 font-mono">Last Stick</span>
-          <div id="stopwatch" class="text-3xl font-black tracking-tight font-mono">00:00:00</div>
+    <div class="p-5 space-y-6 pt-0">
+      
+      <section id="page-tracker" class="page-section space-y-6">
+        <div class="flex flex-col items-center justify-center pt-2 pb-4">
+          <div class="relative flex justify-center items-center w-64 h-64 mx-auto mb-5">
+            <svg class="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="46" fill="transparent" stroke="var(--card-border)" stroke-width="2.5"></circle>
+              <circle id="heroProgressCircle" cx="50" cy="50" r="46" fill="transparent" stroke="var(--accent)" stroke-width="4" stroke-dasharray="289.02" stroke-dashoffset="289.02" stroke-linecap="round" class="transition-all duration-1000 ease-linear"></circle>
+            </svg>
+            <div class="z-10 flex flex-col items-center justify-center w-[200px] h-[200px] rounded-full" style="background: var(--card-bg); backdrop-filter: blur(20px); border: 1px solid var(--card-border); box-shadow: inset 0 0 30px rgba(0,0,0,0.2);">
+              <span class="text-[10px] font-bold uppercase tracking-widest block mb-2" style="color: var(--text-muted);">Current Gap</span>
+              <div id="stopwatch" class="text-5xl font-light tracking-tighter" style="color: var(--text-main); font-variant-numeric: tabular-nums;">00:00:00</div>
+            </div>
+          </div>
+          
+          <div id="smartStatusWrapper" class="px-5 py-2.5 rounded-full border transition-all duration-500 bg-gray-500/10 border-gray-500/20 text-gray-400">
+            <span id="smartStatusText" class="text-[11px] font-bold uppercase tracking-wider flex items-center gap-2">
+              <i data-lucide="info" class="w-3.5 h-3.5"></i> Waiting for first log
+            </span>
+          </div>
         </div>
-      </div>
-      <div class="grid grid-cols-5 gap-2">
-        <button id="mainLogBtn" onclick="handleLogClick()" class="col-span-3 py-3.5 dynamic-bg text-black font-black text-sm rounded-2xl dynamic-glow">START SMOKING</button>
-        <button id="waveBtn" onclick="toggleWaveMode()" class="col-span-2 py-3.5 glass-card font-bold text-xs rounded-2xl flex flex-col items-center"><span>🌊 RIDE WAVE</span><span class="text-[8px] opacity-80">(10m)</span></button>
-      </div>
-      <div id="waveOverlay" class="hidden glass-card p-3 rounded-2xl text-center border-l-4 border-sky-500">
-        <div class="flex justify-between text-xs font-bold font-mono"><span>WAVE TIMER</span><span id="waveCountdown">10:00</span></div>
-        <div class="w-full bg-gray-800/50 rounded-full h-2 mt-2"><div id="waveProgressBar" class="bg-emerald-500 h-full rounded-full" style="width: 100%"></div></div>
-      </div>
-      <div class="grid grid-cols-2 gap-3">
-        <div class="glass-card p-3.5 rounded-2xl border-l-2 border-amber-500"><p class="text-[10px] opacity-60 uppercase">Today's Count</p><p id="todayCount" class="text-xl font-bold">0</p></div>
-        <div class="glass-card p-3.5 rounded-2xl border-l-2 border-sky-500"><p class="text-[10px] opacity-60 uppercase">Previous Gap</p><p id="prevGap" class="text-xl font-bold dynamic-text">--</p></div>
-        <div class="glass-card p-3.5 rounded-2xl border-l-2 border-red-500"><p class="text-[10px] opacity-60 uppercase">Today's Spend</p><p id="todaySpend" class="text-xl font-bold text-red-500">AED 0</p></div>
-        <div class="glass-card p-3.5 rounded-2xl border-l-2 border-emerald-500"><p class="text-[10px] opacity-60 uppercase">Best Gap</p><p id="bestGap" class="text-xl font-bold text-emerald-500">--</p></div>
-      </div>
-      <div class="glass-card p-4 rounded-2xl space-y-3"><div class="flex justify-between items-center"><h3 class="text-xs opacity-60 uppercase font-semibold">Recent Logs</h3></div><div id="homeRecentLogs" class="space-y-2 text-xs"></div></div>
-    </section>
 
-    <!-- PAGE 2: PREMIUM 10 CHARTS -->
-    <section id="page-insights" class="space-y-5 hidden">
-      <div class="flex justify-between items-center"><h2 class="text-base font-bold">10-Point Analytics Mirror</h2></div>
-      <div id="chartContainer" class="space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div onclick="window.showStatDetail('spend')" class="premium-card p-4 active:scale-95 transition-transform cursor-pointer">
+            <div class="flex items-center gap-2 mb-2">
+              <div class="w-6 h-6 rounded-full bg-red-500/10 flex items-center justify-center text-red-500"><i data-lucide="wallet" class="w-3 h-3"></i></div>
+              <p class="text-[9px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Today's Spend</p>
+            </div>
+            <p id="todaySpend" class="text-xl font-bold" style="color: var(--text-main);">AED 0</p>
+          </div>
+          <div onclick="window.showStatDetail('count')" class="premium-card p-4 active:scale-95 transition-transform cursor-pointer">
+            <div class="flex items-center gap-2 mb-2">
+              <div class="w-6 h-6 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500"><i data-lucide="activity" class="w-3 h-3"></i></div>
+              <p class="text-[9px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Today's Sticks</p>
+            </div>
+            <p id="todayCount" class="text-xl font-bold" style="color: var(--text-main);">0 / 15</p>
+          </div>
+          <div onclick="window.showStatDetail('prevGap')" class="premium-card p-4 active:scale-95 transition-transform cursor-pointer">
+            <div class="flex items-center gap-2 mb-2">
+              <div class="w-6 h-6 rounded-full bg-sky-500/10 flex items-center justify-center text-sky-500"><i data-lucide="history" class="w-3 h-3"></i></div>
+              <p class="text-[9px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Previous Gap</p>
+            </div>
+            <p id="prevGapCard" class="text-xl font-bold" style="color: var(--text-main);">--</p>
+          </div>
+          <div onclick="window.showStatDetail('bestGap')" class="premium-card p-4 active:scale-95 transition-transform cursor-pointer">
+            <div class="flex items-center gap-2 mb-2">
+              <div class="w-6 h-6 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500"><i data-lucide="trophy" class="w-3 h-3"></i></div>
+              <p class="text-[9px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Best Gap</p>
+            </div>
+            <p id="bestGapCard" class="text-xl font-bold" style="color: var(--text-main);">--</p>
+          </div>
+        </div>
+
+        <div id="waveOverlay" class="hidden premium-card p-5 border-l-4 border-sky-500 relative overflow-hidden">
+          <div class="flex justify-between items-end mb-3">
+            <div>
+              <p class="text-[10px] font-bold text-sky-500 uppercase tracking-widest flex items-center gap-1"><i data-lucide="waves" class="w-3 h-3"></i> Riding the Wave</p>
+              <p class="text-xs mt-1" style="color: var(--text-muted);">Resisting craving...</p>
+            </div>
+            <span id="waveCountdown" class="text-2xl font-bold tabular-nums" style="color: var(--text-main);">10:00</span>
+          </div>
+          <div class="w-full bg-gray-500/20 rounded-full h-1.5"><div id="waveProgressBar" class="bg-sky-500 h-full rounded-full transition-all duration-1000 ease-linear" style="width: 100%"></div></div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-4">
+          <button onclick="window.toggleWaveMode()" class="col-span-1 premium-card flex flex-col items-center justify-center py-4 active:scale-95 transition-transform text-sky-500">
+            <i data-lucide="shield-check" class="w-6 h-6 mb-1"></i>
+            <span class="text-[10px] font-bold uppercase tracking-wider">Ride</span>
+          </button>
+          <button id="mainLogBtn" onclick="window.handleLogClick()" class="col-span-2 py-4 rounded-2xl font-bold text-sm tracking-wide active:scale-95 transition-all text-white" style="background: var(--accent); box-shadow: 0 10px 25px var(--accent-glow);">
+            START SMOKING
+          </button>
+        </div>
+
+        <div class="space-y-3 pt-2">
+          <div class="flex items-center justify-between px-1">
+            <h3 class="text-xs font-bold uppercase tracking-widest" style="color: var(--text-muted);">Recent Activity</h3>
+            <p class="text-[9px] font-semibold" style="color: var(--text-muted);"><span class="text-emerald-500">●</span> waited longer &nbsp; <span class="text-red-500">●</span> smoked sooner</p>
+          </div>
+          <div id="homeRecentLogs" class="space-y-3"></div>
+        </div>
+      </section>
+
+      <section id="page-insights" class="page-section space-y-4 hidden">
+        <div class="flex justify-between items-center px-1 mb-2">
+          <h2 class="text-xl font-bold" style="color: var(--text-main);">Analytics Mirror</h2>
+          <select id="insightsDateFilter" onchange="window.renderAllCharts()" class="bg-transparent text-xs font-bold outline-none cursor-pointer" style="color: var(--accent);">
+            <option value="today">Today</option>
+            <option value="7days" selected>Last 7 Days</option>
+            <option value="1month">1 Month</option>
+            <option value="all">All Time</option>
+          </select>
+        </div>
+
+        <div class="flex overflow-x-auto gap-3 pb-2 snap-x hide-scrollbar">
+          <div class="premium-card p-4 min-w-[140px] snap-start shrink-0">
+            <div class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2" style="color: var(--text-muted);"><i data-lucide="clock" class="w-3 h-3 text-sky-500"></i> Avg Gap</div>
+            <div id="insightAvgGap" class="text-xl font-bold" style="color: var(--text-main);">--</div>
+          </div>
+          <div class="premium-card p-4 min-w-[140px] snap-start shrink-0">
+            <div class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2" style="color: var(--text-muted);"><i data-lucide="shield-alert" class="w-3 h-3 text-emerald-500"></i> Defeated</div>
+            <div id="insightShields" class="text-xl font-bold" style="color: var(--text-main);">0 Waves</div>
+          </div>
+          <div class="premium-card p-4 min-w-[140px] snap-start shrink-0">
+            <div class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2" style="color: var(--text-muted);"><i data-lucide="alert-triangle" class="w-3 h-3 text-orange-500"></i> Peak Hour</div>
+            <div id="insightPeakHour" class="text-xl font-bold" style="color: var(--text-main);">--</div>
+          </div>
+          <div class="premium-card p-4 min-w-[140px] snap-start shrink-0">
+            <div class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2" style="color: var(--text-muted);"><i data-lucide="brain-circuit" class="w-3 h-3 text-purple-500"></i> Top Trigger</div>
+            <div id="insightTopTrigger" class="text-lg font-bold truncate" style="color: var(--text-main);">--</div>
+          </div>
+          <div class="premium-card p-4 min-w-[140px] snap-start shrink-0">
+            <div class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2" style="color: var(--text-muted);"><i data-lucide="flame" class="w-3 h-3 text-red-500"></i> Heaviest Day</div>
+            <div id="insightHeaviestDay" class="text-lg font-bold" style="color: var(--text-main);">--</div>
+          </div>
+          <div class="premium-card p-4 min-w-[140px] snap-start shrink-0">
+            <div class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2" style="color: var(--text-muted);"><i data-lucide="package" class="w-3 h-3 text-amber-500"></i> Pack Equiv.</div>
+            <div id="insightPackEq" class="text-xl font-bold" style="color: var(--text-main);">0.0</div>
+          </div>
+        </div>
+
+        <div class="premium-card p-5 relative overflow-hidden">
+          <div class="flex justify-between items-start gap-2 mb-2">
+            <p class="text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 leading-tight" style="color: var(--text-muted);">
+              <i data-lucide="wallet" class="w-3.5 h-3.5 text-red-500 shrink-0"></i> 
+              <span>Period Expense (<span id="selectedFilterLabel">Last 7 Days</span>)</span>
+            </p>
+            <span id="insightPeriodCount" class="text-[9px] font-bold px-2 py-0.5 rounded-lg bg-red-500/10 text-red-500 border border-red-500/20 whitespace-nowrap shrink-0">0 Sticks</span>
+          </div>
+          <p id="insightPeriodSpend" class="text-3xl font-bold tracking-tight truncate" style="color: var(--text-main);">--</p>
+        </div>
+
+        <div id="chartContainer" class="space-y-5">
+          <div id="card-1" class="premium-card p-5">
+            <div class="flex justify-between items-center mb-3">
+              <div class="flex items-center gap-2.5">
+                <div class="w-7 h-7 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500"><i data-lucide="activity" class="w-4 h-4"></i></div>
+                <h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">Widen The Gap Trend</h3>
+              </div>
+              <div class="flex items-center gap-2">
+                <span id="badge-chart1" class="hidden text-[9px] font-bold px-2 py-0.5 rounded border"></span>
+                <div class="drag-handle"><i data-lucide="grip-horizontal" class="w-4 h-4"></i></div>
+              </div>
+            </div>
+            <div class="chart-wrapper"><canvas id="chart1"></canvas></div>
+          </div>
+          
+          <div id="card-2" class="premium-card p-5">
+            <div class="flex justify-between items-center mb-3">
+              <div class="flex items-center gap-2.5">
+                <div class="w-7 h-7 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500"><i data-lucide="bar-chart-2" class="w-4 h-4"></i></div>
+                <h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">Daily Volume</h3>
+              </div>
+              <div class="flex items-center gap-2">
+                <span id="badge-chart2" class="hidden text-[9px] font-bold px-2 py-0.5 rounded border"></span>
+                <div class="drag-handle"><i data-lucide="grip-horizontal" class="w-4 h-4"></i></div>
+              </div>
+            </div>
+            <div class="chart-wrapper"><canvas id="chart2"></canvas></div>
+          </div>
+
+          <div id="card-3" class="premium-card p-5">
+            <div class="flex justify-between items-center mb-3">
+              <div class="flex items-center gap-2.5">
+                <div class="w-7 h-7 rounded-full bg-red-500/10 flex items-center justify-center text-red-500"><i data-lucide="pie-chart" class="w-4 h-4"></i></div>
+                <h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">Spend Tracker</h3>
+              </div>
+              <div class="flex items-center gap-2">
+                <span id="badge-chart3" class="hidden text-[9px] font-bold px-2 py-0.5 rounded border"></span>
+                <div class="drag-handle"><i data-lucide="grip-horizontal" class="w-4 h-4"></i></div>
+              </div>
+            </div>
+            <div class="chart-wrapper"><canvas id="chart3"></canvas></div>
+          </div>
+          
+          <div id="card-5" class="premium-card p-5">
+            <div class="flex justify-between items-center mb-3">
+              <div class="flex items-center gap-2.5">
+                <div class="w-7 h-7 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-500"><i data-lucide="brain" class="w-4 h-4"></i></div>
+                <h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">Trigger Psychology</h3>
+              </div>
+              <div class="flex items-center gap-2">
+                <span id="badge-chart5" class="hidden text-[9px] font-bold px-2 py-0.5 rounded border"></span>
+                <div class="drag-handle"><i data-lucide="grip-horizontal" class="w-4 h-4"></i></div>
+              </div>
+            </div>
+            <div class="chart-wrapper" style="height: 210px;"><canvas id="chart5"></canvas></div>
+          </div>
+
+          <div id="card-7" class="premium-card p-5">
+            <div class="flex justify-between items-center mb-3">
+              <div class="flex items-center gap-2.5">
+                <div class="w-7 h-7 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-500"><i data-lucide="alarm-clock" class="w-4 h-4"></i></div>
+                <h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">Trigger Timing</h3>
+              </div>
+              <div class="flex items-center gap-2">
+                <span id="badge-chart6" class="hidden text-[9px] font-bold px-2 py-0.5 rounded border"></span>
+                <div class="drag-handle"><i data-lucide="grip-horizontal" class="w-4 h-4"></i></div>
+              </div>
+            </div>
+            <div class="chart-wrapper" style="height: 220px;"><canvas id="chart6"></canvas></div>
+          </div>
+          
+          <div id="card-6" class="premium-card p-5 relative overflow-hidden">
+            <div class="flex justify-between items-center mb-3">
+              <div class="flex items-center gap-2.5">
+                <div class="w-7 h-7 rounded-full bg-sky-500/10 flex items-center justify-center text-sky-500"><i data-lucide="map-pin" class="w-4 h-4"></i></div>
+                <h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">Thermal Heatmap</h3>
+              </div>
+              <div class="flex gap-3 items-center">
+                <button onclick="window.openMapModal()" class="text-sky-500 text-xs font-bold uppercase tracking-wider">Expand</button>
+                <div class="drag-handle"><i data-lucide="grip-horizontal" class="w-4 h-4"></i></div>
+              </div>
+            </div>
+            <div id="mapContainer" class="w-full h-48 rounded-2xl z-10 overflow-hidden border border-gray-500/10"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="page-history" class="page-section space-y-6 hidden">
+        <h2 class="text-xl font-bold px-1" style="color: var(--text-main);">Full History Log</h2>
+        <div id="fullHistoryList" class="space-y-3"></div>
+      </section>
+      
+      <section id="page-settings" class="page-section space-y-6 hidden">
+        <h2 class="text-xl font-bold px-1" style="color: var(--text-main);">Preferences</h2>
         
-        <!-- Chart 1 -->
-        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-emerald-500 chart-card">
-          <h3 class="text-xs text-emerald-500 font-bold uppercase">Widen The Gap Trend</h3>
-          <div class="w-full h-40 relative chart-canvas-container">
-            <canvas id="chart1"></canvas>
-            <div class="empty-state hidden absolute inset-0 blur-overlay flex flex-col items-center justify-center text-center z-10 rounded-xl"><span class="text-2xl mb-1">🔒</span><p class="text-xs font-bold">Log 3 sticks to unlock</p></div>
+        <div class="premium-card p-5 space-y-4">
+          <h3 class="text-[10px] font-bold uppercase tracking-widest border-b border-gray-500/10 pb-2 flex items-center gap-2" style="color: var(--text-muted);"><i data-lucide="palette" class="w-3 h-3"></i> Appearance & App</h3>
+          <div class="flex justify-between items-center">
+            <label class="text-xs font-semibold" style="color: var(--text-main);">Theme Mode</label>
+            <select id="themeSelect" onchange="window.updateSettings()" class="bg-gray-500/10 text-xs p-2 rounded-xl font-semibold border border-gray-500/20 outline-none" style="color: var(--text-main);"><option value="default">Amber Glow</option><option value="carbon">Carbon Matrix</option><option value="white">Clean White & Blue</option></select>
+          </div>
+          <div class="flex justify-between items-center pt-2 border-t border-gray-500/10">
+            <label class="text-xs font-semibold" style="color: var(--text-main);">Time Format</label>
+            <select id="timeFormatSelect" onchange="window.updateSettings()" class="bg-gray-500/10 text-xs p-2 rounded-xl font-semibold border border-gray-500/20 outline-none" style="color: var(--text-main);">
+              <option value="12h">12-Hour (AM/PM)</option>
+              <option value="24h">24-Hour</option>
+            </select>
+          </div>
+          <div class="flex justify-between items-center pt-2 border-t border-gray-500/10">
+            <label class="text-xs font-semibold" style="color: var(--text-main);">Lock Duration</label>
+            <select id="lockSecsInput" onchange="window.updateSettings()" class="bg-gray-500/10 text-xs p-2 rounded-xl font-semibold border border-gray-500/20 outline-none" style="color: var(--text-main);">
+              <option value="60">1 Minute</option>
+              <option value="300">5 Minutes</option>
+              <option value="600">10 Minutes</option>
+            </select>
+          </div>
+          <div class="flex justify-between items-center pt-2 border-t border-gray-500/10">
+            <label class="text-xs font-semibold" style="color: var(--text-main);">Haptic Feedback</label>
+            <input type="checkbox" id="hapticsInput" onchange="window.updateSettings()" class="w-4 h-4 rounded border-gray-500/20 accent-sky-500">
           </div>
         </div>
 
-        <!-- Chart 2 -->
-        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-red-500 chart-card">
-          <h3 class="text-xs text-red-500 font-bold uppercase">7-Day Spend Trend</h3>
-          <div class="w-full h-40 relative chart-canvas-container">
-            <canvas id="chart2"></canvas>
-            <div class="empty-state hidden absolute inset-0 blur-overlay flex flex-col items-center justify-center text-center z-10 rounded-xl"><span class="text-2xl mb-1">🔒</span><p class="text-xs font-bold">Log 3 sticks to unlock</p></div>
+        <div class="premium-card p-5 space-y-4">
+          <h3 class="text-[10px] font-bold uppercase tracking-widest border-b border-gray-500/10 pb-2 flex items-center gap-2" style="color: var(--text-muted);"><i data-lucide="banknote" class="w-3 h-3"></i> Financials & Limits</h3>
+          <div class="flex justify-between items-center">
+            <label class="text-xs font-semibold" style="color: var(--text-main);">Currency</label>
+            <select id="currencySelect" onchange="window.updateSettings()" class="bg-gray-500/10 text-xs p-2 rounded-xl font-semibold border border-gray-500/20 outline-none" style="color: var(--text-main);"><option value="AED">AED (د.إ)</option><option value="USD">USD ($)</option><option value="EUR">EUR (€)</option><option value="GBP">GBP (£)</option><option value="INR">INR (₹)</option></select>
+          </div>
+          <div class="flex justify-between items-center">
+            <div class="pr-3">
+              <label class="text-xs font-semibold block" style="color: var(--text-main);">Daily Cigarette Goal</label>
+            </div>
+            <input type="number" id="dailyLimitInput" onchange="window.updateSettings()" class="w-16 bg-gray-500/10 p-2 rounded-xl border border-gray-500/20 text-center text-xs font-bold shrink-0" style="color: var(--text-main);" value="15">
+          </div>
+          <div class="flex justify-between items-center">
+            <div class="pr-3">
+              <label class="text-xs font-semibold block" style="color: var(--text-main);">Pack Price</label>
+            </div>
+            <input type="number" id="packPriceInput" onchange="window.updateSettings()" class="w-20 bg-gray-500/10 p-2 rounded-xl border border-gray-500/20 text-center text-xs font-bold shrink-0" style="color: var(--text-main);" value="20">
+          </div>
+          <div class="flex justify-between items-center">
+            <div class="pr-3">
+              <label class="text-xs font-semibold block" style="color: var(--text-main);">Sticks Per Pack</label>
+            </div>
+            <input type="number" id="packSizeInput" onchange="window.updateSettings()" class="w-16 bg-gray-500/10 p-2 rounded-xl border border-gray-500/20 text-center text-xs font-bold shrink-0" style="color: var(--text-main);" value="20">
+          </div>
+          <div class="flex justify-between items-center pt-3 border-t border-gray-500/10">
+            <label class="text-xs font-bold" style="color: var(--text-main);">Cost Per Cigarette</label>
+            <span id="costPerCigDisplay" class="text-xs font-bold px-3 py-1.5 rounded-lg bg-gray-500/10" style="color: var(--accent);">--</span>
           </div>
         </div>
 
-        <!-- Chart 3 -->
-        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-indigo-500 chart-card">
-          <h3 class="text-xs text-indigo-500 font-bold uppercase">Craving Zones Radar</h3>
-          <div class="w-full h-48 relative chart-canvas-container"><canvas id="chart3"></canvas><div class="empty-state hidden absolute inset-0 blur-overlay flex flex-col items-center justify-center z-10 rounded-xl"><span class="text-2xl">🔒</span></div></div>
+        <div class="premium-card p-5 space-y-4">
+          <h3 class="text-[10px] font-bold uppercase tracking-widest border-b border-gray-500/10 pb-2 flex items-center gap-2" style="color: var(--text-muted);"><i data-lucide="tag" class="w-3 h-3"></i> Custom Tags</h3>
+          <div class="flex gap-2">
+            <input type="text" id="newTriggerInput" placeholder="New tag name..." class="w-full bg-gray-500/10 p-2.5 rounded-xl border border-gray-500/20 text-xs font-semibold outline-none" style="color: var(--text-main);">
+            <button onclick="window.addCustomTrigger()" class="px-4 bg-amber-500/20 text-amber-500 font-bold text-xs rounded-xl hover:bg-amber-500/30">Add</button>
+          </div>
+          <div id="triggerListSettings" class="flex flex-wrap gap-2 pt-1"></div>
         </div>
 
-        <!-- Chart 4 -->
-        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-amber-500 chart-card">
-          <h3 class="text-xs text-amber-500 font-bold uppercase">☀️ Day vs 🌙 Night</h3>
-          <div class="w-full h-40 relative chart-canvas-container"><canvas id="chart4"></canvas><div class="empty-state hidden absolute inset-0 blur-overlay flex flex-col items-center justify-center z-10 rounded-xl"><span class="text-2xl">🔒</span></div></div>
-        </div>
-
-        <!-- Chart 5 -->
-        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-orange-500 chart-card">
-          <h3 class="text-xs text-orange-500 font-bold uppercase">24-Hour Danger Matrix</h3>
-          <div class="w-full h-40 relative chart-canvas-container"><canvas id="chart5"></canvas><div class="empty-state hidden absolute inset-0 blur-overlay flex flex-col items-center justify-center z-10 rounded-xl"><span class="text-2xl">🔒</span></div></div>
-        </div>
-
-        <!-- Chart 6 -->
-        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-blue-500 chart-card">
-          <h3 class="text-xs text-blue-500 font-bold uppercase">Day of Week Pattern</h3>
-          <div class="w-full h-40 relative chart-canvas-container"><canvas id="chart6"></canvas><div class="empty-state hidden absolute inset-0 blur-overlay flex flex-col items-center justify-center z-10 rounded-xl"><span class="text-2xl">🔒</span></div></div>
-        </div>
-
-        <!-- Chart 7 -->
-        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-purple-500 chart-card">
-          <h3 class="text-xs text-purple-500 font-bold uppercase">Trigger Breakdown</h3>
-          <div class="w-full h-48 relative chart-canvas-container"><canvas id="chart7"></canvas><div class="empty-state hidden absolute inset-0 blur-overlay flex flex-col items-center justify-center z-10 rounded-xl"><span class="text-2xl">🔒</span></div></div>
-        </div>
-
-        <!-- Chart 8 -->
-        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-teal-500 chart-card">
-          <h3 class="text-xs text-teal-500 font-bold uppercase">Gap Distribution (Performance)</h3>
-          <div class="w-full h-40 relative chart-canvas-container"><canvas id="chart8"></canvas><div class="empty-state hidden absolute inset-0 blur-overlay flex flex-col items-center justify-center z-10 rounded-xl"><span class="text-2xl">🔒</span></div></div>
-        </div>
-
-        <!-- Chart 9 -->
-        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-pink-500 chart-card">
-          <h3 class="text-xs text-pink-500 font-bold uppercase">7-Day Stick Count</h3>
-          <div class="w-full h-40 relative chart-canvas-container"><canvas id="chart9"></canvas><div class="empty-state hidden absolute inset-0 blur-overlay flex flex-col items-center justify-center z-10 rounded-xl"><span class="text-2xl">🔒</span></div></div>
-        </div>
-
-        <!-- Chart 10 -->
-        <div class="glass-card p-4 rounded-2xl space-y-3 border-l-4 border-sky-500 chart-card">
-          <h3 class="text-xs text-sky-500 font-bold uppercase">Spatial Map</h3>
-          <div class="w-full h-44 relative chart-canvas-container">
-            <div id="mapContainer" class="w-full h-full border border-gray-800/20 rounded-xl"></div>
-            <div class="empty-state hidden absolute inset-0 blur-overlay flex flex-col items-center justify-center z-10 rounded-xl"><span class="text-2xl">🔒</span></div>
+        <div class="premium-card p-5 space-y-3">
+          <h3 class="text-[10px] font-bold uppercase tracking-widest border-b border-gray-500/10 pb-2 flex items-center gap-2" style="color: var(--text-muted);"><i data-lucide="database" class="w-3 h-3"></i> Data & Security</h3>
+          <button onclick="window.exportLogsCSV()" class="w-full py-3 bg-sky-500/10 text-sky-500 font-bold text-xs rounded-xl text-center active:scale-95 transition-transform border border-sky-500/20 flex items-center justify-center gap-2"><i data-lucide="download" class="w-4 h-4"></i> Export Logs (CSV)</button>
+          <button onclick="window.setupPin()" id="pinStatusBtn" class="w-full py-3 bg-indigo-500/10 text-indigo-500 font-bold text-xs rounded-xl text-center active:scale-95 transition-transform">Set App PIN</button>
+          <div class="pt-2 grid grid-cols-2 gap-2">
+            <button onclick="window.resetData('24h')" class="py-3 bg-orange-500/10 text-orange-500 font-bold text-[11px] rounded-xl text-center active:scale-95 transition-transform border border-orange-500/20">Wipe 24h Logs</button>
+            <button onclick="window.resetData('all')" class="py-3 bg-red-500/10 text-red-500 font-bold text-[11px] rounded-xl text-center active:scale-95 transition-transform border border-red-500/20">Wipe All Data</button>
           </div>
         </div>
-
-      </div>
-    </section>
-
-    <!-- PAGE 3 -->
-    <section id="page-history" class="space-y-4 hidden"><h2 class="text-base font-bold">History</h2><div id="fullHistoryList" class="space-y-2 text-xs"></div></section>
-
-    <!-- PAGE 4 -->
-    <section id="page-settings" class="space-y-5 hidden">
-      <h2 class="text-base font-bold">Settings</h2>
-      <div class="glass-card p-4 rounded-2xl space-y-3 text-xs">
-        <select id="themeSelect" onchange="updateSettings()" class="w-full bg-gray-800 p-2 rounded text-white border border-gray-700"><option value="default">Amber Glow (Default)</option><option value="carbon">Carbon Matrix (Dark)</option><option value="white">Clean Light</option></select>
-        <div class="flex justify-between items-center"><span>Haptic Vibration:</span><input type="checkbox" id="hapticToggle" checked onchange="updateSettings()" class="w-4 h-4 accent-amber-500" /></div>
-        <div class="flex justify-between items-center"><span>Daily Target Limit:</span><input type="number" id="dailyLimitInput" onchange="updateSettings()" class="w-20 bg-gray-800 p-2 rounded text-white" /></div>
-        <div class="flex justify-between items-center"><span>Pack Price (AED):</span><input type="number" id="packPriceInput" onchange="updateSettings()" class="w-20 bg-gray-800 p-2 rounded text-white" /></div>
-        <div class="flex justify-between items-center"><span>Button Lock:</span><select id="lockDurationSelect" onchange="updateSettings()" class="bg-gray-800 p-2 rounded text-white"><option value="300">5 Mins</option><option value="120">2 Mins</option><option value="0">Off</option></select></div>
-      </div>
-      <div class="glass-card p-4 rounded-2xl space-y-3 text-xs border border-red-500/40">
-        <div class="flex justify-between items-center pb-2 border-b border-gray-500/20"><span>App PIN Lock:</span><button onclick="setupPin()" id="pinStatusBtn" class="bg-gray-800 px-3 py-1 rounded text-white">Setup</button></div>
-        <button onclick="resetData('all')" class="w-full py-2.5 bg-red-500/80 text-white font-bold rounded-xl mt-2">WIPE ALL DATA</button>
-      </div>
-    </section>
-  </div>
-
-  <div id="triggerModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex flex-col justify-end nav-bar">
-    <div class="glass-card p-5 rounded-t-3xl border-t border-amber-500/50 space-y-4 animate-slide-up max-w-md mx-auto w-full">
-      <div class="flex justify-between items-center"><h3 class="text-sm font-bold dynamic-text">SELECT TRIGGER</h3><button onclick="closeTriggerModal()" class="text-sm">✕</button></div>
-      <div id="modalTriggerGrid" class="grid grid-cols-2 gap-2.5 text-xs"></div>
-      <button onclick="closeTriggerModal()" class="w-full py-3 glass-card rounded-2xl">Skip</button>
+      </section>
     </div>
   </div>
 
-  <nav class="fixed bottom-0 left-0 right-0 glass-card border-t border-gray-800/20 z-40 flex justify-around p-2 text-xs opacity-90 !bg-transparent backdrop-blur-xl nav-bar">
-    <button onclick="switchTab('tracker')" id="tab-tracker" class="flex flex-col items-center py-1 w-full tab-active"><span class="text-base">⏱️</span><span class="mt-0.5">Tracker</span></button>
-    <button onclick="switchTab('insights')" id="tab-insights" class="flex flex-col items-center py-1 w-full"><span class="text-base">📊</span><span class="mt-0.5">Insights</span></button>
-    <button onclick="switchTab('history')" id="tab-history" class="flex flex-col items-center py-1 w-full"><span class="text-base">📜</span><span class="mt-0.5">History</span></button>
-    <button onclick="switchTab('settings')" id="tab-settings" class="flex flex-col items-center py-1 w-full"><span class="text-base">⚙️</span><span class="mt-0.5">Settings</span></button>
-  </nav>
+  <div class="fixed bottom-0 left-0 right-0 z-50 dock-bar pb-6 pt-2 px-4 shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
+    <nav class="flex justify-between items-center max-w-md mx-auto">
+      <button onclick="window.switchTab('tracker')" id="tab-tracker" class="nav-btn nav-active flex flex-col items-center p-2 w-full">
+        <i data-lucide="clock" class="w-6 h-6 mb-1"></i><span class="text-[9px] font-bold uppercase tracking-wider">Track</span>
+      </button>
+      <button onclick="window.switchTab('insights')" id="tab-insights" class="nav-btn flex flex-col items-center p-2 w-full">
+        <i data-lucide="bar-chart-3" class="w-6 h-6 mb-1"></i><span class="text-[9px] font-bold uppercase tracking-wider">Data</span>
+      </button>
+      <button onclick="window.switchTab('history')" id="tab-history" class="nav-btn flex flex-col items-center p-2 w-full">
+        <i data-lucide="list" class="w-6 h-6 mb-1"></i><span class="text-[9px] font-bold uppercase tracking-wider">Log</span>
+      </button>
+      <button onclick="window.switchTab('settings')" id="tab-settings" class="nav-btn flex flex-col items-center p-2 w-full">
+        <i data-lucide="settings" class="w-6 h-6 mb-1"></i><span class="text-[9px] font-bold uppercase tracking-wider">SETTINGS</span>
+      </button>
+    </nav>
+  </div>
+
+  <div id="statDetailModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex flex-col justify-end transition-opacity" onclick="if(event.target===this) window.closeStatDetail()">
+    <div class="premium-card p-6 rounded-b-none space-y-4 max-w-md mx-auto w-full">
+      <div class="flex justify-between items-start">
+        <div class="flex items-center gap-3">
+          <div id="statDetailIcon" class="w-10 h-10 rounded-full flex items-center justify-center shrink-0"><i data-lucide="info" class="w-4 h-4"></i></div>
+          <div>
+            <h3 id="statDetailTitle" class="text-xs font-bold uppercase tracking-widest" style="color: var(--text-muted);">Detail</h3>
+            <p id="statDetailValue" class="text-2xl font-bold" style="color: var(--text-main);">--</p>
+          </div>
+        </div>
+        <button onclick="window.closeStatDetail()" class="w-8 h-8 rounded-full bg-gray-500/10 flex items-center justify-center shrink-0"><i data-lucide="x" class="w-4 h-4" style="color: var(--text-muted);"></i></button>
+      </div>
+      <p id="statDetailDesc" class="text-xs leading-relaxed" style="color: var(--text-muted);"></p>
+      <div id="statDetailExtra" class="space-y-2 text-xs"></div>
+    </div>
+  </div>
+
+  <div id="shieldDashboardModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex flex-col justify-end transition-opacity" onclick="if(event.target===this) window.closeShieldDashboard()">
+    <div class="premium-card p-6 rounded-b-none space-y-6 max-w-md mx-auto w-full border-t border-sky-500/30">
+      <div class="flex justify-between items-center mb-2">
+        <h3 class="text-sm font-bold uppercase tracking-widest text-sky-500"><i data-lucide="shield-check" class="w-4 h-4 inline-block mr-1 -mt-0.5"></i> Wave Dashboard</h3>
+        <button onclick="window.closeShieldDashboard()" class="w-8 h-8 rounded-full bg-gray-500/10 flex items-center justify-center shrink-0"><i data-lucide="x" class="w-4 h-4" style="color: var(--text-muted);"></i></button>
+      </div>
+      <div class="flex flex-col items-center justify-center py-4">
+        <div class="relative flex justify-center items-center w-32 h-32 rounded-full bg-gray-500/10 shadow-[0_0_30px_rgba(14,165,233,0.2)] border-4 border-sky-500/20">
+          <div class="absolute inset-0 rounded-full border-4 border-sky-500 border-t-transparent animate-spin opacity-50" style="animation-duration: 3s;"></div>
+          <div class="text-center z-10">
+            <div id="modalShieldCount" class="text-4xl font-bold text-sky-500">0</div>
+            <div class="text-[9px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Defeats</div>
+          </div>
+        </div>
+        <p id="modalShieldMins" class="mt-4 text-xs font-bold px-3 py-1 bg-sky-500/10 text-sky-500 rounded-full border border-sky-500/20">0 Mins Resisted</p>
+      </div>
+      <div class="space-y-3 pt-2 border-t border-gray-500/10">
+        <h4 class="text-[10px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Milestones & Badges</h4>
+        <div class="grid grid-cols-3 gap-3">
+          <div id="badge1" class="flex flex-col items-center p-3 rounded-2xl bg-gray-500/10 opacity-30 grayscale transition-all duration-500 border border-gray-500/20">
+            <i data-lucide="medal" class="w-8 h-8 text-amber-600 mb-1"></i>
+            <span class="text-[9px] font-bold text-center mt-1" style="color: var(--text-main);">First Win</span>
+          </div>
+          <div id="badge10" class="flex flex-col items-center p-3 rounded-2xl bg-gray-500/10 opacity-30 grayscale transition-all duration-500 border border-gray-500/20">
+            <i data-lucide="award" class="w-8 h-8 text-gray-300 mb-1"></i>
+            <span class="text-[9px] font-bold text-center mt-1" style="color: var(--text-main);">Iron Will</span>
+          </div>
+          <div id="badge50" class="flex flex-col items-center p-3 rounded-2xl bg-gray-500/10 opacity-30 grayscale transition-all duration-500 border border-gray-500/20">
+            <i data-lucide="trophy" class="w-8 h-8 text-amber-400 mb-1"></i>
+            <span class="text-[9px] font-bold text-center mt-1" style="color: var(--text-main);">Unshakable</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="triggerModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex flex-col justify-end transition-opacity" onclick="if(event.target===this) window.closeTriggerModal()">
+    <div class="premium-card p-6 rounded-b-none space-y-4 max-w-md mx-auto w-full">
+      <div class="flex justify-between items-center">
+        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest text-center">Select Tags</h3>
+        <button onclick="window.saveTags()" class="text-xs font-bold text-white px-4 py-1.5 rounded-full shadow-lg active:scale-95 transition-all" style="background: var(--accent);">Save</button>
+      </div>
+      <div id="modalTriggerGrid" class="grid grid-cols-2 gap-3 text-xs font-bold"></div>
+    </div>
+  </div>
+
+  <div id="mapModal" class="hidden fixed inset-0 bg-black/90 z-50 flex flex-col p-4 backdrop-blur-md">
+    <div class="flex justify-between items-center mb-4 mt-8 px-2">
+      <h3 class="text-lg font-bold text-white">Thermal View</h3>
+      <button onclick="window.closeMapModal()" class="bg-white/10 text-white text-xs px-4 py-2 rounded-full font-bold active:scale-95">Done</button>
+    </div>
+    <div id="mapModalContainer" class="w-full flex-1 rounded-3xl border border-white/10 overflow-hidden shadow-2xl"></div>
+  </div>
 
   <script src="app.js"></script>
 </body>
