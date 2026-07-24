@@ -4,15 +4,23 @@ let settings = Object.assign({}, DEFAULT_SETTINGS, JSON.parse(localStorage.getIt
 if (!settings.packSize || settings.packSize <= 0) settings.packSize = 20;
 if (!settings.timeFormat) settings.timeFormat = '12h';
 let triggers = JSON.parse(localStorage.getItem('smoke_triggers')) || ['💼 Work Stress', '🍽️ After Meal', '☕ Chai / Coffee', '🚗 Driving', '📱 Boredom', '👥 Social'];
-let shields = parseInt(localStorage.getItem('smoke_shields')) || 0;
+
+// Legacy Migration: Convert old integer shields to array of timestamps for analytics
+let waves = JSON.parse(localStorage.getItem('smoke_waves'));
+if (!waves) {
+  waves = [];
+  let legacyShields = parseInt(localStorage.getItem('smoke_shields')) || 0;
+  for(let i=0; i<legacyShields; i++) waves.push(Date.now() - (i * 86400000));
+  localStorage.setItem('smoke_waves', JSON.stringify(waves));
+}
+
 let lockEndTime = parseInt(localStorage.getItem('smoke_lock_end')) || 0;
 let waveEndTime = parseInt(localStorage.getItem('smoke_wave_end')) || 0;
+let waveDurationMs = parseInt(localStorage.getItem('smoke_wave_duration')) || 600000;
 
 function hashPin(p) { let h = 0; for (let i = 0; i < p.length; i++) { h = ((h << 5) - h) + p.charCodeAt(i); h |= 0; } return h.toString(36); }
 function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-// One-time migration: old versions stored the PIN as reversible base64 (trivially decodable via atob in devtools).
-// We migrate it to a one-way hash so the raw PIN is never sitting in localStorage.
 (function migratePin() {
   const legacy = localStorage.getItem('smoke_pin');
   if (legacy && !localStorage.getItem('smoke_pin_hash')) {
@@ -36,8 +44,30 @@ Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "SF Pro Display
 
 const crosshairPlugin = { id: 'crosshair', afterDraw: chart => { if (chart.tooltip?._active?.length && (chart.config.type === 'line' || chart.config.type === 'bar')) { const activePoint = chart.tooltip._active[0]; const ctx = chart.ctx; const x = activePoint.element.x; ctx.save(); ctx.beginPath(); ctx.moveTo(x, chart.scales.y.top); ctx.lineTo(x, chart.scales.y.bottom); ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)'; ctx.setLineDash([4, 4]); ctx.stroke(); ctx.restore(); } } };
 
-// FIX: Dynamic color for center text based on theme
-const centerTextPlugin = { id: 'centerText', beforeDraw: chart => { if (chart.config.type === 'doughnut') { const ctx = chart.ctx; ctx.restore(); const total = chart.data.datasets[0].data.reduce((a,b)=>a+b, 0); const text = total > 0 ? total + " Logs" : "No Data"; ctx.font = "bold 16px sans-serif"; ctx.textBaseline = "middle"; ctx.fillStyle = document.body.classList.contains('theme-white') ? "#64748B" : "#F3F4F6"; ctx.fillText(text, Math.round((chart.width - ctx.measureText(text).width) / 2), chart.height / 2); ctx.save(); } } };
+// Updated Center Text Plugin to handle both Donut charts dynamically
+const centerTextPlugin = {
+  id: 'centerText',
+  beforeDraw: chart => {
+    if (chart.config.type === 'doughnut') {
+      const ctx = chart.ctx; ctx.restore();
+      let text = "";
+      if (chart.canvas.id === 'chart4') {
+        const smoked = chart.data.datasets[0].data[0];
+        const resisted = chart.data.datasets[0].data[1];
+        const total = smoked + resisted;
+        text = total > 0 ? Math.round((resisted/total)*100) + "%" : "0%";
+      } else {
+        const total = chart.data.datasets[0].data.reduce((a,b)=>a+b, 0);
+        text = total > 0 ? total + " Logs" : "No Data";
+      }
+      ctx.font = "bold " + (chart.canvas.id === 'chart4' ? '26px' : '16px') + " sans-serif";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = document.body.classList.contains('theme-white') ? "#64748B" : "#F3F4F6";
+      ctx.fillText(text, Math.round((chart.width - ctx.measureText(text).width) / 2), chart.height / 2);
+      ctx.save();
+    }
+  }
+};
 
 function formatAppTime(dateObj) {
   return dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: settings.timeFormat === '12h' });
@@ -100,7 +130,6 @@ function bootCore() {
       newHtml = `<i data-lucide="rocket" class="w-3.5 h-3.5 text-sky-500"></i><span class="text-sky-500">Setting your first baseline gap</span>`;
     }
     
-    // FIX: Optimized blinking icon issue. DOM is updated only if text actually changed.
     if (statusText.dataset.rawHtml !== newHtml) {
       statusWrapper.className = newClass;
       statusText.innerHTML = newHtml;
@@ -156,8 +185,17 @@ function savePinSetup() {
 
 function handleLogClick() {
   if(new Date().getTime() < lockEndTime) return;
-  if(settings.haptics && navigator.vibrate) navigator.vibrate(50);
-  if(waveEndTime>0) { localStorage.removeItem('smoke_wave_end'); waveEndTime=0; clearInterval(waveTimer); document.getElementById('waveOverlay').classList.add('hidden'); }
+  
+  // Non-Judgmental Failure Handling
+  if(waveEndTime > 0) { 
+    localStorage.removeItem('smoke_wave_end'); 
+    waveEndTime = 0; 
+    clearInterval(waveTimer); 
+    document.getElementById('waveOverlay').classList.add('hidden'); 
+    showToast("No worries — logging this one.");
+  } else {
+    if(settings.haptics && navigator.vibrate) navigator.vibrate(50);
+  }
   
   const now = new Date().getTime();
   let gap = logs.length > 0 ? Math.round((now - logs[logs.length-1].timestamp)/60000) : null;
@@ -195,10 +233,22 @@ function checkLock() {
   }
 }
 
-function toggleWaveMode() {
+function openWaveModal() {
   if(new Date().getTime() < lockEndTime || waveEndTime>0) return;
-  waveEndTime = new Date().getTime() + 600000; localStorage.setItem('smoke_wave_end', waveEndTime); checkWave();
+  document.getElementById('waveModal').classList.remove('hidden');
 }
+function closeWaveModal() {
+  document.getElementById('waveModal').classList.add('hidden');
+}
+function startWave(mins) {
+  closeWaveModal();
+  waveDurationMs = mins * 60000;
+  localStorage.setItem('smoke_wave_duration', waveDurationMs);
+  waveEndTime = new Date().getTime() + waveDurationMs; 
+  localStorage.setItem('smoke_wave_end', waveEndTime); 
+  checkWave();
+}
+
 function checkWave() {
   const o = document.getElementById('waveOverlay');
   if(!o) return;
@@ -207,8 +257,23 @@ function checkWave() {
     if(waveTimer) clearInterval(waveTimer);
     waveTimer = setInterval(() => {
       let rem = Math.ceil((waveEndTime - new Date().getTime())/1000);
-      if(rem<=0) { clearInterval(waveTimer); waveEndTime=0; localStorage.removeItem('smoke_wave_end'); o.classList.add('hidden'); shields++; localStorage.setItem('smoke_shields', shields); updateUI(); }
-      else { document.getElementById('waveCountdown').innerText=`${Math.floor(rem/60).toString().padStart(2,'0')}:${(rem%60).toString().padStart(2,'0')}`; document.getElementById('waveProgressBar').style.width=`${(rem/600)*100}%`; }
+      let totalSecs = waveDurationMs / 1000;
+      if(rem<=0) { 
+        clearInterval(waveTimer); 
+        waveEndTime=0; 
+        localStorage.removeItem('smoke_wave_end'); 
+        o.classList.add('hidden'); 
+        
+        // Instant Gratification: Push Wave & Show Toast
+        waves.push(Date.now()); 
+        localStorage.setItem('smoke_waves', JSON.stringify(waves)); 
+        showToast("🛡️ Craving Defeated! +1 Shield");
+        updateUI(); 
+      }
+      else { 
+        document.getElementById('waveCountdown').innerText=`${Math.floor(rem/60).toString().padStart(2,'0')}:${(rem%60).toString().padStart(2,'0')}`; 
+        document.getElementById('waveProgressBar').style.width=`${(rem/totalSecs)*100}%`; 
+      }
     }, 1000);
   }
 }
@@ -271,7 +336,17 @@ function updateSettings() {
 function updateCostPerCigDisplay() { const el = document.getElementById('costPerCigDisplay'); if (el) el.innerText = `${settings.currency} ${(settings.packPrice / settings.packSize).toFixed(2)}`; }
 
 function updateUI() {
-  document.getElementById('shieldCount').innerText = shields;
+  document.getElementById('shieldCount').innerText = waves.length;
+  
+  // Home Screen Metrics: Streak & Today's Waves
+  const todayWaves = waves.filter(w => new Date(w).toDateString() === new Date().toDateString());
+  document.getElementById('homeTodayBeaten').innerText = `${todayWaves.length} Defeated`;
+  
+  let currentStreak = 0;
+  let allEvents = [...logs.map(l => ({t: l.timestamp, type: 'log'})), ...waves.map(w => ({t: w, type: 'wave'}))].sort((a,b) => b.t - a.t);
+  for (let e of allEvents) { if (e.type === 'wave') currentStreak++; else break; }
+  document.getElementById('homeStreak').innerText = `🔥 ${currentStreak} Streak`;
+
   const today = logs.filter(l => new Date(l.timestamp).toDateString() === new Date().toDateString());
   document.getElementById('todayCount').innerText = `${today.length} / ${settings.dailyLimit}`;
   document.getElementById('todaySpend').innerText = `${settings.currency} ${(today.length * (settings.packPrice/settings.packSize)).toFixed(1)}`;
@@ -311,11 +386,11 @@ function showStatDetail(type) {
 function closeStatDetail() { document.getElementById('statDetailModal').classList.add('hidden'); }
 
 function showShieldDashboard() {
-  document.getElementById('modalShieldCount').innerText = shields; document.getElementById('modalShieldMins').innerText = (shields * 10) + " Mins Resisted";
+  document.getElementById('modalShieldCount').innerText = waves.length;
   ['badge1', 'badge10', 'badge50'].forEach(id => document.getElementById(id).className = "flex flex-col items-center p-3 rounded-2xl bg-gray-500/10 opacity-30 grayscale transition-all duration-500 border border-gray-500/20");
-  if(shields >= 1) { document.getElementById('badge1').classList.remove('opacity-30', 'grayscale'); document.getElementById('badge1').classList.add('shadow-[0_0_15px_rgba(245,158,11,0.15)]'); }
-  if(shields >= 10) { document.getElementById('badge10').classList.remove('opacity-30', 'grayscale'); document.getElementById('badge10').classList.add('shadow-[0_0_15px_rgba(245,158,11,0.15)]'); document.getElementById('badge10').querySelector('i').classList.replace('text-gray-300', 'text-sky-400'); }
-  if(shields >= 50) { document.getElementById('badge50').classList.remove('opacity-30', 'grayscale'); document.getElementById('badge50').classList.add('shadow-[0_0_15px_rgba(245,158,11,0.15)]'); }
+  if(waves.length >= 1) { document.getElementById('badge1').classList.remove('opacity-30', 'grayscale'); document.getElementById('badge1').classList.add('shadow-[0_0_15px_rgba(245,158,11,0.15)]'); }
+  if(waves.length >= 10) { document.getElementById('badge10').classList.remove('opacity-30', 'grayscale'); document.getElementById('badge10').classList.add('shadow-[0_0_15px_rgba(245,158,11,0.15)]'); document.getElementById('badge10').querySelector('i').classList.replace('text-gray-300', 'text-sky-400'); }
+  if(waves.length >= 50) { document.getElementById('badge50').classList.remove('opacity-30', 'grayscale'); document.getElementById('badge50').classList.add('shadow-[0_0_15px_rgba(245,158,11,0.15)]'); }
   document.getElementById('shieldDashboardModal').classList.remove('hidden'); if(window.lucide) window.lucide.createIcons();
 }
 function closeShieldDashboard() { document.getElementById('shieldDashboardModal').classList.add('hidden'); }
@@ -325,7 +400,9 @@ function resetData(type) {
     showConfirm("Delete last 24h logs?", "This will permanently remove logs from the last 24 hours.", () => {
       const now = new Date().getTime();
       logs = logs.filter(l => (now - l.timestamp) > 86400000);
+      waves = waves.filter(w => (now - w) > 86400000);
       localStorage.setItem('smoke_logs', JSON.stringify(logs));
+      localStorage.setItem('smoke_waves', JSON.stringify(waves));
       location.reload();
     });
   } else {
@@ -454,13 +531,24 @@ function renderAllCharts() {
   const filterEl = document.getElementById('selectedFilterLabel');
   if(filterEl) filterEl.innerText = { today: 'Today', '7days': 'Last 7 Days', '1month': '1 Month', all: 'All Time' }[filter] || 'Selected Period';
 
+  // Analytics Engine: Win Rate Calculation
+  let activeWaves = waves;
+  const now = new Date();
+  if(filter === 'today') activeWaves = waves.filter(w => w >= new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime());
+  else if(filter === '7days') activeWaves = waves.filter(w => w >= new Date(now.getTime() - (7 * 86400000)).getTime());
+  else if(filter === '1month') activeWaves = waves.filter(w => w >= new Date(now.getTime() - (30 * 86400000)).getTime());
+
+  const totalEvents = activeLogs.length + activeWaves.length;
+  const winRate = totalEvents > 0 ? Math.round((activeWaves.length / totalEvents) * 100) : 0;
+  
+  document.getElementById('insightWinRate').innerText = `${winRate}%`;
+
   let totalSpend = (activeLogs.length * (settings.packPrice/settings.packSize)).toFixed(1);
   document.getElementById('insightPeriodSpend').innerText = `${settings.currency} ${totalSpend}`;
   document.getElementById('insightPeriodCount').innerText = `${activeLogs.length} Sticks`;
 
   const gappedLogs = activeLogs.filter(l => l.gap !== null && l.gap !== undefined);
   document.getElementById('insightAvgGap').innerText = gappedLogs.length > 0 ? formatGap(Math.round(gappedLogs.reduce((a, b) => a + b.gap, 0) / gappedLogs.length)) : '--';
-  document.getElementById('insightShields').innerText = `${shields} Defeats`;
 
   if(activeLogs.length > 0) {
     let hours = {}; activeLogs.forEach(l => { let h = new Date(l.timestamp).getHours(); hours[h] = (hours[h]||0)+1; });
@@ -494,7 +582,6 @@ function renderAllCharts() {
   setBadge('badge-chart2', activeLogs.length > 0 ? `${activeLogs.length} Total` : '', 'bg-amber-500/10 text-amber-500 border-amber-500/20');
   setBadge('badge-chart3', activeLogs.length > 0 ? `${settings.currency} ${totalSpend}` : '', 'bg-red-500/10 text-red-500 border-red-500/20');
 
-  // FIX: X-Axis Multi-line Labels (Array format prevents clipping)
   const labels = activeLogs.length > 0 ? activeLogs.map(l => {
     let d = new Date(l.timestamp);
     let tStr = formatAppTime(d);
@@ -506,25 +593,26 @@ function renderAllCharts() {
   const gaps = activeLogs.length > 0 ? activeLogs.map(l => l.gap) : [0];
   const chartTextColor = settings.theme === 'white' ? '#64748B' : '#9CA3AF';
 
-  // FIX: Base options -> Removed negative padding to prevent edge clipping
   const proOptions = { responsive: true, maintainAspectRatio: false, animation: { duration: 600, easing: 'easeOutQuart' }, interaction: { mode: 'index', intersect: false }, layout: { padding: { left: 0, right: 0, top: 10, bottom: 0 } }, plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.95)', titleColor: '#FFFFFF', bodyColor: '#10B981', padding: 12, cornerRadius: 12, displayColors: false } }, scales: { x: { grid: { display: false }, ticks: { color: chartTextColor, font: { size: 9, weight: '600' }, maxTicksLimit: 4 } }, y: { beginAtZero: true, grid: { color: 'rgba(156, 163, 175, 0.05)', drawBorder: false }, ticks: { color: chartTextColor, font: { size: 9, weight: '600' }, padding: 6 } } } };
   const createGradient = (ctx, colorHex) => { let g = ctx.createLinearGradient(0, 0, 0, 180); g.addColorStop(0, colorHex); g.addColorStop(1, 'rgba(0,0,0,0)'); return g; };
   function upsertChart(key, ctx, config) { const existing = myChartInstances[key]; if (existing && existing.config.type === config.type) { existing.data = config.data; if (config.options) existing.options = config.options; existing.update(); } else { if (existing) existing.destroy(); myChartInstances[key] = new Chart(ctx, config); } }
 
   const ctx1 = document.getElementById('chart1').getContext('2d');
-  // FIX: Added offset to X-axis to center the line
   upsertChart(1, ctx1, { type: 'line', data: { labels: labels, datasets: [{ label: 'Gap (mins)', data: gaps, borderColor: '#10B981', backgroundColor: createGradient(ctx1, 'rgba(16, 185, 129, 0.25)'), borderWidth: 3, tension: 0.4, fill: true, pointRadius: 0, pointHitRadius: 15 }] }, options: { ...proOptions, scales: { ...proOptions.scales, x: { ...proOptions.scales.x, offset: true } } }, plugins: [crosshairPlugin] });
 
   let dayMap = {}; activeLogs.forEach(l => { let d = document.getElementById('insightsDateFilter').value === '7days' ? new Date(l.timestamp).toLocaleDateString([], {weekday:'short'}) : new Date(l.timestamp).toLocaleDateString([], {month:'short', day:'numeric'}); dayMap[d] = (dayMap[d] || 0) + 1; });
   let dayLabels = Object.keys(dayMap), dayCounts = Object.values(dayMap); if(dayLabels.length === 0) { dayLabels = ['Today']; dayCounts = [0]; }
   const ctx2 = document.getElementById('chart2').getContext('2d');
   
-  // FIX: Offset true & maxBarThickness to prevent left clipping
   upsertChart(2, ctx2, { type: 'bar', data: { labels: dayLabels, datasets: [{ label: 'Count', data: dayCounts, backgroundColor: settings.theme === 'white' ? '#2563EB' : '#F59E0B', borderRadius: Number.MAX_VALUE, borderSkipped: false, maxBarThickness: 16 }, { label: 'Limit', data: dayLabels.map(() => settings.dailyLimit), type: 'line', borderColor: '#EF4444', borderWidth: 2, borderDash: [4,4], pointRadius: 0 }] }, options: { ...proOptions, scales: { x: { ...proOptions.scales.x, offset: true }, y: { ...proOptions.scales.y } } }, plugins: [crosshairPlugin] });
 
   let cumulativeSpend = 0; let spendData = gaps.map(() => { cumulativeSpend += (settings.packPrice / settings.packSize); return cumulativeSpend.toFixed(1); });
   const ctx3 = document.getElementById('chart3').getContext('2d');
   upsertChart(3, ctx3, { type: 'line', data: { labels: labels, datasets: [{ label: 'Spend', data: spendData, borderColor: '#EF4444', backgroundColor: createGradient(ctx3, 'rgba(239, 68, 68, 0.2)'), fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0, pointHitRadius: 15 }] }, options: { ...proOptions, scales: { ...proOptions.scales, x: { ...proOptions.scales.x, offset: true } } }, plugins: [crosshairPlugin] });
+
+  // Chart 4: Urge Win Rate (Donut)
+  const ctx4 = document.getElementById('chart4').getContext('2d');
+  upsertChart(4, ctx4, { type: 'doughnut', data: { labels: ['Smoked', 'Resisted'], datasets: [{ data: [activeLogs.length, activeWaves.length], backgroundColor: ['#EF4444', '#0EA5E9'], borderWidth: 0, cutout: '76%' }] }, options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12, font: { size: 10 }, color: chartTextColor } } } }, plugins: [centerTextPlugin] });
 
   const ctx5 = document.getElementById('chart5').getContext('2d');
   const triggerCounts = triggers.map(t => activeLogs.filter(l => (l.tags && l.tags.includes(t)) || l.trigger === t).length);
@@ -538,15 +626,24 @@ function renderAllCharts() {
     let tArr = l.tags && l.tags.length ? l.tags : (l.trigger ? [l.trigger] : []);
     tArr.forEach(tg => { if (triggerByPart[tg]) triggerByPart[tg][partOf(new Date(l.timestamp).getHours())]++; }); 
   });
+  
+  // Waves (Resisted) by part of day for the overlay chart
+  let wavesByPart = [0, 0, 0, 0];
+  activeWaves.forEach(w => wavesByPart[partOf(new Date(w).getHours())]++);
+
   const palette = ['#F59E0B', '#10B981', '#6366F1', '#EF4444', '#2563EB', '#A855F7'];
   const partTotals = dayParts.map((_, i) => triggers.reduce((sum, t) => sum + triggerByPart[t][i], 0));
   const peakPartIdx = partTotals.some(v => v > 0) ? partTotals.indexOf(Math.max(...partTotals)) : -1;
   setBadge('badge-chart6', peakPartIdx >= 0 ? `Peak: ${dayParts[peakPartIdx]}` : '', 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20');
-  const chart6El = document.getElementById('chart6');
   
-  // FIX: Trigger Timing chart layout. maxBarThickness controls the extreme width, borderRadius: 0 fixes the stacked gap issue, and offset: true adds padding so left/right bars don't cut.
+  const chart6El = document.getElementById('chart6');
   if (chart6El) {
-    upsertChart(6, chart6El.getContext('2d'), { type: 'bar', data: { labels: dayParts, datasets: triggers.map((t, i) => ({ label: t, data: triggerByPart[t], backgroundColor: palette[i % palette.length], borderRadius: 0, maxBarThickness: 32, stack: 'triggers' })) }, options: { ...proOptions, scales: { x: { ...proOptions.scales.x, stacked: true, offset: true }, y: { ...proOptions.scales.y, stacked: true, ticks: { ...proOptions.scales.y.ticks, precision: 0 } } }, plugins: { ...proOptions.plugins, legend: { display: true, position: 'bottom', labels: { boxWidth: 8, padding: 10, font: { size: 9 }, color: chartTextColor } } } } });
+    let datasets = triggers.map((t, i) => ({ label: t, data: triggerByPart[t], backgroundColor: palette[i % palette.length], borderRadius: 0, maxBarThickness: 32, stack: 'triggers' }));
+    
+    // Add Resisted (Shield) Bar parallel to Triggers
+    datasets.push({ label: 'Resisted', data: wavesByPart, backgroundColor: '#0EA5E9', borderRadius: 0, maxBarThickness: 32, stack: 'resisted' });
+
+    upsertChart(6, chart6El.getContext('2d'), { type: 'bar', data: { labels: dayParts, datasets: datasets }, options: { ...proOptions, scales: { x: { ...proOptions.scales.x, stacked: true, offset: true }, y: { ...proOptions.scales.y, stacked: true, ticks: { ...proOptions.scales.y.ticks, precision: 0 } } }, plugins: { ...proOptions.plugins, legend: { display: true, position: 'bottom', labels: { boxWidth: 8, padding: 10, font: { size: 9 }, color: chartTextColor } } } } });
   }
 
   renderHeatMap('mapContainer', activeLogs);
@@ -578,8 +675,9 @@ function initDragAndDrop() { const container = document.getElementById('chartCon
 function loadChartOrder() { const savedOrder = JSON.parse(localStorage.getItem('smoke_chart_order')); if(!savedOrder) return; const container = document.getElementById('chartContainer'); savedOrder.forEach(id => { const card = document.getElementById(id); if(card) container.appendChild(card); }); }
 
 window.enterPin = enterPin; window.clearPin = clearPin; window.setupPin = setupPin;
-window.handleLogClick = handleLogClick; window.toggleWaveMode = toggleWaveMode; window.switchTab = switchTab; window.updateSettings = updateSettings; window.resetData = resetData; 
+window.handleLogClick = handleLogClick; window.switchTab = switchTab; window.updateSettings = updateSettings; window.resetData = resetData; 
 window.openTriggerModal = openTriggerModal; window.closeTriggerModal = closeTriggerModal; window.toggleTag = toggleTag; window.saveTags = saveTags;
+window.openWaveModal = openWaveModal; window.closeWaveModal = closeWaveModal; window.startWave = startWave;
 window.renderAllCharts = renderAllCharts; window.openMapModal = openMapModal; window.closeMapModal = closeMapModal;
 window.showStatDetail = showStatDetail; window.closeStatDetail = closeStatDetail; window.showShieldDashboard = showShieldDashboard; window.closeShieldDashboard = closeShieldDashboard;
 window.exportLogsCSV = exportLogsCSV; window.addCustomTrigger = addCustomTrigger; window.removeCustomTrigger = removeCustomTrigger;
