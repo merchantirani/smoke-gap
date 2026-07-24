@@ -1,7 +1,8 @@
 let logs = JSON.parse(localStorage.getItem('smoke_logs')) || [];
-const DEFAULT_SETTINGS = { theme: 'default', haptics: true, dailyLimit: 15, lockSecs: 300, packPrice: 20, packSize: 20, currency: 'AED' };
+const DEFAULT_SETTINGS = { theme: 'default', haptics: true, dailyLimit: 15, lockSecs: 300, packPrice: 20, packSize: 20, currency: 'AED', timeFormat: '12h' };
 let settings = Object.assign({}, DEFAULT_SETTINGS, JSON.parse(localStorage.getItem('smoke_settings')) || {});
 if (!settings.packSize || settings.packSize <= 0) settings.packSize = 20;
+if (!settings.timeFormat) settings.timeFormat = '12h';
 let triggers = JSON.parse(localStorage.getItem('smoke_triggers')) || ['💼 Work Stress', '🍽️ After Meal', '☕ Chai / Coffee', '🚗 Driving', '📱 Boredom', '👥 Social'];
 let shields = parseInt(localStorage.getItem('smoke_shields')) || 0;
 let lockEndTime = parseInt(localStorage.getItem('smoke_lock_end')) || 0;
@@ -23,12 +24,18 @@ Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "SF Pro Display
 const crosshairPlugin = { id: 'crosshair', afterDraw: chart => { if (chart.tooltip?._active?.length && (chart.config.type === 'line' || chart.config.type === 'bar')) { const activePoint = chart.tooltip._active[0]; const ctx = chart.ctx; const x = activePoint.element.x; ctx.save(); ctx.beginPath(); ctx.moveTo(x, chart.scales.y.top); ctx.lineTo(x, chart.scales.y.bottom); ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)'; ctx.setLineDash([4, 4]); ctx.stroke(); ctx.restore(); } } };
 const centerTextPlugin = { id: 'centerText', beforeDraw: chart => { if (chart.config.type === 'doughnut') { const ctx = chart.ctx; ctx.restore(); const total = chart.data.datasets[0].data.reduce((a,b)=>a+b, 0); const text = total > 0 ? total + " Logs" : "No Data"; ctx.font = "bold 16px sans-serif"; ctx.textBaseline = "middle"; ctx.fillStyle = "#F3F4F6"; ctx.fillText(text, Math.round((chart.width - ctx.measureText(text).width) / 2), chart.height / 2); ctx.save(); } } };
 
+// HELPER: Global Time Formatter (12h/24h)
+function formatAppTime(dateObj) {
+  return dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: settings.timeFormat === '12h' });
+}
+
 window.onload = () => {
   applyTheme(settings.theme);
   document.getElementById('dailyLimitInput').value = settings.dailyLimit;
   document.getElementById('packPriceInput').value = settings.packPrice;
   document.getElementById('packSizeInput').value = settings.packSize;
   document.getElementById('themeSelect').value = settings.theme;
+  document.getElementById('timeFormatSelect').value = settings.timeFormat;
   document.getElementById('currencySelect').value = settings.currency || 'AED';
   document.getElementById('lockSecsInput').value = settings.lockSecs;
   document.getElementById('hapticsInput').checked = settings.haptics;
@@ -47,7 +54,43 @@ function bootCore() {
   mainTimer = setInterval(() => {
     if(logs.length === 0 || document.getElementById('page-tracker').classList.contains('hidden')) return;
     const diff = new Date().getTime() - logs[logs.length-1].timestamp;
+    
+    // 1. Update Stopwatch
     document.getElementById('stopwatch').innerText = `${Math.floor(diff/3600000).toString().padStart(2,'0')}:${Math.floor((diff%3600000)/60000).toString().padStart(2,'0')}:${Math.floor((diff%60000)/1000).toString().padStart(2,'0')}`;
+    
+    // 2. Update Premium Ring & Smart Status
+    const prevLog = logs[logs.length-1];
+    const prevGapMs = prevLog.gap ? prevLog.gap * 60000 : 0;
+    const circle = document.getElementById('heroProgressCircle');
+    const statusWrapper = document.getElementById('smartStatusWrapper');
+    const statusText = document.getElementById('smartStatusText');
+    const dashMax = 289.02; // Circumference
+    
+    if (prevGapMs > 0) {
+      let percent = diff / prevGapMs;
+      if (percent < 1) {
+        circle.style.stroke = '#F59E0B'; // Amber while tracking
+        circle.style.strokeDashoffset = dashMax - (dashMax * percent);
+        circle.style.filter = 'none';
+        
+        let remMins = Math.ceil((prevGapMs - diff) / 60000);
+        statusWrapper.className = 'px-5 py-2.5 rounded-full border transition-all duration-500 bg-amber-500/10 border-amber-500/20';
+        statusText.innerHTML = `<i data-lucide="alert-circle" class="w-3.5 h-3.5 text-amber-500"></i><span class="text-amber-500">${remMins} min${remMins>1?'s':''} left to beat previous gap</span>`;
+      } else {
+        circle.style.stroke = '#10B981'; // Emerald when beaten
+        circle.style.strokeDashoffset = 0;
+        circle.style.filter = 'drop-shadow(0 0 8px rgba(16,185,129,0.5))'; // Glow effect
+        
+        let extraMins = Math.floor((diff - prevGapMs) / 60000);
+        statusWrapper.className = 'px-5 py-2.5 rounded-full border transition-all duration-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.15)]';
+        statusText.innerHTML = `<i data-lucide="trophy" class="w-3.5 h-3.5 text-emerald-500"></i><span class="text-emerald-500">Widened the gap by +${extraMins} min${extraMins!==1?'s':''}</span>`;
+      }
+    } else {
+      circle.style.strokeDashoffset = 0; circle.style.stroke = 'var(--accent)'; circle.style.filter = 'none';
+      statusWrapper.className = 'px-5 py-2.5 rounded-full border transition-all duration-500 bg-sky-500/10 border-sky-500/20';
+      statusText.innerHTML = `<i data-lucide="rocket" class="w-3.5 h-3.5 text-sky-500"></i><span class="text-sky-500">Setting your first baseline gap</span>`;
+    }
+    if(window.lucide && diff % 60000 < 1000) window.lucide.createIcons(); // rare icon refresh
   }, 1000);
 }
 
@@ -149,6 +192,7 @@ function applyTheme(t) { document.body.className = document.body.className.repla
 
 function updateSettings() {
   settings.theme = document.getElementById('themeSelect').value;
+  settings.timeFormat = document.getElementById('timeFormatSelect').value;
   settings.currency = document.getElementById('currencySelect').value;
   settings.dailyLimit = parseInt(document.getElementById('dailyLimitInput').value) || 15;
   settings.packPrice = parseFloat(document.getElementById('packPriceInput').value) || 20;
@@ -159,6 +203,7 @@ function updateSettings() {
   localStorage.setItem('smoke_settings', JSON.stringify(settings)); 
   applyTheme(settings.theme); updateCostPerCigDisplay(); updateUI();
   if(!document.getElementById('page-insights').classList.contains('hidden')) renderAllCharts();
+  if(!document.getElementById('page-history').classList.contains('hidden')) renderHistory('fullHistoryList');
 }
 
 function updateCostPerCigDisplay() { const el = document.getElementById('costPerCigDisplay'); if (el) el.innerText = `${settings.currency} ${(settings.packPrice / settings.packSize).toFixed(2)}`; }
@@ -224,7 +269,7 @@ function exportLogsCSV() {
   logs.forEach(l => {
     let d = new Date(l.timestamp);
     let tagsStr = l.tags && l.tags.length ? l.tags.join(' | ') : (l.trigger || '');
-    csvContent += `${l.timestamp},"${d.toLocaleDateString()}","${d.toLocaleTimeString()}",${l.gap ?? ''},"${tagsStr}",${l.lat||''},${l.lng||''}\n`;
+    csvContent += `${l.timestamp},"${d.toLocaleDateString()}","${formatAppTime(d)}",${l.gap ?? ''},"${tagsStr}",${l.lat||''},${l.lng||''}\n`;
   });
   let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   let url = URL.createObjectURL(blob);
@@ -291,7 +336,6 @@ function renderHistory(tId='fullHistoryList', limit=null) {
   if(logs.length===0) { c.innerHTML="<p class='text-center py-6 text-xs flex flex-col items-center gap-2' style='color: var(--text-muted);'><i data-lucide='inbox' class='w-6 h-6 opacity-50'></i> No logs recorded yet.</p>"; if(window.lucide) window.lucide.createIcons(); return; }
   let items = logs.slice().reverse(); if(limit) items = items.slice(0,limit);
   
-  // FIXED: Removed the left absolute line for cleaner design
   c.innerHTML = items.map((l, j) => {
     const origIdx = logs.length - 1 - j;
     const prev = origIdx > 0 ? logs[origIdx - 1] : null;
@@ -306,7 +350,7 @@ function renderHistory(tId='fullHistoryList', limit=null) {
       <div class="flex items-start gap-3 flex-1 min-w-0 pr-3">
         <div class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${trendClass}"><i data-lucide="${trendIcon}" class="w-3.5 h-3.5"></i></div>
         <div class="flex-1 min-w-0">
-          <div class="font-bold tracking-wide" style="color: var(--text-main);">${new Date(l.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
+          <div class="font-bold tracking-wide" style="color: var(--text-main);">${formatAppTime(new Date(l.timestamp))}</div>
           <div class="text-[10px] font-bold uppercase mt-0.5 flex items-start gap-1" style="color: var(--text-muted);">
             <i data-lucide="tag" class="w-3 h-3 shrink-0 mt-0.5"></i>
             <span class="leading-relaxed whitespace-normal break-words">${tagsDisplay}</span>
@@ -344,7 +388,9 @@ function renderAllCharts() {
 
   if(activeLogs.length > 0) {
     let hours = {}; activeLogs.forEach(l => { let h = new Date(l.timestamp).getHours(); hours[h] = (hours[h]||0)+1; });
-    document.getElementById('insightPeakHour').innerText = `${Object.keys(hours).reduce((a,b) => hours[a] > hours[b] ? a : b)}:00`;
+    let peakHrInt = parseInt(Object.keys(hours).reduce((a,b) => hours[a] > hours[b] ? a : b));
+    let peakDate = new Date(); peakDate.setHours(peakHrInt, 0, 0, 0);
+    document.getElementById('insightPeakHour').innerText = formatAppTime(peakDate);
   } else document.getElementById('insightPeakHour').innerText = '--';
 
   if(activeLogs.length > 0) {
@@ -372,7 +418,7 @@ function renderAllCharts() {
   setBadge('badge-chart2', activeLogs.length > 0 ? `${activeLogs.length} Total` : '', 'bg-amber-500/10 text-amber-500 border-amber-500/20');
   setBadge('badge-chart3', activeLogs.length > 0 ? `${settings.currency} ${totalSpend}` : '', 'bg-red-500/10 text-red-500 border-red-500/20');
 
-  const labels = activeLogs.length > 0 ? activeLogs.map(l => new Date(l.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})) : ['No Data'];
+  const labels = activeLogs.length > 0 ? activeLogs.map(l => formatAppTime(new Date(l.timestamp))) : ['No Data'];
   const gaps = activeLogs.length > 0 ? activeLogs.map(l => l.gap) : [0];
   const chartTextColor = settings.theme === 'white' ? '#64748B' : '#9CA3AF';
 

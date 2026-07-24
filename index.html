@@ -45,10 +45,6 @@
     .app-container { padding-bottom: 96px; min-height: 100vh; }
     .premium-card { background: var(--card-bg); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid var(--card-border); box-shadow: 0 10px 30px rgba(0,0,0,0.04); border-radius: 1.5rem; transition: all 0.2s ease; }
     
-    .hero-ring { position: relative; display: flex; justify-content: center; align-items: center; width: 16rem; height: 16rem; border-radius: 50%; background: var(--card-bg); box-shadow: inset 0 0 0 2px var(--card-border), 0 0 40px var(--accent-glow); }
-    .hero-ring::before { content: ''; position: absolute; inset: -4px; border-radius: 50%; background: conic-gradient(var(--accent), transparent 60%); animation: spin 4s linear infinite; opacity: 0.4; z-index: 0; }
-    @keyframes spin { 100% { transform: rotate(360deg); } }
-
     .dock-bar { background: var(--card-bg); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); border-top: 1px solid var(--card-border); }
     .nav-btn { color: var(--text-muted); transition: all 0.3s ease; }
     .nav-active { color: var(--accent); }
@@ -100,13 +96,27 @@
 
     <div class="p-5 space-y-6 pt-0">
       
+      <!-- 1. TRACKER TAB -->
       <section id="page-tracker" class="page-section space-y-6">
-        <div class="flex flex-col items-center justify-center py-2">
-          <div class="hero-ring">
-            <div class="text-center z-10">
-              <span class="text-xs font-semibold uppercase tracking-widest block mb-2" style="color: var(--text-muted);">Last Smoke</span>
+        
+        <!-- Premium Apple-Style Progress Ring & Smart Status -->
+        <div class="flex flex-col items-center justify-center pt-2 pb-4">
+          <div class="relative flex justify-center items-center w-64 h-64 mx-auto mb-5">
+            <svg class="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="46" fill="transparent" stroke="var(--card-border)" stroke-width="2.5"></circle>
+              <circle id="heroProgressCircle" cx="50" cy="50" r="46" fill="transparent" stroke="var(--accent)" stroke-width="4" stroke-dasharray="289.02" stroke-dashoffset="289.02" stroke-linecap="round" class="transition-all duration-1000 ease-linear"></circle>
+            </svg>
+            <div class="z-10 flex flex-col items-center justify-center w-[200px] h-[200px] rounded-full" style="background: var(--card-bg); backdrop-filter: blur(20px); border: 1px solid var(--card-border); box-shadow: inset 0 0 30px rgba(0,0,0,0.2);">
+              <span class="text-[10px] font-bold uppercase tracking-widest block mb-2" style="color: var(--text-muted);">Current Gap</span>
               <div id="stopwatch" class="text-5xl font-light tracking-tighter" style="color: var(--text-main); font-variant-numeric: tabular-nums;">00:00:00</div>
             </div>
+          </div>
+          
+          <!-- Dynamic Smart Status Badge -->
+          <div id="smartStatusWrapper" class="px-5 py-2.5 rounded-full border transition-all duration-500 bg-gray-500/10 border-gray-500/20 text-gray-400">
+            <span id="smartStatusText" class="text-[11px] font-bold uppercase tracking-wider flex items-center gap-2">
+              <i data-lucide="info" class="w-3.5 h-3.5"></i> Waiting for first log
+            </span>
           </div>
         </div>
 
@@ -171,6 +181,7 @@
         </div>
       </section>
 
+      <!-- 2. INSIGHTS TAB -->
       <section id="page-insights" class="page-section space-y-4 hidden">
         <div class="flex justify-between items-center px-1 mb-2">
           <h2 class="text-xl font-bold" style="color: var(--text-main);">Analytics Mirror</h2>
@@ -307,11 +318,13 @@
         </div>
       </section>
 
+      <!-- 3. HISTORY TAB -->
       <section id="page-history" class="page-section space-y-6 hidden">
         <h2 class="text-xl font-bold px-1" style="color: var(--text-main);">Full History Log</h2>
         <div id="fullHistoryList" class="space-y-3"></div>
       </section>
       
+      <!-- 4. SETTINGS TAB -->
       <section id="page-settings" class="page-section space-y-6 hidden">
         <h2 class="text-xl font-bold px-1" style="color: var(--text-main);">Preferences</h2>
         
@@ -320,6 +333,14 @@
           <div class="flex justify-between items-center">
             <label class="text-xs font-semibold" style="color: var(--text-main);">Theme Mode</label>
             <select id="themeSelect" onchange="window.updateSettings()" class="bg-gray-500/10 text-xs p-2 rounded-xl font-semibold border border-gray-500/20 outline-none" style="color: var(--text-main);"><option value="default">Amber Glow</option><option value="carbon">Carbon Matrix</option><option value="white">Clean White & Blue</option></select>
+          </div>
+          <!-- NEW: Time Format Settings Toggle -->
+          <div class="flex justify-between items-center pt-2 border-t border-gray-500/10">
+            <label class="text-xs font-semibold" style="color: var(--text-main);">Time Format</label>
+            <select id="timeFormatSelect" onchange="window.updateSettings()" class="bg-gray-500/10 text-xs p-2 rounded-xl font-semibold border border-gray-500/20 outline-none" style="color: var(--text-main);">
+              <option value="12h">12-Hour (AM/PM)</option>
+              <option value="24h">24-Hour</option>
+            </select>
           </div>
           <div class="flex justify-between items-center pt-2 border-t border-gray-500/10">
             <label class="text-xs font-semibold" style="color: var(--text-main);">Lock Duration</label>
@@ -457,7 +478,6 @@
     </div>
   </div>
 
-  <!-- FIXED MODAL BACKDROP CLICK -->
   <div id="triggerModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex flex-col justify-end transition-opacity" onclick="if(event.target===this) window.closeTriggerModal()">
     <div class="premium-card p-6 rounded-b-none space-y-4 max-w-md mx-auto w-full">
       <div class="flex justify-between items-center">
