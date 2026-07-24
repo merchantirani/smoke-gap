@@ -87,7 +87,7 @@ function bootCore() {
       newHtml = `<i data-lucide="rocket" class="w-3.5 h-3.5 text-sky-500"></i><span class="text-sky-500">Setting your first baseline gap</span>`;
     }
     
-    // FIX: Only update innerHTML if it actually changes. Stops icon from blinking/disappearing!
+    // FIX: Optimized blinking icon issue. DOM is updated only if text actually changed.
     if (statusText.dataset.rawHtml !== newHtml) {
       statusWrapper.className = newClass;
       statusText.innerHTML = newHtml;
@@ -422,35 +422,37 @@ function renderAllCharts() {
   setBadge('badge-chart2', activeLogs.length > 0 ? `${activeLogs.length} Total` : '', 'bg-amber-500/10 text-amber-500 border-amber-500/20');
   setBadge('badge-chart3', activeLogs.length > 0 ? `${settings.currency} ${totalSpend}` : '', 'bg-red-500/10 text-red-500 border-red-500/20');
 
-  // FIX: X-Axis Labels (Date + Time fix)
+  // FIX: X-Axis Multi-line Labels (Array format prevents clipping)
   const labels = activeLogs.length > 0 ? activeLogs.map(l => {
     let d = new Date(l.timestamp);
     let tStr = formatAppTime(d);
     if (filter === 'today') return tStr;
-    if (filter === '7days') return d.toLocaleDateString([], {weekday:'short'}) + ' ' + tStr;
-    return d.toLocaleDateString([], {month:'short', day:'numeric'}) + ', ' + tStr;
+    if (filter === '7days') return [d.toLocaleDateString([], {weekday:'short'}), tStr];
+    return [d.toLocaleDateString([], {month:'short', day:'numeric'}), tStr];
   }) : ['No Data'];
   
   const gaps = activeLogs.length > 0 ? activeLogs.map(l => l.gap) : [0];
   const chartTextColor = settings.theme === 'white' ? '#64748B' : '#9CA3AF';
 
-  const proOptions = { responsive: true, maintainAspectRatio: false, animation: { duration: 600, easing: 'easeOutQuart' }, interaction: { mode: 'index', intersect: false }, layout: { padding: { left: -5, right: 5, top: 10, bottom: 0 } }, plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.95)', titleColor: '#FFFFFF', bodyColor: '#10B981', padding: 12, cornerRadius: 12, displayColors: false } }, scales: { x: { grid: { display: false }, ticks: { color: chartTextColor, font: { size: 9, weight: '600' }, maxTicksLimit: 4 } }, y: { beginAtZero: true, grid: { color: 'rgba(156, 163, 175, 0.05)', drawBorder: false }, ticks: { color: chartTextColor, font: { size: 9, weight: '600' }, padding: 6 } } } };
+  // FIX: Base options -> Removed negative padding to prevent edge clipping
+  const proOptions = { responsive: true, maintainAspectRatio: false, animation: { duration: 600, easing: 'easeOutQuart' }, interaction: { mode: 'index', intersect: false }, layout: { padding: { left: 0, right: 0, top: 10, bottom: 0 } }, plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.95)', titleColor: '#FFFFFF', bodyColor: '#10B981', padding: 12, cornerRadius: 12, displayColors: false } }, scales: { x: { grid: { display: false }, ticks: { color: chartTextColor, font: { size: 9, weight: '600' }, maxTicksLimit: 4 } }, y: { beginAtZero: true, grid: { color: 'rgba(156, 163, 175, 0.05)', drawBorder: false }, ticks: { color: chartTextColor, font: { size: 9, weight: '600' }, padding: 6 } } } };
   const createGradient = (ctx, colorHex) => { let g = ctx.createLinearGradient(0, 0, 0, 180); g.addColorStop(0, colorHex); g.addColorStop(1, 'rgba(0,0,0,0)'); return g; };
   function upsertChart(key, ctx, config) { const existing = myChartInstances[key]; if (existing && existing.config.type === config.type) { existing.data = config.data; if (config.options) existing.options = config.options; existing.update(); } else { if (existing) existing.destroy(); myChartInstances[key] = new Chart(ctx, config); } }
 
   const ctx1 = document.getElementById('chart1').getContext('2d');
-  upsertChart(1, ctx1, { type: 'line', data: { labels: labels, datasets: [{ label: 'Gap (mins)', data: gaps, borderColor: '#10B981', backgroundColor: createGradient(ctx1, 'rgba(16, 185, 129, 0.25)'), borderWidth: 3, tension: 0.4, fill: true, pointRadius: 0, pointHitRadius: 15 }] }, options: proOptions, plugins: [crosshairPlugin] });
+  // FIX: Added offset to X-axis to center the line
+  upsertChart(1, ctx1, { type: 'line', data: { labels: labels, datasets: [{ label: 'Gap (mins)', data: gaps, borderColor: '#10B981', backgroundColor: createGradient(ctx1, 'rgba(16, 185, 129, 0.25)'), borderWidth: 3, tension: 0.4, fill: true, pointRadius: 0, pointHitRadius: 15 }] }, options: { ...proOptions, scales: { ...proOptions.scales, x: { ...proOptions.scales.x, offset: true } } }, plugins: [crosshairPlugin] });
 
   let dayMap = {}; activeLogs.forEach(l => { let d = document.getElementById('insightsDateFilter').value === '7days' ? new Date(l.timestamp).toLocaleDateString([], {weekday:'short'}) : new Date(l.timestamp).toLocaleDateString([], {month:'short', day:'numeric'}); dayMap[d] = (dayMap[d] || 0) + 1; });
   let dayLabels = Object.keys(dayMap), dayCounts = Object.values(dayMap); if(dayLabels.length === 0) { dayLabels = ['Today']; dayCounts = [0]; }
   const ctx2 = document.getElementById('chart2').getContext('2d');
   
-  // FIX: Daily volume chart bar edge offset issue
-  upsertChart(2, ctx2, { type: 'bar', data: { labels: dayLabels, datasets: [{ label: 'Count', data: dayCounts, backgroundColor: settings.theme === 'white' ? '#2563EB' : '#F59E0B', borderRadius: Number.MAX_VALUE, borderSkipped: false, barThickness: 16 }, { label: 'Limit', data: dayLabels.map(() => settings.dailyLimit), type: 'line', borderColor: '#EF4444', borderWidth: 2, borderDash: [4,4], pointRadius: 0 }] }, options: { ...proOptions, scales: { x: { ...proOptions.scales.x, offset: true }, y: { ...proOptions.scales.y } } }, plugins: [crosshairPlugin] });
+  // FIX: Offset true & maxBarThickness to prevent left clipping
+  upsertChart(2, ctx2, { type: 'bar', data: { labels: dayLabels, datasets: [{ label: 'Count', data: dayCounts, backgroundColor: settings.theme === 'white' ? '#2563EB' : '#F59E0B', borderRadius: Number.MAX_VALUE, borderSkipped: false, maxBarThickness: 16 }, { label: 'Limit', data: dayLabels.map(() => settings.dailyLimit), type: 'line', borderColor: '#EF4444', borderWidth: 2, borderDash: [4,4], pointRadius: 0 }] }, options: { ...proOptions, scales: { x: { ...proOptions.scales.x, offset: true }, y: { ...proOptions.scales.y } } }, plugins: [crosshairPlugin] });
 
   let cumulativeSpend = 0; let spendData = gaps.map(() => { cumulativeSpend += (settings.packPrice / settings.packSize); return cumulativeSpend.toFixed(1); });
   const ctx3 = document.getElementById('chart3').getContext('2d');
-  upsertChart(3, ctx3, { type: 'line', data: { labels: labels, datasets: [{ label: 'Spend', data: spendData, borderColor: '#EF4444', backgroundColor: createGradient(ctx3, 'rgba(239, 68, 68, 0.2)'), fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0, pointHitRadius: 15 }] }, options: proOptions, plugins: [crosshairPlugin] });
+  upsertChart(3, ctx3, { type: 'line', data: { labels: labels, datasets: [{ label: 'Spend', data: spendData, borderColor: '#EF4444', backgroundColor: createGradient(ctx3, 'rgba(239, 68, 68, 0.2)'), fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0, pointHitRadius: 15 }] }, options: { ...proOptions, scales: { ...proOptions.scales, x: { ...proOptions.scales.x, offset: true } } }, plugins: [crosshairPlugin] });
 
   const ctx5 = document.getElementById('chart5').getContext('2d');
   const triggerCounts = triggers.map(t => activeLogs.filter(l => (l.tags && l.tags.includes(t)) || l.trigger === t).length);
@@ -469,8 +471,10 @@ function renderAllCharts() {
   const peakPartIdx = partTotals.some(v => v > 0) ? partTotals.indexOf(Math.max(...partTotals)) : -1;
   setBadge('badge-chart6', peakPartIdx >= 0 ? `Peak: ${dayParts[peakPartIdx]}` : '', 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20');
   const chart6El = document.getElementById('chart6');
+  
+  // FIX: Trigger Timing chart layout. maxBarThickness controls the extreme width, borderRadius: 0 fixes the stacked gap issue, and offset: true adds padding so left/right bars don't cut.
   if (chart6El) {
-    upsertChart(6, chart6El.getContext('2d'), { type: 'bar', data: { labels: dayParts, datasets: triggers.map((t, i) => ({ label: t, data: triggerByPart[t], backgroundColor: palette[i % palette.length], borderRadius: 4, stack: 'triggers' })) }, options: { ...proOptions, scales: { x: { ...proOptions.scales.x, stacked: true }, y: { ...proOptions.scales.y, stacked: true, ticks: { ...proOptions.scales.y.ticks, precision: 0 } } }, plugins: { ...proOptions.plugins, legend: { display: true, position: 'bottom', labels: { boxWidth: 8, padding: 10, font: { size: 9 }, color: chartTextColor } } } } });
+    upsertChart(6, chart6El.getContext('2d'), { type: 'bar', data: { labels: dayParts, datasets: triggers.map((t, i) => ({ label: t, data: triggerByPart[t], backgroundColor: palette[i % palette.length], borderRadius: 0, maxBarThickness: 32, stack: 'triggers' })) }, options: { ...proOptions, scales: { x: { ...proOptions.scales.x, stacked: true, offset: true }, y: { ...proOptions.scales.y, stacked: true, ticks: { ...proOptions.scales.y.ticks, precision: 0 } } }, plugins: { ...proOptions.plugins, legend: { display: true, position: 'bottom', labels: { boxWidth: 8, padding: 10, font: { size: 9 }, color: chartTextColor } } } } });
   }
 
   renderHeatMap('mapContainer', activeLogs);
