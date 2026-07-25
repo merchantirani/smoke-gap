@@ -40,36 +40,40 @@ let isHolding = false;
 
 window.startHold = function(e) {
   if (e && e.cancelable) e.preventDefault();
+  
   if (new Date().getTime() < lockEndTime || waveEndTime > 0) {
       if (waveEndTime > 0) showToast("Wave in progress. Can't log now!");
+      else showToast("Wait for the lock to clear 🔒");
       return;
   }
+  
   if (settings.haptics && navigator.vibrate) navigator.vibrate(15);
   isHolding = true;
   holdStartTime = Date.now();
+  
   const progressEl = document.getElementById('holdProgress');
   const textEl = document.getElementById('holdText');
   const iconEl = document.getElementById('holdIcon');
   
-  textEl.innerText = "Hold...";
-  iconEl.classList.add('text-red-500');
-  iconEl.classList.remove('text-gray-400');
+  if(textEl) textEl.innerText = "Hold...";
+  if(iconEl) { iconEl.classList.add('text-red-500'); iconEl.classList.remove('text-gray-400'); }
   
   function update() {
     if (!isHolding) return;
     const elapsed = Date.now() - holdStartTime;
     const pct = Math.min((elapsed / 800) * 100, 100); // 800ms friction
-    progressEl.style.width = pct + '%';
+    if(progressEl) progressEl.style.width = pct + '%';
     
     if (elapsed >= 800) {
       isHolding = false;
-      progressEl.style.width = '100%';
-      textEl.innerText = "Done";
+      if(progressEl) progressEl.style.width = '100%';
+      if(textEl) textEl.innerText = "Done";
       if (settings.haptics && navigator.vibrate) navigator.vibrate([30, 50, 30]);
       handleLogClick();
       setTimeout(() => { 
-        progressEl.style.width = '0%'; textEl.innerText = "Hold to Smoke"; 
-        iconEl.classList.add('text-gray-400'); iconEl.classList.remove('text-red-500'); 
+        if(progressEl) progressEl.style.width = '0%'; 
+        if(textEl) textEl.innerText = "Hold to Smoke"; 
+        if(iconEl) { iconEl.classList.add('text-gray-400'); iconEl.classList.remove('text-red-500'); }
       }, 500);
     } else {
       holdTimerId = requestAnimationFrame(update);
@@ -80,15 +84,23 @@ window.startHold = function(e) {
 
 window.cancelHold = function(e) {
   if (e && e.cancelable) e.preventDefault();
+  
+  // Show helper toast if user just clicked instead of holding
+  if (isHolding && Date.now() - holdStartTime < 800 && Date.now() - holdStartTime > 10) {
+     showToast("Press and hold to log ⏱️");
+  }
+  
   isHolding = false;
   if (holdTimerId) cancelAnimationFrame(holdTimerId);
+  
+  if (new Date().getTime() < lockEndTime) return; // Do not overwrite LOCKED UI text
+  
   const progressEl = document.getElementById('holdProgress');
   const textEl = document.getElementById('holdText');
   const iconEl = document.getElementById('holdIcon');
-  progressEl.style.width = '0%';
-  textEl.innerText = "Hold to Smoke";
-  iconEl.classList.add('text-gray-400');
-  iconEl.classList.remove('text-red-500');
+  if(progressEl) progressEl.style.width = '0%';
+  if(textEl) textEl.innerText = "Hold to Smoke";
+  if(iconEl) { iconEl.classList.add('text-gray-400'); iconEl.classList.remove('text-red-500'); }
 }
 
 Chart.defaults.color = '#64748B';
@@ -197,7 +209,7 @@ function checkPeakNudge() {
   if(logs.length < 5) return;
   const now = new Date();
   const dStr = now.toDateString();
-  if(lastPeakNudgeDate === dStr) return; // Once per day
+  if(lastPeakNudgeDate === dStr) return; 
   
   let hours = {}; logs.forEach(l => { let h = new Date(l.timestamp).getHours(); hours[h] = (hours[h]||0)+1; });
   let peakHr = parseInt(Object.keys(hours).reduce((a,b) => hours[a] > hours[b] ? a : b));
@@ -408,7 +420,12 @@ function checkLock() {
   }
 }
 
-function openWaveModal() { if(new Date().getTime() < lockEndTime || waveEndTime>0) return; document.getElementById('waveModal').classList.remove('hidden'); }
+// CRITICAL FIX: "Ride It Out" should not be blocked if the user is in the smoke cooldown lock!
+function openWaveModal() { 
+  if(waveEndTime>0) return; 
+  document.getElementById('waveModal').classList.remove('hidden'); 
+}
+
 function closeWaveModal() { document.getElementById('waveModal').classList.add('hidden'); }
 function startWave(mins) {
   closeWaveModal();

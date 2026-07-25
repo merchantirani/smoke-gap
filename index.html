@@ -88,7 +88,8 @@
     .custom-input-wrapper input[type="date"], .custom-input-wrapper input[type="time"] { width: 100%; background: transparent; border: none; outline: none; color: var(--text-main); font-weight: 700; font-size: 0.95rem; padding-right: 32px; appearance: none; -webkit-appearance: none; }
     .custom-input-wrapper input::-webkit-calendar-picker-indicator { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); opacity: 0.6; cursor: pointer; }
     
-    .hold-btn { position: relative; overflow: hidden; user-select: none; -webkit-touch-callout: none; }
+    /* CRITICAL FIX: touch-action: none prevents mobile browser from cancelling the hold gesture */
+    .hold-btn { position: relative; overflow: hidden; user-select: none; -webkit-touch-callout: none; touch-action: none; }
     #holdProgress { position: absolute; top: 0; left: 0; height: 100%; width: 0%; background: rgba(239, 68, 68, 0.15); pointer-events: none; transition: width 0.05s linear; }
   </style>
 </head>
@@ -135,13 +136,11 @@
       
       <section id="page-tracker" class="page-section space-y-4">
         
-        <!-- NEW: The "Why" Identity Tag -->
         <div id="motivationTag" class="hidden mx-auto mb-2 w-max px-4 py-1.5 rounded-full border text-[10px] font-bold tracking-widest uppercase transition-all" style="background: var(--input-bg); border-color: var(--card-border); color: var(--text-muted);">
           FOR: <span id="motivationText" style="color: var(--text-main);">--</span>
         </div>
 
         <div class="flex flex-col items-center justify-center pt-2 pb-2">
-          <!-- NEW: Interactive Hero Ring -->
           <div onclick="window.showStatDetail('currentGap')" class="relative flex justify-center items-center w-64 h-64 mx-auto mb-5 cursor-pointer active:scale-95 transition-transform">
             <svg class="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 100 100">
               <circle cx="50" cy="50" r="46" fill="transparent" stroke="var(--card-border)" stroke-width="2.5"></circle>
@@ -160,7 +159,6 @@
           </div>
         </div>
 
-        <!-- NEW: Flipped Action Zone Hierarchy & Hold Mechanic -->
         <div class="grid grid-cols-2 gap-3 relative">
           <!-- Ride it out (Primary) -->
           <button onclick="window.openWaveModal()" class="py-4 flex flex-col items-center justify-center rounded-2xl active:scale-95 transition-all shadow-[0_10px_25px_var(--accent-glow)] border border-transparent" style="background: var(--accent); color: white;">
@@ -182,7 +180,6 @@
           </button>
         </div>
 
-        <!-- Stats Grid (Added Resisted) -->
         <div class="grid grid-cols-2 gap-3">
           <div onclick="window.showStatDetail('spend')" class="premium-card p-4 active:scale-95 transition-transform cursor-pointer">
             <div class="flex items-center gap-2 mb-2">
@@ -201,7 +198,6 @@
             <p id="limitWarningMsg" class="text-[9px] font-semibold mt-1 hidden text-amber-500">Tomorrow is a fresh start.</p>
           </div>
 
-          <!-- NEW: Cravings Defeated Card -->
           <div onclick="window.showStatDetail('resisted')" class="premium-card p-4 active:scale-95 transition-transform cursor-pointer">
             <div class="flex items-center gap-2 mb-2">
               <div class="w-6 h-6 rounded-full bg-sky-500/10 flex items-center justify-center text-sky-500"><i data-lucide="shield" class="w-3 h-3"></i></div>
@@ -413,7 +409,6 @@
         <div class="premium-card p-5 space-y-4">
           <h3 class="text-[10px] font-bold uppercase tracking-widest border-b pb-2 flex items-center gap-2" style="color: var(--text-muted); border-color: var(--card-border);"><i data-lucide="palette" class="w-3 h-3"></i> Identity & Appearance</h3>
           
-          <!-- NEW: Motivation Settings -->
           <div class="flex flex-col">
             <label class="text-xs font-semibold mb-1" style="color: var(--text-main);">Why are you widening the gap?</label>
             <input type="text" id="motivationInput" onchange="window.updateSettings()" placeholder="e.g., Health, Savings, Daughter" class="w-full p-2.5 rounded-xl border text-xs font-semibold outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);">
@@ -624,7 +619,6 @@
         <p class="text-[11px] leading-relaxed" style="color: var(--text-muted);">Cravings usually peak and pass within 3 to 5 minutes.<br>How long do you want to hold on?</p>
       </div>
       <div class="grid grid-cols-3 gap-3">
-        <!-- NEW: Recommended Badge on 5 Mins -->
         <button onclick="window.startWave(5)" class="relative py-4 flex flex-col items-center justify-center rounded-2xl bg-sky-500/10 border border-sky-500/20 active:scale-95 transition-transform text-sky-500 font-bold overflow-hidden">
           <div class="absolute top-0 inset-x-0 bg-sky-500 text-white text-[8px] uppercase tracking-widest py-0.5 font-bold">Recommended</div>
           <span class="numeric-display text-xl mt-3">5</span><span class="text-[9px] uppercase tracking-wider">Mins</span>
