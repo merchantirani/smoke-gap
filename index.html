@@ -41,103 +41,62 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
     :root { 
-      --bg-body: #090A0F; 
-      --text-main: #F3F4F6; 
-      --text-muted: #9CA3AF; 
-      --card-bg: rgba(22, 25, 35, 0.7); 
-      --card-border: rgba(255, 255, 255, 0.06); 
-      --accent: #F59E0B; 
-      --accent-glow: rgba(245, 158, 11, 0.2); 
-      
-      --overlay-bg: rgba(0, 0, 0, 0.75);
-      --modal-bg: #11131A;
-      --input-bg: rgba(255, 255, 255, 0.04);
+      --bg-body: #090A0F; --text-main: #F3F4F6; --text-muted: #9CA3AF; 
+      --card-bg: rgba(22, 25, 35, 0.7); --card-border: rgba(255, 255, 255, 0.06); 
+      --accent: #F59E0B; --accent-glow: rgba(245, 158, 11, 0.2); 
+      --overlay-bg: rgba(0, 0, 0, 0.75); --modal-bg: #11131A; --input-bg: rgba(255, 255, 255, 0.04);
     }
     html.theme-carbon, body.theme-carbon { 
-      --bg-body: #000000; 
-      --text-main: #FFFFFF; 
-      --text-muted: #6B7280; 
-      --card-bg: rgba(18, 18, 18, 0.85); 
-      --card-border: rgba(255, 255, 255, 0.05); 
-      --accent: #3B82F6; 
-      --accent-glow: rgba(59, 130, 246, 0.2); 
-      
-      --overlay-bg: rgba(0, 0, 0, 0.85);
-      --modal-bg: #121212;
-      --input-bg: rgba(255, 255, 255, 0.06);
+      --bg-body: #000000; --text-main: #FFFFFF; --text-muted: #6B7280; 
+      --card-bg: rgba(18, 18, 18, 0.85); --card-border: rgba(255, 255, 255, 0.05); 
+      --accent: #3B82F6; --accent-glow: rgba(59, 130, 246, 0.2); 
+      --overlay-bg: rgba(0, 0, 0, 0.85); --modal-bg: #121212; --input-bg: rgba(255, 255, 255, 0.06);
     }
     html.theme-white, body.theme-white { 
-      --bg-body: #F8FAFC; 
-      --text-main: #0F172A; 
-      --text-muted: #64748B; 
-      --card-bg: rgba(255, 255, 255, 0.85); 
-      --card-border: rgba(203, 213, 225, 0.6); 
-      --accent: #2563EB; 
-      --accent-glow: rgba(37, 99, 235, 0.15); 
-      
-      --overlay-bg: rgba(15, 23, 42, 0.25);
-      --modal-bg: #FFFFFF;
-      --input-bg: rgba(0, 0, 0, 0.03);
+      --bg-body: #F8FAFC; --text-main: #0F172A; --text-muted: #64748B; 
+      --card-bg: rgba(255, 255, 255, 0.85); --card-border: rgba(203, 213, 225, 0.6); 
+      --accent: #2563EB; --accent-glow: rgba(37, 99, 235, 0.15); 
+      --overlay-bg: rgba(15, 23, 42, 0.25); --modal-bg: #FFFFFF; --input-bg: rgba(0, 0, 0, 0.03);
     }
     
     html, body { background-color: var(--bg-body); color: var(--text-main); font-family: 'General Sans', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-tap-highlight-color: transparent; }
-    
     button, .nav-btn, .drag-handle, .dock-bar { user-select: none; -webkit-user-select: none; }
     
-    .brand-title { 
-      font-family: 'Clash Display', sans-serif; 
-      font-weight: 700; 
-      letter-spacing: -0.03em; 
-      background: linear-gradient(135deg, var(--accent), var(--text-main));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
+    .brand-title { font-family: 'Clash Display', sans-serif; font-weight: 700; letter-spacing: -0.03em; background: linear-gradient(135deg, var(--accent), var(--text-main)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     .numeric-display { font-family: 'Space Grotesk', monospace; font-variant-numeric: tabular-nums; }
-    
     .app-container { padding-bottom: 96px; min-height: 100vh; }
     .premium-card { background: var(--card-bg); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid var(--card-border); box-shadow: 0 10px 30px rgba(0,0,0,0.04); border-radius: 1.5rem; transition: all 0.2s ease; }
-    
     .dock-bar { background: var(--card-bg); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); border-top: 1px solid var(--card-border); }
     .nav-btn { color: var(--text-muted); transition: all 0.3s ease; }
     .nav-active { color: var(--accent); }
     .nav-active i { stroke-width: 2.5; filter: drop-shadow(0 0 8px var(--accent-glow)); }
-    
     .drag-handle { touch-action: none; cursor: grab; padding: 8px; opacity: 0.4; }
     .drag-handle:active { cursor: grabbing; opacity: 1; }
     .sortable-ghost { opacity: 0.2; transform: scale(0.96); }
-    
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    
     .chart-wrapper { position: relative; width: 100%; height: 180px; }
-    
     .page-section { animation: fadeIn 0.3s ease-out forwards; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-
     .shake-anim { animation: shakeDots 0.4s ease; }
     @keyframes shakeDots { 0%,100% { transform: translateX(0); } 20%,60% { transform: translateX(-8px); } 40%,80% { transform: translateX(8px); } }
-
-    @keyframes pulse-breathe {
-      0%, 100% { transform: scale(0.8); opacity: 0.15; }
-      50% { transform: scale(1.6); opacity: 0.3; }
-    }
-
-    @keyframes live-pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(0.85); }
-    }
+    @keyframes pulse-breathe { 0%, 100% { transform: scale(0.8); opacity: 0.15; } 50% { transform: scale(1.6); opacity: 0.3; } }
+    @keyframes live-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.85); } }
     .live-dot { animation: live-pulse 2s infinite ease-in-out; }
-
-    .takeover-bg {
-      background: radial-gradient(circle at center, var(--accent-glow) 0%, var(--bg-body) 80%);
-    }
-
+    .takeover-bg { background: radial-gradient(circle at center, var(--accent-glow) 0%, var(--bg-body) 80%); }
     .custom-input-wrapper { position: relative; display: flex; align-items: center; width: 100%; }
     .custom-input-wrapper input[type="date"], .custom-input-wrapper input[type="time"] { width: 100%; background: transparent; border: none; outline: none; color: var(--text-main); font-weight: 700; font-size: 0.95rem; padding-right: 32px; appearance: none; -webkit-appearance: none; }
     .custom-input-wrapper input::-webkit-calendar-picker-indicator { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); opacity: 0.6; cursor: pointer; }
+    
+    .intensity-btn.active { background: var(--accent); color: white; border-color: transparent; box-shadow: 0 4px 12px var(--accent-glow); transform: scale(1.1); }
   </style>
 </head>
 <body>
+
+  <!-- Loading Skeleton -->
+  <div id="appSkeleton" class="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-[var(--bg-body)] transition-opacity duration-500 pointer-events-none">
+    <div class="w-12 h-12 border-4 border-gray-500/20 border-t-[var(--accent)] rounded-full animate-spin"></div>
+  </div>
 
   <div id="lockScreen" class="fixed inset-0 flex flex-col items-center justify-center hidden" style="z-index: 10000; background-color: var(--bg-body);">
     <div class="text-center space-y-8">
@@ -219,6 +178,8 @@
               <p class="text-[9px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Today's Sticks</p>
             </div>
             <p id="todayCount" class="numeric-display text-xl font-bold" style="color: var(--text-main);">0 / 15</p>
+            <!-- New Limit Warning Msg -->
+            <p id="limitWarningMsg" class="text-[9px] font-semibold mt-1 hidden text-amber-500">Tomorrow is a fresh start.</p>
           </div>
 
           <div onclick="window.showStatDetail('prevGap')" class="premium-card p-4 active:scale-95 transition-transform cursor-pointer">
@@ -244,8 +205,7 @@
           <div class="flex justify-between items-end mb-3 relative z-10">
             <div>
               <p class="text-[10px] font-bold text-sky-500 uppercase tracking-widest flex items-center gap-1"><i data-lucide="waves" class="w-3 h-3"></i> Riding the Wave</p>
-              <p class="text-[10px] mt-1 font-medium" style="color: var(--text-main);">Cravings naturally drop after 3-5 mins.</p>
-              <p class="text-[9px] mt-0.5" style="color: var(--text-muted);">Breathe in... Hold... Exhale...</p>
+              <p id="waveMotivationalText" class="text-[11px] mt-1.5 font-medium leading-snug max-w-[200px] transition-all duration-500" style="color: var(--text-main);">Breathe in... Hold... Exhale...</p>
             </div>
             <span id="waveCountdown" class="numeric-display text-3xl font-bold tabular-nums" style="color: var(--text-main);">--:--</span>
           </div>
@@ -499,8 +459,15 @@
         </div>
 
         <div class="premium-card p-5 space-y-3">
-          <h3 class="text-[10px] font-bold uppercase tracking-widest border-b pb-2 flex items-center gap-2" style="color: var(--text-muted); border-color: var(--card-border);"><i data-lucide="database" class="w-3 h-3"></i> Data & Security</h3>
-          <button onclick="window.exportLogsCSV()" class="w-full py-3 bg-sky-500/10 text-sky-500 font-bold text-xs rounded-xl text-center active:scale-95 transition-transform border border-sky-500/20 flex items-center justify-center gap-2"><i data-lucide="download" class="w-4 h-4"></i> Export Logs (CSV)</button>
+          <h3 class="text-[10px] font-bold uppercase tracking-widest border-b pb-2 flex items-center gap-2" style="color: var(--text-muted); border-color: var(--card-border);"><i data-lucide="database" class="w-3 h-3"></i> Data Backup & Security</h3>
+          
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="window.exportJSON()" class="py-3 bg-emerald-500/10 text-emerald-500 font-bold text-[11px] rounded-xl text-center active:scale-95 transition-transform border border-emerald-500/20 flex flex-col items-center justify-center"><i data-lucide="upload-cloud" class="w-4 h-4 mb-1"></i> Backup Data</button>
+            <button onclick="document.getElementById('importFileInput').click()" class="py-3 bg-blue-500/10 text-blue-500 font-bold text-[11px] rounded-xl text-center active:scale-95 transition-transform border border-blue-500/20 flex flex-col items-center justify-center"><i data-lucide="download-cloud" class="w-4 h-4 mb-1"></i> Restore Data</button>
+            <input type="file" id="importFileInput" class="hidden" accept=".json" onchange="window.importJSON(event)">
+          </div>
+
+          <button onclick="window.exportLogsCSV()" class="w-full py-3 bg-sky-500/10 text-sky-500 font-bold text-xs rounded-xl text-center active:scale-95 transition-transform border border-sky-500/20 flex items-center justify-center gap-2"><i data-lucide="file-text" class="w-4 h-4"></i> Export CSV (Spreadsheet)</button>
           <button onclick="window.setupPin()" id="pinStatusBtn" class="w-full py-3 bg-indigo-500/10 text-indigo-500 font-bold text-xs rounded-xl text-center active:scale-95 transition-transform">Set App PIN</button>
           <div class="pt-2 grid grid-cols-2 gap-2">
             <button onclick="window.resetData('24h')" class="py-3 bg-orange-500/10 text-orange-500 font-bold text-[11px] rounded-xl text-center active:scale-95 transition-transform border border-orange-500/20">Wipe 24h Logs</button>
@@ -511,7 +478,7 @@
     </div>
   </div>
 
-  <div class="fixed bottom-0 left-0 right-0 z-50 dock-bar pb-6 pt-2 px-4 shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
+  <div class="fixed bottom-0 left-0 right-0 z-40 dock-bar pb-6 pt-2 px-4 shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
     <nav class="flex justify-between items-center max-w-md mx-auto">
       <button onclick="window.switchTab('tracker')" id="tab-tracker" class="nav-btn nav-active flex flex-col items-center p-2 w-full">
         <i data-lucide="clock" class="w-6 h-6 mb-1"></i><span class="text-[9px] font-bold uppercase tracking-wider">Track</span>
@@ -528,6 +495,7 @@
     </nav>
   </div>
 
+  <!-- EDIT MODAL WITH INTENSITY SCALE -->
   <div id="triggerModal" class="hidden fixed inset-0 backdrop-blur-sm z-50 flex flex-col justify-end transition-opacity" style="background-color: var(--overlay-bg);" onclick="if(event.target===this) window.closeTriggerModal()">
     <div class="p-6 rounded-t-3xl space-y-4 max-w-md mx-auto w-full border-t shadow-2xl" style="background-color: var(--modal-bg); border-color: var(--card-border);">
       <div class="flex justify-between items-center mb-1">
@@ -551,30 +519,58 @@
           </div>
         </div>
       </div>
+      
+      <div>
+        <div class="flex justify-between items-center mb-2">
+          <p class="text-[10px] uppercase tracking-widest font-bold" style="color: var(--text-muted);">Craving Intensity</p>
+          <p id="editIntensityLabel" class="text-[10px] font-bold" style="color: var(--accent);">Moderate</p>
+        </div>
+        <div class="flex justify-between gap-2 mb-4">
+          <button onclick="window.setEditIntensity(1)" id="editInt1" class="w-10 h-10 rounded-full border text-xs font-bold transition-all" style="border-color: var(--card-border); color: var(--text-main);">1</button>
+          <button onclick="window.setEditIntensity(2)" id="editInt2" class="w-10 h-10 rounded-full border text-xs font-bold transition-all" style="border-color: var(--card-border); color: var(--text-main);">2</button>
+          <button onclick="window.setEditIntensity(3)" id="editInt3" class="w-10 h-10 rounded-full border text-xs font-bold transition-all" style="border-color: var(--card-border); color: var(--text-main);">3</button>
+          <button onclick="window.setEditIntensity(4)" id="editInt4" class="w-10 h-10 rounded-full border text-xs font-bold transition-all" style="border-color: var(--card-border); color: var(--text-main);">4</button>
+          <button onclick="window.setEditIntensity(5)" id="editInt5" class="w-10 h-10 rounded-full border text-xs font-bold transition-all" style="border-color: var(--card-border); color: var(--text-main);">5</button>
+        </div>
+      </div>
+
       <p class="text-[10px] uppercase tracking-widest font-bold -mb-1" style="color: var(--text-muted);">Tags</p>
       <div id="modalTriggerGrid" class="flex flex-wrap gap-2.5 pt-1"></div>
     </div>
   </div>
 
+  <!-- TAKEOVER WITH INTENSITY -->
   <div id="smokeTakeover" class="hidden fixed inset-0 z-[20000] opacity-0 transition-opacity duration-500">
     <div class="absolute inset-0 takeover-bg backdrop-blur-2xl cursor-pointer" onclick="window.closeSmokeTakeover()"></div>
     <button onclick="window.cancelSmokeTakeover(event)" class="absolute top-14 right-6 z-[20001] px-4 py-2 bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-bold uppercase tracking-wider rounded-full backdrop-blur-md flex items-center gap-1.5 active:scale-95 transition-all"><i data-lucide="x" class="w-3 h-3"></i> Cancel</button>
     <div class="absolute inset-0 flex flex-col justify-between pointer-events-none">
-      <div class="flex-1 flex flex-col items-center justify-center p-6 space-y-8">
-        <p class="text-[var(--text-main)] font-bold tracking-widest uppercase text-xs opacity-90 mt-12">Light your cigarette.</p>
-        <div class="relative flex justify-center items-center w-48 h-48">
+      <div class="flex-1 flex flex-col items-center justify-center p-6 space-y-8 mt-10">
+        <p class="text-[var(--text-main)] font-bold tracking-widest uppercase text-xs opacity-90">Light your cigarette.</p>
+        <div class="relative flex justify-center items-center w-40 h-40">
           <svg class="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 120 120">
             <circle cx="60" cy="60" r="54" fill="transparent" stroke="var(--card-border)" stroke-width="4"></circle>
             <circle id="takeoverRing" cx="60" cy="60" r="54" fill="transparent" stroke="var(--accent)" stroke-width="6" stroke-dasharray="339.29" stroke-dashoffset="339.29" stroke-linecap="round" style="transition: stroke-dashoffset 1s linear; filter: drop-shadow(0 0 12px var(--accent-glow));"></circle>
           </svg>
-          <span id="takeoverNumber" class="numeric-display text-7xl font-light z-10" style="color: var(--text-main);">6</span>
+          <span id="takeoverNumber" class="numeric-display text-6xl font-light z-10" style="color: var(--text-main);">6</span>
         </div>
         <p id="takeoverFact" class="text-[11px] font-medium text-center text-gray-400 opacity-0 transition-opacity duration-1000 max-w-[200px] leading-relaxed">It's been -- since your last one.</p>
       </div>
-      <div class="p-6 pb-12 w-full max-w-md mx-auto pointer-events-auto">
-        <p class="text-[10px] uppercase tracking-widest text-center text-gray-500 font-bold mb-4">Tap to tag (optional)</p>
+      <div class="p-6 pb-10 w-full max-w-md mx-auto pointer-events-auto bg-gradient-to-t from-[var(--bg-body)] to-transparent">
+        
+        <div class="mb-5 text-center">
+          <p class="text-[10px] uppercase tracking-widest font-bold mb-2" style="color: var(--text-muted);">Craving Intensity</p>
+          <div class="flex justify-center gap-2">
+            <button onclick="window.setTakeoverIntensity(1)" id="toInt1" class="w-9 h-9 rounded-full border text-xs font-bold transition-all" style="border-color: var(--card-border); color: var(--text-main);">1</button>
+            <button onclick="window.setTakeoverIntensity(2)" id="toInt2" class="w-9 h-9 rounded-full border text-xs font-bold transition-all" style="border-color: var(--card-border); color: var(--text-main);">2</button>
+            <button onclick="window.setTakeoverIntensity(3)" id="toInt3" class="w-9 h-9 rounded-full border text-xs font-bold transition-all bg-[var(--accent)] text-white shadow-[0_4px_12px_var(--accent-glow)] scale-110 border-transparent">3</button>
+            <button onclick="window.setTakeoverIntensity(4)" id="toInt4" class="w-9 h-9 rounded-full border text-xs font-bold transition-all" style="border-color: var(--card-border); color: var(--text-main);">4</button>
+            <button onclick="window.setTakeoverIntensity(5)" id="toInt5" class="w-9 h-9 rounded-full border text-xs font-bold transition-all" style="border-color: var(--card-border); color: var(--text-main);">5</button>
+          </div>
+          <p id="takeoverIntensityLabel" class="text-[9px] font-bold mt-1.5" style="color: var(--accent);">Moderate</p>
+        </div>
+
+        <p class="text-[10px] uppercase tracking-widest text-center text-gray-500 font-bold mb-2">Tap to tag (optional)</p>
         <div id="takeoverTagsGrid" class="flex flex-wrap justify-center gap-2.5"></div>
-        <p class="text-[9px] text-center text-gray-500 mt-6 opacity-60">Tap anywhere outside to skip</p>
       </div>
     </div>
   </div>
@@ -664,7 +660,7 @@
     <div id="mapModalContainer" class="w-full flex-1 rounded-3xl overflow-hidden shadow-2xl" style="border: 1px solid var(--card-border);"></div>
   </div>
 
-  <div id="toastContainer" class="fixed bottom-24 left-0 right-0 z-[10001] flex flex-col items-center gap-2 pointer-events-none px-6"></div>
+  <div id="toastContainer" class="fixed bottom-24 left-0 right-0 z-[10001] flex flex-col items-center justify-end gap-2 pointer-events-none px-6"></div>
 
   <div id="confirmModal" class="hidden fixed inset-0 backdrop-blur-sm z-[10000] flex items-center justify-center p-6" style="background-color: var(--overlay-bg);" onclick="if(event.target===this) window.closeConfirmModal()">
     <div class="p-6 rounded-3xl space-y-4 max-w-xs w-full text-center border shadow-2xl" style="background-color: var(--modal-bg); border-color: var(--card-border);">
