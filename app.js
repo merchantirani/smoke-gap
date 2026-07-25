@@ -4,10 +4,7 @@ let settings = Object.assign({}, DEFAULT_SETTINGS, JSON.parse(localStorage.getIt
 if (!settings.packSize || settings.packSize <= 0) settings.packSize = 20;
 if (!settings.timeFormat) settings.timeFormat = '12h';
 
-// FIX 3: Default Tags update
 let triggers = JSON.parse(localStorage.getItem('smoke_triggers')) || ['🏠 Home', '💼 Work', '🚗 Car / Commute', '🎉 Outside / Social', '😰 Stress', '🍽️ After Meal', '☕ Chai / Coffee', '📱 Boredom', '👥 Peer Pressure', '🍺 Alcohol', '😡 Anger', '🌙 Habit'];
-
-// FIX 3: Vibrant 20-Color Palette for charts
 const CHART_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316', '#14B8A6', '#6366F1', '#F43F5E', '#84CC16', '#0EA5E9', '#D946EF', '#EAB308', '#1D4ED8', '#047857', '#B45309', '#BE123C', '#6D28D9'];
 
 let waves = JSON.parse(localStorage.getItem('smoke_waves'));
@@ -50,7 +47,6 @@ Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "SF Pro Display
 
 const crosshairPlugin = { id: 'crosshair', afterDraw: chart => { if (chart.tooltip?._active?.length && (chart.config.type === 'line' || chart.config.type === 'bar')) { const activePoint = chart.tooltip._active[0]; const ctx = chart.ctx; const x = activePoint.element.x; ctx.save(); ctx.beginPath(); ctx.moveTo(x, chart.scales.y.top); ctx.lineTo(x, chart.scales.y.bottom); ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)'; ctx.setLineDash([4, 4]); ctx.stroke(); ctx.restore(); } } };
 
-// FIX 4: Chart center text alignment mathematically perfect locking
 const centerTextPlugin = {
   id: 'centerText',
   beforeDraw: chart => {
@@ -67,8 +63,6 @@ const centerTextPlugin = {
         text = total > 0 ? total + " Logs" : "No Data";
       }
       ctx.font = "bold " + (chart.canvas.id === 'chart4' ? '26px' : '16px') + " sans-serif";
-      
-      // True Center rendering logic based on chart inner area
       const x = chart.chartArea.left + (chart.chartArea.right - chart.chartArea.left) / 2;
       const y = chart.chartArea.top + (chart.chartArea.bottom - chart.chartArea.top) / 2;
       ctx.textAlign = "center";
@@ -520,10 +514,8 @@ function updateCostPerCigDisplay() { const el = document.getElementById('costPer
 function updateUI() {
   document.getElementById('shieldCount').innerText = waves.length;
   
-  // FIX 1A: Defeated Counter logic updated to show All-Time Defeats (or keep it today, but ensure it works). Let's use All-Time for pride.
   document.getElementById('homeTodayBeaten').innerText = `${waves.length} Defeated`;
   
-  // FIX 1B: True Streak Logic - Consecutive Logged Days Under Limit
   let streak = 0;
   let logsByDate = {};
   logs.forEach(l => {
@@ -531,7 +523,7 @@ function updateUI() {
     logsByDate[dStr] = (logsByDate[dStr] || 0) + 1;
   });
   let todayStr = new Date().toDateString();
-  if (!logsByDate[todayStr]) logsByDate[todayStr] = 0; // if no smokes today, you are under limit today!
+  if (!logsByDate[todayStr]) logsByDate[todayStr] = 0;
 
   let uniqueDates = Object.keys(logsByDate).sort((a,b) => new Date(b) - new Date(a));
   for (let dStr of uniqueDates) {
@@ -839,7 +831,6 @@ function renderAllCharts() {
 
   setBadge('badge-chart1', gappedLogs.length > 0 ? `Avg ${formatGap(Math.round(gappedLogs.reduce((a, b) => a + b.gap, 0) / gappedLogs.length))}` : '', 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20');
   setBadge('badge-chart2', activeLogs.length > 0 ? `${activeLogs.length} Total` : '', 'bg-amber-500/10 text-amber-500 border-amber-500/20');
-  setBadge('badge-chart3', activeLogs.length > 0 ? `${settings.currency} ${totalSpend}` : '', 'bg-red-500/10 text-red-500 border-red-500/20');
 
   const labels = activeLogs.length > 0 ? activeLogs.map(l => {
     let d = new Date(l.timestamp);
@@ -865,9 +856,41 @@ function renderAllCharts() {
   
   upsertChart(2, ctx2, { type: 'bar', data: { labels: dayLabels, datasets: [{ label: 'Count', data: dayCounts, backgroundColor: (document.body.classList.contains('theme-white') || document.documentElement.classList.contains('theme-white')) ? '#2563EB' : '#F59E0B', borderRadius: Number.MAX_VALUE, borderSkipped: false, maxBarThickness: 16 }, { label: 'Limit', data: dayLabels.map(() => settings.dailyLimit), type: 'line', borderColor: '#EF4444', borderWidth: 2, borderDash: [4,4], pointRadius: 0 }] }, options: { ...proOptions, scales: { x: { ...proOptions.scales.x, offset: true }, y: { ...proOptions.scales.y } } }, plugins: [crosshairPlugin] });
 
-  let cumulativeSpend = 0; let spendData = gaps.map(() => { cumulativeSpend += (settings.packPrice / settings.packSize); return cumulativeSpend.toFixed(1); });
+  // NEW CHART 3 LOGIC (Baseline vs Actual -> Saved)
+  let cumulativeSpend = 0; 
+  let spendData = [];
+  let savedData = [];
+  let pricePerStick = settings.packPrice / settings.packSize;
+
+  let baselineGapMs = parseInt(localStorage.getItem('smoke_baseline_gap'));
+  if (!baselineGapMs && logs.length > 1) {
+    let limit = Math.min(logs.length, 10);
+    baselineGapMs = (logs[limit - 1].timestamp - logs[0].timestamp) / (limit - 1);
+    if (logs.length >= 10) localStorage.setItem('smoke_baseline_gap', baselineGapMs);
+  }
+  if (!baselineGapMs || isNaN(baselineGapMs) || baselineGapMs <= 0) {
+    baselineGapMs = (24 * 60 * 60 * 1000) / settings.dailyLimit;
+  }
+
+  if (activeLogs.length > 0) {
+    let periodStartTime = activeLogs[0].timestamp;
+    activeLogs.forEach((l, i) => {
+      cumulativeSpend += pricePerStick;
+      spendData.push(cumulativeSpend.toFixed(1));
+      
+      let timeElapsed = l.timestamp - periodStartTime;
+      let expectedCigs = 1 + (timeElapsed / baselineGapMs);
+      let actualCigs = i + 1;
+      let savedAmount = Math.max(0, expectedCigs - actualCigs) * pricePerStick;
+      savedData.push(savedAmount.toFixed(1));
+    });
+  }
+
   const ctx3 = document.getElementById('chart3').getContext('2d');
-  upsertChart(3, ctx3, { type: 'line', data: { labels: labels, datasets: [{ label: 'Spend', data: spendData, borderColor: '#EF4444', backgroundColor: createGradient(ctx3, 'rgba(239, 68, 68, 0.2)'), fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0, pointHitRadius: 15 }] }, options: { ...proOptions, scales: { ...proOptions.scales, x: { ...proOptions.scales.x, offset: true } } }, plugins: [crosshairPlugin] });
+  upsertChart(3, ctx3, { type: 'line', data: { labels: labels, datasets: [{ label: 'Spent', data: spendData, borderColor: '#EF4444', backgroundColor: createGradient(ctx3, 'rgba(239, 68, 68, 0.15)'), fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0, pointHitRadius: 15 }, { label: 'Saved', data: savedData, borderColor: '#10B981', backgroundColor: createGradient(ctx3, 'rgba(16, 185, 129, 0.15)'), fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0, pointHitRadius: 15 }] }, options: { ...proOptions, scales: { ...proOptions.scales, x: { ...proOptions.scales.x, offset: true } } }, plugins: [crosshairPlugin] });
+
+  let finalSaved = savedData.length > 0 ? savedData[savedData.length - 1] : '0.0';
+  setBadge('badge-chart3', activeLogs.length > 0 ? `Saved ${settings.currency} ${finalSaved}` : '', 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20');
 
   const ctx4 = document.getElementById('chart4').getContext('2d');
   upsertChart(4, ctx4, { type: 'doughnut', data: { labels: ['Smoked', 'Resisted'], datasets: [{ data: [activeLogs.length, activeWaves.length], backgroundColor: ['#EF4444', '#0EA5E9'], borderWidth: 0, cutout: '76%' }] }, options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12, font: { size: 10 }, color: chartTextColor } } } }, plugins: [centerTextPlugin] });
@@ -877,7 +900,6 @@ function renderAllCharts() {
   const topTriggerIdx = triggerCounts.length ? triggerCounts.indexOf(Math.max(...triggerCounts)) : -1;
   setBadge('badge-chart5', (topTriggerIdx >= 0 && triggerCounts[topTriggerIdx] > 0) ? `Top: ${triggers[topTriggerIdx]}` : '', 'bg-purple-500/10 text-purple-500 border-purple-500/20');
   
-  // FIX 3: Dynamic usage of the 20-color vibrant palette
   upsertChart(5, ctx5, { type: 'doughnut', data: { labels: triggers, datasets: [{ data: triggerCounts, backgroundColor: triggers.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]), borderWidth: 0, cutout: '76%' }] }, options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12, font: { size: 10 }, color: chartTextColor } } } }, plugins: [centerTextPlugin] });
 
   const dayParts = ['Morning', 'Afternoon', 'Evening', 'Night']; const partOf = (hr) => hr >= 5 && hr < 12 ? 0 : hr >= 12 && hr < 17 ? 1 : hr >= 17 && hr < 21 ? 2 : 3;
