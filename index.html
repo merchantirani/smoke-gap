@@ -91,7 +91,10 @@
     .custom-input-wrapper input[type="date"], .custom-input-wrapper input[type="time"] { width: 100%; background: transparent; border: none; outline: none; color: var(--text-main); font-weight: 700; font-size: 0.95rem; padding-right: 32px; appearance: none; -webkit-appearance: none; }
     .custom-input-wrapper input::-webkit-calendar-picker-indicator { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); opacity: 0.6; cursor: pointer; }
     .hold-btn { position: relative; overflow: hidden; user-select: none; -webkit-touch-callout: none; touch-action: none; }
-    #holdProgress { position: absolute; top: 0; left: 0; height: 100%; width: 0%; background: rgba(239, 68, 68, 0.15); pointer-events: none; transition: width 0.05s linear; }
+    #holdProgress { position: absolute; top: 0; left: 0; height: 100%; width: 0%; background: rgba(239, 68, 68, 0.55); pointer-events: none; transition: width 0.05s linear; }
+    .hold-btn.is-holding { border-color: rgba(239, 68, 68, 0.6) !important; box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12); }
+    .ride-btn { position: relative; overflow: hidden; }
+    #rideProgressFill { position: absolute; bottom: 0; left: 0; height: 100%; width: 0%; background: rgba(255,255,255,0.18); pointer-events: none; transition: width 1s linear; }
 
     /* Heatmap styling */
     .heat-cell { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
@@ -164,9 +167,12 @@
         </div>
 
         <div class="grid grid-cols-2 gap-3 relative">
-          <button onclick="window.openWaveModal()" class="py-4 flex flex-col items-center justify-center rounded-2xl active:scale-95 transition-all shadow-[0_10px_25px_var(--accent-glow)] border border-transparent" style="background: var(--accent); color: white;">
-            <i data-lucide="shield-check" class="w-6 h-6 mb-1"></i>
-            <span class="text-[11px] font-bold uppercase tracking-wider text-center leading-tight">Ride It Out</span>
+          <button id="rideItOutBtn" onclick="window.openWaveModal()" class="ride-btn py-4 flex flex-col items-center justify-center rounded-2xl active:scale-95 transition-all shadow-[0_10px_25px_var(--accent-glow)] border border-transparent relative overflow-hidden" style="background: var(--accent); color: white;">
+            <div id="rideProgressFill"></div>
+            <span class="relative z-10 flex flex-col items-center gap-1">
+              <i data-lucide="shield-check" class="w-6 h-6 mb-1" id="rideIcon"></i>
+              <span id="rideText" class="text-[11px] font-bold uppercase tracking-wider text-center leading-tight">Ride It Out</span>
+            </span>
           </button>
           
           <button id="mainLogBtn" 
@@ -180,6 +186,26 @@
               <span id="holdText">Hold to Smoke</span>
             </span>
           </button>
+        </div>
+
+        <div id="waveOverlay" class="hidden premium-card p-4 relative overflow-hidden border" style="border-color: rgba(14,165,233,0.3);">
+          <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-30"><div class="w-32 h-32 rounded-full bg-sky-500" style="animation: pulse-breathe 11s infinite ease-in-out; filter: blur(18px);"></div></div>
+          <div class="relative z-10 flex items-center gap-3">
+            <div class="relative shrink-0 w-16 h-16">
+              <svg viewBox="0 0 80 80" class="w-16 h-16 -rotate-90">
+                <circle cx="40" cy="40" r="34" fill="transparent" stroke="rgba(14,165,233,0.15)" stroke-width="7"></circle>
+                <circle id="waveRing" cx="40" cy="40" r="34" fill="transparent" stroke="#0EA5E9" stroke-width="7" stroke-dasharray="213.63" stroke-dashoffset="0" stroke-linecap="round" style="transition: stroke-dashoffset 1s linear; filter: drop-shadow(0 0 6px rgba(14,165,233,0.6));"></circle>
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <span id="waveCountdown" class="numeric-display text-[13px] font-bold tabular-nums" style="color: var(--text-main);">--:--</span>
+              </div>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-[10px] font-bold text-sky-500 uppercase tracking-widest flex items-center gap-1"><i data-lucide="waves" class="w-3 h-3"></i> Riding the Wave</p>
+              <p id="waveMotivationalText" class="text-[11px] mt-1 font-medium leading-snug" style="color: var(--text-main);">Breathe in... Hold... Exhale...</p>
+            </div>
+            <button onclick="window.cancelActiveWave()" class="shrink-0 w-8 h-8 rounded-full flex items-center justify-center active:scale-95 transition-all" style="background-color: var(--input-bg); color: var(--text-muted);"><i data-lucide="x" class="w-4 h-4"></i></button>
+          </div>
         </div>
 
         <div class="grid grid-cols-2 gap-3">
@@ -202,17 +228,6 @@
           </div>
         </div>
 
-        <div id="waveOverlay" class="hidden premium-card p-5 border-l-4 border-sky-500 relative overflow-hidden">
-          <div class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="w-24 h-24 rounded-full bg-sky-500" style="animation: pulse-breathe 11s infinite ease-in-out;"></div></div>
-          <div class="flex justify-between items-end mb-3 relative z-10">
-            <div>
-              <p class="text-[10px] font-bold text-sky-500 uppercase tracking-widest flex items-center gap-1"><i data-lucide="waves" class="w-3 h-3"></i> Riding the Wave</p>
-              <p id="waveMotivationalText" class="text-[11px] mt-1.5 font-medium leading-snug max-w-[200px] transition-all duration-500" style="color: var(--text-main);">Breathe in... Hold... Exhale...</p>
-            </div>
-            <span id="waveCountdown" class="numeric-display text-3xl font-bold tabular-nums" style="color: var(--text-main);">--:--</span>
-          </div>
-          <div class="w-full bg-gray-500/20 rounded-full h-1.5 relative z-10"><div id="waveProgressBar" class="bg-sky-500 h-full rounded-full transition-all duration-1000 ease-linear" style="width: 100%"></div></div>
-        </div>
 
         <div class="space-y-3 pt-2">
           <div class="flex items-center justify-between px-1 mb-1">
@@ -558,7 +573,7 @@
     </div>
   </div>
 
-  <div id="shieldDashboardModal" class="hidden fixed inset-0 backdrop-blur-md z-50 flex flex-col justify-end transition-opacity" style="background-color: var(--overlay-bg);" onclick="if(event.target===this) window.closeShieldDashboard()"><div class="p-6 rounded-t-3xl space-y-6 max-w-md mx-auto w-full border-t border-sky-500/30 shadow-2xl" style="background-color: var(--modal-bg);"><div class="flex justify-between items-center mb-2"><h3 class="text-sm font-bold uppercase tracking-widest text-sky-500"><i data-lucide="shield-check" class="w-4 h-4 inline-block mr-1 -mt-0.5"></i> Wave Dashboard</h3><button onclick="window.closeShieldDashboard()" class="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style="background-color: var(--input-bg); color: var(--text-muted);"><i data-lucide="x" class="w-4 h-4"></i></button></div><div class="flex flex-col items-center justify-center py-4"><div class="relative flex justify-center items-center w-32 h-32 rounded-full bg-gray-500/10 shadow-[0_0_30px_rgba(14,165,233,0.2)] border-4 border-sky-500/20"><div class="absolute inset-0 rounded-full border-4 border-sky-500 border-t-transparent animate-spin opacity-50" style="animation-duration: 3s;"></div><div class="text-center z-10"><div id="modalShieldCount" class="numeric-display text-4xl font-bold text-sky-500">0</div><div class="text-[9px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Defeats</div></div></div><p id="modalShieldMins" class="mt-4 text-xs font-bold px-3 py-1 bg-sky-500/10 text-sky-500 rounded-full border border-sky-500/20">Active Resistance History</p></div><div class="space-y-3 pt-2 border-t" style="border-color: var(--card-border);"><h4 class="text-[10px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Milestones & Badges</h4><div class="grid grid-cols-3 gap-3"><div id="badge1" class="flex flex-col items-center p-3 rounded-2xl opacity-30 grayscale transition-all duration-500 border" style="background-color: var(--input-bg); border-color: var(--card-border);"><i data-lucide="medal" class="w-8 h-8 text-amber-600 mb-1"></i><span class="text-[9px] font-bold text-center mt-1" style="color: var(--text-main);">First Win</span><span class="text-[8px]" style="color: var(--text-muted);">1 Shield</span></div><div id="badge10" class="flex flex-col items-center p-3 rounded-2xl opacity-30 grayscale transition-all duration-500 border" style="background-color: var(--input-bg); border-color: var(--card-border);"><i data-lucide="award" class="w-8 h-8 text-gray-300 mb-1"></i><span class="text-[9px] font-bold text-center mt-1" style="color: var(--text-main);">Iron Will</span><span class="text-[8px]" style="color: var(--text-muted);">10 Shields</span></div><div id="badge50" class="flex flex-col items-center p-3 rounded-2xl opacity-30 grayscale transition-all duration-500 border" style="background-color: var(--input-bg); border-color: var(--card-border);"><i data-lucide="trophy" class="w-8 h-8 text-amber-400 mb-1"></i><span class="text-[9px] font-bold text-center mt-1" style="color: var(--text-main);">Unshakable</span><span class="text-[8px]" style="color: var(--text-muted);">50 Shields</span></div></div></div></div></div>
+  <div id="shieldDashboardModal" class="hidden fixed inset-0 backdrop-blur-md z-50 flex flex-col justify-end transition-opacity" style="background-color: var(--overlay-bg);" onclick="if(event.target===this) window.closeShieldDashboard()"><div class="p-6 rounded-t-3xl space-y-6 max-w-md mx-auto w-full border-t border-sky-500/30 shadow-2xl" style="background-color: var(--modal-bg);"><div class="flex justify-between items-center mb-2"><h3 class="text-sm font-bold uppercase tracking-widest text-sky-500"><i data-lucide="shield-check" class="w-4 h-4 inline-block mr-1 -mt-0.5"></i> Wave Dashboard</h3><button onclick="window.closeShieldDashboard()" class="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style="background-color: var(--input-bg); color: var(--text-muted);"><i data-lucide="x" class="w-4 h-4"></i></button></div><div class="flex flex-col items-center justify-center py-4"><div class="relative flex justify-center items-center w-32 h-32 rounded-full bg-gray-500/10 shadow-[0_0_30px_rgba(14,165,233,0.2)] border-4 border-sky-500/20"><div class="absolute inset-0 rounded-full border-4 border-sky-500 border-t-transparent animate-spin opacity-50" style="animation-duration: 3s;"></div><div class="text-center z-10"><div id="modalShieldCount" class="numeric-display text-4xl font-bold text-sky-500">0</div><div class="text-[9px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Defeats</div></div></div><p id="modalShieldMins" class="mt-4 text-xs font-bold px-3 py-1 bg-sky-500/10 text-sky-500 rounded-full border border-sky-500/20">--</p></div><div class="space-y-3 pt-2 border-t" style="border-color: var(--card-border);"><h4 class="text-[10px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Milestones & Badges</h4><div class="grid grid-cols-3 gap-3"><div id="badge1" class="relative flex flex-col items-center p-3 rounded-2xl opacity-30 grayscale transition-all duration-500 border" style="background-color: var(--input-bg); border-color: var(--card-border);"><i data-lucide="lock" class="badge-lock w-3 h-3 absolute top-2 right-2" style="color: var(--text-muted);"></i><i data-lucide="medal" class="w-8 h-8 text-amber-600 mb-1"></i><span class="text-[9px] font-bold text-center mt-1" style="color: var(--text-main);">First Win</span><span id="badge1Sub" class="text-[8px]" style="color: var(--text-muted);">1 Shield</span></div><div id="badge10" class="relative flex flex-col items-center p-3 rounded-2xl opacity-30 grayscale transition-all duration-500 border" style="background-color: var(--input-bg); border-color: var(--card-border);"><i data-lucide="lock" class="badge-lock w-3 h-3 absolute top-2 right-2" style="color: var(--text-muted);"></i><i data-lucide="award" class="w-8 h-8 text-gray-300 mb-1"></i><span class="text-[9px] font-bold text-center mt-1" style="color: var(--text-main);">Iron Will</span><span id="badge10Sub" class="text-[8px]" style="color: var(--text-muted);">10 Shields</span></div><div id="badge50" class="relative flex flex-col items-center p-3 rounded-2xl opacity-30 grayscale transition-all duration-500 border" style="background-color: var(--input-bg); border-color: var(--card-border);"><i data-lucide="lock" class="badge-lock w-3 h-3 absolute top-2 right-2" style="color: var(--text-muted);"></i><i data-lucide="trophy" class="w-8 h-8 text-amber-400 mb-1"></i><span class="text-[9px] font-bold text-center mt-1" style="color: var(--text-main);">Unshakable</span><span id="badge50Sub" class="text-[8px]" style="color: var(--text-muted);">50 Shields</span></div></div></div></div></div>
   <div id="waveModal" class="hidden fixed inset-0 backdrop-blur-sm z-50 flex flex-col justify-end transition-opacity" style="background-color: var(--overlay-bg);" onclick="if(event.target===this) window.closeWaveModal()"><div class="p-6 rounded-t-3xl space-y-5 max-w-md mx-auto w-full border-t border-sky-500/30 shadow-2xl" style="background-color: var(--modal-bg);"><div class="text-center space-y-1 mb-2"><h3 class="text-lg font-bold" style="color: var(--text-main);">Ride It Out</h3><p class="text-[11px] leading-relaxed" style="color: var(--text-muted);">Cravings usually peak and pass within 3 to 5 minutes.<br>How long do you want to hold on?</p></div><div class="grid grid-cols-3 gap-3"><button onclick="window.startWave(5)" class="relative py-4 flex flex-col items-center justify-center rounded-2xl bg-sky-500/10 border border-sky-500/20 active:scale-95 transition-transform text-sky-500 font-bold overflow-hidden"><div class="absolute top-0 inset-x-0 bg-sky-500 text-white text-[8px] uppercase tracking-widest py-0.5 font-bold">Recommended</div><span class="numeric-display text-xl mt-3">5</span><span class="text-[9px] uppercase tracking-wider">Mins</span></button><button onclick="window.startWave(10)" class="py-4 flex flex-col items-center justify-center rounded-2xl bg-sky-500/10 border border-sky-500/20 active:scale-95 transition-transform text-sky-500 font-bold"><span class="numeric-display text-xl">10</span><span class="text-[9px] uppercase tracking-wider">Mins</span></button><button onclick="window.startWave(20)" class="py-4 flex flex-col items-center justify-center rounded-2xl bg-sky-500/10 border border-sky-500/20 active:scale-95 transition-transform text-sky-500 font-bold"><span class="numeric-display text-xl">20</span><span class="text-[9px] uppercase tracking-wider">Mins</span></button></div><button onclick="window.closeWaveModal()" class="w-full py-3 mt-2 rounded-xl text-xs font-bold active:scale-95 transition-transform" style="background-color: var(--input-bg); color: var(--text-main);">Cancel</button></div></div>
   <div id="mapModal" class="hidden fixed inset-0 z-50 flex flex-col p-4 backdrop-blur-md" style="background-color: var(--overlay-bg);"><div class="flex justify-between items-center mb-4 mt-8 px-2"><h3 class="text-lg font-bold" style="color: var(--text-main);">Thermal View</h3><button onclick="window.closeMapModal()" class="text-xs px-4 py-2 rounded-full font-bold active:scale-95 border" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);">Done</button></div><div id="mapModalContainer" class="w-full flex-1 rounded-3xl overflow-hidden shadow-2xl" style="border: 1px solid var(--card-border);"></div></div>
   <div id="toastContainer" class="fixed bottom-24 left-0 right-0 z-[10001] flex flex-col items-center justify-end gap-2 pointer-events-none px-6"></div>
