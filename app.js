@@ -1,5 +1,5 @@
 let logs = JSON.parse(localStorage.getItem('smoke_logs')) || [];
-const DEFAULT_SETTINGS = { theme: 'default', haptics: true, dailyLimit: 15, lockSecs: 300, packPrice: 20, packSize: 20, currency: 'AED', timeFormat: '12h' };
+const DEFAULT_SETTINGS = { theme: 'default', haptics: true, dailyLimit: 15, lockSecs: 300, packPrice: 20, packSize: 20, currency: 'AED', timeFormat: '12h', motivation: '' };
 let settings = Object.assign({}, DEFAULT_SETTINGS, JSON.parse(localStorage.getItem('smoke_settings')) || {});
 if (!settings.packSize || settings.packSize <= 0) settings.packSize = 20;
 if (!settings.timeFormat) settings.timeFormat = '12h';
@@ -32,6 +32,64 @@ let currentSelectedTags = [];
 let currentIntensity = 3;
 let takeoverTimer = null;
 let takeoverCountdown = 6;
+
+// HOLD LOGIC
+let holdTimerId = null;
+let holdStartTime = 0;
+let isHolding = false;
+
+window.startHold = function(e) {
+  if (e && e.cancelable) e.preventDefault();
+  if (new Date().getTime() < lockEndTime || waveEndTime > 0) {
+      if (waveEndTime > 0) showToast("Wave in progress. Can't log now!");
+      return;
+  }
+  if (settings.haptics && navigator.vibrate) navigator.vibrate(15);
+  isHolding = true;
+  holdStartTime = Date.now();
+  const progressEl = document.getElementById('holdProgress');
+  const textEl = document.getElementById('holdText');
+  const iconEl = document.getElementById('holdIcon');
+  
+  textEl.innerText = "Hold...";
+  iconEl.classList.add('text-red-500');
+  iconEl.classList.remove('text-gray-400');
+  
+  function update() {
+    if (!isHolding) return;
+    const elapsed = Date.now() - holdStartTime;
+    const pct = Math.min((elapsed / 800) * 100, 100); // 800ms friction
+    progressEl.style.width = pct + '%';
+    
+    if (elapsed >= 800) {
+      isHolding = false;
+      progressEl.style.width = '100%';
+      textEl.innerText = "Done";
+      if (settings.haptics && navigator.vibrate) navigator.vibrate([30, 50, 30]);
+      handleLogClick();
+      setTimeout(() => { 
+        progressEl.style.width = '0%'; textEl.innerText = "Hold to Smoke"; 
+        iconEl.classList.add('text-gray-400'); iconEl.classList.remove('text-red-500'); 
+      }, 500);
+    } else {
+      holdTimerId = requestAnimationFrame(update);
+    }
+  }
+  holdTimerId = requestAnimationFrame(update);
+}
+
+window.cancelHold = function(e) {
+  if (e && e.cancelable) e.preventDefault();
+  isHolding = false;
+  if (holdTimerId) cancelAnimationFrame(holdTimerId);
+  const progressEl = document.getElementById('holdProgress');
+  const textEl = document.getElementById('holdText');
+  const iconEl = document.getElementById('holdIcon');
+  progressEl.style.width = '0%';
+  textEl.innerText = "Hold to Smoke";
+  iconEl.classList.add('text-gray-400');
+  iconEl.classList.remove('text-red-500');
+}
 
 Chart.defaults.color = '#64748B';
 Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif';
@@ -72,6 +130,7 @@ window.onload = () => {
   document.getElementById('currencySelect').value = settings.currency || 'AED';
   document.getElementById('lockSecsInput').value = settings.lockSecs;
   document.getElementById('hapticsInput').checked = settings.haptics;
+  document.getElementById('motivationInput').value = settings.motivation || '';
   updateCostPerCigDisplay();
   
   loadChartOrder(); initDragAndDrop(); renderTriggerSettingsList();
@@ -177,22 +236,17 @@ function savePinSetup() {
 }
 
 function handleLogClick() {
-  if(new Date().getTime() < lockEndTime) return;
-  
   let waveWasActive = false;
   if(waveEndTime > 0) { 
     waveWasActive = true;
     localStorage.removeItem('smoke_wave_end'); 
     waveEndTime = 0; clearInterval(waveTimer); 
     document.getElementById('waveOverlay').classList.add('hidden'); 
-  } else {
-    if(settings.haptics && navigator.vibrate) navigator.vibrate(50);
   }
   
   const now = new Date().getTime();
   let gap = logs.length > 0 ? Math.round((now - logs[logs.length-1].timestamp)/60000) : null;
   
-  // Create Log (Intensity defaults to 3, can be changed in takeover)
   logs.push({timestamp: now, gap: gap, tags: [], lat: null, lng: null, intensity: 3});
   const newLogIdx = logs.length - 1;
   localStorage.setItem('smoke_logs', JSON.stringify(logs));
@@ -347,8 +401,9 @@ function checkLock() {
     if(cooldownTimer) clearInterval(cooldownTimer);
     cooldownTimer = setInterval(() => {
       let rem = Math.ceil((lockEndTime - new Date().getTime())/1000);
-      if(rem<=0) { clearInterval(cooldownTimer); btn.disabled=false; btn.style.opacity = '1'; btn.innerText='START SMOKING'; }
-      else btn.innerText=`LOCKED (${Math.floor(rem/60)}:${(rem%60).toString().padStart(2,'0')})`;
+      const textEl = document.getElementById('holdText');
+      if(rem<=0) { clearInterval(cooldownTimer); btn.disabled=false; btn.style.opacity = '1'; if(textEl) textEl.innerText='Hold to Smoke'; }
+      else if(textEl) textEl.innerText=`LOCKED (${Math.floor(rem/60)}:${(rem%60).toString().padStart(2,'0')})`;
     }, 1000);
   }
 }
@@ -379,7 +434,6 @@ function checkWave() {
         document.getElementById('waveCountdown').innerText=`${Math.floor(rem/60).toString().padStart(2,'0')}:${(rem%60).toString().padStart(2,'0')}`; 
         document.getElementById('waveProgressBar').style.width=`${(rem/totalSecs)*100}%`; 
         
-        // Dynamic Therapy Text
         const pct = (totalSecs - rem) / totalSecs;
         let txt = "Breathe in... Hold... Exhale...";
         if(pct < 0.2) txt = "Notice the urge without acting on it. Where do you feel it?";
@@ -433,6 +487,7 @@ function updateSettings() {
   settings.theme = document.getElementById('themeSelect').value; settings.timeFormat = document.getElementById('timeFormatSelect').value; settings.currency = document.getElementById('currencySelect').value;
   settings.dailyLimit = parseInt(document.getElementById('dailyLimitInput').value) || 15; settings.packPrice = parseFloat(document.getElementById('packPriceInput').value) || 20; settings.packSize = parseInt(document.getElementById('packSizeInput').value) || 20;
   settings.lockSecs = parseInt(document.getElementById('lockSecsInput').value) || 300; settings.haptics = document.getElementById('hapticsInput').checked;
+  settings.motivation = document.getElementById('motivationInput').value;
   if (settings.packSize <= 0) settings.packSize = 20;
   localStorage.setItem('smoke_settings', JSON.stringify(settings)); 
   applyTheme(settings.theme); updateCostPerCigDisplay(); updateUI();
@@ -444,9 +499,13 @@ function updateCostPerCigDisplay() { const el = document.getElementById('costPer
 
 function updateUI() {
   document.getElementById('shieldCount').innerText = waves.length;
-  document.getElementById('homeTodayBeaten').innerText = `${waves.length} Defeated`; // All-time wins
+  document.getElementById('homeTodayBeaten').innerText = `${waves.length} Defeated`;
   
-  // Advanced Streak Logic (Forgiveness)
+  const motEl = document.getElementById('motivationTag');
+  const motText = document.getElementById('motivationText');
+  if (settings.motivation && settings.motivation.trim() !== "") { motText.innerText = settings.motivation; motEl.classList.remove('hidden'); } 
+  else { motEl.classList.add('hidden'); }
+
   let streak = 0; let slipDays = 0; let logsByDate = {};
   logs.forEach(l => { let dStr = new Date(l.timestamp).toDateString(); logsByDate[dStr] = (logsByDate[dStr] || 0) + 1; });
   let todayStr = new Date().toDateString();
@@ -454,12 +513,8 @@ function updateUI() {
 
   let uniqueDates = Object.keys(logsByDate).sort((a,b) => new Date(b) - new Date(a));
   for (let dStr of uniqueDates) {
-    if (logsByDate[dStr] <= settings.dailyLimit) {
-      streak++;
-    } else {
-      if (slipDays < 2) { slipDays++; streak++; } // Forgive up to 2 days
-      else break;
-    }
+    if (logsByDate[dStr] <= settings.dailyLimit) { streak++; } 
+    else { if (slipDays < 2) { slipDays++; streak++; } else break; }
   }
   document.getElementById('homeStreak').innerText = `🔥 ${streak} Day Streak`;
 
@@ -475,14 +530,16 @@ function updateUI() {
   if(stickIconEl && stickTextEl) {
     if(overLimit) {
       stickIconEl.className = 'w-6 h-6 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500';
-      stickTextEl.style.color = '#F59E0B';
-      limitMsg.classList.remove('hidden');
+      stickTextEl.style.color = '#F59E0B'; limitMsg.classList.remove('hidden');
     } else {
       stickIconEl.className = 'w-6 h-6 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500';
-      stickTextEl.style.color = 'var(--text-main)';
-      limitMsg.classList.add('hidden');
+      stickTextEl.style.color = 'var(--text-main)'; limitMsg.classList.add('hidden');
     }
   }
+
+  const todayWaves = waves.filter(w => new Date(w).toDateString() === todayStr);
+  const trEl = document.getElementById('todayResisted');
+  if(trEl) trEl.innerText = todayWaves.length.toString();
 
   document.getElementById('todaySpend').innerText = `${settings.currency} ${(today.length * (settings.packPrice/settings.packSize)).toFixed(1)}`;
   document.getElementById('prevGapCard').innerText = logs.length > 1 ? formatGap(logs[logs.length-1].gap) : '--';
@@ -515,6 +572,19 @@ function showStatDetail(type) {
     iconClass = 'bg-emerald-500/10 text-emerald-500'; iconName = 'trophy'; title.innerText = "Best Gap Today"; const todayGaps = today.map(l => l.gap).filter(g => g !== null && g !== undefined); const best = todayGaps.length ? Math.max(...todayGaps) : null; value.innerText = formatGap(best); desc.innerText = best !== null ? `The longest you've gone between cigarettes today.` : `No gap data for today yet.`;
     const allGaps = logs.map(l => l.gap).filter(g => g !== null && g !== undefined);
     extra.innerHTML = allGaps.length ? row('Your all-time best gap', formatGap(Math.max(...allGaps))) : '';
+  } else if (type === 'resisted') {
+    iconClass = 'bg-sky-500/10 text-sky-500'; iconName = 'shield'; title.innerText = "Cravings Defeated"; value.innerText = waves.length.toString(); desc.innerText = `You have successfully ridden out ${waves.length} craving wave(s) in total.`; 
+    const todayWaves = waves.filter(w => new Date(w).toDateString() === new Date().toDateString()); extra.innerHTML = row('Defeated Today', todayWaves.length.toString());
+  } else if (type === 'currentGap') {
+    const diff = logs.length > 0 ? (new Date().getTime() - logs[logs.length-1].timestamp) / 60000 : 0;
+    const allGaps = logs.map(l => l.gap).filter(g => g !== null && g !== undefined);
+    const avgGap = allGaps.length ? Math.round(allGaps.reduce((a,b)=>a+b,0)/allGaps.length) : 0;
+    iconClass = 'bg-sky-500/10 text-sky-500'; iconName = 'clock'; title.innerText = "Current Gap"; value.innerText = formatGap(Math.round(diff)); 
+    if (avgGap > 0) {
+      if (diff > avgGap) desc.innerText = `Great job! You are ${formatGap(Math.round(diff - avgGap))} ahead of your all-time average gap.`;
+      else desc.innerText = `You are ${formatGap(Math.round(avgGap - diff))} away from your average gap. Keep holding!`;
+    } else desc.innerText = "Setting your baseline gap. Keep going!";
+    extra.innerHTML = avgGap ? row('All-Time Average Gap', formatGap(avgGap)) : '';
   }
   icon.className = `w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${iconClass}`; icon.innerHTML = `<i data-lucide="${iconName}" class="w-4 h-4"></i>`;
   document.getElementById('statDetailModal').classList.remove('hidden'); if(window.lucide) window.lucide.createIcons();
@@ -531,22 +601,17 @@ function showShieldDashboard() {
 }
 function closeShieldDashboard() { document.getElementById('shieldDashboardModal').classList.add('hidden'); }
 
-// DATA BACKUP & RESTORE
 function exportJSON() {
   if(logs.length === 0) { showToast("No data to backup yet."); return; }
   const data = { logs, settings, triggers, waves, version: '1.2' };
   const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.setAttribute("href", url);
-  link.setAttribute("download", `SmokeGap_Backup_${new Date().toISOString().slice(0,10)}.json`);
-  document.body.appendChild(link); link.click(); document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  const url = URL.createObjectURL(blob); const link = document.createElement("a");
+  link.setAttribute("href", url); link.setAttribute("download", `SmokeGap_Backup_${new Date().toISOString().slice(0,10)}.json`);
+  document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url);
 }
 
 window.importJSON = function(event) {
-  const file = event.target.files[0];
-  if(!file) return;
+  const file = event.target.files[0]; if(!file) return;
   const reader = new FileReader();
   reader.onload = (e) => {
     try {
@@ -556,8 +621,7 @@ window.importJSON = function(event) {
         if(data.settings) localStorage.setItem('smoke_settings', JSON.stringify(data.settings));
         if(data.triggers) localStorage.setItem('smoke_triggers', JSON.stringify(data.triggers));
         if(data.waves) localStorage.setItem('smoke_waves', JSON.stringify(data.waves));
-        showToast("Data restored successfully!");
-        setTimeout(() => location.reload(), 1500);
+        showToast("Data restored successfully!"); setTimeout(() => location.reload(), 1500);
       } else { showToast("Invalid backup file."); }
     } catch(err) { showToast("Error reading file."); }
   };
@@ -565,16 +629,8 @@ window.importJSON = function(event) {
 }
 
 function resetData(type) { 
-  if(type === '24h') {
-    showConfirm("Delete last 24h logs?", "This will permanently remove logs from the last 24 hours.", () => {
-      const now = new Date().getTime();
-      logs = logs.filter(l => (now - l.timestamp) > 86400000);
-      waves = waves.filter(w => (now - w) > 86400000);
-      localStorage.setItem('smoke_logs', JSON.stringify(logs)); localStorage.setItem('smoke_waves', JSON.stringify(waves)); location.reload();
-    });
-  } else {
-    showConfirm("Wipe ALL data?", "This cannot be undone. All logs, settings, and tags will be erased.", () => { localStorage.clear(); location.reload(); });
-  }
+  if(type === '24h') { showConfirm("Delete last 24h logs?", "This will permanently remove logs from the last 24 hours.", () => { const now = new Date().getTime(); logs = logs.filter(l => (now - l.timestamp) > 86400000); waves = waves.filter(w => (now - w) > 86400000); localStorage.setItem('smoke_logs', JSON.stringify(logs)); localStorage.setItem('smoke_waves', JSON.stringify(waves)); location.reload(); }); } 
+  else { showConfirm("Wipe ALL data?", "This cannot be undone. All logs, settings, and tags will be erased.", () => { localStorage.clear(); location.reload(); }); }
 }
 
 function exportLogsCSV() {
@@ -584,9 +640,7 @@ function exportLogsCSV() {
     let d = new Date(l.timestamp); let tagsStr = l.tags && l.tags.length ? l.tags.join(' | ') : (l.trigger || '');
     csvContent += `${l.timestamp},"${d.toLocaleDateString()}","${formatAppTime(d)}",${l.gap ?? ''},"${tagsStr}",${l.intensity||3},${l.lat||''},${l.lng||''}\n`;
   });
-  let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  let url = URL.createObjectURL(blob); let link = document.createElement("a"); link.setAttribute("href", url); link.setAttribute("download", `SmokeGap_Logs_${new Date().toISOString().slice(0,10)}.csv`);
-  document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url);
+  let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); let url = URL.createObjectURL(blob); let link = document.createElement("a"); link.setAttribute("href", url); link.setAttribute("download", `SmokeGap_Logs_${new Date().toISOString().slice(0,10)}.csv`); document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url);
 }
 
 function addCustomTrigger() { let val = document.getElementById('newTriggerInput').value.trim(); if(val && !triggers.includes(val)) { triggers.push(val); localStorage.setItem('smoke_triggers', JSON.stringify(triggers)); document.getElementById('newTriggerInput').value = ''; renderTriggerSettingsList(); } }
@@ -594,8 +648,7 @@ function removeCustomTrigger(idx) { triggers.splice(idx, 1); localStorage.setIte
 function renderTriggerSettingsList() { const c = document.getElementById('triggerListSettings'); if(!c) return; c.innerHTML = triggers.map((t, idx) => `<span class="text-xs px-3 py-1.5 rounded-xl border flex items-center gap-1.5 font-medium" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);">${esc(t)} <button onclick="window.removeCustomTrigger(${idx})" class="text-red-500 font-bold hover:opacity-80">✕</button></span>`).join(''); }
 
 window.setEditIntensity = function(val) {
-  if(settings.haptics && navigator.vibrate) navigator.vibrate(10);
-  currentIntensity = val;
+  if(settings.haptics && navigator.vibrate) navigator.vibrate(10); currentIntensity = val;
   for(let i=1; i<=5; i++) {
     const b = document.getElementById('editInt'+i);
     if(i===val) { b.className = "w-10 h-10 rounded-full border text-xs font-bold transition-all bg-[var(--accent)] text-white shadow-[0_4px_12px_var(--accent-glow)] scale-110 border-transparent"; }
@@ -606,14 +659,8 @@ window.setEditIntensity = function(val) {
 
 function openTriggerModal(logIdx = null) {
   editingLogIdx = logIdx !== null ? logIdx : logs.length - 1;
-  const log = logs[editingLogIdx];
-  currentSelectedTags = log.tags && log.tags.length ? [...log.tags] : (log.trigger ? [log.trigger] : []);
-  window.setEditIntensity(log.intensity || 3);
-  
-  const d = new Date(log.timestamp);
-  document.getElementById('editLogDate').value = `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`;
-  document.getElementById('editLogTime').value = `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
-
+  const log = logs[editingLogIdx]; currentSelectedTags = log.tags && log.tags.length ? [...log.tags] : (log.trigger ? [log.trigger] : []); window.setEditIntensity(log.intensity || 3);
+  const d = new Date(log.timestamp); document.getElementById('editLogDate').value = `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`; document.getElementById('editLogTime').value = `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
   renderModalTriggerGrid(); document.getElementById('triggerModal').classList.remove('hidden'); if(window.lucide) window.lucide.createIcons();
 }
 
@@ -627,20 +674,13 @@ function renderModalTriggerGrid() {
   }).join('');
 }
 
-function toggleTag(idx) {
-  const t = triggers[idx];
-  if(currentSelectedTags.includes(t)) currentSelectedTags = currentSelectedTags.filter(tag => tag !== t);
-  else currentSelectedTags.push(t);
-  renderModalTriggerGrid();
-}
+function toggleTag(idx) { const t = triggers[idx]; if(currentSelectedTags.includes(t)) currentSelectedTags = currentSelectedTags.filter(tag => tag !== t); else currentSelectedTags.push(t); renderModalTriggerGrid(); }
 
 function saveTags() {
   if(editingLogIdx !== null && logs[editingLogIdx]) {
     const dateVal = document.getElementById('editLogDate').value; const timeVal = document.getElementById('editLogTime').value;
     if(dateVal && timeVal) { const dt = new Date(`${dateVal}T${timeVal}`); if(!isNaN(dt.getTime())) logs[editingLogIdx].timestamp = dt.getTime(); }
-    logs[editingLogIdx].tags = [...currentSelectedTags];
-    logs[editingLogIdx].intensity = currentIntensity;
-    
+    logs[editingLogIdx].tags = [...currentSelectedTags]; logs[editingLogIdx].intensity = currentIntensity;
     logs.sort((a,b) => a.timestamp - b.timestamp);
     for (let i = 0; i < logs.length; i++) { logs[i].gap = i > 0 ? Math.round((logs[i].timestamp - logs[i-1].timestamp)/60000) : null; }
     localStorage.setItem('smoke_logs', JSON.stringify(logs));
@@ -687,21 +727,15 @@ function renderHistoryItem(l) {
   const visibleTags = tagsArr.slice(0, 2).map(esc).join(', ');
   const extraCount = tagsArr.length - 2; const tagsDisplay = extraCount > 0 ? `${visibleTags} <span class="opacity-60">+${extraCount} more</span>` : visibleTags;
   
-  let intensityDots = '';
-  let intVal = l.intensity || 3;
-  for(let i=1; i<=5; i++) {
-    intensityDots += `<div class="w-1.5 h-1.5 rounded-full ${i <= intVal ? 'bg-[var(--accent)]' : 'bg-gray-500/20'}"></div>`;
-  }
+  let intensityDots = ''; let intVal = l.intensity || 3;
+  for(let i=1; i<=5; i++) { intensityDots += `<div class="w-1.5 h-1.5 rounded-full ${i <= intVal ? 'bg-[var(--accent)]' : 'bg-gray-500/20'}"></div>`; }
 
   return `
   <div onclick="window.openTriggerModal(${l.origIdx})" class="premium-card p-4 flex justify-between items-center relative overflow-hidden cursor-pointer active:scale-[0.98] transition-transform hover:bg-gray-500/5">
     <div class="flex items-start gap-3 flex-1 min-w-0 pr-3">
       <div class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${trendClass}"><i data-lucide="${trendIcon}" class="w-3.5 h-3.5"></i></div>
       <div class="flex-1 min-w-0">
-        <div class="font-bold tracking-wide flex items-center gap-2" style="color: var(--text-main);">
-          ${formatAppTime(new Date(l.timestamp))}
-          <div class="flex gap-0.5 ml-2">${intensityDots}</div>
-        </div>
+        <div class="font-bold tracking-wide flex items-center gap-2" style="color: var(--text-main);">${formatAppTime(new Date(l.timestamp))}<div class="flex gap-0.5 ml-2">${intensityDots}</div></div>
         <div class="text-[10px] font-bold uppercase mt-0.5 flex items-start gap-1" style="color: var(--text-muted);"><i data-lucide="tag" class="w-3 h-3 shrink-0 mt-0.5"></i><span class="leading-relaxed whitespace-normal break-words">${tagsDisplay}</span></div>
       </div>
     </div>
