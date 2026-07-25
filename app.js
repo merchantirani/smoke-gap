@@ -265,8 +265,9 @@ function setTakeoverIntensity(val) {
   if(settings.haptics && navigator.vibrate) navigator.vibrate(10); currentIntensity = val;
   for(let i=1; i<=5; i++) {
     const b = document.getElementById('toInt'+i); if(!b) continue;
-    if(i===val) { b.className = "w-9 h-9 rounded-full border text-xs font-bold transition-all bg-[var(--accent)] text-white shadow-[0_4px_12px_var(--accent-glow)] scale-110 border-transparent"; }
-    else { b.className = "w-9 h-9 rounded-full border text-xs font-bold transition-all"; b.style.borderColor = "var(--card-border)"; b.style.color = "var(--text-main)"; b.style.backgroundColor = "transparent"; b.style.boxShadow = "none"; b.style.transform = "scale(1)"; }
+    b.className = "w-9 h-9 rounded-full border text-xs font-bold transition-all";
+    if(i===val) { b.style.background = "var(--accent)"; b.style.color = "#fff"; b.style.boxShadow = "0 4px 12px var(--accent-glow)"; b.style.transform = "scale(1.1)"; b.style.borderColor = "transparent"; }
+    else { b.style.background = "transparent"; b.style.borderColor = "var(--card-border)"; b.style.color = "var(--text-main)"; b.style.boxShadow = "none"; b.style.transform = "scale(1)"; }
   }
   document.getElementById('takeoverIntensityLabel').innerText = INTENSITY_LABELS[val];
 }
@@ -560,9 +561,10 @@ function renderTriggerSettingsList() { const c = document.getElementById('trigge
 window.setEditIntensity = function(val) {
   if(settings.haptics && navigator.vibrate) navigator.vibrate(10); currentIntensity = val;
   for(let i=1; i<=5; i++) {
-    const b = document.getElementById('editInt'+i);
-    if(i===val) { b.className = "w-10 h-10 rounded-full border text-xs font-bold transition-all bg-[var(--accent)] text-white shadow-[0_4px_12px_var(--accent-glow)] scale-110 border-transparent"; }
-    else { b.className = "w-10 h-10 rounded-full border text-xs font-bold transition-all"; b.style.borderColor = "var(--card-border)"; b.style.color = "var(--text-main)"; b.style.backgroundColor = "transparent"; b.style.boxShadow = "none"; b.style.transform = "scale(1)"; }
+    const b = document.getElementById('editInt'+i); if(!b) continue;
+    b.className = "w-10 h-10 rounded-full border text-xs font-bold transition-all";
+    if(i===val) { b.style.background = "var(--accent)"; b.style.color = "#fff"; b.style.boxShadow = "0 4px 12px var(--accent-glow)"; b.style.transform = "scale(1.1)"; b.style.borderColor = "transparent"; }
+    else { b.style.background = "transparent"; b.style.borderColor = "var(--card-border)"; b.style.color = "var(--text-main)"; b.style.boxShadow = "none"; b.style.transform = "scale(1)"; }
   }
   const lbl = document.getElementById('editIntensityLabel'); if(lbl) lbl.innerText = INTENSITY_LABELS[val];
 }
@@ -687,7 +689,7 @@ function renderHistoryItem(l) {
   const tagsDisplay = extraCount > 0 ? `${visibleTags} <span class="opacity-60">+${extraCount} more</span>` : visibleTags;
   
   let intensityDots = ''; let intVal = l.intensity || 3;
-  for(let i=1; i<=5; i++) { intensityDots += `<div class="w-1.5 h-1.5 rounded-full ${i <= intVal ? 'bg-[var(--accent)]' : 'bg-gray-500/20'}"></div>`; }
+  for(let i=1; i<=5; i++) { intensityDots += `<div class="w-1.5 h-1.5 rounded-full" style="background-color: ${i <= intVal ? 'var(--accent)' : 'rgba(156,163,175,0.2)'};"></div>`; }
 
   const timeStr = l.timestamp ? formatAppTime(new Date(l.timestamp)) : '--:--';
 
