@@ -11,7 +11,7 @@ let settings = Object.assign({}, DEFAULT_SETTINGS, JSON.parse(localStorage.getIt
 if (!settings.packSize || settings.packSize <= 0) settings.packSize = 20;
 if (!settings.timeFormat) settings.timeFormat = '12h';
 
-// Check Auto-Reduce Logic (Once a week limit reduction)
+// Check Auto-Reduce Logic
 let lastReduceDate = localStorage.getItem('smoke_last_reduce_date');
 if (settings.autoReduce) {
     let nowStr = new Date().toDateString();
@@ -56,6 +56,9 @@ let currentIntensity = 3;
 let takeoverTimer = null;
 let takeoverCountdown = 6;
 let historyRenderLimit = 30;
+
+// HERO CAROUSEL STATE persistence
+let activeHeroStyle = parseInt(localStorage.getItem('smoke_hero_style')) || 0;
 
 // BULLETPROOF HOLD LOGIC
 let holdTimerId = null;
@@ -148,6 +151,7 @@ window.onload = () => {
   updateCostPerCigDisplay();
   
   loadChartOrder(); initDragAndDrop(); renderTriggerSettingsList();
+  setupCarouselSwipe(); setHeroStyle(activeHeroStyle);
   
   const filterSelect = document.getElementById('historyTagFilter');
   if(filterSelect) {
@@ -176,30 +180,55 @@ function bootCore() {
       const prevLog = logs[logs.length-1];
       const prevGapMs = prevLog.gap ? prevLog.gap * 60000 : 0;
       const circle = document.getElementById('heroProgressCircle');
+      const milestoneCircle = document.getElementById('heroMilestoneCircle');
       const statusWrapper = document.getElementById('smartStatusWrapper');
       const statusText = document.getElementById('smartStatusText');
       const liveDot = document.getElementById('headerLiveDot');
       const dashMax = 289.02;
+      const milestoneDashMax = 251.32;
       
       let newClass = '', newHtml = '', dotColor = '#9CA3AF';
       
+      // Calculate All-Time Avg Gap for Milestone Ring
+      const allGaps = logs.map(l => l.gap).filter(g => g !== null && g !== undefined);
+      const avgGapMs = allGaps.length ? (allGaps.reduce((a,b)=>a+b, 0) / allGaps.length) * 60000 : 3600000;
+      
+      if (activeHeroStyle === 1 && milestoneCircle) { // MILESTONE STYLE ACTIVE
+        milestoneCircle.classList.remove('hidden');
+        let ratio = diff / avgGapMs;
+        let p1 = Math.min(ratio, 1.0);
+        if(circle) { circle.style.stroke = p1 >= 1.0 ? '#10B981' : 'var(--accent)'; circle.style.strokeDashoffset = dashMax - (dashMax * p1); }
+        if (ratio > 1.0) {
+          let p2 = Math.min(ratio - 1.0, 1.0);
+          milestoneCircle.style.strokeDashoffset = milestoneDashMax - (milestoneDashMax * p2);
+          document.getElementById('heroSubLabel').classList.remove('hidden');
+          document.getElementById('heroSubLabel').innerText = `BEATING AVG BY +${formatGap(Math.floor((diff - avgGapMs)/60000))}`;
+        } else {
+          milestoneCircle.style.strokeDashoffset = milestoneDashMax;
+          document.getElementById('heroSubLabel').classList.add('hidden');
+        }
+      } else if (milestoneCircle) {
+        milestoneCircle.classList.add('hidden');
+        document.getElementById('heroSubLabel').classList.add('hidden');
+      }
+
       if (prevGapMs > 0) {
         let percent = diff / prevGapMs;
         if (percent < 1) {
-          if(circle) { circle.style.stroke = '#F59E0B'; circle.style.strokeDashoffset = dashMax - (dashMax * percent); circle.style.filter = 'none'; }
+          if(activeHeroStyle === 0 && circle) { circle.style.stroke = '#F59E0B'; circle.style.strokeDashoffset = dashMax - (dashMax * percent); circle.style.filter = 'none'; }
           let remMins = Math.ceil((prevGapMs - diff) / 60000);
           newClass = 'px-5 py-2.5 rounded-full border transition-all duration-500 bg-amber-500/10 border-amber-500/20';
           newHtml = `<i data-lucide="alert-circle" class="w-3.5 h-3.5 text-amber-500"></i><span class="text-amber-500">${remMins} min${remMins>1?'s':''} left to beat previous gap</span>`;
           dotColor = '#F59E0B';
         } else {
-          if(circle) { circle.style.stroke = '#10B981'; circle.style.strokeDashoffset = 0; circle.style.filter = 'drop-shadow(0 0 8px rgba(16,185,129,0.5))'; }
+          if(activeHeroStyle === 0 && circle) { circle.style.stroke = '#10B981'; circle.style.strokeDashoffset = 0; circle.style.filter = 'drop-shadow(0 0 8px rgba(16,185,129,0.5))'; }
           let extraMins = Math.floor((diff - prevGapMs) / 60000);
           newClass = 'px-5 py-2.5 rounded-full border transition-all duration-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.15)]';
           newHtml = `<i data-lucide="trophy" class="w-3.5 h-3.5 text-emerald-500"></i><span class="text-emerald-500">Widened the gap by +${extraMins} min${extraMins!==1?'s':''}</span>`;
           dotColor = '#10B981';
         }
       } else {
-        if(circle) { circle.style.strokeDashoffset = dashMax; circle.style.stroke = 'var(--card-border)'; circle.style.filter = 'none'; }
+        if(activeHeroStyle === 0 && circle) { circle.style.strokeDashoffset = dashMax; circle.style.stroke = 'var(--card-border)'; circle.style.filter = 'none'; }
         newClass = 'px-5 py-2.5 rounded-full border transition-all duration-500 bg-sky-500/10 border-sky-500/20';
         newHtml = `<i data-lucide="rocket" class="w-3.5 h-3.5 text-sky-500"></i><span class="text-sky-500">Setting your first baseline gap</span>`;
         dotColor = '#0EA5E9';
@@ -209,6 +238,34 @@ function bootCore() {
       if (statusText && statusText.dataset.rawHtml !== newHtml) { statusWrapper.className = newClass; statusText.innerHTML = newHtml; statusText.dataset.rawHtml = newHtml; if(window.lucide) window.lucide.createIcons(); }
     } catch(err) {}
   }, 1000);
+}
+
+// HERO CAROUSEL CONTROLLER
+function setHeroStyle(idx) {
+  activeHeroStyle = idx;
+  localStorage.setItem('smoke_hero_style', activeHeroStyle);
+  const dot0 = document.getElementById('carouselDot0'), dot1 = document.getElementById('carouselDot1');
+  const label = document.getElementById('heroLabelText');
+  if(dot0 && dot1) {
+    dot0.className = `w-2 h-2 rounded-full transition-all ${idx === 0 ? 'bg-amber-500 w-4' : 'bg-gray-500/40'}`;
+    dot1.className = `w-2 h-2 rounded-full transition-all ${idx === 1 ? 'bg-amber-500 w-4' : 'bg-gray-500/40'}`;
+  }
+  if(label) label.innerHTML = idx === 0 ? `<i data-lucide="info" class="w-3 h-3"></i> Current Gap` : `<i data-lucide="target" class="w-3 h-3 text-emerald-500"></i> Milestone Ring`;
+  if(window.lucide) window.lucide.createIcons();
+}
+
+let touchStartX = 0;
+function setupCarouselSwipe() {
+  const el = document.getElementById('heroCarousel');
+  if(!el) return;
+  el.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, {passive: true});
+  el.addEventListener('touchend', e => {
+    let diffX = e.changedTouches[0].screenX - touchStartX;
+    if (Math.abs(diffX) > 40) {
+      if (diffX < 0) setHeroStyle(1);
+      else setHeroStyle(0);
+    }
+  }, {passive: true});
 }
 
 function checkPeakNudge() {
@@ -256,7 +313,6 @@ function handleLogClick() {
   lockEndTime = now + (settings.lockSecs * 1000);
   localStorage.setItem('smoke_lock_end', lockEndTime);
   
-  // PostHog Tracking Event
   if (window.posthog) {
     posthog.capture('cigarette_logged', {
       gap_minutes: gap,
@@ -544,30 +600,44 @@ function updateUI() {
 
 function formatGap(m) { if (m === null || m === undefined || isNaN(m)) return '—'; if (m < 60) return `${m}m`; return `${Math.floor(m / 60)}h ${m % 60 > 0 ? (m % 60) + 'm' : ''}`.trim(); }
 
+// EXPANDED HIGH-DETAIL STAT MODAL
 function showStatDetail(type) {
   const today = logs.filter(l => new Date(l.timestamp).toDateString() === new Date().toDateString());
   const pricePerStick = settings.packPrice / settings.packSize;
   const icon = document.getElementById('statDetailIcon'), title = document.getElementById('statDetailTitle'), value = document.getElementById('statDetailValue'), desc = document.getElementById('statDetailDesc'), extra = document.getElementById('statDetailExtra');
-  const row = (label, val) => `<div class="flex justify-between border-t pt-2" style="border-color: var(--card-border);"><span style="color: var(--text-muted);">${label}</span><span class="font-bold" style="color: var(--text-main);">${val}</span></div>`;
+  const pBox = document.getElementById('statDetailProgressBox'), pLabel = document.getElementById('statProgressLabel'), pPct = document.getElementById('statProgressPct'), pBar = document.getElementById('statProgressBar');
+  const row = (label, val) => `<div class="flex justify-between border-t pt-2.5" style="border-color: var(--card-border);"><span style="color: var(--text-muted);">${label}</span><span class="font-bold" style="color: var(--text-main);">${val}</span></div>`;
+  
+  pBox.classList.add('hidden');
   let iconClass = 'bg-gray-500/10 text-gray-400', iconName = 'info';
 
   if (type === 'spend') {
-    iconClass = 'bg-red-500/10 text-red-500'; iconName = 'wallet'; title.innerText = "Today's Spend"; value.innerText = `${settings.currency} ${(today.length * pricePerStick).toFixed(1)}`; desc.innerText = `Based on ${today.length} cigarette${today.length===1?'':'s'} logged today at ${settings.currency} ${pricePerStick.toFixed(2)} per stick.`;
-    const monthLogs = logs.filter(l => (new Date().getTime() - l.timestamp) < 30*86400000); extra.innerHTML = row('Cost per cigarette', `${settings.currency} ${pricePerStick.toFixed(2)}`) + row('Last 30 days', `${settings.currency} ${(monthLogs.length * pricePerStick).toFixed(1)}`);
+    iconClass = 'bg-red-500/10 text-red-500'; iconName = 'wallet'; title.innerText = "Today's Expense"; value.innerText = `${settings.currency} ${(today.length * pricePerStick).toFixed(1)}`; 
+    desc.innerText = `You have spent ${settings.currency} ${(today.length * pricePerStick).toFixed(1)} today across ${today.length} stick${today.length===1?'':'s'}. Every cigarette delayed directly protects your monthly wallet.`;
+    const monthLogs = logs.filter(l => (new Date().getTime() - l.timestamp) < 30*86400000); 
+    extra.innerHTML = row('Cost Per Stick', `${settings.currency} ${pricePerStick.toFixed(2)}`) + row('30-Day Total Spend', `${settings.currency} ${(monthLogs.length * pricePerStick).toFixed(1)}`);
   } else if (type === 'count') {
-    const over = today.length >= settings.dailyLimit; iconClass = over ? 'bg-amber-500/10 text-amber-500' : 'bg-amber-500/10 text-amber-500'; iconName = 'activity'; title.innerText = "Today's Sticks"; value.innerText = `${today.length} / ${settings.dailyLimit}`; desc.innerText = over ? `Daily goal reached. Don't be too hard on yourself.` : `You're ${settings.dailyLimit - today.length} away from your limit.`; extra.innerHTML = row('Your daily goal', `${settings.dailyLimit} cigarettes`);
-  } else if (type === 'prevGap') {
-    iconClass = 'bg-sky-500/10 text-sky-500'; iconName = 'history'; title.innerText = "Previous Gap"; const g = logs.length > 1 ? logs[logs.length-1].gap : null; value.innerText = formatGap(g); desc.innerText = logs.length > 1 ? `Time between your last two logged cigarettes.` : `Log at least 2 cigarettes to see a gap here.`; const gappedAll = logs.map(l => l.gap).filter(g => g !== null && g !== undefined); extra.innerHTML = gappedAll.length ? row('Your all-time average gap', formatGap(Math.round(gappedAll.reduce((a,b)=>a+b,0)/gappedAll.length))) : '';
+    const over = today.length >= settings.dailyLimit; iconClass = over ? 'bg-amber-500/10 text-amber-500' : 'bg-amber-500/10 text-amber-500'; iconName = 'activity'; 
+    title.innerText = "Daily Volume Limit"; value.innerText = `${today.length} / ${settings.dailyLimit}`; 
+    desc.innerText = over ? `Daily goal reached (${settings.dailyLimit} max). Focus on holding until tomorrow to keep momentum.` : `You have ${settings.dailyLimit - today.length} stick(s) remaining under your daily limit target.`; 
+    pBox.classList.remove('hidden'); pLabel.innerText = "Daily Limit Used"; 
+    let pct = Math.min(100, Math.round((today.length / settings.dailyLimit) * 100)); pPct.innerText = `${pct}%`; pBar.style.width = `${pct}%`; pBar.style.backgroundColor = over ? '#EF4444' : '#F59E0B';
+    extra.innerHTML = row('Target Daily Cap', `${settings.dailyLimit} sticks`) + row('Auto-Reduce Active', settings.autoReduce ? 'Yes (-1 stick/week)' : 'Disabled');
   } else if (type === 'bestGap') {
-    iconClass = 'bg-emerald-500/10 text-emerald-500'; iconName = 'trophy'; title.innerText = "Best Gap Today"; const todayGaps = today.map(l => l.gap).filter(g => g !== null && g !== undefined); const best = todayGaps.length ? Math.max(...todayGaps) : null; value.innerText = formatGap(best); desc.innerText = best !== null ? `The longest you've gone between cigarettes today.` : `No gap data for today yet.`; const allGaps = logs.map(l => l.gap).filter(g => g !== null && g !== undefined); extra.innerHTML = allGaps.length ? row('Your all-time best gap', formatGap(Math.max(...allGaps))) : '';
+    iconClass = 'bg-emerald-500/10 text-emerald-500'; iconName = 'trophy'; title.innerText = "Today's Best Gap"; const todayGaps = today.map(l => l.gap).filter(g => g !== null && g !== undefined); const best = todayGaps.length ? Math.max(...todayGaps) : null; value.innerText = formatGap(best); 
+    desc.innerText = best !== null ? `Your longest gap between cigarettes today was ${formatGap(best)}. The wider your gaps, the faster your baseline addiction drops.` : `No gap data recorded for today yet.`; 
+    const allGaps = logs.map(l => l.gap).filter(g => g !== null && g !== undefined); extra.innerHTML = allGaps.length ? row('All-Time Record Gap', formatGap(Math.max(...allGaps))) + row('All-Time Average Gap', formatGap(Math.round(allGaps.reduce((a,b)=>a+b,0)/allGaps.length))) : '';
   } else if (type === 'resisted') {
-    iconClass = 'bg-sky-500/10 text-sky-500'; iconName = 'shield'; title.innerText = "Cravings Defeated"; value.innerText = waves.length.toString(); desc.innerText = `You have successfully ridden out ${waves.length} craving wave(s) in total.`; const todayWaves = waves.filter(w => new Date(w).toDateString() === new Date().toDateString()); extra.innerHTML = row('Defeated Today', todayWaves.length.toString());
+    iconClass = 'bg-sky-500/10 text-sky-500'; iconName = 'shield'; title.innerText = "Craving Defeats"; value.innerText = waves.length.toString(); 
+    desc.innerText = `You have ridden out ${waves.length} urge wave(s) without giving in. Each defeated wave rewires your neural habit loops.`; 
+    const todayWaves = waves.filter(w => new Date(w).toDateString() === new Date().toDateString()); extra.innerHTML = row('Defeated Today', `${todayWaves.length} wave(s)`) + row('Shield Badges Unlocked', waves.length >= 50 ? '3/3' : waves.length >= 10 ? '2/3' : waves.length >= 1 ? '1/3' : '0/3');
   } else if (type === 'currentGap') {
-    const diff = logs.length > 0 ? (new Date().getTime() - logs[logs.length-1].timestamp) / 60000 : 0; const allGaps = logs.map(l => l.gap).filter(g => g !== null && g !== undefined); const avgGap = allGaps.length ? Math.round(allGaps.reduce((a,b)=>a+b,0)/allGaps.length) : 0; iconClass = 'bg-sky-500/10 text-sky-500'; iconName = 'clock'; title.innerText = "Current Gap"; value.innerText = formatGap(Math.round(diff)); 
-    if (avgGap > 0) { if (diff > avgGap) desc.innerText = `Great job! You are ${formatGap(Math.round(diff - avgGap))} ahead of your all-time average gap.`; else desc.innerText = `You are ${formatGap(Math.round(avgGap - diff))} away from your average gap. Keep holding!`; } else desc.innerText = "Setting your baseline gap. Keep going!";
+    const diff = logs.length > 0 ? (new Date().getTime() - logs[logs.length-1].timestamp) / 60000 : 0; const allGaps = logs.map(l => l.gap).filter(g => g !== null && g !== undefined); const avgGap = allGaps.length ? Math.round(allGaps.reduce((a,b)=>a+b,0)/allGaps.length) : 0; iconClass = 'bg-sky-500/10 text-sky-500'; iconName = 'clock'; title.innerText = "Active Gap Stopwatch"; value.innerText = formatGap(Math.round(diff)); 
+    if (avgGap > 0) { if (diff > avgGap) desc.innerText = `Outstanding! You are currently ${formatGap(Math.round(diff - avgGap))} past your all-time average gap!`; else desc.innerText = `Hold on! You are ${formatGap(Math.round(avgGap - diff))} away from reaching your average gap milestone.`; } else desc.innerText = "Setting your baseline timing gap. Every extra minute counts!";
     extra.innerHTML = avgGap ? row('All-Time Average Gap', formatGap(avgGap)) : '';
   }
-  icon.className = `w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${iconClass}`; icon.innerHTML = `<i data-lucide="${iconName}" class="w-4 h-4"></i>`;
+  
+  icon.className = `w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${iconClass}`; icon.innerHTML = `<i data-lucide="${iconName}" class="w-5 h-5"></i>`;
   document.getElementById('statDetailModal').classList.remove('hidden'); if(window.lucide) window.lucide.createIcons();
 }
 function closeStatDetail() { document.getElementById('statDetailModal').classList.add('hidden'); }
@@ -602,7 +672,7 @@ function closeShieldDashboard() { document.getElementById('shieldDashboardModal'
 
 function exportJSON() {
   if(!logs || logs.length === 0) { showToast("No data to backup yet."); return; }
-  const data = { logs, settings, triggers, waves, version: '1.3' };
+  const data = { logs, settings, triggers, waves, version: '1.4' };
   const blob = new Blob([JSON.stringify(data)], { type: "application/json" }); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.setAttribute("href", url); link.setAttribute("download", `SmokeGap_Backup_${new Date().toISOString().slice(0,10)}.json`); document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url);
 }
 
@@ -782,6 +852,7 @@ function getFilteredLogs() {
 }
 function setBadge(id, text, colorClass) { const b = document.getElementById(id); if(b) { if(text) { b.innerText = text; b.className = `text-[9px] font-bold px-2 py-0.5 rounded border ${colorClass}`; b.classList.remove('hidden'); } else b.classList.add('hidden'); } }
 
+// REFACTORED HEATMAP CALENDAR (Fixed 28-day 4-week grid)
 function renderHeatmapCalendar(logsArray) {
     const container = document.getElementById('calendarHeatmap');
     if(!container) return;
@@ -790,7 +861,8 @@ function renderHeatmapCalendar(logsArray) {
     const today = new Date();
     today.setHours(0,0,0,0);
     
-    for (let i = 29; i >= 0; i--) {
+    // Past 28 days (4 clean weeks)
+    for (let i = 27; i >= 0; i--) {
         let d = new Date(today);
         d.setDate(today.getDate() - i);
         dailyCounts[d.toDateString()] = 0;
@@ -813,15 +885,14 @@ function renderHeatmapCalendar(logsArray) {
         let intensity = 0;
         if (count > 0) {
             let ratio = count / maxVal;
-            if (ratio > 1) ratio = 1;
             intensity = Math.ceil(ratio * 4); 
-            if(intensity===0) intensity=1;
+            if(intensity === 0) intensity = 1;
         }
         
-        currentCol += `<div class="heat-cell" style="background-color: var(--heat-${intensity});" title="${count} on ${dStr}"></div>`;
+        currentCol += `<div class="heat-cell" style="background-color: var(--heat-${intensity});" title="${count} cigarettes on ${dStr}"></div>`;
         dayCount++;
         
-        if (dayCount % 5 === 0) {
+        if (dayCount % 7 === 0) {
             html += `<div class="heat-col">${currentCol}</div>`;
             currentCol = '';
         }
@@ -1031,4 +1102,4 @@ window.renderAllCharts = renderAllCharts; window.openMapModal = openMapModal; wi
 window.showStatDetail = showStatDetail; window.closeStatDetail = closeStatDetail; window.showShieldDashboard = showShieldDashboard; window.closeShieldDashboard = closeShieldDashboard;
 window.exportLogsCSV = exportLogsCSV; window.addCustomTrigger = addCustomTrigger; window.removeCustomTrigger = removeCustomTrigger;
 window.closeConfirmModal = closeConfirmModal; window.confirmYes = confirmYes; window.setTakeoverIntensity = setTakeoverIntensity; window.exportJSON = exportJSON;
-window.closePinSetupModal = closePinSetupModal; window.savePinSetup = savePinSetup;
+window.closePinSetupModal = closePinSetupModal; window.savePinSetup = savePinSetup; window.setHeroStyle = setHeroStyle;
