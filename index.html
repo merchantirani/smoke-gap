@@ -3,35 +3,31 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
-  <meta name="theme-color" id="theme-color-meta" content="#090A0F" />
+  <meta name="theme-color" id="theme-color-meta" content="#F5F5F0" />
   <title>pause — Widen the gap.</title>
 
-  <!-- PostHog Analytics & Session Replay -->
+  <!-- PostHog Analytics -->
   <script>
     !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}
     (p=t.createElement("script")).type="text/javascript",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);
     var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="capture identify alias people.set people.set_once set_config register register_once unregister opt_out_capturing has_opted_out_capturing opt_in_capturing reset isFeatureEnabled onFeatureFlags getFeatureFlag getFeatureFlagPayload reloadFeatureFlags group groupIdentify".split(" "),n=0;n<o.length;n++)g(u,o[n]);
     e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
-
-    posthog.init('phc_zKxDjX5K3qKcANYGwRWdTVeGfVwBgFygbFuymtRCCbYM', {
-      api_host: 'https://us.i.posthog.com',
-      person_profiles: 'always',
-      session_recording: {
-        maskAllInputs: false
-      }
-    });
+    posthog.init('phc_zKxDjX5K3qKcANYGwRWdTVeGfVwBgFygbFuymtRCCbYM', { api_host: 'https://us.i.posthog.com', person_profiles: 'always', session_recording: { maskAllInputs: false } });
   </script>
 
   <script>
     (function() {
       try {
         var s = JSON.parse(localStorage.getItem('smoke_settings')) || {};
-        var t = s.theme || 'default';
+        var t = s.theme || 'calm'; // Default to Calm Paper
         if (t !== 'default') document.documentElement.classList.add('theme-' + t);
         var meta = document.getElementById('theme-color-meta');
         if (meta) {
           if (t === 'white') meta.setAttribute('content', '#F8FAFC');
           else if (t === 'carbon') meta.setAttribute('content', '#000000');
+          else if (t === 'oled') meta.setAttribute('content', '#000000');
+          else if (t === 'aurora') meta.setAttribute('content', '#1e1b4b');
+          else if (t === 'calm') meta.setAttribute('content', '#F5F5F0');
           else meta.setAttribute('content', '#090A0F');
         }
       } catch(e){}
@@ -42,8 +38,6 @@
   <link rel="icon" type="image/png" sizes="16x16" href="icons/pause_favicon_16.png">
   <link rel="icon" type="image/png" sizes="32x32" href="icons/pause_favicon_32.png">
   <link rel="apple-touch-icon" sizes="180x180" href="icons/pause_icon_180.png">
-  <link rel="icon" type="image/png" sizes="192x192" href="icons/pause_icon_192.png">
-  <link rel="icon" type="image/png" sizes="512x512" href="icons/pause_icon_512.png">
 
   <link href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700&f[]=general-sans@400,500,600,700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -55,6 +49,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  
   <style>
     :root { 
       --bg-body: #090A0F; --text-main: #F3F4F6; --text-muted: #9CA3AF; 
@@ -76,6 +72,28 @@
       --accent: #2563EB; --accent-glow: rgba(37, 99, 235, 0.15); 
       --overlay-bg: rgba(15, 23, 42, 0.25); --modal-bg: #FFFFFF; --input-bg: rgba(0, 0, 0, 0.03);
       --heat-0: rgba(0, 0, 0, 0.04); --heat-1: #93C5FD; --heat-2: #3B82F6; --heat-3: #1D4ED8; --heat-4: #1E3A8A;
+    }
+    html.theme-calm, body.theme-calm { 
+      --bg-body: #F5F5F0; --text-main: #2C3E50; --text-muted: #7F8C8D; 
+      --card-bg: #FFFFFF; --card-border: #E5E5E0; 
+      --accent: #6B8E23; --accent-glow: rgba(107, 142, 35, 0.15); 
+      --overlay-bg: rgba(44, 62, 80, 0.4); --modal-bg: #FFFFFF; --input-bg: #F9F9F6;
+      --heat-0: rgba(0, 0, 0, 0.03); --heat-1: #C5E1A5; --heat-2: #81C784; --heat-3: #558B2F; --heat-4: #33691E;
+    }
+    html.theme-oled, body.theme-oled { 
+      --bg-body: #000000; --text-main: #E2E8F0; --text-muted: #64748B; 
+      --card-bg: #000000; --card-border: #1E293B; 
+      --accent: #39FF14; --accent-glow: rgba(57, 255, 20, 0.15); 
+      --overlay-bg: rgba(0, 0, 0, 0.9); --modal-bg: #000000; --input-bg: #0F172A;
+      --heat-0: rgba(255, 255, 255, 0.05); --heat-1: #bbf7d0; --heat-2: #4ade80; --heat-3: #16a34a; --heat-4: #14532d;
+    }
+    html.theme-aurora, body.theme-aurora { 
+      --bg-body: #1e1b4b; background: linear-gradient(135deg, #1e1b4b 0%, #0f766e 100%); background-attachment: fixed;
+      --text-main: #F8FAFC; --text-muted: #94A3B8; 
+      --card-bg: rgba(255, 255, 255, 0.05); --card-border: rgba(255, 255, 255, 0.1); 
+      --accent: #2DD4BF; --accent-glow: rgba(45, 212, 191, 0.2); 
+      --overlay-bg: rgba(15, 23, 42, 0.8); --modal-bg: #1e293b; --input-bg: rgba(255, 255, 255, 0.08);
+      --heat-0: rgba(255, 255, 255, 0.05); --heat-1: #99f6e4; --heat-2: #2dd4bf; --heat-3: #0d9488; --heat-4: #115e59;
     }
     
     html, body { background-color: var(--bg-body); color: var(--text-main); font-family: 'General Sans', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-tap-highlight-color: transparent; }
@@ -149,10 +167,16 @@
         </div>
         <p class="text-[9px] font-bold uppercase tracking-[0.2em] mt-0.5" style="color: var(--text-muted);">Widen the gap.</p>
       </div>
-      <button onclick="window.showShieldDashboard()" class="premium-card px-4 py-1.5 rounded-full flex items-center gap-2 active:scale-95 transition-transform">
-        <i data-lucide="shield" class="w-3 h-3" style="color: var(--accent);"></i>
-        <span id="shieldCount" class="numeric-display text-sm font-bold" style="color: var(--text-main);">0</span>
-      </button>
+      <div class="flex items-center gap-3">
+        <div class="text-right">
+          <p class="text-[9px] font-bold uppercase text-gray-400">Momentum</p>
+          <p id="momentumScoreHeader" class="text-sm font-bold" style="color: var(--accent);">0</p>
+        </div>
+        <button onclick="window.showShieldDashboard()" class="premium-card px-4 py-1.5 rounded-full flex items-center gap-2 active:scale-95 transition-transform border border-sky-500/20 shadow-[0_0_10px_rgba(14,165,233,0.1)]">
+          <i data-lucide="shield" class="w-3 h-3 text-sky-500"></i>
+          <span id="shieldCount" class="numeric-display text-sm font-bold text-sky-500">0</span>
+        </button>
+      </div>
     </header>
 
     <div class="p-5 space-y-4 pt-0">
@@ -163,27 +187,30 @@
           FOR: <span id="motivationText" style="color: var(--text-main);">--</span>
         </div>
 
-        <!-- HERO CAROUSEL CONTAINER (Swipeable) -->
+        <!-- Empty State UI -->
+        <div id="emptyStateUI" class="hidden premium-card p-6 text-center space-y-3 border-dashed border-2 border-gray-400/30">
+          <div class="w-12 h-12 bg-sky-500/10 rounded-full flex items-center justify-center mx-auto text-sky-500 mb-2"><i data-lucide="sparkles" class="w-6 h-6"></i></div>
+          <h3 class="text-lg font-bold" style="color: var(--text-main);">Welcome to Day 1</h3>
+          <p class="text-xs leading-relaxed" style="color: var(--text-muted);">This space will track your progress. Log your first cigarette below to set a baseline gap, or hit "Ride It Out" to defeat your first craving!</p>
+        </div>
+
+        <!-- HERO CAROUSEL CONTAINER -->
         <div id="heroCarousel" class="relative flex flex-col items-center justify-center pt-2 pb-2 touch-pan-y" style="touch-action: pan-y;">
           <div onclick="window.showStatDetail('currentGap')" class="relative flex justify-center items-center w-64 h-64 mx-auto mb-2 cursor-pointer active:scale-95 transition-transform">
             
-            <!-- SVG RINGS FOR STYLES -->
             <svg class="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 100 100">
               <circle cx="50" cy="50" r="46" fill="transparent" stroke="var(--card-border)" stroke-width="2.5"></circle>
-              <!-- Primary Progress Circle -->
               <circle id="heroProgressCircle" cx="50" cy="50" r="46" fill="transparent" stroke="var(--accent)" stroke-width="4" stroke-dasharray="289.02" stroke-dashoffset="289.02" stroke-linecap="round" class="transition-all duration-1000 ease-linear"></circle>
-              <!-- Secondary Milestone Ring (Overflow Record) -->
               <circle id="heroMilestoneCircle" cx="50" cy="50" r="40" fill="transparent" stroke="#10B981" stroke-width="3" stroke-dasharray="251.32" stroke-dashoffset="251.32" stroke-linecap="round" class="transition-all duration-1000 ease-linear hidden"></circle>
             </svg>
 
-            <div class="z-10 flex flex-col items-center justify-center w-[200px] h-[200px] rounded-full" style="background: var(--card-bg); backdrop-filter: blur(20px); border: 1px solid var(--card-border); box-shadow: inset 0 0 30px rgba(0,0,0,0.2);">
+            <div class="z-10 flex flex-col items-center justify-center w-[200px] h-[200px] rounded-full" style="background: var(--card-bg); backdrop-filter: blur(20px); border: 1px solid var(--card-border); box-shadow: inset 0 0 30px rgba(0,0,0,0.1);">
               <span id="heroLabelText" class="text-[10px] font-bold uppercase tracking-widest block mb-2 flex items-center gap-1" style="color: var(--text-muted);"><i data-lucide="info" class="w-3 h-3"></i> Current Gap</span>
               <div id="stopwatch" class="numeric-display text-4xl font-semibold tracking-tighter" style="color: var(--text-main);">00:00:00</div>
               <span id="heroSubLabel" class="text-[9px] font-bold uppercase tracking-wider text-amber-500 mt-1 hidden">--</span>
             </div>
           </div>
 
-          <!-- Carousel Dots -->
           <div class="flex items-center gap-2 mb-4">
             <button onclick="window.setHeroStyle(0)" id="carouselDot0" class="w-2 h-2 rounded-full transition-all bg-amber-500"></button>
             <button onclick="window.setHeroStyle(1)" id="carouselDot1" class="w-2 h-2 rounded-full transition-all bg-gray-500/40"></button>
@@ -239,21 +266,32 @@
         </div>
 
         <div class="grid grid-cols-2 gap-3">
-          <div onclick="window.showStatDetail('spend')" class="premium-card p-4 active:scale-95 transition-transform cursor-pointer">
-            <div class="flex items-center gap-2 mb-2"><div class="w-6 h-6 rounded-full bg-red-500/10 flex items-center justify-center text-red-500"><i data-lucide="wallet" class="w-3 h-3"></i></div><p class="text-[9px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Today's Spend</p></div>
+          <div onclick="window.showStatDetail('spend')" class="premium-card p-4 active:scale-95 transition-transform cursor-pointer relative">
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-2"><div class="w-6 h-6 rounded-full bg-red-500/10 flex items-center justify-center text-red-500"><i data-lucide="wallet" class="w-3 h-3"></i></div><p class="text-[9px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Spend</p></div>
+              <span id="trendSpend" class="text-[9px] font-bold text-gray-500">--</span>
+            </div>
             <p id="todaySpend" class="numeric-display text-xl font-bold" style="color: var(--text-main);">AED 0</p>
           </div>
-          <div onclick="window.showStatDetail('count')" class="premium-card p-4 active:scale-95 transition-transform cursor-pointer">
-            <div class="flex items-center gap-2 mb-2"><div id="todaySticksIcon" class="w-6 h-6 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500"><i data-lucide="activity" class="w-3 h-3"></i></div><p class="text-[9px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Today's Sticks</p></div>
+          <div onclick="window.showStatDetail('count')" class="premium-card p-4 active:scale-95 transition-transform cursor-pointer relative">
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-2"><div id="todaySticksIcon" class="w-6 h-6 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500"><i data-lucide="activity" class="w-3 h-3"></i></div><p class="text-[9px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Sticks</p></div>
+              <span id="trendCount" class="text-[9px] font-bold text-gray-500">--</span>
+            </div>
             <p id="todayCount" class="numeric-display text-xl font-bold" style="color: var(--text-main);">0 / 15</p>
             <p id="limitWarningMsg" class="text-[9px] font-semibold mt-1 hidden text-amber-500">Tomorrow is a fresh start.</p>
           </div>
-          <div onclick="window.showStatDetail('resisted')" class="premium-card p-4 active:scale-95 transition-transform cursor-pointer">
-            <div class="flex items-center gap-2 mb-2"><div class="w-6 h-6 rounded-full bg-sky-500/10 flex items-center justify-center text-sky-500"><i data-lucide="shield" class="w-3 h-3"></i></div><p class="text-[9px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Defeated</p></div>
+          <div onclick="window.showStatDetail('resisted')" class="premium-card p-4 active:scale-95 transition-transform cursor-pointer relative">
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-2"><div class="w-6 h-6 rounded-full bg-sky-500/10 flex items-center justify-center text-sky-500"><i data-lucide="shield" class="w-3 h-3"></i></div><p class="text-[9px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Defeats</p></div>
+              <span id="trendResisted" class="text-[9px] font-bold text-gray-500">--</span>
+            </div>
             <p id="todayResisted" class="numeric-display text-xl font-bold" style="color: var(--text-main);">0</p>
           </div>
-          <div onclick="window.showStatDetail('bestGap')" class="premium-card p-4 active:scale-95 transition-transform cursor-pointer">
-            <div class="flex items-center gap-2 mb-2"><div class="w-6 h-6 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500"><i data-lucide="trophy" class="w-3 h-3"></i></div><p class="text-[9px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Best Gap</p></div>
+          <div onclick="window.showStatDetail('bestGap')" class="premium-card p-4 active:scale-95 transition-transform cursor-pointer relative">
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-2"><div class="w-6 h-6 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500"><i data-lucide="trophy" class="w-3 h-3"></i></div><p class="text-[9px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Best Gap</p></div>
+            </div>
             <p id="bestGapCard" class="numeric-display text-xl font-bold" style="color: var(--text-main);">--</p>
           </div>
         </div>
@@ -306,8 +344,8 @@
             <div id="insightTopTrigger" class="text-lg font-bold truncate" style="color: var(--text-main);">--</div>
           </div>
           <div class="premium-card p-4 min-w-[140px] snap-start shrink-0">
-            <div class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2" style="color: var(--text-muted);"><i data-lucide="flame" class="w-3 h-3 text-red-500"></i> Heaviest Day</div>
-            <div id="insightHeaviestDay" class="text-lg font-bold" style="color: var(--text-main);">--</div>
+            <div class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2" style="color: var(--text-muted);"><i data-lucide="flame" class="w-3 h-3 text-red-500"></i> Highest Intensity</div>
+            <div id="insightHighIntensity" class="text-lg font-bold" style="color: var(--text-main);">--</div>
           </div>
         </div>
 
@@ -346,7 +384,7 @@
               <div class="flex items-center gap-2.5"><div class="w-7 h-7 rounded-full bg-sky-500/10 flex items-center justify-center text-sky-500"><i data-lucide="shield" class="w-4 h-4"></i></div><h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">Cravings Resisted</h3></div>
               <div class="drag-handle"><i data-lucide="grip-horizontal" class="w-4 h-4"></i></div>
             </div>
-            <p class="text-[10px] mb-3 -mt-1" style="color: var(--text-muted);">How many total cravings you successfully beat vs how many you smoked.</p>
+            <p class="text-[10px] mb-3 -mt-1" style="color: var(--text-muted);">How many cravings you successfully beat vs how many waves you cancelled/lost.</p>
             <div class="chart-wrapper" style="height: 180px;"><canvas id="chart4"></canvas></div>
           </div>
           
@@ -424,7 +462,14 @@
           </div>
           <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
             <label class="text-xs font-semibold" style="color: var(--text-main);">Theme Mode</label>
-            <select id="themeSelect" onchange="window.updateSettings()" class="text-xs p-2 rounded-xl font-semibold border outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);"><option value="default">Amber Glow</option><option value="carbon">Carbon Matrix</option><option value="white">Clean White & Blue</option></select>
+            <select id="themeSelect" onchange="window.updateSettings()" class="text-xs p-2 rounded-xl font-semibold border outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);">
+                <option value="calm">Calm Paper (Default)</option>
+                <option value="oled">Pure OLED (Battery Saver)</option>
+                <option value="aurora">Aurora (Gradient Glass)</option>
+                <option value="default">Amber Glow</option>
+                <option value="white">Clean White & Blue</option>
+                <option value="carbon">Carbon Matrix</option>
+            </select>
           </div>
           <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
             <label class="text-xs font-semibold" style="color: var(--text-main);">Time Format</label>
@@ -493,9 +538,13 @@
 
         <div class="premium-card p-5 space-y-3">
           <div class="flex justify-between items-end border-b pb-2" style="border-color: var(--card-border);">
-            <h3 class="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2" style="color: var(--text-muted);"><i data-lucide="database" class="w-3 h-3"></i> Data Backup & Security</h3>
+            <h3 class="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2" style="color: var(--text-muted);"><i data-lucide="database" class="w-3 h-3"></i> Backup & Integrations</h3>
             <p id="dataSummaryText" class="text-[9px] font-medium" style="color: var(--text-muted);">0 logs • Since --</p>
           </div>
+          
+          <button id="btnEnableNotif" onclick="window.enablePushNotifications()" class="w-full py-3 bg-purple-500/10 text-purple-500 font-bold text-xs rounded-xl text-center active:scale-95 transition-transform border border-purple-500/20 flex items-center justify-center gap-2 mb-2"><i data-lucide="bell" class="w-4 h-4"></i> Enable Smart Reminders</button>
+
+          <p id="backupReminderText" class="text-[10px] text-center font-bold text-amber-500 mb-2 hidden">⚠️ Backup your data soon</p>
           <div class="grid grid-cols-2 gap-2">
             <button onclick="window.exportJSON()" class="py-3 bg-emerald-500/10 text-emerald-500 font-bold text-[11px] rounded-xl text-center active:scale-95 transition-transform border border-emerald-500/20 flex flex-col items-center justify-center"><i data-lucide="upload-cloud" class="w-4 h-4 mb-1"></i> Backup Data</button>
             <button onclick="document.getElementById('importFileInput').click()" class="py-3 bg-blue-500/10 text-blue-500 font-bold text-[11px] rounded-xl text-center active:scale-95 transition-transform border border-blue-500/20 flex flex-col items-center justify-center"><i data-lucide="download-cloud" class="w-4 h-4 mb-1"></i> Restore Data</button>
@@ -620,7 +669,7 @@
   </div>
 
   <div id="shieldDashboardModal" class="hidden fixed inset-0 backdrop-blur-md z-50 flex flex-col justify-end transition-opacity" style="background-color: var(--overlay-bg);" onclick="if(event.target===this) window.closeShieldDashboard()"><div class="p-6 rounded-t-3xl space-y-6 max-w-md mx-auto w-full border-t border-sky-500/30 shadow-2xl" style="background-color: var(--modal-bg);"><div class="flex justify-between items-center mb-2"><h3 class="text-sm font-bold uppercase tracking-widest text-sky-500"><i data-lucide="shield-check" class="w-4 h-4 inline-block mr-1 -mt-0.5"></i> Wave Dashboard</h3><button onclick="window.closeShieldDashboard()" class="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style="background-color: var(--input-bg); color: var(--text-muted);"><i data-lucide="x" class="w-4 h-4"></i></button></div><div class="flex flex-col items-center justify-center py-4"><div class="relative flex justify-center items-center w-32 h-32 rounded-full bg-gray-500/10 shadow-[0_0_30px_rgba(14,165,233,0.2)] border-4 border-sky-500/20"><div class="absolute inset-0 rounded-full border-4 border-sky-500 border-t-transparent animate-spin opacity-50" style="animation-duration: 3s;"></div><div class="text-center z-10"><div id="modalShieldCount" class="numeric-display text-4xl font-bold text-sky-500">0</div><div class="text-[9px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Defeats</div></div></div><p id="modalShieldMins" class="mt-4 text-xs font-bold px-3 py-1 bg-sky-500/10 text-sky-500 rounded-full border border-sky-500/20">--</p></div><div class="space-y-3 pt-2 border-t" style="border-color: var(--card-border);"><h4 class="text-[10px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Milestones & Badges</h4><div class="grid grid-cols-3 gap-3"><div id="badge1" class="relative flex flex-col items-center p-3 rounded-2xl opacity-30 grayscale transition-all duration-500 border" style="background-color: var(--input-bg); border-color: var(--card-border);"><i data-lucide="lock" class="badge-lock w-3 h-3 absolute top-2 right-2" style="color: var(--text-muted);"></i><i data-lucide="medal" class="w-8 h-8 text-amber-600 mb-1"></i><span class="text-[9px] font-bold text-center mt-1" style="color: var(--text-main);">First Win</span><span id="badge1Sub" class="text-[8px]" style="color: var(--text-muted);">1 Shield</span></div><div id="badge10" class="relative flex flex-col items-center p-3 rounded-2xl opacity-30 grayscale transition-all duration-500 border" style="background-color: var(--input-bg); border-color: var(--card-border);"><i data-lucide="lock" class="badge-lock w-3 h-3 absolute top-2 right-2" style="color: var(--text-muted);"></i><i data-lucide="award" class="w-8 h-8 text-gray-300 mb-1"></i><span class="text-[9px] font-bold text-center mt-1" style="color: var(--text-main);">Iron Will</span><span id="badge10Sub" class="text-[8px]" style="color: var(--text-muted);">10 Shields</span></div><div id="badge50" class="relative flex flex-col items-center p-3 rounded-2xl opacity-30 grayscale transition-all duration-500 border" style="background-color: var(--input-bg); border-color: var(--card-border);"><i data-lucide="lock" class="badge-lock w-3 h-3 absolute top-2 right-2" style="color: var(--text-muted);"></i><i data-lucide="trophy" class="w-8 h-8 text-amber-400 mb-1"></i><span class="text-[9px] font-bold text-center mt-1" style="color: var(--text-main);">Unshakable</span><span id="badge50Sub" class="text-[8px]" style="color: var(--text-muted);">50 Shields</span></div></div></div></div></div>
-  <div id="waveModal" class="hidden fixed inset-0 backdrop-blur-sm z-50 flex flex-col justify-end transition-opacity" style="background-color: var(--overlay-bg);" onclick="if(event.target===this) window.closeWaveModal()"><div class="p-6 rounded-t-3xl space-y-5 max-w-md mx-auto w-full border-t border-sky-500/30 shadow-2xl" style="background-color: var(--modal-bg);"><div class="text-center space-y-1 mb-2"><h3 class="text-lg font-bold" style="color: var(--text-main);">Ride It Out</h3><p class="text-[11px] leading-relaxed" style="color: var(--text-muted);">Cravings usually peak and pass within 3 to 5 minutes.<br>How long do you want to hold on?</p></div><div class="grid grid-cols-3 gap-3"><button onclick="window.startWave(5)" class="relative py-4 flex flex-col items-center justify-center rounded-2xl bg-sky-500/10 border border-sky-500/20 active:scale-95 transition-transform text-sky-500 font-bold overflow-hidden"><div class="absolute top-0 inset-x-0 bg-sky-500 text-white text-[8px] uppercase tracking-widest py-0.5 font-bold">Recommended</div><span class="numeric-display text-xl mt-3">5</span><span class="text-[9px] uppercase tracking-wider">Mins</span></button><button onclick="window.startWave(10)" class="py-4 flex flex-col items-center justify-center rounded-2xl bg-sky-500/10 border border-sky-500/20 active:scale-95 transition-transform text-sky-500 font-bold"><span class="numeric-display text-xl">10</span><span class="text-[9px] uppercase tracking-wider">Mins</span></button><button onclick="window.startWave(20)" class="py-4 flex flex-col items-center justify-center rounded-2xl bg-sky-500/10 border border-sky-500/20 active:scale-95 transition-transform text-sky-500 font-bold"><span class="numeric-display text-xl">20</span><span class="text-[9px] uppercase tracking-wider">Mins</span></button></div><button onclick="window.closeWaveModal()" class="w-full py-3 mt-2 rounded-xl text-xs font-bold active:scale-95 transition-transform" style="background-color: var(--input-bg); color: var(--text-main);">Cancel</button></div></div>
+  <div id="waveModal" class="hidden fixed inset-0 backdrop-blur-sm z-50 flex flex-col justify-end transition-opacity" style="background-color: var(--overlay-bg);" onclick="if(event.target===this) window.closeWaveModal()"><div class="p-6 rounded-t-3xl space-y-5 max-w-md mx-auto w-full border-t border-sky-500/30 shadow-2xl" style="background-color: var(--modal-bg);"><div class="text-center space-y-1 mb-2"><h3 class="text-lg font-bold" style="color: var(--text-main);">Ride It Out</h3><p class="text-[11px] leading-relaxed" style="color: var(--text-muted);">Cravings usually peak within 3 to 5 minutes.<br>How long do you want to hold on?</p></div><div class="grid grid-cols-3 gap-3"><button onclick="window.startWave(5)" class="relative py-4 flex flex-col items-center justify-center rounded-2xl bg-sky-500/10 border border-sky-500/20 active:scale-95 transition-transform text-sky-500 font-bold overflow-hidden"><div class="absolute top-0 inset-x-0 bg-sky-500 text-white text-[8px] uppercase tracking-widest py-0.5 font-bold">Recommended</div><span class="numeric-display text-xl mt-3">5</span><span class="text-[9px] uppercase tracking-wider">Mins</span></button><button onclick="window.startWave(10)" class="py-4 flex flex-col items-center justify-center rounded-2xl bg-sky-500/10 border border-sky-500/20 active:scale-95 transition-transform text-sky-500 font-bold"><span class="numeric-display text-xl">10</span><span class="text-[9px] uppercase tracking-wider">Mins</span></button><button onclick="window.startWave(20)" class="py-4 flex flex-col items-center justify-center rounded-2xl bg-sky-500/10 border border-sky-500/20 active:scale-95 transition-transform text-sky-500 font-bold"><span class="numeric-display text-xl">20</span><span class="text-[9px] uppercase tracking-wider">Mins</span></button></div><button onclick="window.closeWaveModal()" class="w-full py-3 mt-2 rounded-xl text-xs font-bold active:scale-95 transition-transform" style="background-color: var(--input-bg); color: var(--text-main);">Cancel</button></div></div>
   <div id="mapModal" class="hidden fixed inset-0 z-50 flex flex-col p-4 backdrop-blur-md" style="background-color: var(--overlay-bg);"><div class="flex justify-between items-center mb-4 mt-8 px-2"><h3 class="text-lg font-bold" style="color: var(--text-main);">Thermal View</h3><button onclick="window.closeMapModal()" class="text-xs px-4 py-2 rounded-full font-bold active:scale-95 border" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);">Done</button></div><div id="mapModalContainer" class="w-full flex-1 rounded-3xl overflow-hidden shadow-2xl" style="border: 1px solid var(--card-border);"></div></div>
   <div id="toastContainer" class="fixed bottom-24 left-0 right-0 z-[10001] flex flex-col items-center justify-end gap-2 pointer-events-none px-6"></div>
   <div id="confirmModal" class="hidden fixed inset-0 backdrop-blur-sm z-[10000] flex items-center justify-center p-6" style="background-color: var(--overlay-bg);" onclick="if(event.target===this) window.closeConfirmModal()"><div class="p-6 rounded-3xl space-y-4 max-w-xs w-full text-center border shadow-2xl" style="background-color: var(--modal-bg); border-color: var(--card-border);"><i data-lucide="alert-triangle" class="w-8 h-8 mx-auto text-red-500"></i><h3 id="confirmTitle" class="text-sm font-bold" style="color: var(--text-main);">Are you sure?</h3><p id="confirmMessage" class="text-xs leading-relaxed" style="color: var(--text-muted);"></p><div class="flex gap-3 pt-1"><button onclick="window.closeConfirmModal()" class="flex-1 py-3 rounded-xl text-xs font-bold active:scale-95 transition-transform" style="background-color: var(--input-bg); color: var(--text-main);">Cancel</button><button onclick="window.confirmYes()" class="flex-1 py-3 rounded-xl text-xs font-bold text-white bg-red-500 active:scale-95 transition-transform">Confirm</button></div></div></div>
