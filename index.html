@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" id="theme-color-meta" content="#F5F5F0" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <title>pause — Widen the gap.</title>
 
   <!-- PostHog Analytics -->
@@ -19,7 +20,7 @@
     (function() {
       try {
         var s = JSON.parse(localStorage.getItem('smoke_settings')) || {};
-        var t = s.theme || 'calm'; // Default to Calm Paper
+        var t = s.theme || 'calm'; // Default Calm Paper
         if (t !== 'default') document.documentElement.classList.add('theme-' + t);
         var meta = document.getElementById('theme-color-meta');
         if (meta) {
@@ -90,13 +91,20 @@
     html.theme-aurora, body.theme-aurora { 
       --bg-body: #1e1b4b; background: linear-gradient(135deg, #1e1b4b 0%, #0f766e 100%); background-attachment: fixed;
       --text-main: #F8FAFC; --text-muted: #94A3B8; 
-      --card-bg: rgba(255, 255, 255, 0.05); --card-border: rgba(255, 255, 255, 0.1); 
+      --card-bg: rgba(255, 255, 255, 0.07); --card-border: rgba(255, 255, 255, 0.12); 
       --accent: #2DD4BF; --accent-glow: rgba(45, 212, 191, 0.2); 
       --overlay-bg: rgba(15, 23, 42, 0.8); --modal-bg: #1e293b; --input-bg: rgba(255, 255, 255, 0.08);
       --heat-0: rgba(255, 255, 255, 0.05); --heat-1: #99f6e4; --heat-2: #2dd4bf; --heat-3: #0d9488; --heat-4: #115e59;
     }
     
-    html, body { background-color: var(--bg-body); color: var(--text-main); font-family: 'General Sans', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-tap-highlight-color: transparent; }
+    html, body { 
+      min-height: 100vh; 
+      background-color: var(--bg-body) !important; 
+      color: var(--text-main); 
+      font-family: 'General Sans', -apple-system, BlinkMacSystemFont, sans-serif; 
+      -webkit-tap-highlight-color: transparent; 
+      overscroll-behavior-y: none;
+    }
     button, .nav-btn, .drag-handle, .dock-bar { user-select: none; -webkit-user-select: none; }
     
     .brand-title { font-family: 'Clash Display', sans-serif; font-weight: 700; letter-spacing: -0.03em; background: linear-gradient(135deg, var(--accent), var(--text-main)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
@@ -130,7 +138,7 @@
     .ride-btn { position: relative; overflow: hidden; }
     #rideProgressFill { position: absolute; bottom: 0; left: 0; height: 100%; width: 0%; background: rgba(255,255,255,0.18); pointer-events: none; transition: width 1s linear; }
 
-    /* Heatmap Fixed Alignment */
+    /* Heatmap Alignment */
     .heat-cell { width: 13px; height: 13px; border-radius: 3px; flex-shrink: 0; transition: all 0.2s ease; }
     .heat-col { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; }
   </style>
@@ -168,12 +176,16 @@
         <p class="text-[9px] font-bold uppercase tracking-[0.2em] mt-0.5" style="color: var(--text-muted);">Widen the gap.</p>
       </div>
       <div class="flex items-center gap-3">
-        <div class="text-right">
-          <p class="text-[9px] font-bold uppercase text-gray-400">Momentum</p>
-          <p id="momentumScoreHeader" class="text-sm font-bold" style="color: var(--accent);">0</p>
-        </div>
-        <button onclick="window.showShieldDashboard()" class="premium-card px-4 py-1.5 rounded-full flex items-center gap-2 active:scale-95 transition-transform border border-sky-500/20 shadow-[0_0_10px_rgba(14,165,233,0.1)]">
-          <i data-lucide="shield" class="w-3 h-3 text-sky-500"></i>
+        <!-- CLICKABLE MOMENTUM SCORE -->
+        <button onclick="window.showMomentumModal()" class="text-right cursor-pointer active:scale-95 transition-transform bg-transparent border-0 outline-none">
+          <p class="text-[8px] font-bold uppercase tracking-wider text-gray-400">Momentum</p>
+          <div class="flex items-center gap-1">
+            <span id="momentumScoreHeader" class="text-sm font-bold" style="color: var(--accent);">0</span>
+            <i data-lucide="chevron-right" class="w-3 h-3 text-gray-400"></i>
+          </div>
+        </button>
+        <button onclick="window.showShieldDashboard()" class="premium-card px-3.5 py-1.5 rounded-full flex items-center gap-1.5 active:scale-95 transition-transform border border-sky-500/20 shadow-[0_0_10px_rgba(14,165,233,0.1)]">
+          <i data-lucide="shield" class="w-3.5 h-3.5 text-sky-500"></i>
           <span id="shieldCount" class="numeric-display text-sm font-bold text-sky-500">0</span>
         </button>
       </div>
@@ -344,8 +356,12 @@
             <div id="insightTopTrigger" class="text-lg font-bold truncate" style="color: var(--text-main);">--</div>
           </div>
           <div class="premium-card p-4 min-w-[140px] snap-start shrink-0">
-            <div class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2" style="color: var(--text-muted);"><i data-lucide="flame" class="w-3 h-3 text-red-500"></i> Highest Intensity</div>
-            <div id="insightHighIntensity" class="text-lg font-bold" style="color: var(--text-main);">--</div>
+            <div class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2" style="color: var(--text-muted);"><i data-lucide="flame" class="w-3 h-3 text-red-500"></i> High Intensity</div>
+            <div id="insightHighIntensity" class="text-lg font-bold truncate" style="color: var(--text-main);">--</div>
+          </div>
+          <div class="premium-card p-4 min-w-[140px] snap-start shrink-0">
+            <div class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2" style="color: var(--text-muted);"><i data-lucide="calendar" class="w-3 h-3 text-red-500"></i> Heaviest Day</div>
+            <div id="insightHeaviestDay" class="text-lg font-bold" style="color: var(--text-main);">--</div>
           </div>
         </div>
 
@@ -463,7 +479,7 @@
           <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
             <label class="text-xs font-semibold" style="color: var(--text-main);">Theme Mode</label>
             <select id="themeSelect" onchange="window.updateSettings()" class="text-xs p-2 rounded-xl font-semibold border outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);">
-                <option value="calm">Calm Paper (Default)</option>
+                <option value="calm">Calm Paper (Default Light)</option>
                 <option value="oled">Pure OLED (Battery Saver)</option>
                 <option value="aurora">Aurora (Gradient Glass)</option>
                 <option value="default">Amber Glow</option>
@@ -570,6 +586,42 @@
     </nav>
   </div>
 
+  <!-- MOMENTUM SCORE MODAL -->
+  <div id="momentumModal" class="hidden fixed inset-0 backdrop-blur-md z-50 flex flex-col justify-end transition-opacity" style="background-color: var(--overlay-bg);" onclick="if(event.target===this) window.closeMomentumModal()">
+    <div class="p-6 rounded-t-3xl space-y-5 max-w-md mx-auto w-full border-t shadow-2xl" style="background-color: var(--modal-bg); border-color: var(--card-border);">
+      <div class="flex justify-between items-center border-b pb-3" style="border-color: var(--card-border);">
+        <div class="flex items-center gap-2">
+          <i data-lucide="zap" class="w-5 h-5" style="color: var(--accent);"></i>
+          <h3 class="text-sm font-bold uppercase tracking-widest" style="color: var(--text-main);">Daily Momentum Score</h3>
+        </div>
+        <button onclick="window.closeMomentumModal()" class="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style="background-color: var(--input-bg); color: var(--text-muted);"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+
+      <div class="flex flex-col items-center justify-center py-2">
+        <div class="numeric-display text-5xl font-bold tracking-tight mb-1" id="modalMomentumVal" style="color: var(--accent);">0</div>
+        <span id="modalMomentumBadge" class="text-[10px] font-bold uppercase px-3 py-1 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">Building Momentum</span>
+      </div>
+
+      <div class="space-y-3 text-xs pt-1">
+        <p class="font-semibold text-center" style="color: var(--text-muted);">How Momentum is calculated (0-100 pts):</p>
+        <div class="space-y-2">
+          <div class="flex justify-between p-2.5 rounded-xl border" style="background: var(--input-bg); border-color: var(--card-border);">
+            <span class="flex items-center gap-2"><i data-lucide="flame" class="w-4 h-4 text-orange-500"></i> Streak Consistency</span>
+            <span id="scoreStreakPts" class="font-bold text-emerald-500">+0 pts</span>
+          </div>
+          <div class="flex justify-between p-2.5 rounded-xl border" style="background: var(--input-bg); border-color: var(--card-border);">
+            <span class="flex items-center gap-2"><i data-lucide="shield" class="w-4 h-4 text-sky-500"></i> Wave Win Rate</span>
+            <span id="scoreWinPts" class="font-bold text-emerald-500">+0 pts</span>
+          </div>
+          <div class="flex justify-between p-2.5 rounded-xl border" style="background: var(--input-bg); border-color: var(--card-border);">
+            <span class="flex items-center gap-2"><i data-lucide="target" class="w-4 h-4 text-amber-500"></i> Daily Goal Discipline</span>
+            <span id="scoreGoalPts" class="font-bold text-emerald-500">+0 pts</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="triggerModal" class="hidden fixed inset-0 backdrop-blur-sm z-50 flex flex-col justify-end transition-opacity" style="background-color: var(--overlay-bg);" onclick="if(event.target===this) window.closeTriggerModal()">
     <div class="p-6 rounded-t-3xl space-y-4 max-w-md mx-auto w-full border-t shadow-2xl" style="background-color: var(--modal-bg); border-color: var(--card-border);">
       <div class="flex justify-between items-center mb-1">
@@ -638,7 +690,6 @@
     </div>
   </div>
 
-  <!-- EXPANDED DETAILED STAT MODAL -->
   <div id="statDetailModal" class="hidden fixed inset-0 backdrop-blur-sm z-50 flex flex-col justify-end transition-opacity" style="background-color: var(--overlay-bg);" onclick="if(event.target===this) window.closeStatDetail()">
     <div class="p-6 rounded-t-3xl space-y-5 max-w-md mx-auto w-full border-t shadow-2xl" style="background-color: var(--modal-bg); border-color: var(--card-border);">
       <div class="flex justify-between items-start">
