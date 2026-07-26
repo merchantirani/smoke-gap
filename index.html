@@ -25,7 +25,7 @@
     (function() {
       try {
         var s = JSON.parse(localStorage.getItem('smoke_settings')) || {};
-        var t = s.theme || 'white'; // Default Light Theme
+        var t = s.theme || 'white';
         if (t !== 'default') document.documentElement.classList.add('theme-' + t);
         var meta = document.getElementById('theme-color-meta');
         var metaColors = { white: '#F8FAFC', carbon: '#000000', aurora: '#0B0B14', oled: '#000000', paper: '#FAF6F0', calm: '#F5F5F0', default: '#090A0F' };

@@ -271,10 +271,10 @@ function bootCore() {
           newHtml = `<i data-lucide="trophy" class="w-3.5 h-3.5 text-emerald-500"></i><span class="text-emerald-500">Widened the gap by +${extraMins} min${extraMins!==1?'s':''}</span>`;
           dotColor = '#10B981';
 
-          // NOTIFICATION #2: GAP WIDENED MILESTONE
+          // PROPER ENGLISH NOTIFICATION #2: GAP WIDENED MILESTONE
           if(!gapWidenedNotified) {
             gapWidenedNotified = true;
-            sendSystemNotification("🎉 Gap Widened!", `Tumne pichla gap (${formatGap(Math.round(prevGapMs/60000))}) beat kar diya hai! Ab naya personal record ban raha hai.`, 'notifGapWidened');
+            sendSystemNotification("🎉 Gap Widened!", `Great progress! You just beat your previous gap (${formatGap(Math.round(prevGapMs/60000))}). You're setting a personal best.`, 'notifGapWidened');
           }
         }
       } else {
@@ -284,10 +284,10 @@ function bootCore() {
         dotColor = '#0EA5E9';
       }
 
-      // NOTIFICATION #3: FORGOTTEN LOG / 1.5x INACTIVITY REMINDER
+      // PROPER ENGLISH NOTIFICATION #3: FORGOTTEN LOG / 1.5x INACTIVITY REMINDER
       if (avgGapMs > 0 && diff >= avgGapMs * 1.5 && waveEndTime <= 0 && !inactivityNotified) {
         inactivityNotified = true;
-        sendSystemNotification("🚬 Log karna bhool gaye?", "Usual gap se 1.5x time ho gaya hai. Cigarette pi li toh log kar lo, ya gap widening jari rakho!", 'notifInactivity');
+        sendSystemNotification("🚬 Did you forget to log?", "It's been longer than your average gap. Log your stick or keep widening the gap!", 'notifInactivity');
       }
 
       if(liveDot) { liveDot.style.backgroundColor = dotColor; liveDot.style.boxShadow = `0 0 8px ${dotColor}`; }
@@ -296,7 +296,7 @@ function bootCore() {
   }, 1000);
 }
 
-// NOTIFICATION #4: PREDICTIVE PEAK CRAVING ALERT
+// PROPER ENGLISH NOTIFICATION #4: PREDICTIVE PEAK CRAVING ALERT
 function checkPeakNudge() {
   if(!logs || logs.length < 5) return;
   const now = new Date(); const dStr = now.toDateString();
@@ -309,8 +309,8 @@ function checkPeakNudge() {
     if(Object.keys(hours).length > 0) {
       let peakHr = parseInt(Object.keys(hours).reduce((a,b) => hours[a] > hours[b] ? a : b));
       if (now.getHours() === peakHr || (now.getHours() === peakHr - 1 && now.getMinutes() >= 45)) {
-        showToast("Your peak craving time is approaching. Ready to ride it out?");
-        sendSystemNotification("☕ Peak Craving Approaching", "Is time tumhara trigger peak hota hai. Tayyar raho, Ride It Out try karna!", 'notifPredictive');
+        showToast("Your peak craving time is approaching. Ready to Ride It Out?");
+        sendSystemNotification("☕ Peak Craving Approaching", "Your usual peak craving time is near. Stay mindful and prepare to Ride It Out!", 'notifPredictive');
         lastPeakNudgeDate = dStr; localStorage.setItem('smoke_peak_nudge', dStr);
         if (window.posthog) posthog.capture('peak_craving_nudge_shown', { hour: peakHr });
       }
@@ -552,8 +552,8 @@ function waveTick() {
     resetRideButton();
     waves.push(Date.now()); localStorage.setItem('smoke_waves', JSON.stringify(waves)); logWaveAttempt('won'); showToast("🛡️ Craving Defeated! +1 Shield");
     
-    // NOTIFICATION #1: WAVE COMPLETE
-    sendSystemNotification("🛡️ Craving Defeated!", "Zabardast! Tumne wave poori kar li. +1 Shield unlock ho gaya hai!", 'notifWaveComplete');
+    // PROPER ENGLISH NOTIFICATION #1: WAVE COMPLETE
+    sendSystemNotification("🛡️ Craving Defeated!", "Awesome job! You successfully rode out the craving wave. +1 Shield unlocked.", 'notifWaveComplete');
     
     celebrateBadgeIfUnlocked();
     if (window.posthog) posthog.capture('ride_wave_completed', { duration_mins: waveDurationMs / 60000 });
@@ -612,6 +612,7 @@ function showConfirm(title, message, onConfirm) {
 }
 function closeConfirmModal() { document.getElementById('confirmModal').classList.add('hidden'); pendingConfirmCallback = null; }
 function confirmYes() { const cb = pendingConfirmCallback; closeConfirmModal(); if(cb) cb(); }
+
 const THEME_META_COLORS = { white: '#F8FAFC', carbon: '#000000', aurora: '#0B0B14', oled: '#000000', paper: '#FAF6F0', calm: '#F5F5F0', default: '#090A0F' };
 const LIGHT_THEMES = ['white', 'paper', 'calm'];
 function isLightTheme() { return LIGHT_THEMES.includes(settings.theme) || document.documentElement.classList.contains('theme-white') || document.documentElement.classList.contains('theme-paper') || document.documentElement.classList.contains('theme-calm'); }
