@@ -14,6 +14,13 @@ let settings = Object.assign({}, DEFAULT_SETTINGS, JSON.parse(localStorage.getIt
 if (!settings.packSize || settings.packSize <= 0) settings.packSize = 20;
 if (!settings.timeFormat) settings.timeFormat = '12h';
 
+// Register Service Worker for Closed-App Notifications
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').then(() => {
+    console.log("Service Worker registered successfully.");
+  }).catch(err => console.log("SW registration failed", err));
+}
+
 // Auto-Reduce Goal Logic
 let lastReduceDate = localStorage.getItem('smoke_last_reduce_date');
 if (settings.autoReduce) {
@@ -51,9 +58,14 @@ let waveEndTime = parseInt(localStorage.getItem('smoke_wave_end')) || 0;
 let waveDurationMs = parseInt(localStorage.getItem('smoke_wave_duration')) || 600000;
 let lastPeakNudgeDate = localStorage.getItem('smoke_peak_nudge') || '';
 
-// NOTIFICATION STATE TRACKERS
 let gapWidenedNotified = false;
 let inactivityNotified = false;
+
+// SOS CRAVING INTERRUPTER STATE
+let sosTimer = null;
+let sosSecs = 15;
+let pendingLogIndex = null;
+let pendingWaveActive = false;
 
 function hashPin(p) { let h = 0; for (let i = 0; i < p.length; i++) { h = ((h << 5) - h) + p.charCodeAt(i); h |= 0; } return h.toString(36); }
 function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -109,7 +121,7 @@ window.startHold = function(e) {
       if(textEl) textEl.innerText = "Done";
       if (settings.haptics && navigator.vibrate) navigator.vibrate([30, 50, 30]);
       
-      try { handleLogClick(); } catch(err) { console.error("Error logging", err); } 
+      try { triggerSosInterrupterFirst(); } catch(err) { console.error("Error logging", err); } 
       finally {
         setTimeout(() => { 
           if(progressEl) progressEl.style.width = '0%'; 
@@ -162,13 +174,11 @@ window.onload = () => {
     document.getElementById('motivationInput').value = settings.motivation || '';
     document.getElementById('autoReduceInput').checked = settings.autoReduce || false;
 
-    // Load Notification Toggle States
     const notifKeys = ['notifWaveComplete', 'notifGapWidened', 'notifInactivity', 'notifPredictive'];
     notifKeys.forEach(k => {
       const el = document.getElementById(k + 'Input');
       if(el) el.checked = settings[k] !== false;
     });
-    updateNotifPermBtn();
   } catch(e) {}
   updateCostPerCigDisplay();
   
@@ -187,26 +197,23 @@ window.onload = () => {
 
 function sendSystemNotification(title, body, key) {
   if (settings[key] !== false && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-    try { new Notification(title, { body, icon: 'icons/pause_icon_192.png' }); } catch(e) {}
+    try {
+      if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.ready.then(reg => {
+          reg.showNotification(title, { body, icon: 'icons/pause_icon_192.png' });
+        });
+      } else {
+        new Notification(title, { body, icon: 'icons/pause_icon_192.png' });
+      }
+    } catch(e) {}
   }
-}
-
-function updateNotifPermBtn() {
-  const btn = document.getElementById('notifPermBtn');
-  if(!btn) return;
-  if (typeof Notification === 'undefined') { btn.innerText = 'Not Supported'; btn.style.opacity = '0.5'; btn.disabled = true; return; }
-  if (Notification.permission === 'granted') { btn.innerText = 'Enabled ✓'; btn.classList.remove('text-sky-500'); btn.classList.add('text-emerald-500'); }
-  else if (Notification.permission === 'denied') { btn.innerText = 'Blocked — Check Browser Settings'; btn.classList.remove('text-sky-500'); btn.classList.add('text-red-500'); }
-  else { btn.innerText = 'Enable Master'; btn.classList.remove('text-emerald-500', 'text-red-500'); btn.classList.add('text-sky-500'); }
 }
 
 function requestNotifPermission() {
   if (typeof Notification === 'undefined') { showToast("Notifications not supported in browser"); return; }
-  if (Notification.permission === 'denied') { showToast("Notifications blocked — enable them in your browser settings"); return; }
   Notification.requestPermission().then(perm => {
     if(perm === 'granted') { showToast("Smart Reminders Enabled! 🔔"); }
     else { showToast("Notification Permission Denied"); }
-    updateNotifPermBtn();
   });
 }
 
@@ -217,6 +224,55 @@ function toggleNotifSetting(key) {
   localStorage.setItem('smoke_settings', JSON.stringify(settings));
   if(el.checked && typeof Notification !== 'undefined' && Notification.permission !== 'granted') {
     requestNotifPermission();
+  }
+}
+
+// SOS CRAVING INTERRUPTER (15s Micro-Action)
+function triggerSosInterrupterFirst() {
+  const actions = [
+    "Drink a full glass of cold water 💧",
+    "Take 3 deep breaths (4s in, 4s hold, 6s out) 🫁",
+    "Walk away from your current room for 1 minute 🚶"
+  ];
+  const choice = actions[Math.floor(Math.random() * actions.length)];
+  document.getElementById('sosActionTitle').innerText = choice;
+
+  sosSecs = 15;
+  const numEl = document.getElementById('sosTimerNum');
+  const ringEl = document.getElementById('sosTimerRing');
+  if(numEl) numEl.innerText = sosSecs;
+  if(ringEl) ringEl.style.strokeDashoffset = '0';
+
+  document.getElementById('sosInterrupterModal').classList.remove('hidden');
+  if(window.lucide) window.lucide.createIcons();
+
+  if(sosTimer) clearInterval(sosTimer);
+  sosTimer = setInterval(() => {
+    sosSecs--;
+    if(numEl) numEl.innerText = sosSecs;
+    if(ringEl) {
+      let offset = 138.23 - (138.23 * (sosSecs / 15));
+      ringEl.style.strokeDashoffset = offset;
+    }
+    if(sosSecs <= 0) {
+      clearInterval(sosTimer);
+    }
+  }, 1000);
+}
+
+function closeSosInterrupter(cravingPassed) {
+  if(sosTimer) clearInterval(sosTimer);
+  document.getElementById('sosInterrupterModal').classList.add('hidden');
+
+  if(cravingPassed) {
+    waves.push(Date.now());
+    localStorage.setItem('smoke_waves', JSON.stringify(waves));
+    logWaveAttempt('won');
+    showToast("🛡️ Craving Defeated! +1 Shield");
+    if(window.confetti) confetti({particleCount: 80, spread: 60, origin: {y: 0.6}});
+    try { updateUI(); } catch(e){}
+  } else {
+    handleLogClick();
   }
 }
 
@@ -236,8 +292,7 @@ function bootCore() {
       const allGaps = logs.map(l => l.gap).filter(g => g !== null && g !== undefined);
       const avgGapMs = allGaps.length ? (allGaps.reduce((a,b)=>a+b, 0) / allGaps.length) * 60000 : 3600000;
 
-      // NOTIFICATION CHECKS run even when the tab/app is hidden or in the background,
-      // otherwise reminders would never fire when the person actually needs them.
+      // NOTIFICATIONS RUN IN BACKGROUND
       if (prevGapMs > 0 && diff >= prevGapMs && !gapWidenedNotified) {
         gapWidenedNotified = true;
         sendSystemNotification("🎉 Gap Widened!", `Great progress! You just beat your previous gap (${formatGap(Math.round(prevGapMs/60000))}). You're setting a personal best.`, 'notifGapWidened');
@@ -247,69 +302,155 @@ function bootCore() {
         sendSystemNotification("🚬 Did you forget to log?", "It's been longer than your average gap. Log your stick or keep widening the gap!", 'notifInactivity');
       }
 
-      if (document.hidden) return; // Skip the rest — pure UI/DOM work not needed while tab is hidden
+      if (document.hidden) return; // UI updates skipped when tab hidden
 
       const stopwatchEl = document.getElementById('stopwatch');
       if(stopwatchEl) stopwatchEl.innerText = `${Math.floor(diff/3600000).toString().padStart(2,'0')}:${Math.floor((diff%3600000)/60000).toString().padStart(2,'0')}:${Math.floor((diff%60000)/1000).toString().padStart(2,'0')}`;
 
-      const circle = document.getElementById('heroProgressCircle');
-      const milestoneCircle = document.getElementById('heroMilestoneCircle');
-      const statusWrapper = document.getElementById('smartStatusWrapper');
-      const statusText = document.getElementById('smartStatusText');
-      const liveDot = document.getElementById('headerLiveDot');
-      const dashMax = 289.02;
-      const milestoneDashMax = 251.32;
-      
-      let newClass = '', newHtml = '', dotColor = '#9CA3AF';
+      // HERO DISPLAY ENGINE (Gauge vs Linear vs Circle)
+      updateHeroDisplay(diff, prevGapMs, avgGapMs);
 
-      if (activeHeroStyle === 1 && milestoneCircle) {
-        milestoneCircle.classList.remove('hidden');
-        let ratio = diff / avgGapMs;
-        let p1 = Math.min(ratio, 1.0);
-        if(circle) { circle.style.stroke = p1 >= 1.0 ? '#10B981' : 'var(--accent)'; circle.style.strokeDashoffset = dashMax - (dashMax * p1); }
-        if (ratio > 1.0) {
-          let p2 = Math.min(ratio - 1.0, 1.0);
-          milestoneCircle.style.strokeDashoffset = milestoneDashMax - (milestoneDashMax * p2);
-          document.getElementById('heroSubLabel').classList.remove('hidden');
-          document.getElementById('heroSubLabel').innerText = `BEATING AVG BY +${formatGap(Math.floor((diff - avgGapMs)/60000))}`;
-        } else {
-          milestoneCircle.style.strokeDashoffset = milestoneDashMax;
-          document.getElementById('heroSubLabel').classList.add('hidden');
-        }
-      } else if (milestoneCircle) {
-        milestoneCircle.classList.add('hidden');
-        document.getElementById('heroSubLabel').classList.add('hidden');
-      }
-
-      if (prevGapMs > 0) {
-        let percent = diff / prevGapMs;
-        if (percent < 1) {
-          if(activeHeroStyle === 0 && circle) { circle.style.stroke = '#F59E0B'; circle.style.strokeDashoffset = dashMax - (dashMax * percent); circle.style.filter = 'none'; }
-          let remMins = Math.ceil((prevGapMs - diff) / 60000);
-          newClass = 'px-5 py-2.5 rounded-full border transition-all duration-500 bg-amber-500/10 border-amber-500/20';
-          newHtml = `<i data-lucide="alert-circle" class="w-3.5 h-3.5 text-amber-500"></i><span class="text-amber-500">${remMins} min${remMins>1?'s':''} left to beat previous gap</span>`;
-          dotColor = '#F59E0B';
-        } else {
-          if(activeHeroStyle === 0 && circle) { circle.style.stroke = '#10B981'; circle.style.strokeDashoffset = 0; circle.style.filter = 'drop-shadow(0 0 8px rgba(16,185,129,0.5))'; }
-          let extraMins = Math.floor((diff - prevGapMs) / 60000);
-          newClass = 'px-5 py-2.5 rounded-full border transition-all duration-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.15)]';
-          newHtml = `<i data-lucide="trophy" class="w-3.5 h-3.5 text-emerald-500"></i><span class="text-emerald-500">Widened the gap by +${extraMins} min${extraMins!==1?'s':''}</span>`;
-          dotColor = '#10B981';
-        }
-      } else {
-        if(activeHeroStyle === 0 && circle) { circle.style.strokeDashoffset = dashMax; circle.style.stroke = 'var(--card-border)'; circle.style.filter = 'none'; }
-        newClass = 'px-5 py-2.5 rounded-full border transition-all duration-500 bg-sky-500/10 border-sky-500/20';
-        newHtml = `<i data-lucide="rocket" class="w-3.5 h-3.5 text-sky-500"></i><span class="text-sky-500">Setting your first baseline gap</span>`;
-        dotColor = '#0EA5E9';
-      }
-
-      if(liveDot) { liveDot.style.backgroundColor = dotColor; liveDot.style.boxShadow = `0 0 8px ${dotColor}`; }
-      if (statusText && statusText.dataset.rawHtml !== newHtml) { statusWrapper.className = newClass; statusText.innerHTML = newHtml; statusText.dataset.rawHtml = newHtml; if(window.lucide) window.lucide.createIcons(); }
     } catch(err) {}
   }, 1000);
 }
 
-// PROPER ENGLISH NOTIFICATION #4: PREDICTIVE PEAK CRAVING ALERT
+function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
+  const circle = document.getElementById('heroProgressCircle');
+  const milestoneCircle = document.getElementById('heroMilestoneCircle');
+  const gaugeArc = document.getElementById('heroGaugeArc');
+  const linearBar = document.getElementById('heroLinearBar');
+  const linearSub = document.getElementById('heroLinearSub');
+  const statusWrapper = document.getElementById('smartStatusWrapper');
+  const statusText = document.getElementById('smartStatusText');
+  const liveDot = document.getElementById('headerLiveDot');
+
+  const dashMax = 289.02;
+  const gaugeMax = 165; // Speedometer arc length
+
+  let dotColor = '#9CA3AF', newClass = '', newHtml = '';
+
+  // 1. SPEEDOMETER GAUGE (Option A)
+  if (activeHeroStyle === 0 && gaugeArc) {
+    let ratio = avgGapMs > 0 ? diff / avgGapMs : 0;
+    let pct = Math.min(ratio, 1.0);
+    gaugeArc.style.strokeDashoffset = (gaugeMax - (gaugeMax * pct)).toFixed(2);
+    if(ratio >= 1.0) {
+      gaugeArc.style.stroke = '#10B981'; // Green Victory Zone
+      document.getElementById('heroSubLabel').classList.remove('hidden');
+      document.getElementById('heroSubLabel').innerText = `VICTORY ZONE (+${formatGap(Math.floor((diff - avgGapMs)/60000))})`;
+    } else {
+      gaugeArc.style.stroke = 'var(--accent)';
+      document.getElementById('heroSubLabel').classList.add('hidden');
+    }
+  }
+
+  // 2. LINEAR COUNTDOWN (Option B)
+  if (activeHeroStyle === 1 && linearBar && linearSub) {
+    let ratio = avgGapMs > 0 ? Math.min(1.0, diff / avgGapMs) : 0;
+    linearBar.style.width = `${ratio * 100}%`;
+    linearBar.style.backgroundColor = ratio >= 1.0 ? '#10B981' : 'var(--accent)';
+    if(diff >= avgGapMs) {
+      linearSub.innerText = `Record Beat (+${formatGap(Math.floor((diff - avgGapMs)/60000))})`;
+      linearSub.className = "text-[8px] font-bold text-center uppercase tracking-wider text-emerald-500 truncate";
+    } else {
+      let remMins = Math.ceil((avgGapMs - diff)/60000);
+      linearSub.innerText = `Target: ${formatGap(Math.round(avgGapMs/60000))} (${remMins}m left)`;
+      linearSub.className = "text-[8px] font-bold text-center uppercase tracking-wider text-amber-500 truncate";
+    }
+  }
+
+  // 3. MILESTONE RING (Option C)
+  if (activeHeroStyle === 2 && circle && milestoneCircle) {
+    let ratio = diff / avgGapMs;
+    let p1 = Math.min(ratio, 1.0);
+    circle.style.stroke = p1 >= 1.0 ? '#10B981' : 'var(--accent)';
+    circle.style.strokeDashoffset = dashMax - (dashMax * p1);
+    if (ratio > 1.0) {
+      milestoneCircle.classList.remove('hidden');
+      let p2 = Math.min(ratio - 1.0, 1.0);
+      milestoneCircle.style.strokeDashoffset = 251.32 - (251.32 * p2);
+      document.getElementById('heroSubLabel').classList.remove('hidden');
+      document.getElementById('heroSubLabel').innerText = `BEATING AVG BY +${formatGap(Math.floor((diff - avgGapMs)/60000))}`;
+    } else {
+      milestoneCircle.classList.add('hidden');
+      document.getElementById('heroSubLabel').classList.add('hidden');
+    }
+  }
+
+  // SMART STATUS BADGE BELOW HERO
+  if (prevGapMs > 0) {
+    let percent = diff / prevGapMs;
+    if (percent < 1) {
+      let remMins = Math.ceil((prevGapMs - diff) / 60000);
+      newClass = 'px-5 py-2.5 rounded-full border transition-all duration-500 bg-amber-500/10 border-amber-500/20';
+      newHtml = `<i data-lucide="alert-circle" class="w-3.5 h-3.5 text-amber-500"></i><span class="text-amber-500">${remMins} min${remMins>1?'s':''} left to beat previous gap</span>`;
+      dotColor = '#F59E0B';
+    } else {
+      let extraMins = Math.floor((diff - prevGapMs) / 60000);
+      newClass = 'px-5 py-2.5 rounded-full border transition-all duration-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.15)]';
+      newHtml = `<i data-lucide="trophy" class="w-3.5 h-3.5 text-emerald-500"></i><span class="text-emerald-500">Widened the gap by +${extraMins} min${extraMins!==1?'s':''}</span>`;
+      dotColor = '#10B981';
+    }
+  } else {
+    newClass = 'px-5 py-2.5 rounded-full border transition-all duration-500 bg-sky-500/10 border-sky-500/20';
+    newHtml = `<i data-lucide="rocket" class="w-3.5 h-3.5 text-sky-500"></i><span class="text-sky-500">Setting your first baseline gap</span>`;
+    dotColor = '#0EA5E9';
+  }
+
+  if(liveDot) { liveDot.style.backgroundColor = dotColor; liveDot.style.boxShadow = `0 0 8px ${dotColor}`; }
+  if (statusText && statusText.dataset.rawHtml !== newHtml) { statusWrapper.className = newClass; statusText.innerHTML = newHtml; statusText.dataset.rawHtml = newHtml; if(window.lucide) window.lucide.createIcons(); }
+}
+
+function setHeroStyle(idx) {
+  activeHeroStyle = idx;
+  localStorage.setItem('smoke_hero_style', activeHeroStyle);
+  
+  const dot0 = document.getElementById('carouselDot0'), dot1 = document.getElementById('carouselDot1'), dot2 = document.getElementById('carouselDot2');
+  const label = document.getElementById('heroLabelText');
+  const svgCircle = document.getElementById('heroSvgDisplay');
+  const svgGauge = document.getElementById('heroGaugeSvg');
+  const linearBox = document.getElementById('heroLinearBox');
+
+  if(dot0 && dot1 && dot2) {
+    dot0.className = `w-2 h-2 rounded-full transition-all ${idx === 0 ? 'bg-amber-500 w-4' : 'bg-gray-500/40'}`;
+    dot1.className = `w-2 h-2 rounded-full transition-all ${idx === 1 ? 'bg-amber-500 w-4' : 'bg-gray-500/40'}`;
+    dot2.className = `w-2 h-2 rounded-full transition-all ${idx === 2 ? 'bg-amber-500 w-4' : 'bg-gray-500/40'}`;
+  }
+
+  if (idx === 0) { // OPTION A: SPEEDOMETER GAUGE
+    if(svgGauge) svgGauge.classList.remove('hidden');
+    if(svgCircle) svgCircle.classList.add('hidden');
+    if(linearBox) linearBox.classList.add('hidden');
+    if(label) label.innerHTML = `<i data-lucide="gauge" class="w-3 h-3 text-amber-500"></i> Speedometer Gauge`;
+  } else if (idx === 1) { // OPTION B: LINEAR COUNTDOWN
+    if(svgGauge) svgGauge.classList.add('hidden');
+    if(svgCircle) svgCircle.classList.add('hidden');
+    if(linearBox) linearBox.classList.remove('hidden');
+    if(label) label.innerHTML = `<i data-lucide="clock" class="w-3 h-3 text-sky-500"></i> Linear Target Timer`;
+  } else { // OPTION C: CIRCULAR RING
+    if(svgGauge) svgGauge.classList.add('hidden');
+    if(svgCircle) svgCircle.classList.remove('hidden');
+    if(linearBox) linearBox.classList.add('hidden');
+    if(label) label.innerHTML = `<i data-lucide="target" class="w-3 h-3 text-emerald-500"></i> Milestone Ring`;
+  }
+
+  if(window.lucide) window.lucide.createIcons();
+}
+
+let touchStartX = 0;
+function setupCarouselSwipe() {
+  const el = document.getElementById('heroCarousel');
+  if(!el) return;
+  el.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, {passive: true});
+  el.addEventListener('touchend', e => {
+    let diffX = e.changedTouches[0].screenX - touchStartX;
+    if (Math.abs(diffX) > 40) {
+      if (diffX < 0) setHeroStyle((activeHeroStyle + 1) % 3);
+      else setHeroStyle((activeHeroStyle + 2) % 3);
+    }
+  }, {passive: true});
+}
+
 function checkPeakNudge() {
   if(!logs || logs.length < 5) return;
   const now = new Date(); const dStr = now.toDateString();
@@ -329,33 +470,6 @@ function checkPeakNudge() {
       }
     }
   }
-}
-
-function setHeroStyle(idx) {
-  activeHeroStyle = idx;
-  localStorage.setItem('smoke_hero_style', activeHeroStyle);
-  const dot0 = document.getElementById('carouselDot0'), dot1 = document.getElementById('carouselDot1');
-  const label = document.getElementById('heroLabelText');
-  if(dot0 && dot1) {
-    dot0.className = `w-2 h-2 rounded-full transition-all ${idx === 0 ? 'bg-amber-500 w-4' : 'bg-gray-500/40'}`;
-    dot1.className = `w-2 h-2 rounded-full transition-all ${idx === 1 ? 'bg-amber-500 w-4' : 'bg-gray-500/40'}`;
-  }
-  if(label) label.innerHTML = idx === 0 ? `<i data-lucide="info" class="w-3 h-3"></i> Current Gap` : `<i data-lucide="target" class="w-3 h-3 text-emerald-500"></i> Milestone Ring`;
-  if(window.lucide) window.lucide.createIcons();
-}
-
-let touchStartX = 0;
-function setupCarouselSwipe() {
-  const el = document.getElementById('heroCarousel');
-  if(!el) return;
-  el.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, {passive: true});
-  el.addEventListener('touchend', e => {
-    let diffX = e.changedTouches[0].screenX - touchStartX;
-    if (Math.abs(diffX) > 40) {
-      if (diffX < 0) setHeroStyle(1);
-      else setHeroStyle(0);
-    }
-  }, {passive: true});
 }
 
 function enterPin(n) {
@@ -565,7 +679,6 @@ function waveTick() {
     resetRideButton();
     waves.push(Date.now()); localStorage.setItem('smoke_waves', JSON.stringify(waves)); logWaveAttempt('won'); showToast("🛡️ Craving Defeated! +1 Shield");
     
-    // PROPER ENGLISH NOTIFICATION #1: WAVE COMPLETE
     sendSystemNotification("🛡️ Craving Defeated!", "Awesome job! You successfully rode out the craving wave. +1 Shield unlocked.", 'notifWaveComplete');
     
     celebrateBadgeIfUnlocked();
@@ -668,12 +781,36 @@ function updateUI() {
 
   const today = logs.filter(l => l.timestamp && new Date(l.timestamp).toDateString() === todayStr);
   const overLimit = today.length >= settings.dailyLimit;
-  const todayCountTextEl = document.getElementById('todayCountText'); if(todayCountTextEl) todayCountTextEl.innerText = `${today.length} / ${settings.dailyLimit}`;
+  const todayCountTextEl = document.getElementById('todayCountText'); if(todayCountTextEl) todayCountTextEl.innerText = `${today.length} / ${settings.dailyLimit} Sticks`;
   
-  const stickIconEl = document.getElementById('todaySticksIcon'); const stickTextEl = document.getElementById('todayCount'); const limitMsg = document.getElementById('limitWarningMsg');
-  if(stickIconEl && stickTextEl) {
-    if(overLimit) { stickIconEl.className = 'w-6 h-6 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500'; stickTextEl.style.color = '#F59E0B'; if(limitMsg) limitMsg.classList.remove('hidden'); } 
-    else { stickIconEl.className = 'w-6 h-6 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500'; stickTextEl.style.color = 'var(--text-main)'; if(limitMsg) limitMsg.classList.add('hidden'); }
+  // NICOTINE WILLPOWER BATTERY METER LOGIC
+  const fillBar = document.getElementById('batteryFillBar');
+  const pctText = document.getElementById('batteryPctText');
+  const battIcon = document.getElementById('batteryIcon');
+  const limitMsg = document.getElementById('limitWarningMsg');
+
+  let remCap = Math.max(0, settings.dailyLimit - today.length);
+  let battPct = Math.round((remCap / Math.max(1, settings.dailyLimit)) * 100);
+
+  if(fillBar && pctText) {
+    pctText.innerText = `${battPct}%`;
+    fillBar.style.width = `${battPct}%`;
+    if(battPct <= 20) {
+      fillBar.className = "h-full rounded-full transition-all duration-500 bg-red-500";
+      pctText.className = "numeric-display text-[10px] font-bold text-red-500";
+      if(battIcon) battIcon.className = "w-3.5 h-3.5 text-red-500";
+      if(limitMsg) limitMsg.classList.remove('hidden');
+    } else if(battPct <= 50) {
+      fillBar.className = "h-full rounded-full transition-all duration-500 bg-amber-500";
+      pctText.className = "numeric-display text-[10px] font-bold text-amber-500";
+      if(battIcon) battIcon.className = "w-3.5 h-3.5 text-amber-500";
+      if(limitMsg) limitMsg.classList.add('hidden');
+    } else {
+      fillBar.className = "h-full rounded-full transition-all duration-500 bg-emerald-500";
+      pctText.className = "numeric-display text-[10px] font-bold text-emerald-500";
+      if(battIcon) battIcon.className = "w-3.5 h-3.5 text-emerald-500";
+      if(limitMsg) limitMsg.classList.add('hidden');
+    }
   }
 
   const todayWaves = waves.filter(w => new Date(w).toDateString() === todayStr);
@@ -733,12 +870,14 @@ function showStatDetail(type) {
     const monthLogs = logs.filter(l => (new Date().getTime() - l.timestamp) < 30*86400000); 
     extra.innerHTML = row('Cost Per Stick', `${settings.currency} ${pricePerStick.toFixed(2)}`) + row('30-Day Total Spend', `${settings.currency} ${(monthLogs.length * pricePerStick).toFixed(1)}`);
   } else if (type === 'count') {
-    const over = today.length >= settings.dailyLimit; iconClass = over ? 'bg-amber-500/10 text-amber-500' : 'bg-amber-500/10 text-amber-500'; iconName = 'activity'; 
-    title.innerText = "Daily Volume Limit"; value.innerText = `${today.length} / ${settings.dailyLimit}`; 
-    desc.innerText = over ? `Daily goal reached (${settings.dailyLimit} max). Focus on holding until tomorrow to keep momentum.` : `You have ${settings.dailyLimit - today.length} stick(s) remaining under your daily limit target.`; 
-    pBox.classList.remove('hidden'); pLabel.innerText = "Daily Limit Used"; 
-    let pct = Math.min(100, Math.round((today.length / settings.dailyLimit) * 100)); pPct.innerText = `${pct}%`; pBar.style.width = `${pct}%`; pBar.style.backgroundColor = over ? '#EF4444' : '#F59E0B';
-    extra.innerHTML = row('Target Daily Cap', `${settings.dailyLimit} sticks`) + row('Auto-Reduce Active', settings.autoReduce ? 'Yes (-1 stick/week)' : 'Disabled');
+    const remCap = Math.max(0, settings.dailyLimit - today.length);
+    const battPct = Math.round((remCap / Math.max(1, settings.dailyLimit)) * 100);
+    iconClass = 'bg-emerald-500/10 text-emerald-500'; iconName = 'battery-charging'; 
+    title.innerText = "Nicotine Willpower Battery"; value.innerText = `${battPct}% Remaining`; 
+    desc.innerText = `Your daily limit is ${settings.dailyLimit} sticks. You have smoked ${today.length} stick(s) today. You have ${remCap} stick(s) left before depleting your willpower battery.`; 
+    pBox.classList.remove('hidden'); pLabel.innerText = "Battery Capacity Remaining"; 
+    pPct.innerText = `${battPct}%`; pBar.style.width = `${battPct}%`; pBar.style.backgroundColor = battPct <= 20 ? '#EF4444' : battPct <= 50 ? '#F59E0B' : '#10B981';
+    extra.innerHTML = row('Daily Goal Cap', `${settings.dailyLimit} sticks`) + row('Sticks Smoked Today', `${today.length} sticks`) + row('Auto-Reduce Active', settings.autoReduce ? 'Yes (-1 stick/week)' : 'Disabled');
   } else if (type === 'bestGap') {
     iconClass = 'bg-emerald-500/10 text-emerald-500'; iconName = 'trophy'; title.innerText = "Today's Best Gap"; const todayGaps = today.map(l => l.gap).filter(g => g !== null && g !== undefined); const best = todayGaps.length ? Math.max(...todayGaps) : null; value.innerText = formatGap(best); 
     desc.innerText = best !== null ? `Your longest gap between cigarettes today was ${formatGap(best)}. The wider your gaps, the faster your baseline addiction drops.` : `No gap data recorded for today yet.`; 
@@ -812,7 +951,7 @@ function closeShieldDashboard() { document.getElementById('shieldDashboardModal'
 
 function exportJSON() {
   if(!logs || logs.length === 0) { showToast("No data to backup yet."); return; }
-  const data = { logs, settings, triggers, waves, version: '1.5' };
+  const data = { logs, settings, triggers, waves, version: '1.6' };
   const blob = new Blob([JSON.stringify(data)], { type: "application/json" }); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.setAttribute("href", url); link.setAttribute("download", `SmokeGap_Backup_${new Date().toISOString().slice(0,10)}.json`); document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url);
   localStorage.setItem('smoke_last_backup', new Date().getTime().toString());
   const banner = document.getElementById('backupReminderBanner'); if(banner) banner.classList.add('hidden');
@@ -1313,3 +1452,4 @@ window.exportLogsCSV = exportLogsCSV; window.addCustomTrigger = addCustomTrigger
 window.closeConfirmModal = closeConfirmModal; window.confirmYes = confirmYes; window.setTakeoverIntensity = setTakeoverIntensity; window.exportJSON = exportJSON; window.importJSON = importJSON;
 window.closePinSetupModal = closePinSetupModal; window.savePinSetup = savePinSetup; window.setHeroStyle = setHeroStyle;
 window.requestNotifPermission = requestNotifPermission; window.toggleNotifSetting = toggleNotifSetting;
+window.closeSosInterrupter = closeSosInterrupter;
