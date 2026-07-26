@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
-  <meta name="theme-color" id="theme-color-meta" content="#090A0F" />
+  <meta name="theme-color" id="theme-color-meta" content="#F8FAFC" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <title>pause — Widen the gap.</title>
 
-  <!-- PostHog Analytics & Session Replay -->
+  <!-- PostHog Analytics -->
   <script>
     !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}
     (p=t.createElement("script")).type="text/javascript",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);
@@ -16,9 +17,7 @@
     posthog.init('phc_zKxDjX5K3qKcANYGwRWdTVeGfVwBgFygbFuymtRCCbYM', {
       api_host: 'https://us.i.posthog.com',
       person_profiles: 'always',
-      session_recording: {
-        maskAllInputs: false
-      }
+      session_recording: { maskAllInputs: false }
     });
   </script>
 
@@ -26,11 +25,11 @@
     (function() {
       try {
         var s = JSON.parse(localStorage.getItem('smoke_settings')) || {};
-        var t = s.theme || 'white';
+        var t = s.theme || 'white'; // Default Light Theme
         if (t !== 'default') document.documentElement.classList.add('theme-' + t);
         var meta = document.getElementById('theme-color-meta');
-        var metaColors = { white: '#F8FAFC', carbon: '#000000', aurora: '#0B0B14', oled: '#000000', paper: '#FAF6F0', default: '#090A0F' };
-        if (meta) meta.setAttribute('content', metaColors[t] || metaColors.default);
+        var metaColors = { white: '#F8FAFC', carbon: '#000000', aurora: '#0B0B14', oled: '#000000', paper: '#FAF6F0', calm: '#F5F5F0', default: '#090A0F' };
+        if (meta) meta.setAttribute('content', metaColors[t] || metaColors.white);
       } catch(e){}
     })();
   </script>
@@ -39,8 +38,6 @@
   <link rel="icon" type="image/png" sizes="16x16" href="icons/pause_favicon_16.png">
   <link rel="icon" type="image/png" sizes="32x32" href="icons/pause_favicon_32.png">
   <link rel="apple-touch-icon" sizes="180x180" href="icons/pause_icon_180.png">
-  <link rel="icon" type="image/png" sizes="192x192" href="icons/pause_icon_192.png">
-  <link rel="icon" type="image/png" sizes="512x512" href="icons/pause_icon_512.png">
 
   <link href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700&f[]=general-sans@400,500,600,700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -52,6 +49,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  
   <style>
     :root { 
       --bg-body: #090A0F; --text-main: #F3F4F6; --text-muted: #9CA3AF; 
@@ -99,7 +98,7 @@
     body.theme-aurora::before { content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.5; background: radial-gradient(circle at 15% 15%, rgba(167,139,250,0.25), transparent 40%), radial-gradient(circle at 85% 75%, rgba(56,189,248,0.18), transparent 45%); }
     body.theme-aurora .app-container { position: relative; z-index: 1; }
     
-    html, body { background-color: var(--bg-body); color: var(--text-main); font-family: 'General Sans', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-tap-highlight-color: transparent; }
+    html, body { min-height: 100vh; background-color: var(--bg-body) !important; color: var(--text-main); font-family: 'General Sans', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
     button, .nav-btn, .drag-handle, .dock-bar { user-select: none; -webkit-user-select: none; }
     
     .brand-title { font-family: 'Clash Display', sans-serif; font-weight: 700; letter-spacing: -0.03em; background: linear-gradient(135deg, var(--accent), var(--text-main)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
@@ -118,7 +117,6 @@
     .chart-wrapper { position: relative; width: 100%; height: 180px; }
     .page-section { animation: fadeIn 0.3s ease-out forwards; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes confettiFall { 0% { transform: translateY(0) rotate(0deg); opacity: 0.9; } 100% { transform: translateY(110vh) rotate(540deg); opacity: 0; } }
     .shake-anim { animation: shakeDots 0.4s ease; }
     @keyframes shakeDots { 0%,100% { transform: translateX(0); } 20%,60% { transform: translateX(-8px); } 40%,80% { transform: translateX(8px); } }
     @keyframes pulse-breathe { 0%, 100% { transform: scale(0.8); opacity: 0.15; } 50% { transform: scale(1.6); opacity: 0.3; } }
@@ -134,7 +132,7 @@
     .ride-btn { position: relative; overflow: hidden; }
     #rideProgressFill { position: absolute; bottom: 0; left: 0; height: 100%; width: 0%; background: rgba(255,255,255,0.18); pointer-events: none; transition: width 1s linear; }
 
-    /* Heatmap Fixed Alignment */
+    /* Heatmap Alignment */
     .heat-cell { width: 13px; height: 13px; border-radius: 3px; flex-shrink: 0; transition: all 0.2s ease; }
     .heat-col { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; }
   </style>
@@ -171,10 +169,18 @@
         </div>
         <p class="text-[9px] font-bold uppercase tracking-[0.2em] mt-0.5" style="color: var(--text-muted);">Widen the gap.</p>
       </div>
-      <button onclick="window.showShieldDashboard()" class="premium-card px-4 py-1.5 rounded-full flex items-center gap-2 active:scale-95 transition-transform">
-        <i data-lucide="shield" class="w-3 h-3" style="color: var(--accent);"></i>
-        <span id="shieldCount" class="numeric-display text-sm font-bold" style="color: var(--text-main);">0</span>
-      </button>
+
+      <!-- HEADER RIGHT: MOMENTUM & SHIELD SIDE-BY-SIDE -->
+      <div class="flex items-center gap-2">
+        <button onclick="window.showStatDetail('momentum')" class="premium-card px-3 py-1.5 rounded-full flex items-center gap-1.5 active:scale-95 transition-transform cursor-pointer">
+          <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-500"></i>
+          <span id="momentumScoreHeader" class="numeric-display text-sm font-bold" style="color: var(--text-main);">0</span>
+        </button>
+        <button onclick="window.showShieldDashboard()" class="premium-card px-3.5 py-1.5 rounded-full flex items-center gap-1.5 active:scale-95 transition-transform cursor-pointer">
+          <i data-lucide="shield" class="w-3.5 h-3.5" style="color: var(--accent);"></i>
+          <span id="shieldCount" class="numeric-display text-sm font-bold" style="color: var(--text-main);">0</span>
+        </button>
+      </div>
     </header>
 
     <div class="p-5 space-y-4 pt-0">
@@ -193,33 +199,13 @@
           FOR: <span id="motivationText" style="color: var(--text-main);">--</span>
         </div>
 
-        <div id="momentumCard" onclick="window.showStatDetail('momentum')" class="premium-card p-3.5 flex items-center gap-3 cursor-pointer active:scale-95 transition-transform">
-          <div class="relative shrink-0 w-12 h-12">
-            <svg viewBox="0 0 44 44" class="w-12 h-12 -rotate-90">
-              <circle cx="22" cy="22" r="19" fill="transparent" stroke="var(--input-bg)" stroke-width="4"></circle>
-              <circle id="momentumRing" cx="22" cy="22" r="19" fill="transparent" stroke="var(--accent)" stroke-width="4" stroke-dasharray="119.4" stroke-dashoffset="119.4" stroke-linecap="round" style="transition: stroke-dashoffset 0.8s ease-out;"></circle>
-            </svg>
-            <div class="absolute inset-0 flex items-center justify-center">
-              <span id="momentumScoreNum" class="numeric-display text-[13px] font-bold" style="color: var(--text-main);">--</span>
-            </div>
-          </div>
-          <div class="flex-1 min-w-0">
-            <p class="text-[9px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Today's Momentum</p>
-            <p id="momentumLabel" class="text-sm font-bold mt-0.5" style="color: var(--text-main);">Calculating...</p>
-          </div>
-          <i data-lucide="chevron-right" class="w-4 h-4 shrink-0" style="color: var(--text-muted);"></i>
-        </div>
-
         <!-- HERO CAROUSEL CONTAINER (Swipeable) -->
         <div id="heroCarousel" class="relative flex flex-col items-center justify-center pt-2 pb-2 touch-pan-y" style="touch-action: pan-y;">
           <div onclick="window.showStatDetail('currentGap')" class="relative flex justify-center items-center w-64 h-64 mx-auto mb-2 cursor-pointer active:scale-95 transition-transform">
             
-            <!-- SVG RINGS FOR STYLES -->
             <svg class="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 100 100">
               <circle cx="50" cy="50" r="46" fill="transparent" stroke="var(--card-border)" stroke-width="2.5"></circle>
-              <!-- Primary Progress Circle -->
               <circle id="heroProgressCircle" cx="50" cy="50" r="46" fill="transparent" stroke="var(--accent)" stroke-width="4" stroke-dasharray="289.02" stroke-dashoffset="289.02" stroke-linecap="round" class="transition-all duration-1000 ease-linear"></circle>
-              <!-- Secondary Milestone Ring (Overflow Record) -->
               <circle id="heroMilestoneCircle" cx="50" cy="50" r="40" fill="transparent" stroke="#10B981" stroke-width="3" stroke-dasharray="251.32" stroke-dashoffset="251.32" stroke-linecap="round" class="transition-all duration-1000 ease-linear hidden"></circle>
             </svg>
 
@@ -230,7 +216,6 @@
             </div>
           </div>
 
-          <!-- Carousel Dots -->
           <div class="flex items-center gap-2 mb-4">
             <button onclick="window.setHeroStyle(0)" id="carouselDot0" class="w-2 h-2 rounded-full transition-all bg-amber-500"></button>
             <button onclick="window.setHeroStyle(1)" id="carouselDot1" class="w-2 h-2 rounded-full transition-all bg-gray-500/40"></button>
@@ -471,7 +456,7 @@
           </div>
           <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
             <label class="text-xs font-semibold" style="color: var(--text-main);">Theme Mode</label>
-            <select id="themeSelect" onchange="window.updateSettings()" class="text-xs p-2 rounded-xl font-semibold border outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);"><option value="white">Clean White & Blue</option><option value="default">Amber Glow</option><option value="carbon">Carbon Matrix</option><option value="aurora">Aurora</option><option value="oled">Pure OLED</option><option value="paper">Calm Paper</option></select>
+            <select id="themeSelect" onchange="window.updateSettings()" class="text-xs p-2 rounded-xl font-semibold border outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);"><option value="white">Clean White & Blue (Default)</option><option value="default">Amber Glow</option><option value="carbon">Carbon Matrix</option><option value="aurora">Aurora</option><option value="oled">Pure OLED</option><option value="paper">Calm Paper</option></select>
           </div>
           <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
             <label class="text-xs font-semibold" style="color: var(--text-main);">Time Format</label>
@@ -484,6 +469,48 @@
           <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
             <label class="text-xs font-semibold" style="color: var(--text-main);">Haptic Feedback</label>
             <input type="checkbox" id="hapticsInput" onchange="window.updateSettings()" class="w-4 h-4 rounded border-gray-500/20 accent-sky-500">
+          </div>
+        </div>
+
+        <!-- NOTIFICATION PREFERENCES CARD -->
+        <div class="premium-card p-5 space-y-4">
+          <div class="flex justify-between items-center border-b pb-2" style="border-color: var(--card-border);">
+            <h3 class="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2" style="color: var(--text-muted);"><i data-lucide="bell" class="w-3.5 h-3.5 text-purple-500"></i> Smart Notifications</h3>
+            <button onclick="window.requestNotifPermission()" id="notifPermBtn" class="text-[10px] font-bold text-sky-500 uppercase tracking-wider">Enable Master</button>
+          </div>
+          
+          <div class="space-y-3 pt-1">
+            <div class="flex justify-between items-center">
+              <div>
+                <label class="text-xs font-semibold block" style="color: var(--text-main);">🌊 Wave Complete Alerts</label>
+                <p class="text-[9px]" style="color: var(--text-muted);">Notify when Ride It Out timer finishes</p>
+              </div>
+              <input type="checkbox" id="notifWaveCompleteInput" onchange="window.toggleNotifSetting('notifWaveComplete')" class="w-4 h-4 rounded accent-sky-500">
+            </div>
+
+            <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
+              <div>
+                <label class="text-xs font-semibold block" style="color: var(--text-main);">🏆 Gap Widened Milestone</label>
+                <p class="text-[9px]" style="color: var(--text-muted);">Alert when current gap beats previous record</p>
+              </div>
+              <input type="checkbox" id="notifGapWidenedInput" onchange="window.toggleNotifSetting('notifGapWidened')" class="w-4 h-4 rounded accent-sky-500">
+            </div>
+
+            <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
+              <div>
+                <label class="text-xs font-semibold block" style="color: var(--text-main);">⏱️ Forgotten Log (1.5x Nudge)</label>
+                <p class="text-[9px]" style="color: var(--text-muted);">Reminder if usual gap time passes by 1.5x</p>
+              </div>
+              <input type="checkbox" id="notifInactivityInput" onchange="window.toggleNotifSetting('notifInactivity')" class="w-4 h-4 rounded accent-sky-500">
+            </div>
+
+            <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
+              <div>
+                <label class="text-xs font-semibold block" style="color: var(--text-main);">🧠 Predictive Craving Alerts</label>
+                <p class="text-[9px]" style="color: var(--text-muted);">Alerts 10 mins before your usual peak habit hour</p>
+              </div>
+              <input type="checkbox" id="notifPredictiveInput" onchange="window.toggleNotifSetting('notifPredictive')" class="w-4 h-4 rounded accent-sky-500">
+            </div>
           </div>
         </div>
 
@@ -507,14 +534,6 @@
               <p class="text-[9px] leading-snug mt-0.5" style="color: var(--text-muted);">Lower daily goal by 1 stick every week.</p>
             </div>
             <input type="checkbox" id="autoReduceInput" onchange="window.updateSettings()" class="w-4 h-4 rounded border-gray-500/20 accent-sky-500 shrink-0">
-          </div>
-
-          <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
-            <div class="pr-3">
-              <label class="text-xs font-semibold block" style="color: var(--text-main);">Peak-Time Notifications</label>
-              <p class="text-[9px] leading-snug mt-0.5" style="color: var(--text-muted);">Get a browser alert near your usual craving hour (works while this tab is open).</p>
-            </div>
-            <input type="checkbox" id="notifsEnabledInput" onchange="window.toggleNotifications(this)" class="w-4 h-4 rounded border-gray-500/20 accent-sky-500 shrink-0">
           </div>
 
           <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
@@ -648,7 +667,7 @@
     </div>
   </div>
 
-  <!-- EXPANDED DETAILED STAT MODAL -->
+  <!-- EXPANDED STAT MODAL -->
   <div id="statDetailModal" class="hidden fixed inset-0 backdrop-blur-sm z-50 flex flex-col justify-end transition-opacity" style="background-color: var(--overlay-bg);" onclick="if(event.target===this) window.closeStatDetail()">
     <div class="p-6 rounded-t-3xl space-y-5 max-w-md mx-auto w-full border-t shadow-2xl" style="background-color: var(--modal-bg); border-color: var(--card-border);">
       <div class="flex justify-between items-start">
