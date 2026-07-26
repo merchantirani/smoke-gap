@@ -168,6 +168,7 @@ window.onload = () => {
       const el = document.getElementById(k + 'Input');
       if(el) el.checked = settings[k] !== false;
     });
+    updateNotifPermBtn();
   } catch(e) {}
   updateCostPerCigDisplay();
   
@@ -190,11 +191,22 @@ function sendSystemNotification(title, body, key) {
   }
 }
 
+function updateNotifPermBtn() {
+  const btn = document.getElementById('notifPermBtn');
+  if(!btn) return;
+  if (typeof Notification === 'undefined') { btn.innerText = 'Not Supported'; btn.style.opacity = '0.5'; btn.disabled = true; return; }
+  if (Notification.permission === 'granted') { btn.innerText = 'Enabled ✓'; btn.classList.remove('text-sky-500'); btn.classList.add('text-emerald-500'); }
+  else if (Notification.permission === 'denied') { btn.innerText = 'Blocked — Check Browser Settings'; btn.classList.remove('text-sky-500'); btn.classList.add('text-red-500'); }
+  else { btn.innerText = 'Enable Master'; btn.classList.remove('text-emerald-500', 'text-red-500'); btn.classList.add('text-sky-500'); }
+}
+
 function requestNotifPermission() {
   if (typeof Notification === 'undefined') { showToast("Notifications not supported in browser"); return; }
+  if (Notification.permission === 'denied') { showToast("Notifications blocked — enable them in your browser settings"); return; }
   Notification.requestPermission().then(perm => {
     if(perm === 'granted') { showToast("Smart Reminders Enabled! 🔔"); }
     else { showToast("Notification Permission Denied"); }
+    updateNotifPermBtn();
   });
 }
 
@@ -216,14 +228,30 @@ function bootCore() {
   mainTimer = setInterval(() => {
     try {
       checkPeakNudge();
-      if(!logs || logs.length === 0 || document.hidden) return;
+      if(!logs || logs.length === 0) return;
       const diff = new Date().getTime() - logs[logs.length-1].timestamp;
-      
-      const stopwatchEl = document.getElementById('stopwatch');
-      if(stopwatchEl) stopwatchEl.innerText = `${Math.floor(diff/3600000).toString().padStart(2,'0')}:${Math.floor((diff%3600000)/60000).toString().padStart(2,'0')}:${Math.floor((diff%60000)/1000).toString().padStart(2,'0')}`;
-      
+
       const prevLog = logs[logs.length-1];
       const prevGapMs = prevLog.gap ? prevLog.gap * 60000 : 0;
+      const allGaps = logs.map(l => l.gap).filter(g => g !== null && g !== undefined);
+      const avgGapMs = allGaps.length ? (allGaps.reduce((a,b)=>a+b, 0) / allGaps.length) * 60000 : 3600000;
+
+      // NOTIFICATION CHECKS run even when the tab/app is hidden or in the background,
+      // otherwise reminders would never fire when the person actually needs them.
+      if (prevGapMs > 0 && diff >= prevGapMs && !gapWidenedNotified) {
+        gapWidenedNotified = true;
+        sendSystemNotification("🎉 Gap Widened!", `Great progress! You just beat your previous gap (${formatGap(Math.round(prevGapMs/60000))}). You're setting a personal best.`, 'notifGapWidened');
+      }
+      if (avgGapMs > 0 && diff >= avgGapMs * 1.5 && waveEndTime <= 0 && !inactivityNotified) {
+        inactivityNotified = true;
+        sendSystemNotification("🚬 Did you forget to log?", "It's been longer than your average gap. Log your stick or keep widening the gap!", 'notifInactivity');
+      }
+
+      if (document.hidden) return; // Skip the rest — pure UI/DOM work not needed while tab is hidden
+
+      const stopwatchEl = document.getElementById('stopwatch');
+      if(stopwatchEl) stopwatchEl.innerText = `${Math.floor(diff/3600000).toString().padStart(2,'0')}:${Math.floor((diff%3600000)/60000).toString().padStart(2,'0')}:${Math.floor((diff%60000)/1000).toString().padStart(2,'0')}`;
+
       const circle = document.getElementById('heroProgressCircle');
       const milestoneCircle = document.getElementById('heroMilestoneCircle');
       const statusWrapper = document.getElementById('smartStatusWrapper');
@@ -233,10 +261,7 @@ function bootCore() {
       const milestoneDashMax = 251.32;
       
       let newClass = '', newHtml = '', dotColor = '#9CA3AF';
-      
-      const allGaps = logs.map(l => l.gap).filter(g => g !== null && g !== undefined);
-      const avgGapMs = allGaps.length ? (allGaps.reduce((a,b)=>a+b, 0) / allGaps.length) * 60000 : 3600000;
-      
+
       if (activeHeroStyle === 1 && milestoneCircle) {
         milestoneCircle.classList.remove('hidden');
         let ratio = diff / avgGapMs;
@@ -270,24 +295,12 @@ function bootCore() {
           newClass = 'px-5 py-2.5 rounded-full border transition-all duration-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.15)]';
           newHtml = `<i data-lucide="trophy" class="w-3.5 h-3.5 text-emerald-500"></i><span class="text-emerald-500">Widened the gap by +${extraMins} min${extraMins!==1?'s':''}</span>`;
           dotColor = '#10B981';
-
-          // PROPER ENGLISH NOTIFICATION #2: GAP WIDENED MILESTONE
-          if(!gapWidenedNotified) {
-            gapWidenedNotified = true;
-            sendSystemNotification("🎉 Gap Widened!", `Great progress! You just beat your previous gap (${formatGap(Math.round(prevGapMs/60000))}). You're setting a personal best.`, 'notifGapWidened');
-          }
         }
       } else {
         if(activeHeroStyle === 0 && circle) { circle.style.strokeDashoffset = dashMax; circle.style.stroke = 'var(--card-border)'; circle.style.filter = 'none'; }
         newClass = 'px-5 py-2.5 rounded-full border transition-all duration-500 bg-sky-500/10 border-sky-500/20';
         newHtml = `<i data-lucide="rocket" class="w-3.5 h-3.5 text-sky-500"></i><span class="text-sky-500">Setting your first baseline gap</span>`;
         dotColor = '#0EA5E9';
-      }
-
-      // PROPER ENGLISH NOTIFICATION #3: FORGOTTEN LOG / 1.5x INACTIVITY REMINDER
-      if (avgGapMs > 0 && diff >= avgGapMs * 1.5 && waveEndTime <= 0 && !inactivityNotified) {
-        inactivityNotified = true;
-        sendSystemNotification("🚬 Did you forget to log?", "It's been longer than your average gap. Log your stick or keep widening the gap!", 'notifInactivity');
       }
 
       if(liveDot) { liveDot.style.backgroundColor = dotColor; liveDot.style.boxShadow = `0 0 8px ${dotColor}`; }
