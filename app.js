@@ -6,7 +6,7 @@ try {
   if(!Array.isArray(logs)) logs = [];
 } catch(e) { logs = []; }
 
-const DEFAULT_SETTINGS = { theme: 'calm', haptics: true, dailyLimit: 15, lockSecs: 300, packPrice: 20, packSize: 20, currency: 'AED', timeFormat: '12h', motivation: '', autoReduce: false };
+const DEFAULT_SETTINGS = { theme: 'white', haptics: true, dailyLimit: 15, lockSecs: 300, packPrice: 20, packSize: 20, currency: 'AED', timeFormat: '12h', motivation: '', autoReduce: false, notifsEnabled: false };
 let settings = Object.assign({}, DEFAULT_SETTINGS, JSON.parse(localStorage.getItem('smoke_settings')) || {});
 if (!settings.packSize || settings.packSize <= 0) settings.packSize = 20;
 if (!settings.timeFormat) settings.timeFormat = '12h';
@@ -35,8 +35,13 @@ const INTENSITY_LABELS = {1: 'Mild', 2: 'Light', 3: 'Moderate', 4: 'Severe', 5: 
 let waves = [];
 try { waves = JSON.parse(localStorage.getItem('smoke_waves')) || []; if(!Array.isArray(waves)) waves = []; } catch(e) { waves = []; }
 
-let failed_waves = [];
-try { failed_waves = JSON.parse(localStorage.getItem('smoke_failed_waves')) || []; if(!Array.isArray(failed_waves)) failed_waves = []; } catch(e) { failed_waves = []; }
+let waveAttempts = [];
+try { waveAttempts = JSON.parse(localStorage.getItem('smoke_wave_attempts')) || []; if(!Array.isArray(waveAttempts)) waveAttempts = []; } catch(e) { waveAttempts = []; }
+function logWaveAttempt(outcome) {
+  waveAttempts.push({ timestamp: Date.now(), outcome, mins: Math.round(waveDurationMs / 60000) });
+  if(waveAttempts.length > 500) waveAttempts = waveAttempts.slice(-500);
+  localStorage.setItem('smoke_wave_attempts', JSON.stringify(waveAttempts));
+}
 
 let lockEndTime = parseInt(localStorage.getItem('smoke_lock_end')) || 0;
 let waveEndTime = parseInt(localStorage.getItem('smoke_wave_end')) || 0;
@@ -133,7 +138,7 @@ window.cancelHold = function(e) {
 Chart.defaults.color = '#64748B';
 Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif';
 const crosshairPlugin = { id: 'crosshair', afterDraw: chart => { if (chart.tooltip?._active?.length && (chart.config.type === 'line' || chart.config.type === 'bar')) { const activePoint = chart.tooltip._active[0]; const ctx = chart.ctx; const x = activePoint.element.x; ctx.save(); ctx.beginPath(); ctx.moveTo(x, chart.scales.y.top); ctx.lineTo(x, chart.scales.y.bottom); ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)'; ctx.setLineDash([4, 4]); ctx.stroke(); ctx.restore(); } } };
-const centerTextPlugin = { id: 'centerText', beforeDraw: chart => { if (chart.config.type === 'doughnut') { const ctx = chart.ctx; ctx.restore(); let text = ""; if (chart.canvas.id === 'chart4') { const won = chart.data.datasets[0].data[0] || 0; const lost = chart.data.datasets[0].data[1] || 0; const total = won + lost; text = total > 0 ? Math.round((won/total)*100) + "%" : "0%"; } else { const total = chart.data.datasets[0].data.reduce((a,b)=>a+b, 0); text = total > 0 ? total + " Logs" : "No Data"; } ctx.font = "bold " + (chart.canvas.id === 'chart4' ? '26px' : '16px') + " sans-serif"; const x = chart.chartArea.left + (chart.chartArea.right - chart.chartArea.left) / 2; const y = chart.chartArea.top + (chart.chartArea.bottom - chart.chartArea.top) / 2; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = (document.body.classList.contains('theme-white') || document.body.classList.contains('theme-calm') || document.documentElement.classList.contains('theme-white') || document.documentElement.classList.contains('theme-calm')) ? "#64748B" : "#F3F4F6"; ctx.fillText(text, x, y); ctx.save(); } } };
+const centerTextPlugin = { id: 'centerText', beforeDraw: chart => { if (chart.config.type === 'doughnut') { const ctx = chart.ctx; ctx.restore(); let text = ""; if (chart.canvas.id === 'chart4') { const smoked = chart.data.datasets[0].data[0] || 0; const resisted = chart.data.datasets[0].data[1] || 0; const total = smoked + resisted; text = total > 0 ? Math.round((resisted/total)*100) + "%" : "0%"; } else { const total = chart.data.datasets[0].data.reduce((a,b)=>a+b, 0); text = total > 0 ? total + " Logs" : "No Data"; } ctx.font = "bold " + (chart.canvas.id === 'chart4' ? '26px' : '16px') + " sans-serif"; const x = chart.chartArea.left + (chart.chartArea.right - chart.chartArea.left) / 2; const y = chart.chartArea.top + (chart.chartArea.bottom - chart.chartArea.top) / 2; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = (isLightTheme()) ? "#64748B" : "#F3F4F6"; ctx.fillText(text, x, y); ctx.save(); } } };
 
 function formatAppTime(dateObj) { return dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: settings.timeFormat === '12h' }); }
 
@@ -150,6 +155,7 @@ window.onload = () => {
     document.getElementById('hapticsInput').checked = settings.haptics;
     document.getElementById('motivationInput').value = settings.motivation || '';
     document.getElementById('autoReduceInput').checked = settings.autoReduce || false;
+    const notifInput = document.getElementById('notifsEnabledInput'); if(notifInput) notifInput.checked = settings.notifsEnabled && typeof Notification !== 'undefined' && Notification.permission === 'granted';
   } catch(e) {}
   updateCostPerCigDisplay();
   
@@ -159,16 +165,6 @@ window.onload = () => {
   const filterSelect = document.getElementById('historyTagFilter');
   if(filterSelect) {
       filterSelect.innerHTML = `<option value="all">All Tags</option>` + triggers.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
-  }
-
-  // Backup reminder logic
-  const lastBackup = localStorage.getItem('smoke_last_backup');
-  if (lastBackup) {
-    const daysSince = Math.floor((Date.now() - parseInt(lastBackup)) / 86400000);
-    if (daysSince > 7) {
-        const br = document.getElementById('backupReminderText');
-        if(br) { br.classList.remove('hidden'); br.innerText = `⚠️ Last backup: ${daysSince} days ago`; }
-    }
   }
 
   if(window.lucide) window.lucide.createIcons();
@@ -183,7 +179,7 @@ function bootCore() {
   if(mainTimer) clearInterval(mainTimer);
   mainTimer = setInterval(() => {
     try {
-      checkPredictiveNudge();
+      checkPeakNudge();
       if(!logs || logs.length === 0 || document.hidden) return;
       const diff = new Date().getTime() - logs[logs.length-1].timestamp;
       
@@ -202,10 +198,11 @@ function bootCore() {
       
       let newClass = '', newHtml = '', dotColor = '#9CA3AF';
       
+      // Calculate All-Time Avg Gap for Milestone Ring
       const allGaps = logs.map(l => l.gap).filter(g => g !== null && g !== undefined);
       const avgGapMs = allGaps.length ? (allGaps.reduce((a,b)=>a+b, 0) / allGaps.length) * 60000 : 3600000;
       
-      if (activeHeroStyle === 1 && milestoneCircle) {
+      if (activeHeroStyle === 1 && milestoneCircle) { // MILESTONE STYLE ACTIVE
         milestoneCircle.classList.remove('hidden');
         let ratio = diff / avgGapMs;
         let p1 = Math.min(ratio, 1.0);
@@ -252,41 +249,6 @@ function bootCore() {
   }, 1000);
 }
 
-// SMART PREDICTIVE NUDGE
-function checkPredictiveNudge() {
-  if(!logs || logs.length < 5) return;
-  const now = new Date(); const dStr = now.toDateString();
-  if(lastPeakNudgeDate === dStr) return; 
-
-  let hours = {}; logs.forEach(l => { 
-    if(!l.timestamp) return;
-    let h = new Date(l.timestamp).getHours(); 
-    if(!isNaN(h)) hours[h] = (hours[h]||0)+1; 
-  });
-  if(Object.keys(hours).length > 0) {
-    let peakHr = parseInt(Object.keys(hours).reduce((a,b) => hours[a] > hours[b] ? a : b));
-    if (now.getHours() === peakHr || (now.getHours() === peakHr - 1 && now.getMinutes() >= 45)) {
-      sendPushNotification("Craving Peak Time", "Your peak craving time is approaching. Ready to ride it out?");
-      lastPeakNudgeDate = dStr; localStorage.setItem('smoke_peak_nudge', dStr);
-      if (window.posthog) posthog.capture('peak_craving_nudge_shown', { hour: peakHr });
-    }
-  }
-}
-
-window.enablePushNotifications = function() {
-    if (!("Notification" in window)) { showToast("Notifications not supported in this browser"); return; }
-    Notification.requestPermission().then(permission => {
-        if (permission === "granted") { showToast("Smart Reminders Enabled!"); }
-    });
-}
-
-function sendPushNotification(title, body) {
-    showToast(body);
-    if (("Notification" in window) && Notification.permission === "granted") {
-        new Notification(title, { body: body, icon: "icons/pause_icon_192.png" });
-    }
-}
-
 // HERO CAROUSEL CONTROLLER
 function setHeroStyle(idx) {
   activeHeroStyle = idx;
@@ -315,6 +277,62 @@ function setupCarouselSwipe() {
   }, {passive: true});
 }
 
+function sendNudgeNotification(title, body) {
+  if(settings.notifsEnabled && typeof Notification !== 'undefined' && Notification.permission === 'granted' && document.hidden) {
+    try { new Notification(title, { body, icon: 'icons/pause_icon_192.png' }); } catch(e) {}
+  }
+}
+
+function checkPeakNudge() {
+  if(!logs || logs.length < 5) return;
+  const now = new Date(); const dStr = now.toDateString();
+  if(lastPeakNudgeDate !== dStr) {
+    let hours = {}; logs.forEach(l => { 
+      if(!l.timestamp) return;
+      let h = new Date(l.timestamp).getHours(); 
+      if(!isNaN(h)) hours[h] = (hours[h]||0)+1; 
+    });
+    if(Object.keys(hours).length > 0) {
+      let peakHr = parseInt(Object.keys(hours).reduce((a,b) => hours[a] > hours[b] ? a : b));
+      if (now.getHours() === peakHr || (now.getHours() === peakHr - 1 && now.getMinutes() >= 45)) {
+        showToast("Your peak craving time is approaching. Ready to ride it out?");
+        sendNudgeNotification("Peak craving time 🕐", "This is usually a tough hour for you. Ready to ride it out?");
+        lastPeakNudgeDate = dStr; localStorage.setItem('smoke_peak_nudge', dStr);
+        if (window.posthog) posthog.capture('peak_craving_nudge_shown', { hour: peakHr });
+      }
+    }
+  }
+  checkTagPatternNudge();
+}
+
+let lastTagNudgeForLogIdx = -1;
+function checkTagPatternNudge() {
+  if(!logs || logs.length < 8 || waveEndTime > 0) return;
+  const lastIdx = logs.length - 1; const lastLog = logs[lastIdx];
+  if(!lastLog || !lastLog.timestamp || lastIdx === lastTagNudgeForLogIdx) return;
+  const minsSinceLast = (Date.now() - lastLog.timestamp) / 60000;
+  if(minsSinceLast > 20) return;
+  const lastTags = Array.isArray(lastLog.tags) && lastLog.tags.length ? lastLog.tags : (lastLog.trigger ? [lastLog.trigger] : []);
+  if(lastTags.length === 0) return;
+
+  let sum = 0, count = 0;
+  for(let i = 0; i < logs.length - 1; i++) {
+    const l = logs[i]; const tags = Array.isArray(l.tags) && l.tags.length ? l.tags : (l.trigger ? [l.trigger] : []);
+    const nextLog = logs[i+1];
+    if(tags.some(t => lastTags.includes(t)) && nextLog && nextLog.gap !== null && nextLog.gap !== undefined) { sum += nextLog.gap; count++; }
+  }
+  if(count < 3) return;
+  const avgGapAfterTag = sum / count;
+  const allGaps = logs.map(l => l.gap).filter(g => g !== null && g !== undefined);
+  const overallAvg = allGaps.length ? allGaps.reduce((a,b)=>a+b,0) / allGaps.length : 0;
+  if(overallAvg > 0 && avgGapAfterTag < overallAvg * 0.6) {
+    lastTagNudgeForLogIdx = lastIdx;
+    const tagName = lastTags[0];
+    showToast(`Last time with "${tagName}", you smoked again soon after. Want to Ride It Out this time? 🌊`);
+    sendNudgeNotification("Pattern spotted", `Last time with "${tagName}", you smoked again soon after.`);
+  }
+}
+
 function enterPin(n) {
   if(enteredPin.length < 4) { enteredPin += n; document.querySelectorAll('.pin-dot').forEach((el, i) => { el.classList.toggle('bg-gray-400', i < enteredPin.length); el.classList.toggle('bg-gray-500', i >= enteredPin.length); }); }
   if(enteredPin.length === 4) { setTimeout(() => { if(hashPin(enteredPin) === storedPinHash) { document.getElementById('lockScreen').classList.add('hidden'); bootCore(); } else { showToast("Wrong PIN"); shakePinDots(); clearPin(); } }, 200); }
@@ -330,10 +348,7 @@ function handleLogClick() {
   if(waveEndTime > 0) { 
     waveWasActive = true; localStorage.removeItem('smoke_wave_end'); waveEndTime = 0; clearInterval(waveTimer); 
     document.getElementById('waveOverlay').classList.add('hidden'); 
-    
-    failed_waves.push(Date.now());
-    localStorage.setItem('smoke_failed_waves', JSON.stringify(failed_waves));
-    if (window.posthog) posthog.capture('ride_wave_lost');
+    logWaveAttempt('lost'); resetRideButton();
   }
   
   const now = new Date().getTime();
@@ -484,16 +499,34 @@ function startWave(mins) {
   checkWave(); 
 }
 
+function celebrateBadgeIfUnlocked() {
+  const milestones = { 1: 'First Win Unlocked! 🥇', 10: 'Iron Will Unlocked! 🏅', 50: 'Unshakable Unlocked! 🏆' };
+  if(!milestones[waves.length]) return;
+  showToast(milestones[waves.length]);
+  spawnConfetti();
+}
+
+function spawnConfetti() {
+  const colors = ['#F59E0B','#10B981','#0EA5E9','#8B5CF6','#EF4444'];
+  const container = document.createElement('div');
+  container.style.cssText = 'position:fixed;inset:0;z-index:100000;pointer-events:none;overflow:hidden;';
+  document.body.appendChild(container);
+  for(let i=0; i<28; i++) {
+    const piece = document.createElement('div');
+    const size = 6 + Math.random()*6, left = Math.random()*100, duration = 1.8 + Math.random()*1.2, delay = Math.random()*0.3, color = colors[Math.floor(Math.random()*colors.length)], rotate = Math.random()*360;
+    piece.style.cssText = `position:absolute;top:-20px;left:${left}%;width:${size}px;height:${size*1.4}px;background:${color};opacity:0.9;border-radius:2px;transform:rotate(${rotate}deg);animation:confettiFall ${duration}s ease-in ${delay}s forwards;`;
+    container.appendChild(piece);
+  }
+  setTimeout(() => container.remove(), 3200);
+}
+
 function cancelActiveWave() {
   if(waveEndTime <= 0) return;
   if(waveTimer) clearInterval(waveTimer);
   waveEndTime = 0; localStorage.removeItem('smoke_wave_end');
   const o = document.getElementById('waveOverlay'); if(o) o.classList.add('hidden');
+  logWaveAttempt('cancelled');
   resetRideButton();
-  
-  failed_waves.push(Date.now());
-  localStorage.setItem('smoke_failed_waves', JSON.stringify(failed_waves));
-
   if (window.posthog) posthog.capture('ride_wave_cancelled');
   showToast("Wave cancelled");
 }
@@ -512,11 +545,8 @@ function waveTick() {
   if(rem<=0) {
     clearInterval(waveTimer); waveEndTime=0; localStorage.removeItem('smoke_wave_end'); o.classList.add('hidden');
     resetRideButton();
-    waves.push(Date.now()); localStorage.setItem('smoke_waves', JSON.stringify(waves)); 
-    
-    if(window.confetti) confetti({particleCount: 100, spread: 70, origin: {y: 0.6}});
-    showToast("🛡️ Craving Defeated! +1 Shield");
-    
+    waves.push(Date.now()); localStorage.setItem('smoke_waves', JSON.stringify(waves)); logWaveAttempt('won'); showToast("🛡️ Craving Defeated! +1 Shield");
+    celebrateBadgeIfUnlocked();
     if (window.posthog) posthog.capture('ride_wave_completed', { duration_mins: waveDurationMs / 60000 });
     try { updateUI(); } catch(e){}
   } else {
@@ -552,8 +582,7 @@ function switchTab(t) {
   ['tracker','insights','history','settings'].forEach(x => { document.getElementById(`page-${x}`)?.classList.add('hidden'); document.getElementById(`tab-${x}`)?.classList.remove('nav-active'); });
   document.getElementById(`page-${t}`)?.classList.remove('hidden'); document.getElementById(`tab-${t}`)?.classList.add('nav-active');
   if (window.posthog) posthog.capture('tab_switched', { tab_name: t });
-  if(t==='history') renderHistory(); 
-  if(t==='insights') requestAnimationFrame(() => renderAllCharts());
+  if(t==='history') renderHistory(); if(t==='insights') requestAnimationFrame(() => renderAllCharts());
   if(window.lucide) window.lucide.createIcons();
 }
 
@@ -574,23 +603,15 @@ function showConfirm(title, message, onConfirm) {
 }
 function closeConfirmModal() { document.getElementById('confirmModal').classList.add('hidden'); pendingConfirmCallback = null; }
 function confirmYes() { const cb = pendingConfirmCallback; closeConfirmModal(); if(cb) cb(); }
+const THEME_META_COLORS = { white: '#F8FAFC', carbon: '#000000', aurora: '#0B0B14', oled: '#000000', paper: '#FAF6F0', default: '#090A0F' };
+const LIGHT_THEMES = ['white', 'paper'];
+function isLightTheme() { return LIGHT_THEMES.includes(settings.theme) || document.documentElement.classList.contains('theme-white') || document.documentElement.classList.contains('theme-paper'); }
 
-// DYNAMIC THEME AND NOTCH METATAG UPDATER
 function applyTheme(t) { 
-  document.body.className = document.body.className.replace(/theme-\w+/g, '').trim(); 
-  document.documentElement.className = document.documentElement.className.replace(/theme-\w+/g, '').trim(); 
-  if(t !== 'default') { 
-    document.body.classList.add(`theme-${t}`); 
-    document.documentElement.classList.add(`theme-${t}`); 
-  }
+  document.body.className = document.body.className.replace(/theme-\w+/g, '').trim(); document.documentElement.className = document.documentElement.className.replace(/theme-\w+/g, '').trim(); 
+  if(t !== 'default') { document.body.classList.add(`theme-${t}`); document.documentElement.classList.add(`theme-${t}`); }
   const metaTheme = document.getElementById('theme-color-meta');
-  if(metaTheme) { 
-    if (t === 'white') metaTheme.setAttribute('content', '#F8FAFC'); 
-    else if (t === 'carbon' || t === 'oled') metaTheme.setAttribute('content', '#000000'); 
-    else if (t === 'aurora') metaTheme.setAttribute('content', '#1e1b4b'); 
-    else if (t === 'calm') metaTheme.setAttribute('content', '#F5F5F0'); 
-    else metaTheme.setAttribute('content', '#090A0F'); 
-  }
+  if(metaTheme) metaTheme.setAttribute('content', THEME_META_COLORS[t] || THEME_META_COLORS.default);
 }
 
 function updateSettings() {
@@ -607,51 +628,26 @@ function updateSettings() {
   if(!document.getElementById('page-history').classList.contains('hidden')) renderHistory('fullHistoryList');
 }
 
+function toggleNotifications(checkbox) {
+  if(checkbox.checked) {
+    if(typeof Notification === 'undefined') { showToast("Notifications aren't supported in this browser"); checkbox.checked = false; return; }
+    Notification.requestPermission().then(perm => {
+      if(perm === 'granted') { settings.notifsEnabled = true; localStorage.setItem('smoke_settings', JSON.stringify(settings)); showToast("Peak-time notifications enabled 🔔"); }
+      else { settings.notifsEnabled = false; checkbox.checked = false; showToast("Notification permission denied"); }
+      localStorage.setItem('smoke_settings', JSON.stringify(settings));
+    });
+  } else {
+    settings.notifsEnabled = false; localStorage.setItem('smoke_settings', JSON.stringify(settings));
+  }
+}
+
 function updateCostPerCigDisplay() { const el = document.getElementById('costPerCigDisplay'); if (el) el.innerText = `${settings.currency} ${(settings.packPrice / settings.packSize).toFixed(2)}`; }
-
-function getTrendHTML(current, past, inverse = false) {
-    if (past === 0) return `<span class="text-gray-500">--</span>`;
-    const diff = current - past;
-    const pct = Math.round((Math.abs(diff) / past) * 100);
-    if (diff === 0) return `<span class="text-gray-500">— 0%</span>`;
-    
-    const isGood = inverse ? diff < 0 : diff > 0;
-    const color = isGood ? 'text-emerald-500' : 'text-red-500';
-    const arrow = diff > 0 ? '▲' : '▼';
-    return `<span class="${color}">${arrow} ${pct}%</span>`;
-}
-
-function calculateMomentum() {
-  let streak = 0; let slipDays = 0; let logsByDate = {};
-  logs.forEach(l => { if(l && l.timestamp) { let dStr = new Date(l.timestamp).toDateString(); logsByDate[dStr] = (logsByDate[dStr] || 0) + 1; } });
-  let todayStr = new Date().toDateString(); if (!logsByDate[todayStr]) logsByDate[todayStr] = 0;
-  let uniqueDates = Object.keys(logsByDate).sort((a,b) => new Date(b) - new Date(a));
-  for (let dStr of uniqueDates) { if (logsByDate[dStr] <= settings.dailyLimit) { streak++; } else { if (slipDays < 2) { slipDays++; streak++; } else break; } }
-
-  let streakPts = Math.min(40, streak * 5);
-  let totalWaves = waves.length + failed_waves.length;
-  let winR = totalWaves > 0 ? (waves.length / totalWaves) : 0;
-  let winPts = Math.round(winR * 30);
-  let todayLogs = logs.filter(l => l.timestamp && new Date(l.timestamp).toDateString() === todayStr).length;
-  let goalPts = todayLogs <= settings.dailyLimit ? 30 : 0;
-
-  return { total: Math.min(100, streakPts + winPts + goalPts), streakPts, winPts, goalPts };
-}
 
 function updateUI() {
   document.getElementById('shieldCount').innerText = waves.length;
+  const emptyBanner = document.getElementById('emptyStateBanner'); if(emptyBanner) emptyBanner.classList.toggle('hidden', logs.length > 0);
   const motEl = document.getElementById('motivationTag'); const motText = document.getElementById('motivationText');
   if(motEl && motText) { if (settings.motivation && settings.motivation.trim() !== "") { motText.innerText = settings.motivation; motEl.classList.remove('hidden'); } else { motEl.classList.add('hidden'); } }
-
-  const emptyUI = document.getElementById('emptyStateUI');
-  const heroUI = document.getElementById('heroCarousel');
-  if (logs.length === 0) {
-      if(emptyUI) emptyUI.classList.remove('hidden');
-      if(heroUI) heroUI.classList.add('hidden');
-  } else {
-      if(emptyUI) emptyUI.classList.add('hidden');
-      if(heroUI) heroUI.classList.remove('hidden');
-  }
 
   let streak = 0; let slipDays = 0; let logsByDate = {};
   logs.forEach(l => { if(l && l.timestamp) { let dStr = new Date(l.timestamp).toDateString(); logsByDate[dStr] = (logsByDate[dStr] || 0) + 1; } });
@@ -662,12 +658,27 @@ function updateUI() {
 
   const today = logs.filter(l => l.timestamp && new Date(l.timestamp).toDateString() === todayStr);
   const overLimit = today.length >= settings.dailyLimit;
-  document.getElementById('todayCount').innerText = `${today.length} / ${settings.dailyLimit}`;
+  const todayCountTextEl = document.getElementById('todayCountText'); if(todayCountTextEl) todayCountTextEl.innerText = `${today.length} / ${settings.dailyLimit}`;
   
   const stickIconEl = document.getElementById('todaySticksIcon'); const stickTextEl = document.getElementById('todayCount'); const limitMsg = document.getElementById('limitWarningMsg');
   if(stickIconEl && stickTextEl) {
     if(overLimit) { stickIconEl.className = 'w-6 h-6 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500'; stickTextEl.style.color = '#F59E0B'; if(limitMsg) limitMsg.classList.remove('hidden'); } 
     else { stickIconEl.className = 'w-6 h-6 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500'; stickTextEl.style.color = 'var(--text-main)'; if(limitMsg) limitMsg.classList.add('hidden'); }
+  }
+
+  // Weekly trend badge (today's count vs trailing 7-day average, excluding today)
+  const trendBadge = document.getElementById('countTrendBadge');
+  if(trendBadge) {
+    const sevenAgo = new Date(); sevenAgo.setDate(sevenAgo.getDate() - 7); sevenAgo.setHours(0,0,0,0);
+    const weekLogs = logs.filter(l => l.timestamp >= sevenAgo.getTime() && new Date(l.timestamp).toDateString() !== todayStr);
+    const uniqueWeekDays = new Set(weekLogs.map(l => new Date(l.timestamp).toDateString())).size;
+    if(uniqueWeekDays >= 3) {
+      const avgDaily = weekLogs.length / uniqueWeekDays;
+      const diffPct = avgDaily > 0 ? Math.round(((today.length - avgDaily) / avgDaily) * 100) : (today.length > 0 ? 100 : 0);
+      if(diffPct <= -8) { trendBadge.innerText = `▼${Math.abs(diffPct)}%`; trendBadge.className = 'text-[9px] font-bold numeric-display text-emerald-500'; }
+      else if(diffPct >= 8) { trendBadge.innerText = `▲${diffPct}%`; trendBadge.className = 'text-[9px] font-bold numeric-display text-amber-500'; }
+      else { trendBadge.classList.add('hidden'); }
+    } else { trendBadge.classList.add('hidden'); }
   }
 
   const todayWaves = waves.filter(w => new Date(w).toDateString() === todayStr);
@@ -676,51 +687,52 @@ function updateUI() {
 
   document.getElementById('todaySpend').innerText = `${settings.currency} ${(today.length * (settings.packPrice/settings.packSize)).toFixed(1)}`;
   
+  const prevGapCard = document.getElementById('prevGapCard'); if(prevGapCard) { prevGapCard.innerText = logs.length > 1 ? formatGap(logs[logs.length-1].gap) : '--'; }
   const todayGaps = today.map(l => l.gap).filter(g => g !== null && g !== undefined);
   const bestGapCard = document.getElementById('bestGapCard'); if(bestGapCard) { bestGapCard.innerText = todayGaps.length > 0 ? formatGap(Math.max(...todayGaps)) : '--'; }
   
-  const momData = calculateMomentum();
-  const momEl = document.getElementById('momentumScoreHeader');
-  if(momEl) { momEl.innerText = momData.total; momEl.style.color = momData.total >= 75 ? '#10B981' : momData.total >= 40 ? '#F59E0B' : '#EF4444'; }
-
-  let nowMs = Date.now();
-  let thisWkLogs = logs.filter(l => nowMs - l.timestamp < 7*86400000).length;
-  let lastWkLogs = logs.filter(l => nowMs - l.timestamp >= 7*86400000 && nowMs - l.timestamp < 14*86400000).length;
-  let thisWkWaves = waves.filter(w => nowMs - w < 7*86400000).length;
-  let lastWkWaves = waves.filter(w => nowMs - w >= 7*86400000 && nowMs - w < 14*86400000).length;
-  
-  const tSpend = document.getElementById('trendSpend'); if(tSpend) tSpend.innerHTML = getTrendHTML(thisWkLogs, lastWkLogs, true);
-  const tCount = document.getElementById('trendCount'); if(tCount) tCount.innerHTML = getTrendHTML(thisWkLogs, lastWkLogs, true);
-  const tResist = document.getElementById('trendResisted'); if(tResist) tResist.innerHTML = getTrendHTML(thisWkWaves, lastWkWaves, false);
-
   const dataSumm = document.getElementById('dataSummaryText');
   if(dataSumm) {
       if(logs.length > 0) { const firstDate = new Date(logs[0].timestamp).toLocaleDateString([], {month:'short', day:'numeric', year:'numeric'}); dataSumm.innerText = `${logs.length} logs • Since ${firstDate}`; }
       else { dataSumm.innerText = `0 logs • No data yet`; }
   }
 
+  computeMomentumScore(today, todayWaves);
+  checkBackupReminder();
   renderHistory('homeRecentLogs', 3);
 }
 
-function showMomentumModal() {
-  const m = calculateMomentum();
-  document.getElementById('modalMomentumVal').innerText = m.total;
-  document.getElementById('scoreStreakPts').innerText = `+${m.streakPts} pts`;
-  document.getElementById('scoreWinPts').innerText = `+${m.winPts} pts`;
-  document.getElementById('scoreGoalPts').innerText = `+${m.goalPts} pts`;
-  
-  const badge = document.getElementById('modalMomentumBadge');
-  if (m.total >= 75) { badge.innerText = "🔥 Unstoppable Momentum"; badge.className = "text-[10px] font-bold uppercase px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"; }
-  else if (m.total >= 40) { badge.innerText = "⚡ Building Momentum"; badge.className = "text-[10px] font-bold uppercase px-3 py-1 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20"; }
-  else { badge.innerText = "🛡️ Fresh Start"; badge.className = "text-[10px] font-bold uppercase px-3 py-1 rounded-full bg-sky-500/10 text-sky-500 border border-sky-500/20"; }
+function computeMomentumScore(today, todayWaves) {
+  const ringEl = document.getElementById('momentumRing'), numEl = document.getElementById('momentumScoreNum'), labelEl = document.getElementById('momentumLabel');
+  if(!ringEl || !numEl || !labelEl) return;
+  const RING_CIRC = 119.4;
 
-  document.getElementById('momentumModal').classList.remove('hidden');
-  if(window.lucide) window.lucide.createIcons();
+  if(logs.length === 0 && todayWaves.length === 0) {
+    numEl.innerText = '--'; labelEl.innerText = 'Log your first entry';
+    ringEl.style.strokeDashoffset = RING_CIRC; ringEl.style.stroke = 'var(--card-border)';
+    return;
+  }
+
+  const limitComponent = Math.max(0, 100 - (today.length / Math.max(1, settings.dailyLimit)) * 100);
+  const waveComponent = Math.min(100, todayWaves.length * 25);
+  const allGaps = logs.map(l => l.gap).filter(g => g !== null && g !== undefined);
+  const avgGapMin = allGaps.length ? allGaps.reduce((a,b)=>a+b,0) / allGaps.length : 0;
+  const currentGapMin = logs.length > 0 ? (new Date().getTime() - logs[logs.length-1].timestamp) / 60000 : 0;
+  const gapComponent = avgGapMin > 0 ? Math.min(100, (currentGapMin / avgGapMin) * 100) : 50;
+
+  const score = Math.round(limitComponent*0.4 + waveComponent*0.3 + gapComponent*0.3);
+  numEl.innerText = score.toString();
+  ringEl.style.strokeDashoffset = (RING_CIRC - (RING_CIRC * score/100)).toFixed(2);
+
+  if(score >= 80) { labelEl.innerText = 'Strong Day 💪'; ringEl.style.stroke = '#10B981'; }
+  else if(score >= 60) { labelEl.innerText = 'Steady 👍'; ringEl.style.stroke = 'var(--accent)'; }
+  else if(score >= 40) { labelEl.innerText = 'Building 🌱'; ringEl.style.stroke = '#F59E0B'; }
+  else { labelEl.innerText = 'Tough Day — Keep Going 🤍'; ringEl.style.stroke = '#EF4444'; }
 }
-function closeMomentumModal() { document.getElementById('momentumModal').classList.add('hidden'); }
 
 function formatGap(m) { if (m === null || m === undefined || isNaN(m)) return '—'; if (m < 60) return `${m}m`; return `${Math.floor(m / 60)}h ${m % 60 > 0 ? (m % 60) + 'm' : ''}`.trim(); }
 
+// EXPANDED HIGH-DETAIL STAT MODAL
 function showStatDetail(type) {
   const today = logs.filter(l => new Date(l.timestamp).toDateString() === new Date().toDateString());
   const pricePerStick = settings.packPrice / settings.packSize;
@@ -749,14 +761,26 @@ function showStatDetail(type) {
     const allGaps = logs.map(l => l.gap).filter(g => g !== null && g !== undefined); extra.innerHTML = allGaps.length ? row('All-Time Record Gap', formatGap(Math.max(...allGaps))) + row('All-Time Average Gap', formatGap(Math.round(allGaps.reduce((a,b)=>a+b,0)/allGaps.length))) : '';
   } else if (type === 'resisted') {
     iconClass = 'bg-sky-500/10 text-sky-500'; iconName = 'shield'; title.innerText = "Craving Defeats"; value.innerText = waves.length.toString(); 
-    let totalAttempts = waves.length + failed_waves.length;
-    let rate = totalAttempts > 0 ? Math.round((waves.length/totalAttempts)*100) : 0;
     desc.innerText = `You have ridden out ${waves.length} urge wave(s) without giving in. Each defeated wave rewires your neural habit loops.`; 
-    const todayWaves = waves.filter(w => new Date(w).toDateString() === new Date().toDateString()); extra.innerHTML = row('Win Rate (Success)', `${rate}%`) + row('Defeated Today', `${todayWaves.length} wave(s)`) + row('Shield Badges Unlocked', waves.length >= 50 ? '3/3' : waves.length >= 10 ? '2/3' : waves.length >= 1 ? '1/3' : '0/3');
+    const todayWaves = waves.filter(w => new Date(w).toDateString() === new Date().toDateString()); extra.innerHTML = row('Defeated Today', `${todayWaves.length} wave(s)`) + row('Shield Badges Unlocked', waves.length >= 50 ? '3/3' : waves.length >= 10 ? '2/3' : waves.length >= 1 ? '1/3' : '0/3');
   } else if (type === 'currentGap') {
     const diff = logs.length > 0 ? (new Date().getTime() - logs[logs.length-1].timestamp) / 60000 : 0; const allGaps = logs.map(l => l.gap).filter(g => g !== null && g !== undefined); const avgGap = allGaps.length ? Math.round(allGaps.reduce((a,b)=>a+b,0)/allGaps.length) : 0; iconClass = 'bg-sky-500/10 text-sky-500'; iconName = 'clock'; title.innerText = "Active Gap Stopwatch"; value.innerText = formatGap(Math.round(diff)); 
     if (avgGap > 0) { if (diff > avgGap) desc.innerText = `Outstanding! You are currently ${formatGap(Math.round(diff - avgGap))} past your all-time average gap!`; else desc.innerText = `Hold on! You are ${formatGap(Math.round(avgGap - diff))} away from reaching your average gap milestone.`; } else desc.innerText = "Setting your baseline timing gap. Every extra minute counts!";
     extra.innerHTML = avgGap ? row('All-Time Average Gap', formatGap(avgGap)) : '';
+  } else if (type === 'momentum') {
+    const todayLogs = logs.filter(l => new Date(l.timestamp).toDateString() === new Date().toDateString());
+    const todayWaves = waves.filter(w => new Date(w).toDateString() === new Date().toDateString());
+    const limitComponent = Math.max(0, 100 - (todayLogs.length / Math.max(1, settings.dailyLimit)) * 100);
+    const waveComponent = Math.min(100, todayWaves.length * 25);
+    const allGaps = logs.map(l => l.gap).filter(g => g !== null && g !== undefined);
+    const avgGapMin = allGaps.length ? allGaps.reduce((a,b)=>a+b,0) / allGaps.length : 0;
+    const currentGapMin = logs.length > 0 ? (new Date().getTime() - logs[logs.length-1].timestamp) / 60000 : 0;
+    const gapComponent = avgGapMin > 0 ? Math.min(100, (currentGapMin / avgGapMin) * 100) : 50;
+    const score = Math.round(limitComponent*0.4 + waveComponent*0.3 + gapComponent*0.3);
+    iconClass = 'bg-violet-500/10 text-violet-500'; iconName = 'gauge'; title.innerText = "Today's Momentum Score"; value.innerText = (logs.length===0 && todayWaves.length===0) ? '--' : score.toString();
+    desc.innerText = "Your Momentum Score blends how close you are to your daily limit, how many cravings you've resisted today, and how your current gap compares to your average — into one simple number.";
+    pBox.classList.remove('hidden'); pLabel.innerText = "Score Breakdown"; pPct.innerText = `${score}/100`; pBar.style.width = `${Math.min(100,score)}%`; pBar.style.backgroundColor = score >= 60 ? '#10B981' : score >= 40 ? '#F59E0B' : '#EF4444';
+    extra.innerHTML = row('Limit Adherence', `${Math.round(limitComponent)}/100`) + row('Cravings Resisted Today', `${todayWaves.length} (${Math.round(waveComponent)}/100)`) + row('Pace vs Average Gap', `${Math.round(gapComponent)}/100`);
   }
   
   icon.className = `w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${iconClass}`; icon.innerHTML = `<i data-lucide="${iconName}" class="w-5 h-5"></i>`;
@@ -770,6 +794,16 @@ function showShieldDashboard() {
   const todayWaves = waves.filter(w => new Date(w).toDateString() === now.toDateString());
   const weekWaves = waves.filter(w => (now.getTime() - w) < 7 * 86400000);
   document.getElementById('modalShieldMins').innerText = `${todayWaves.length} today · ${weekWaves.length} this week`;
+
+  const successRateEl = document.getElementById('modalSuccessRate');
+  if(successRateEl) {
+    if(waveAttempts.length >= 3) {
+      const wonCount = waveAttempts.filter(a => a.outcome === 'won').length;
+      const rate = Math.round((wonCount / waveAttempts.length) * 100);
+      successRateEl.innerText = `${rate}% Success Rate (${wonCount}/${waveAttempts.length} attempts)`;
+      successRateEl.classList.remove('hidden');
+    } else { successRateEl.classList.add('hidden'); }
+  }
 
   const milestones = [ {id: 'badge1', target: 1, label: '1 Shield'}, {id: 'badge10', target: 10, label: '10 Shields'}, {id: 'badge50', target: 50, label: '50 Shields'} ];
   milestones.forEach(m => {
@@ -794,10 +828,43 @@ function closeShieldDashboard() { document.getElementById('shieldDashboardModal'
 
 function exportJSON() {
   if(!logs || logs.length === 0) { showToast("No data to backup yet."); return; }
-  const data = { logs, settings, triggers, waves, failed_waves, version: '1.5' };
+  const data = { logs, settings, triggers, waves, version: '1.4' };
   const blob = new Blob([JSON.stringify(data)], { type: "application/json" }); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.setAttribute("href", url); link.setAttribute("download", `SmokeGap_Backup_${new Date().toISOString().slice(0,10)}.json`); document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url);
-  localStorage.setItem('smoke_last_backup', Date.now());
-  const br = document.getElementById('backupReminderText'); if(br) br.classList.add('hidden');
+  localStorage.setItem('smoke_last_backup', new Date().getTime().toString());
+  const banner = document.getElementById('backupReminderBanner'); if(banner) banner.classList.add('hidden');
+  showToast("Backup downloaded ✅");
+}
+
+function importJSON(event) {
+  const file = event.target.files && event.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if(!data || !Array.isArray(data.logs)) { showToast("Invalid backup file"); return; }
+      showConfirm("Restore this backup?", `This will replace your current data with ${data.logs.length} logs from the backup file. This cannot be undone.`, () => {
+        localStorage.setItem('smoke_logs', JSON.stringify(data.logs));
+        if(Array.isArray(data.waves)) localStorage.setItem('smoke_waves', JSON.stringify(data.waves));
+        if(Array.isArray(data.triggers)) localStorage.setItem('smoke_triggers', JSON.stringify(data.triggers));
+        if(data.settings) localStorage.setItem('smoke_settings', JSON.stringify(Object.assign({}, DEFAULT_SETTINGS, data.settings)));
+        localStorage.setItem('smoke_last_backup', new Date().getTime().toString());
+        location.reload();
+      });
+    } catch(err) { showToast("Could not read that file"); }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function checkBackupReminder() {
+  const banner = document.getElementById('backupReminderBanner'); if(!banner) return;
+  if(!logs || logs.length < 10) { banner.classList.add('hidden'); return; }
+  const lastBackup = parseInt(localStorage.getItem('smoke_last_backup'));
+  const daysSince = lastBackup ? Math.floor((new Date().getTime() - lastBackup) / 86400000) : Infinity;
+  if(daysSince >= 7) {
+    document.getElementById('backupReminderText').innerText = lastBackup ? `Last backup: ${daysSince} days ago` : "You haven't backed up your data yet";
+    banner.classList.remove('hidden');
+  } else banner.classList.add('hidden');
 }
 
 function resetData(type) { 
@@ -976,54 +1043,54 @@ function getFilteredLogs() {
 }
 function setBadge(id, text, colorClass) { const b = document.getElementById(id); if(b) { if(text) { b.innerText = text; b.className = `text-[9px] font-bold px-2 py-0.5 rounded border ${colorClass}`; b.classList.remove('hidden'); } else b.classList.add('hidden'); } }
 
+// REFACTORED HEATMAP CALENDAR (Fixed 28-day 4-week grid)
 function renderHeatmapCalendar(logsArray) {
-    try {
-      const container = document.getElementById('calendarHeatmap');
-      if(!container) return;
-      
-      let dailyCounts = {};
-      const today = new Date();
-      today.setHours(0,0,0,0);
-      
-      for (let i = 27; i >= 0; i--) {
-          let d = new Date(today);
-          d.setDate(today.getDate() - i);
-          dailyCounts[d.toDateString()] = 0;
-      }
-      
-      logsArray.forEach(l => {
-          let dStr = new Date(l.timestamp).toDateString();
-          if(dailyCounts[dStr] !== undefined) dailyCounts[dStr]++;
-      });
+    const container = document.getElementById('calendarHeatmap');
+    if(!container) return;
+    
+    let dailyCounts = {};
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    
+    // Past 28 days (4 clean weeks)
+    for (let i = 27; i >= 0; i--) {
+        let d = new Date(today);
+        d.setDate(today.getDate() - i);
+        dailyCounts[d.toDateString()] = 0;
+    }
+    
+    logsArray.forEach(l => {
+        let dStr = new Date(l.timestamp).toDateString();
+        if(dailyCounts[dStr] !== undefined) dailyCounts[dStr]++;
+    });
 
-      let maxVal = Math.max(...Object.values(dailyCounts));
-      if (maxVal === 0) maxVal = 1;
+    let maxVal = Math.max(...Object.values(dailyCounts));
+    if (maxVal === 0) maxVal = 1;
 
-      let html = '';
-      let dayCount = 0;
-      let currentCol = '';
-      
-      Object.keys(dailyCounts).forEach((dStr) => {
-          const count = dailyCounts[dStr];
-          let intensity = 0;
-          if (count > 0) {
-              let ratio = count / maxVal;
-              intensity = Math.ceil(ratio * 4); 
-              if(intensity === 0) intensity = 1;
-          }
-          
-          currentCol += `<div class="heat-cell" style="background-color: var(--heat-${intensity});" title="${count} cigarettes on ${dStr}"></div>`;
-          dayCount++;
-          
-          if (dayCount % 7 === 0) {
-              html += `<div class="heat-col">${currentCol}</div>`;
-              currentCol = '';
-          }
-      });
-      
-      if (currentCol !== '') html += `<div class="heat-col">${currentCol}</div>`;
-      container.innerHTML = html;
-    } catch(e) { console.error("Heatmap error:", e); }
+    let html = '';
+    let dayCount = 0;
+    let currentCol = '';
+    
+    Object.keys(dailyCounts).forEach((dStr) => {
+        const count = dailyCounts[dStr];
+        let intensity = 0;
+        if (count > 0) {
+            let ratio = count / maxVal;
+            intensity = Math.ceil(ratio * 4); 
+            if(intensity === 0) intensity = 1;
+        }
+        
+        currentCol += `<div class="heat-cell" style="background-color: var(--heat-${intensity});" title="${count} cigarettes on ${dStr}"></div>`;
+        dayCount++;
+        
+        if (dayCount % 7 === 0) {
+            html += `<div class="heat-col">${currentCol}</div>`;
+            currentCol = '';
+        }
+    });
+    
+    if (currentCol !== '') html += `<div class="heat-col">${currentCol}</div>`;
+    container.innerHTML = html;
 }
 
 function renderAllCharts() {
@@ -1033,14 +1100,14 @@ function renderAllCharts() {
   if(filterEl) filterEl.innerText = { today: 'Today', '7days': 'Last 7 Days', '1month': '1 Month', all: 'All Time' }[filter] || 'Selected Period';
 
   let activeWaves = waves;
-  let activeFailedWaves = failed_waves;
   const now = new Date();
-  if(filter === 'today') { activeWaves = waves.filter(w => w >= new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()); activeFailedWaves = failed_waves.filter(w => w >= new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()); }
-  else if(filter === '7days') { activeWaves = waves.filter(w => w >= new Date(now.getTime() - (7 * 86400000)).getTime()); activeFailedWaves = failed_waves.filter(w => w >= new Date(now.getTime() - (7 * 86400000)).getTime()); }
-  else if(filter === '1month') { activeWaves = waves.filter(w => w >= new Date(now.getTime() - (30 * 86400000)).getTime()); activeFailedWaves = failed_waves.filter(w => w >= new Date(now.getTime() - (30 * 86400000)).getTime()); }
+  if(filter === 'today') activeWaves = waves.filter(w => w >= new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime());
+  else if(filter === '7days') activeWaves = waves.filter(w => w >= new Date(now.getTime() - (7 * 86400000)).getTime());
+  else if(filter === '1month') activeWaves = waves.filter(w => w >= new Date(now.getTime() - (30 * 86400000)).getTime());
 
-  const totalEvents = activeWaves.length + activeFailedWaves.length;
+  const totalEvents = activeLogs.length + activeWaves.length;
   const winRate = totalEvents > 0 ? Math.round((activeWaves.length / totalEvents) * 100) : 0;
+  
   document.getElementById('insightWinRate').innerText = `${winRate}%`;
 
   let totalSpend = (activeLogs.length * (settings.packPrice/settings.packSize)).toFixed(1);
@@ -1058,41 +1125,43 @@ function renderAllCharts() {
     let peakDate = new Date(); peakDate.setHours(peakHrInt, 0, 0, 0);
     document.getElementById('insightPeakHour').innerText = formatAppTime(peakDate);
     
-    let trigs = {}; let trigIntensities = {};
+    let trigs = {}; let trigIntensitySum = {}; let trigIntensityCount = {};
     activeLogs.forEach(l => { 
       let tagsArr = [];
       if (Array.isArray(l.tags) && l.tags.length > 0) tagsArr = l.tags;
       else if (l.trigger) tagsArr = [l.trigger];
       else tagsArr = ['Uncategorized'];
       tagsArr.forEach(t => { 
-          trigs[t] = (trigs[t]||0)+1; 
-          if(!trigIntensities[t]) trigIntensities[t] = [];
-          trigIntensities[t].push(l.intensity || 3);
+        trigs[t] = (trigs[t]||0)+1; 
+        const inten = l.intensity || 3;
+        trigIntensitySum[t] = (trigIntensitySum[t]||0) + inten;
+        trigIntensityCount[t] = (trigIntensityCount[t]||0) + 1;
       });
     });
-    
     let topT = Object.keys(trigs).length > 0 ? Object.keys(trigs).reduce((a,b) => trigs[a] > trigs[b] ? a : b) : '--';
     document.getElementById('insightTopTrigger').innerText = topT.length > 15 ? topT.substring(0,12)+'..' : topT;
-
-    let highestIntensityTag = '--'; let highestAvgInt = 0;
-    Object.keys(trigIntensities).forEach(t => {
-        let avg = trigIntensities[t].reduce((a,b)=>a+b,0) / trigIntensities[t].length;
-        if(avg > highestAvgInt) { highestAvgInt = avg; highestIntensityTag = t; }
-    });
-    const hiEl = document.getElementById('insightHighIntensity');
-    if(hiEl) hiEl.innerText = highestIntensityTag.length > 15 ? highestIntensityTag.substring(0,12)+'..' : highestIntensityTag;
     
     let perDay = {}; activeLogs.forEach(l => { const k = new Date(l.timestamp).toLocaleDateString([], {month:'short', day:'numeric'}); perDay[k] = (perDay[k]||0)+1; });
     let topDay = Object.keys(perDay).reduce((a,b) => perDay[a] > perDay[b] ? a : b);
     document.getElementById('insightHeaviestDay').innerText = `${topDay} (${perDay[topDay]})`;
     
-    smartText = `Your most frequent trigger is <strong>${topT}</strong>, but <strong>${highestIntensityTag}</strong> causes the most severe cravings. Ride It Out next time.`;
+    let dayWord = new Date(activeLogs[0].timestamp).toLocaleDateString([], {weekday: 'long'});
+    smartText = `You mostly struggle around <strong>${formatAppTime(peakDate)}</strong>, heavily triggered by <strong>${topT}</strong>.`;
+
+    // Trigger vs Intensity correlation - which trigger is hardest to resist, not just most frequent
+    const intensityCandidates = Object.keys(trigIntensityCount).filter(t => trigIntensityCount[t] >= 2);
+    if(intensityCandidates.length > 0) {
+      const avgIntensityByTrigger = {}; intensityCandidates.forEach(t => avgIntensityByTrigger[t] = trigIntensitySum[t] / trigIntensityCount[t]);
+      const hardestTrigger = intensityCandidates.reduce((a,b) => avgIntensityByTrigger[a] > avgIntensityByTrigger[b] ? a : b);
+      if(avgIntensityByTrigger[hardestTrigger] >= 3.3 && hardestTrigger !== topT) {
+        smartText += ` Also worth noting: <strong>${hardestTrigger}</strong> tends to bring your most intense cravings, even if it's not your most frequent trigger.`;
+      }
+    }
 
   } else {
     document.getElementById('insightPeakHour').innerText = '--';
     document.getElementById('insightTopTrigger').innerText = '--';
     document.getElementById('insightHeaviestDay').innerText = '--';
-    const hiEl = document.getElementById('insightHighIntensity'); if(hiEl) hiEl.innerText = '--';
   }
   
   document.getElementById('smartTextInsight').innerHTML = smartText;
@@ -1125,7 +1194,7 @@ function renderAllCharts() {
   }) : ['No Data'];
   
   const gaps = activeLogs.length > 0 ? activeLogs.map(l => l.gap) : [0];
-  const chartTextColor = (document.body.classList.contains('theme-white') || document.body.classList.contains('theme-calm') || document.documentElement.classList.contains('theme-white') || document.documentElement.classList.contains('theme-calm')) ? '#64748B' : '#9CA3AF';
+  const chartTextColor = (isLightTheme()) ? '#64748B' : '#9CA3AF';
 
   const proOptions = { responsive: true, maintainAspectRatio: false, animation: { duration: 600, easing: 'easeOutQuart' }, interaction: { mode: 'index', intersect: false }, layout: { padding: { left: 0, right: 0, top: 10, bottom: 0 } }, plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.95)', titleColor: '#FFFFFF', bodyColor: '#10B981', padding: 12, cornerRadius: 12, displayColors: false } }, scales: { x: { grid: { display: false }, ticks: { color: chartTextColor, font: { size: 9, weight: '600' }, maxTicksLimit: 4 } }, y: { beginAtZero: true, grid: { color: 'rgba(156, 163, 175, 0.05)', drawBorder: false }, ticks: { color: chartTextColor, font: { size: 9, weight: '600' }, padding: 6 } } } };
   const createGradient = (ctx, colorHex) => { let g = ctx.createLinearGradient(0, 0, 0, 180); g.addColorStop(0, colorHex); g.addColorStop(1, 'rgba(0,0,0,0)'); return g; };
@@ -1133,127 +1202,108 @@ function renderAllCharts() {
 
   const fullDateTimeTooltip = { callbacks: { title: (items) => { if(!items.length) return ''; const l = activeLogs[items[0].dataIndex]; if(!l) return ''; const d = new Date(l.timestamp); return `${d.toLocaleDateString([], {month:'short', day:'numeric'})} · ${formatAppTime(d)}`; } } };
 
-  // SAFE INDIVIDUAL CHART RENDERING
-  try {
-    const ctx1 = document.getElementById('chart1').getContext('2d');
-    upsertChart(1, ctx1, { type: 'line', data: { labels: labels, datasets: [{ label: 'Gap (mins)', data: gaps, borderColor: '#10B981', backgroundColor: createGradient(ctx1, 'rgba(16, 185, 129, 0.25)'), borderWidth: 3, tension: 0.4, fill: true, pointRadius: 0, pointHitRadius: 15 }] }, options: { ...proOptions, plugins: { ...proOptions.plugins, tooltip: { ...proOptions.plugins.tooltip, ...fullDateTimeTooltip } }, scales: { ...proOptions.scales, x: { ...proOptions.scales.x, offset: true } } }, plugins: [crosshairPlugin] });
-  } catch(e) { console.error("Chart 1 Error:", e); }
+  const ctx1 = document.getElementById('chart1').getContext('2d');
+  upsertChart(1, ctx1, { type: 'line', data: { labels: labels, datasets: [{ label: 'Gap (mins)', data: gaps, borderColor: '#10B981', backgroundColor: createGradient(ctx1, 'rgba(16, 185, 129, 0.25)'), borderWidth: 3, tension: 0.4, fill: true, pointRadius: 0, pointHitRadius: 15 }] }, options: { ...proOptions, plugins: { ...proOptions.plugins, tooltip: { ...proOptions.plugins.tooltip, ...fullDateTimeTooltip } }, scales: { ...proOptions.scales, x: { ...proOptions.scales.x, offset: true } } }, plugins: [crosshairPlugin] });
 
-  try {
-    let dayMap = {}; activeLogs.forEach(l => { let d = document.getElementById('insightsDateFilter').value === '7days' ? new Date(l.timestamp).toLocaleDateString([], {weekday:'short'}) : new Date(l.timestamp).toLocaleDateString([], {month:'short', day:'numeric'}); dayMap[d] = (dayMap[d] || 0) + 1; });
-    let dayLabels = Object.keys(dayMap), dayCounts = Object.values(dayMap); if(dayLabels.length === 0) { dayLabels = ['Today']; dayCounts = [0]; }
-    const ctx2 = document.getElementById('chart2').getContext('2d');
-    upsertChart(2, ctx2, { type: 'bar', data: { labels: dayLabels, datasets: [{ label: 'Count', data: dayCounts, backgroundColor: (document.body.classList.contains('theme-white') || document.body.classList.contains('theme-calm') || document.documentElement.classList.contains('theme-white') || document.documentElement.classList.contains('theme-calm')) ? '#2563EB' : '#F59E0B', borderRadius: Number.MAX_VALUE, borderSkipped: false, maxBarThickness: 16 }, { label: 'Limit', data: dayLabels.map(() => settings.dailyLimit), type: 'line', borderColor: '#EF4444', borderWidth: 2, borderDash: [4,4], pointRadius: 0 }] }, options: { ...proOptions, scales: { x: { ...proOptions.scales.x, offset: true }, y: { ...proOptions.scales.y } } }, plugins: [crosshairPlugin] });
-  } catch(e) { console.error("Chart 2 Error:", e); }
+  let dayMap = {}; activeLogs.forEach(l => { let d = document.getElementById('insightsDateFilter').value === '7days' ? new Date(l.timestamp).toLocaleDateString([], {weekday:'short'}) : new Date(l.timestamp).toLocaleDateString([], {month:'short', day:'numeric'}); dayMap[d] = (dayMap[d] || 0) + 1; });
+  let dayLabels = Object.keys(dayMap), dayCounts = Object.values(dayMap); if(dayLabels.length === 0) { dayLabels = ['Today']; dayCounts = [0]; }
+  const ctx2 = document.getElementById('chart2').getContext('2d');
+  upsertChart(2, ctx2, { type: 'bar', data: { labels: dayLabels, datasets: [{ label: 'Count', data: dayCounts, backgroundColor: (isLightTheme()) ? '#2563EB' : '#F59E0B', borderRadius: Number.MAX_VALUE, borderSkipped: false, maxBarThickness: 16 }, { label: 'Limit', data: dayLabels.map(() => settings.dailyLimit), type: 'line', borderColor: '#EF4444', borderWidth: 2, borderDash: [4,4], pointRadius: 0 }] }, options: { ...proOptions, scales: { x: { ...proOptions.scales.x, offset: true }, y: { ...proOptions.scales.y } } }, plugins: [crosshairPlugin] });
 
-  try {
-    let cumulativeSpend = 0; let spendData = []; let savedData = [];
-    if (activeLogs.length > 0) {
-      let periodStartTime = activeLogs[0].timestamp;
-      activeLogs.forEach((l, i) => {
-        cumulativeSpend += pricePerStick; spendData.push(cumulativeSpend.toFixed(1));
-        let timeElapsed = l.timestamp - periodStartTime; let expectedCigs = 1 + (timeElapsed / baselineGapMs); let actualCigs = i + 1;
-        let savedAmount = Math.max(0, expectedCigs - actualCigs) * pricePerStick; savedData.push(savedAmount.toFixed(1));
-      });
-    }
-    const ctx3 = document.getElementById('chart3').getContext('2d');
-    upsertChart(3, ctx3, { type: 'line', data: { labels: labels, datasets: [{ label: 'Spent', data: spendData, borderColor: '#EF4444', backgroundColor: createGradient(ctx3, 'rgba(239, 68, 68, 0.15)'), fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0, pointHitRadius: 15 }, { label: 'Saved', data: savedData, borderColor: '#10B981', backgroundColor: createGradient(ctx3, 'rgba(16, 185, 129, 0.15)'), fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0, pointHitRadius: 15 }] }, options: { ...proOptions, plugins: { ...proOptions.plugins, tooltip: { ...proOptions.plugins.tooltip, ...fullDateTimeTooltip } }, scales: { ...proOptions.scales, x: { ...proOptions.scales.x, offset: true } } }, plugins: [crosshairPlugin] });
-    let finalSaved = savedData.length > 0 ? savedData[savedData.length - 1] : '0.0';
-    setBadge('badge-chart3', activeLogs.length > 0 ? `Saved ${settings.currency} ${finalSaved}` : '', 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20');
-  } catch(e) { console.error("Chart 3 Error:", e); }
+  let cumulativeSpend = 0; let spendData = []; let savedData = [];
 
-  try {
-    const ctx4 = document.getElementById('chart4').getContext('2d');
-    upsertChart(4, ctx4, { type: 'doughnut', data: { labels: ['Won', 'Lost/Smoked'], datasets: [{ data: [activeWaves.length, activeFailedWaves.length], backgroundColor: ['#0EA5E9', '#EF4444'], borderWidth: 0, cutout: '76%' }] }, options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12, font: { size: 10 }, color: chartTextColor } } } }, plugins: [centerTextPlugin] });
-  } catch(e) { console.error("Chart 4 Error:", e); }
-
-  try {
-    const ctx5 = document.getElementById('chart5').getContext('2d');
-    const triggerCounts = triggers.map(t => activeLogs.filter(l => {
-        let tagsArr = [];
-        if (Array.isArray(l.tags) && l.tags.length > 0) tagsArr = l.tags;
-        else if (l.trigger) tagsArr = [l.trigger];
-        else tagsArr = ['Uncategorized'];
-        return tagsArr.includes(t);
-    }).length);
-    const topTriggerIdx = triggerCounts.length ? triggerCounts.indexOf(Math.max(...triggerCounts)) : -1;
-    setBadge('badge-chart5', (topTriggerIdx >= 0 && triggerCounts[topTriggerIdx] > 0) ? `Top: ${triggers[topTriggerIdx]}` : '', 'bg-purple-500/10 text-purple-500 border-purple-500/20');
-    upsertChart(5, ctx5, { type: 'doughnut', data: { labels: triggers, datasets: [{ data: triggerCounts, backgroundColor: triggers.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]), borderWidth: 0, cutout: '76%' }] }, options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12, font: { size: 10 }, color: chartTextColor } } } }, plugins: [centerTextPlugin] });
-  } catch(e) { console.error("Chart 5 Error:", e); }
-
-  try {
-    const dayParts = ['Morning', 'Afternoon', 'Evening', 'Night']; const partOf = (hr) => hr >= 5 && hr < 12 ? 0 : hr >= 12 && hr < 17 ? 1 : hr >= 17 && hr < 21 ? 2 : 3;
-    let triggerByPart = {}; triggers.forEach(t => triggerByPart[t] = [0, 0, 0, 0]);
-    activeLogs.forEach(l => { 
-      let tagsArr = [];
-      if (Array.isArray(l.tags) && l.tags.length > 0) tagsArr = l.tags; else if (l.trigger) tagsArr = [l.trigger]; else tagsArr = ['Uncategorized'];
-      tagsArr.forEach(tg => { if (triggerByPart[tg]) triggerByPart[tg][partOf(new Date(l.timestamp).getHours())]++; }); 
-    }); 
-    let wavesByPart = [0, 0, 0, 0]; activeWaves.forEach(w => wavesByPart[partOf(new Date(w).getHours())]++);
-
-    let topTriggers = triggers.map(t => ({name: t, count: triggerByPart[t].reduce((a,b)=>a+b,0)}))
-                              .sort((a,b) => b.count - a.count)
-                              .slice(0, 4)
-                              .map(x => x.name);
-                              
-    let otherByPart = [0, 0, 0, 0];
-    triggers.forEach(t => {
-        if(!topTriggers.includes(t)) {
-            for(let i=0; i<4; i++) otherByPart[i] += triggerByPart[t][i];
-        }
+  if (activeLogs.length > 0) {
+    let periodStartTime = activeLogs[0].timestamp;
+    activeLogs.forEach((l, i) => {
+      cumulativeSpend += pricePerStick; spendData.push(cumulativeSpend.toFixed(1));
+      let timeElapsed = l.timestamp - periodStartTime; let expectedCigs = 1 + (timeElapsed / baselineGapMs); let actualCigs = i + 1;
+      let savedAmount = Math.max(0, expectedCigs - actualCigs) * pricePerStick; savedData.push(savedAmount.toFixed(1));
     });
+  }
 
-    const partTotals = dayParts.map((_, i) => triggers.reduce((sum, t) => sum + triggerByPart[t][i], 0));
-    const peakPartIdx = partTotals.some(v => v > 0) ? partTotals.indexOf(Math.max(...partTotals)) : -1;
-    setBadge('badge-chart6', peakPartIdx >= 0 ? `Peak: ${dayParts[peakPartIdx]}` : '', 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20');
-    
-    const chart6El = document.getElementById('chart6');
-    if (chart6El) {
-      let datasets = topTriggers.map((t, i) => ({ label: t, data: triggerByPart[t], backgroundColor: CHART_COLORS[i % CHART_COLORS.length], borderRadius: 0, maxBarThickness: 32, stack: 'triggers' }));
-      if(otherByPart.some(v => v > 0)) datasets.push({ label: 'Other Triggers', data: otherByPart, backgroundColor: '#9CA3AF', borderRadius: 0, maxBarThickness: 32, stack: 'triggers' });
-      datasets.push({ label: 'Resisted', data: wavesByPart, backgroundColor: '#0EA5E9', borderRadius: 0, maxBarThickness: 32, stack: 'resisted' });
-      upsertChart(6, chart6El.getContext('2d'), { type: 'bar', data: { labels: dayParts, datasets: datasets }, options: { ...proOptions, scales: { x: { ...proOptions.scales.x, stacked: true, offset: true }, y: { ...proOptions.scales.y, stacked: true, ticks: { ...proOptions.scales.y.ticks, precision: 0 } } }, plugins: { ...proOptions.plugins, legend: { display: true, position: 'bottom', labels: { boxWidth: 8, padding: 10, font: { size: 9 }, color: chartTextColor } } } } });
-    }
-  } catch(e) { console.error("Chart 6 Error:", e); }
+  const ctx3 = document.getElementById('chart3').getContext('2d');
+  upsertChart(3, ctx3, { type: 'line', data: { labels: labels, datasets: [{ label: 'Spent', data: spendData, borderColor: '#EF4444', backgroundColor: createGradient(ctx3, 'rgba(239, 68, 68, 0.15)'), fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0, pointHitRadius: 15 }, { label: 'Saved', data: savedData, borderColor: '#10B981', backgroundColor: createGradient(ctx3, 'rgba(16, 185, 129, 0.15)'), fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0, pointHitRadius: 15 }] }, options: { ...proOptions, plugins: { ...proOptions.plugins, tooltip: { ...proOptions.plugins.tooltip, ...fullDateTimeTooltip } }, scales: { ...proOptions.scales, x: { ...proOptions.scales.x, offset: true } } }, plugins: [crosshairPlugin] });
+  let finalSaved = savedData.length > 0 ? savedData[savedData.length - 1] : '0.0';
+  setBadge('badge-chart3', activeLogs.length > 0 ? `Saved ${settings.currency} ${finalSaved}` : '', 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20');
+
+  const ctx4 = document.getElementById('chart4').getContext('2d');
+  upsertChart(4, ctx4, { type: 'doughnut', data: { labels: ['Smoked', 'Resisted'], datasets: [{ data: [activeLogs.length, activeWaves.length], backgroundColor: ['#EF4444', '#0EA5E9'], borderWidth: 0, cutout: '76%' }] }, options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12, font: { size: 10 }, color: chartTextColor } } } }, plugins: [centerTextPlugin] });
+
+  const ctx5 = document.getElementById('chart5').getContext('2d');
+  const triggerCounts = triggers.map(t => activeLogs.filter(l => {
+      let tagsArr = [];
+      if (Array.isArray(l.tags) && l.tags.length > 0) tagsArr = l.tags;
+      else if (l.trigger) tagsArr = [l.trigger];
+      else tagsArr = ['Uncategorized'];
+      return tagsArr.includes(t);
+  }).length);
+  const topTriggerIdx = triggerCounts.length ? triggerCounts.indexOf(Math.max(...triggerCounts)) : -1;
+  setBadge('badge-chart5', (topTriggerIdx >= 0 && triggerCounts[topTriggerIdx] > 0) ? `Top: ${triggers[topTriggerIdx]}` : '', 'bg-purple-500/10 text-purple-500 border-purple-500/20');
+  upsertChart(5, ctx5, { type: 'doughnut', data: { labels: triggers, datasets: [{ data: triggerCounts, backgroundColor: triggers.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]), borderWidth: 0, cutout: '76%' }] }, options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12, font: { size: 10 }, color: chartTextColor } } } }, plugins: [centerTextPlugin] });
+
+  const dayParts = ['Morning', 'Afternoon', 'Evening', 'Night']; const partOf = (hr) => hr >= 5 && hr < 12 ? 0 : hr >= 12 && hr < 17 ? 1 : hr >= 17 && hr < 21 ? 2 : 3;
+  let triggerByPart = {}; triggers.forEach(t => triggerByPart[t] = [0, 0, 0, 0]);
+  activeLogs.forEach(l => { 
+    let tagsArr = [];
+    if (Array.isArray(l.tags) && l.tags.length > 0) tagsArr = l.tags; else if (l.trigger) tagsArr = [l.trigger]; else tagsArr = ['Uncategorized'];
+    tagsArr.forEach(tg => { if (triggerByPart[tg]) triggerByPart[tg][partOf(new Date(l.timestamp).getHours())]++; }); 
+  }); 
+  let wavesByPart = [0, 0, 0, 0]; activeWaves.forEach(w => wavesByPart[partOf(new Date(w).getHours())]++);
+
+  let topTriggers = triggers.map(t => ({name: t, count: triggerByPart[t].reduce((a,b)=>a+b,0)}))
+                            .sort((a,b) => b.count - a.count)
+                            .slice(0, 4)
+                            .map(x => x.name);
+                            
+  let otherByPart = [0, 0, 0, 0];
+  triggers.forEach(t => {
+      if(!topTriggers.includes(t)) {
+          for(let i=0; i<4; i++) otherByPart[i] += triggerByPart[t][i];
+      }
+  });
+
+  const partTotals = dayParts.map((_, i) => triggers.reduce((sum, t) => sum + triggerByPart[t][i], 0));
+  const peakPartIdx = partTotals.some(v => v > 0) ? partTotals.indexOf(Math.max(...partTotals)) : -1;
+  setBadge('badge-chart6', peakPartIdx >= 0 ? `Peak: ${dayParts[peakPartIdx]}` : '', 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20');
+  
+  const chart6El = document.getElementById('chart6');
+  if (chart6El) {
+    let datasets = topTriggers.map((t, i) => ({ label: t, data: triggerByPart[t], backgroundColor: CHART_COLORS[i % CHART_COLORS.length], borderRadius: 0, maxBarThickness: 32, stack: 'triggers' }));
+    if(otherByPart.some(v => v > 0)) datasets.push({ label: 'Other Triggers', data: otherByPart, backgroundColor: '#9CA3AF', borderRadius: 0, maxBarThickness: 32, stack: 'triggers' });
+    datasets.push({ label: 'Resisted', data: wavesByPart, backgroundColor: '#0EA5E9', borderRadius: 0, maxBarThickness: 32, stack: 'resisted' });
+    upsertChart(6, chart6El.getContext('2d'), { type: 'bar', data: { labels: dayParts, datasets: datasets }, options: { ...proOptions, scales: { x: { ...proOptions.scales.x, stacked: true, offset: true }, y: { ...proOptions.scales.y, stacked: true, ticks: { ...proOptions.scales.y.ticks, precision: 0 } } }, plugins: { ...proOptions.plugins, legend: { display: true, position: 'bottom', labels: { boxWidth: 8, padding: 10, font: { size: 9 }, color: chartTextColor } } } } });
+  }
   
   renderHeatmapCalendar(logs);
   renderHeatMap('mapContainer', activeLogs);
 }
 
-// BULLETPROOF LEAFLET MAP RENDER
 function renderHeatMap(containerId, activeLogs) {
+  const mapEl = document.getElementById(containerId); if(!mapEl) return;
+  let lastWithLoc = activeLogs.slice().reverse().find(l => l.lat && l.lng), lat = lastWithLoc ? lastWithLoc.lat : 25.2048, lng = lastWithLoc ? lastWithLoc.lng : 55.2708;
+  let heatPoints = activeLogs.filter(l => l.lat && l.lng).map(l => [l.lat, l.lng, 1.0]);
+  const isModal = containerId === 'mapModalContainer'; let m = isModal ? modalMapInstance : mapInstance;
   try {
-    const mapEl = document.getElementById(containerId); if(!mapEl) return;
-    let lastWithLoc = activeLogs.slice().reverse().find(l => l.lat && l.lng), lat = lastWithLoc ? lastWithLoc.lat : 25.2048, lng = lastWithLoc ? lastWithLoc.lng : 55.2708;
-    let heatPoints = activeLogs.filter(l => l.lat && l.lng).map(l => [l.lat, l.lng, 1.0]);
-    const isModal = containerId === 'mapModalContainer'; 
-    let m = isModal ? modalMapInstance : mapInstance;
-
-    if (m) { 
-      try { m.remove(); } catch(e) {} 
-      if (isModal) modalMapInstance = null; else mapInstance = null; 
-    }
-    if (mapEl._leaflet_id) { mapEl._leaflet_id = null; mapEl.innerHTML = ""; }
-
-    m = L.map(containerId, {zoomControl: false, attributionControl: false}).setView([lat, lng], 13);
-    L.tileLayer((settings.theme === 'white' || settings.theme === 'calm' || document.documentElement.classList.contains('theme-white') || document.documentElement.classList.contains('theme-calm')) ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png' : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {maxZoom: 19}).addTo(m);
-    
-    if (isModal) modalMapInstance = m; else mapInstance = m;
-    
+    if (!m || m._smokegapTheme !== settings.theme) {
+      if (m) { try { m.remove(); } catch(e) {} }
+      m = L.map(containerId, {zoomControl: false, attributionControl: false}).setView([lat, lng], 13);
+      L.tileLayer((isLightTheme()) ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png' : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {maxZoom: 19}).addTo(m);
+      m._smokegapTheme = settings.theme; if (isModal) modalMapInstance = m; else mapInstance = m;
+      setTimeout(() => { m.invalidateSize(); }, 250);
+    } else { m.setView([lat, lng], m.getZoom()); setTimeout(() => { m.invalidateSize(); }, 50); }
+    if (m._smokegapHeat) { m.removeLayer(m._smokegapHeat); m._smokegapHeat = null; }
+    if (m._smokegapMarker) { m.removeLayer(m._smokegapMarker); m._smokegapMarker = null; }
     if(heatPoints.length > 0 && window.L.heatLayer) m._smokegapHeat = L.heatLayer(heatPoints, {radius: 28, blur: 18, maxZoom: 17, minOpacity: 0.4}).addTo(m);
     else m._smokegapMarker = L.marker([lat, lng]).addTo(m);
-
-    setTimeout(() => { try { m.invalidateSize(); } catch(e){} }, 250);
-  } catch(e) { console.error("Leaflet Heatmap Error:", e); }
+  } catch(e) {}
 }
 
 function openMapModal() { document.getElementById('mapModal').classList.remove('hidden'); setTimeout(() => { renderHeatMap('mapModalContainer', getFilteredLogs()); }, 200); }
-function closeMapModal() { document.getElementById('mapModal').classList.add('hidden'); if(modalMapInstance) { try { modalMapInstance.remove(); } catch(e){} modalMapInstance = null; } }
+function closeMapModal() { document.getElementById('mapModal').classList.add('hidden'); if(modalMapInstance) { modalMapInstance.remove(); modalMapInstance = null; } }
 function initDragAndDrop() { const container = document.getElementById('chartContainer'); if(!container || !window.Sortable) return; new Sortable(container, { handle: '.drag-handle', animation: 200, ghostClass: 'sortable-ghost', onEnd: function () { localStorage.setItem('smoke_chart_order', JSON.stringify([...container.children].map(c => c.id))); } }); }
 function loadChartOrder() { const savedOrder = JSON.parse(localStorage.getItem('smoke_chart_order')); if(!savedOrder) return; const container = document.getElementById('chartContainer'); savedOrder.forEach(id => { const card = document.getElementById(id); if(card) container.appendChild(card); }); }
 
-// EXPORT ALL TO WINDOW
-window.enterPin = enterPin; window.clearPin = clearPin; window.setupPin = setupPin;
+window.enterPin = enterPin; window.clearPin = clearPin; window.setupPin = setupPin; window.toggleNotifications = toggleNotifications; window.renderHistory = renderHistory;
 window.handleLogClick = handleLogClick; window.switchTab = switchTab; window.updateSettings = updateSettings; window.resetData = resetData; 
 window.startSmokeTakeover = startSmokeTakeover; window.closeSmokeTakeover = closeSmokeTakeover; window.toggleTakeoverTag = toggleTakeoverTag; window.cancelSmokeTakeover = cancelSmokeTakeover;
 window.openTriggerModal = openTriggerModal; window.closeTriggerModal = closeTriggerModal; window.toggleTag = toggleTag; window.saveTags = saveTags;
@@ -1261,6 +1311,5 @@ window.openWaveModal = openWaveModal; window.closeWaveModal = closeWaveModal; wi
 window.renderAllCharts = renderAllCharts; window.openMapModal = openMapModal; window.closeMapModal = closeMapModal;
 window.showStatDetail = showStatDetail; window.closeStatDetail = closeStatDetail; window.showShieldDashboard = showShieldDashboard; window.closeShieldDashboard = closeShieldDashboard;
 window.exportLogsCSV = exportLogsCSV; window.addCustomTrigger = addCustomTrigger; window.removeCustomTrigger = removeCustomTrigger;
-window.closeConfirmModal = closeConfirmModal; window.confirmYes = confirmYes; window.setTakeoverIntensity = setTakeoverIntensity; window.exportJSON = exportJSON;
+window.closeConfirmModal = closeConfirmModal; window.confirmYes = confirmYes; window.setTakeoverIntensity = setTakeoverIntensity; window.exportJSON = exportJSON; window.importJSON = importJSON;
 window.closePinSetupModal = closePinSetupModal; window.savePinSetup = savePinSetup; window.setHeroStyle = setHeroStyle;
-window.showMomentumModal = showMomentumModal; window.closeMomentumModal = closeMomentumModal;
