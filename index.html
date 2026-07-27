@@ -126,11 +126,11 @@
     .ride-btn { position: relative; overflow: hidden; }
     #rideProgressFill { position: absolute; bottom: 0; left: 0; height: 100%; width: 0%; background: rgba(255,255,255,0.18); pointer-events: none; transition: width 1s linear; }
 
-    /* SOS RADAR PULSE (SNAPPY METRONOME BEAT) */
+    /* SOS RADAR PULSE */
     @keyframes radarPing { 0% { transform: scale(0.88); opacity: 0.9; } 50% { transform: scale(1.22); opacity: 0.2; } 100% { transform: scale(0.88); opacity: 0.9; } }
     .sos-pulse-ring { animation: radarPing 1s cubic-bezier(0,0,0.2,1) infinite; }
 
-    /* SEAMLESS 100% INFINITE WAVE ANIMATION */
+    /* SEAMLESS WAVE ANIMATION */
     @keyframes waveMotion { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
     .animate-wave { animation: waveMotion 3s linear infinite; }
 
@@ -172,7 +172,6 @@
         <p class="text-[9px] font-bold uppercase tracking-[0.2em] mt-0.5" style="color: var(--text-muted);">Widen the gap.</p>
       </div>
 
-      <!-- HEADER RIGHT: MOMENTUM & SHIELD SIDE-BY-SIDE -->
       <div class="flex items-center gap-2">
         <button onclick="window.showStatDetail('momentum')" class="premium-card px-3 py-1.5 rounded-full flex items-center gap-1.5 active:scale-95 transition-transform cursor-pointer">
           <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-500"></i>
@@ -201,20 +200,16 @@
           FOR: <span id="motivationText" style="color: var(--text-main);">--</span>
         </div>
 
-        <!-- HERO STOPWATCH: "THE CLIMB" (VERTICAL GROWTH BAR) -->
+        <!-- HERO STOPWATCH: "THE CLIMB" -->
         <div id="heroCarousel" class="relative flex flex-col items-center justify-center pt-2 pb-2">
           <div onclick="window.showStatDetail('currentGap')" class="premium-card p-5 w-full max-w-[320px] mx-auto cursor-pointer active:scale-[0.98] transition-all relative overflow-hidden border" style="border-color: var(--card-border);">
             
             <div class="flex items-center gap-4">
-              <!-- VERTICAL CAPSULE THERMOMETER BAR -->
               <div class="relative shrink-0 w-7 h-44 rounded-full overflow-hidden border flex flex-col justify-end" style="background-color: var(--input-bg); border-color: var(--card-border);">
-                <!-- Dynamic Fill Level -->
                 <div id="heroClimbFill" class="w-full transition-all duration-1000 ease-out" style="height: 0%; background-color: var(--accent);"></div>
-                <!-- Target Marker Line (Average Gap) -->
                 <div id="heroClimbMarker" class="absolute left-0 right-0 h-0.5 bg-white shadow-[0_0_6px_#fff] z-10 hidden"></div>
               </div>
 
-              <!-- TIME & RECORD CONTENT -->
               <div class="flex-1 min-w-0 space-y-1">
                 <div class="flex items-center justify-between">
                   <span class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1" style="color: var(--text-muted);">
@@ -265,28 +260,19 @@
           </button>
         </div>
 
-        <!-- RIDE IT OUT: 100% SEAMLESS DYNAMIC OCEAN WAVE MODAL -->
-        <div id="waveOverlay" class="hidden premium-card p-4 relative overflow-hidden border" style="border-color: rgba(14,165,233,0.3);">
-          
-          <!-- Continuous 100% Seamless Double Sine Wave SVG -->
-          <div class="absolute inset-0 pointer-events-none opacity-30 overflow-hidden flex items-end">
-            <svg viewBox="0 0 1200 120" preserveAspectRatio="none" class="w-[200%] animate-wave" id="waveSvgEl" style="height: 60px;">
+        <!-- RIDE IT OUT: 100% SEAMLESS DYNAMIC OCEAN WAVE MODAL (REDESIGNED: HUGE & PROMINENT) -->
+        <div id="waveOverlay" class="hidden premium-card relative overflow-hidden border flex flex-col items-center justify-center text-center shadow-2xl transition-all duration-500" style="border-color: rgba(14,165,233,0.4); min-height: 280px; background: linear-gradient(180deg, var(--card-bg) 0%, rgba(14,165,233,0.05) 100%);">
+          <div class="absolute inset-0 pointer-events-none flex items-end">
+            <svg viewBox="0 0 1200 120" preserveAspectRatio="none" class="w-[200%] animate-wave transition-all duration-1000 ease-in-out" id="waveSvgEl" style="height: 160px; opacity: 0.5;">
               <path d="M 0,60 Q 150,10 300,60 T 600,60 Q 750,10 900,60 T 1200,60 V 120 H 0 Z" fill="#0EA5E9"></path>
             </svg>
           </div>
-
-          <div class="relative z-10 flex items-center gap-3">
-            <div class="relative shrink-0 w-16 h-16 flex items-center justify-center rounded-2xl bg-sky-500/10 border border-sky-500/30">
-              <i data-lucide="waves" class="w-6 h-6 text-sky-500 animate-pulse"></i>
-              <div class="absolute -bottom-1">
-                <span id="waveCountdown" class="numeric-display text-[11px] font-extrabold text-sky-400">--:--</span>
-              </div>
-            </div>
-            <div class="flex-1 min-w-0">
-              <p class="text-[10px] font-bold text-sky-500 uppercase tracking-widest flex items-center gap-1"><i data-lucide="waves" class="w-3 h-3"></i> Riding the Wave</p>
-              <p id="waveMotivationalText" class="text-[11px] mt-1 font-medium leading-snug" style="color: var(--text-main);">Breathe in... Hold... Exhale...</p>
-            </div>
-            <button onclick="window.cancelActiveWave()" class="shrink-0 w-8 h-8 rounded-full flex items-center justify-center active:scale-95 transition-all" style="background-color: var(--input-bg); color: var(--text-muted);"><i data-lucide="x" class="w-4 h-4"></i></button>
+          <div class="relative z-10 w-full flex flex-col items-center py-6">
+            <i data-lucide="waves" class="w-12 h-12 text-sky-400 animate-pulse mb-3"></i>
+            <p class="text-[10px] font-bold text-sky-500 uppercase tracking-widest mb-1">Riding the Wave</p>
+            <span id="waveCountdown" class="numeric-display text-6xl font-black tracking-tighter drop-shadow-md mb-2" style="color: var(--text-main);">--:--</span>
+            <p id="waveMotivationalText" class="text-xs font-medium mt-2 mb-6 leading-snug px-6" style="color: var(--text-muted);">Breathe in... Hold... Exhale...</p>
+            <button onclick="window.cancelActiveWave()" class="px-6 py-3 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 border backdrop-blur-md flex items-center gap-1.5" style="background: var(--input-bg); border-color: var(--card-border); color: var(--text-main);"><i data-lucide="x" class="w-3.5 h-3.5"></i> Cancel Wave</button>
           </div>
         </div>
 
@@ -296,7 +282,6 @@
             <p id="todaySpend" class="numeric-display text-xl font-bold" style="color: var(--text-main);">AED 0</p>
           </div>
 
-          <!-- NICOTINE WILLPOWER BATTERY METER CARD -->
           <div onclick="window.showStatDetail('count')" class="premium-card p-4 active:scale-95 transition-transform cursor-pointer relative overflow-hidden">
             <div class="flex items-center justify-between mb-1.5">
               <div class="flex items-center gap-1.5">
@@ -506,7 +491,6 @@
           </div>
         </div>
 
-        <!-- NOTIFICATION & FRICTION PREFERENCES CARD -->
         <div class="premium-card p-5 space-y-4">
           <div class="flex justify-between items-center border-b pb-2" style="border-color: var(--card-border);">
             <h3 class="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2" style="color: var(--text-muted);"><i data-lucide="bell" class="w-3.5 h-3.5 text-purple-500"></i> Smart Reminders & Friction</h3>
@@ -641,7 +625,6 @@
     </nav>
   </div>
 
-  <!-- SOS CRAVING INTERRUPTER MODAL (RADAR PULSE METAPHOR) -->
   <div id="sosInterrupterModal" class="hidden fixed inset-0 backdrop-blur-md z-[25000] flex flex-col justify-end transition-opacity" style="background-color: var(--overlay-bg);" onclick="if(event.target===this) window.closeSosInterrupter(false)">
     <div class="p-6 rounded-t-3xl space-y-5 max-w-md mx-auto w-full border-t shadow-2xl text-center" style="background-color: var(--modal-bg); border-color: var(--card-border);">
       <div class="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center mx-auto text-amber-500 mb-1">
@@ -653,7 +636,6 @@
         <p class="text-xs mt-1 leading-relaxed" style="color: var(--text-muted);">Urge dopamine spikes fade in 15 seconds. Give your brain a brief moment to reset.</p>
       </div>
 
-      <!-- RADAR PULSE / FLASH TIMER CONTAINER -->
       <div class="relative w-28 h-28 mx-auto flex items-center justify-center my-3">
         <div id="sosPulseRing1" class="absolute inset-0 rounded-full border-2 border-amber-500/40 sos-pulse-ring"></div>
         <div id="sosPulseRing2" class="absolute -inset-3 rounded-full border border-amber-500/20 sos-pulse-ring" style="animation-delay: 0.4s;"></div>
@@ -673,7 +655,6 @@
     </div>
   </div>
 
-  <!-- EXPANDED STAT MODAL -->
   <div id="triggerModal" class="hidden fixed inset-0 backdrop-blur-sm z-50 flex flex-col justify-end transition-opacity" style="background-color: var(--overlay-bg);" onclick="if(event.target===this) window.closeTriggerModal()">
     <div class="p-6 rounded-t-3xl space-y-4 max-w-md mx-auto w-full border-t shadow-2xl" style="background-color: var(--modal-bg); border-color: var(--card-border);">
       <div class="flex justify-between items-center mb-1">
