@@ -7,7 +7,6 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <title>pause — Widen the gap.</title>
 
-  <!-- PostHog Analytics -->
   <script>
     !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}
     (p=t.createElement("script")).type="text/javascript",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);
@@ -126,15 +125,11 @@
     .ride-btn { position: relative; overflow: hidden; }
     #rideProgressFill { position: absolute; bottom: 0; left: 0; height: 100%; width: 0%; background: rgba(255,255,255,0.18); pointer-events: none; transition: width 1s linear; }
 
-    /* SOS RADAR PULSE */
     @keyframes radarPing { 0% { transform: scale(0.88); opacity: 0.9; } 50% { transform: scale(1.22); opacity: 0.2; } 100% { transform: scale(0.88); opacity: 0.9; } }
     .sos-pulse-ring { animation: radarPing 1s cubic-bezier(0,0,0.2,1) infinite; }
-
-    /* SEAMLESS WAVE ANIMATION */
     @keyframes waveMotion { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
     .animate-wave { animation: waveMotion 3s linear infinite; }
 
-    /* Heatmap Alignment */
     .heat-cell { width: 13px; height: 13px; border-radius: 3px; flex-shrink: 0; transition: all 0.2s ease; }
     .heat-col { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; }
   </style>
@@ -200,44 +195,82 @@
           FOR: <span id="motivationText" style="color: var(--text-main);">--</span>
         </div>
 
-        <!-- HERO STOPWATCH: "THE CLIMB" -->
-        <div id="heroCarousel" class="relative flex flex-col items-center justify-center pt-2 pb-2">
-          <div onclick="window.showStatDetail('currentGap')" class="premium-card p-5 w-full max-w-[320px] mx-auto cursor-pointer active:scale-[0.98] transition-all relative overflow-hidden border" style="border-color: var(--card-border);">
+        <!-- MULTI-WATCH CAROUSEL -->
+        <div id="heroCarousel" class="relative flex flex-col items-center justify-center pt-2 pb-3">
+          
+          <div id="watchContainer" class="w-full relative min-h-[140px]">
             
-            <div class="flex items-center gap-4">
-              <div class="relative shrink-0 w-7 h-44 rounded-full overflow-hidden border flex flex-col justify-end" style="background-color: var(--input-bg); border-color: var(--card-border);">
-                <div id="heroClimbFill" class="w-full transition-all duration-1000 ease-out" style="height: 0%; background-color: var(--accent);"></div>
-                <div id="heroClimbMarker" class="absolute left-0 right-0 h-0.5 bg-white shadow-[0_0_6px_#fff] z-10 hidden"></div>
-              </div>
-
-              <div class="flex-1 min-w-0 space-y-1">
-                <div class="flex items-center justify-between">
-                  <span class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1" style="color: var(--text-muted);">
-                    <i data-lucide="trending-up" class="w-3 h-3 text-amber-500"></i> The Climb
-                  </span>
-                  <span id="heroClimbStatus" class="text-[8px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">Pacing</span>
+            <!-- WATCH 1: THE CLIMB (Fixed Alignment) -->
+            <div id="watchStyle1" onclick="window.showStatDetail('currentGap')" class="premium-card p-5 w-full max-w-[320px] mx-auto cursor-pointer active:scale-[0.98] transition-all relative overflow-hidden border" style="border-color: var(--card-border);">
+              <div class="flex items-center gap-4">
+                <div class="relative shrink-0 w-6 h-36 rounded-full overflow-hidden border flex flex-col justify-end" style="background-color: var(--input-bg); border-color: var(--card-border);">
+                  <div id="heroClimbFill" class="w-full transition-all duration-1000 ease-out" style="height: 0%; background-color: var(--accent);"></div>
+                  <div id="heroClimbMarker" class="absolute left-0 right-0 h-0.5 bg-white shadow-[0_0_6px_#fff] z-10 hidden"></div>
                 </div>
-
-                <div id="stopwatch" class="numeric-display text-3xl font-black tracking-tighter" style="color: var(--text-main);">00:00:00</div>
-
-                <div id="heroRecordBadge" class="hidden text-[8px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.2)]">
-                  🏆 NEW RECORD ZONE
+                <div class="flex-1 min-w-0 space-y-1">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1" style="color: var(--text-muted);"><i data-lucide="trending-up" class="w-3 h-3 text-amber-500"></i> The Climb</span>
+                    <span id="heroClimbStatus" class="text-[8px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">Pacing</span>
+                  </div>
+                  <div id="stopwatch1" class="numeric-display text-3xl font-black tracking-tighter" style="color: var(--text-main);">00:00:00</div>
+                  <div id="heroRecordBadge1" class="hidden text-[8px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.2)]">🏆 NEW RECORD ZONE</div>
+                  <p id="heroClimbSub" class="text-[10px] font-bold text-amber-500 leading-tight">Target Avg: --</p>
                 </div>
-
-                <p id="heroClimbSub" class="text-[10px] font-bold text-amber-500 leading-tight">Target Avg: --</p>
               </div>
+            </div>
+
+            <!-- WATCH 2: THE ORBIT (Circular Rings) -->
+            <div id="watchStyle2" onclick="window.showStatDetail('currentGap')" class="hidden premium-card p-5 w-full max-w-[320px] mx-auto cursor-pointer active:scale-[0.98] transition-all border flex flex-col items-center justify-center relative overflow-hidden" style="border-color: var(--card-border);">
+               <div class="relative flex justify-center items-center w-36 h-36 mb-2">
+                 <svg class="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 120 120">
+                   <circle cx="60" cy="60" r="54" fill="transparent" stroke="var(--input-bg)" stroke-width="6"></circle>
+                   <circle id="heroRingFill" cx="60" cy="60" r="54" fill="transparent" stroke="var(--accent)" stroke-width="6" stroke-dasharray="339.29" stroke-dashoffset="339.29" stroke-linecap="round" style="transition: stroke-dashoffset 1s ease-out;"></circle>
+                 </svg>
+                 <div class="absolute inset-0 flex flex-col items-center justify-center pt-1">
+                   <span id="heroRingStatus" class="text-[8px] font-extrabold uppercase tracking-widest text-amber-500 mb-0.5">Pacing</span>
+                   <div id="stopwatch2" class="numeric-display text-2xl font-black tracking-tighter" style="color: var(--text-main);">00:00:00</div>
+                   <div id="heroRecordBadge2" class="hidden mt-1 text-[7px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.2)]">🏆 RECORD</div>
+                 </div>
+               </div>
+               <div class="flex items-center gap-2 justify-center w-full">
+                 <i data-lucide="aperture" class="w-3.5 h-3.5 text-amber-500"></i>
+                 <p id="heroRingSub" class="text-[10px] font-bold text-amber-500 leading-tight">Target: --</p>
+               </div>
+            </div>
+
+            <!-- WATCH 3: THE HORIZON (Minimalist Bar) -->
+            <div id="watchStyle3" onclick="window.showStatDetail('currentGap')" class="hidden premium-card p-6 w-full max-w-[320px] mx-auto cursor-pointer active:scale-[0.98] transition-all border" style="border-color: var(--card-border);">
+               <div class="flex justify-between items-start mb-3">
+                 <div class="space-y-1">
+                   <span class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5" style="color: var(--text-muted);"><i data-lucide="sunrise" class="w-3.5 h-3.5 text-amber-500"></i> The Horizon</span>
+                   <div id="stopwatch3" class="numeric-display text-4xl font-black tracking-tighter" style="color: var(--text-main);">00:00:00</div>
+                 </div>
+                 <span id="heroHorizonStatus" class="text-[8px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 mt-1">Pacing</span>
+               </div>
+               <div id="heroRecordBadge3" class="hidden mb-3 text-[8px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.2)] w-max">🏆 NEW RECORD ZONE</div>
+               <div class="relative w-full h-2.5 rounded-full overflow-hidden border mb-2" style="background-color: var(--input-bg); border-color: var(--card-border);">
+                 <div id="heroHorizonFill" class="h-full transition-all duration-1000 ease-out" style="width: 0%; background-color: var(--accent);"></div>
+                 <div id="heroHorizonMarker" class="absolute top-0 bottom-0 w-0.5 bg-white shadow-[0_0_6px_#fff] z-10 hidden" style="left: 70%;"></div>
+               </div>
+               <p id="heroHorizonSub" class="text-[10px] font-bold text-amber-500 leading-tight text-right">Target Avg: --</p>
             </div>
 
           </div>
 
-          <div id="smartStatusWrapper" class="mt-3 px-5 py-2.5 rounded-full border transition-all duration-500 bg-gray-500/10 border-gray-500/20 text-gray-400">
+          <!-- WATCH SWITCHER DOTS -->
+          <div class="flex gap-2.5 mt-4 items-center justify-center">
+            <button id="watchDot1" onclick="window.switchWatchStyle(1)" class="w-2 h-2 rounded-full transition-all duration-300"></button>
+            <button id="watchDot2" onclick="window.switchWatchStyle(2)" class="w-2 h-2 rounded-full transition-all duration-300"></button>
+            <button id="watchDot3" onclick="window.switchWatchStyle(3)" class="w-2 h-2 rounded-full transition-all duration-300"></button>
+          </div>
+
+          <div id="smartStatusWrapper" class="mt-4 px-5 py-2.5 rounded-full border transition-all duration-500 bg-gray-500/10 border-gray-500/20 text-gray-400">
             <span id="smartStatusText" class="text-[11px] font-bold uppercase tracking-wider flex items-center gap-2">
               <i data-lucide="info" class="w-3.5 h-3.5"></i> Waiting for first log
             </span>
           </div>
         </div>
 
-        <!-- REFINED BUTTON HIERARCHY -->
         <div class="grid grid-cols-2 gap-3 relative pt-1">
           <button id="rideItOutBtn" onclick="window.openWaveModal()" class="ride-btn py-4 flex flex-col items-center justify-center rounded-2xl active:scale-95 transition-all shadow-[0_10px_25px_var(--accent-glow)] border border-transparent relative overflow-hidden" style="background: var(--accent); color: white;">
             <div id="rideProgressFill"></div>
@@ -260,7 +293,6 @@
           </button>
         </div>
 
-        <!-- RIDE IT OUT: 100% SEAMLESS DYNAMIC OCEAN WAVE MODAL (REDESIGNED: HUGE & PROMINENT) -->
         <div id="waveOverlay" class="hidden premium-card relative overflow-hidden border flex flex-col items-center justify-center text-center shadow-2xl transition-all duration-500" style="border-color: rgba(14,165,233,0.4); min-height: 280px; background: linear-gradient(180deg, var(--card-bg) 0%, rgba(14,165,233,0.05) 100%);">
           <div class="absolute inset-0 pointer-events-none flex items-end">
             <svg viewBox="0 0 1200 120" preserveAspectRatio="none" class="w-[200%] animate-wave transition-all duration-1000 ease-in-out" id="waveSvgEl" style="height: 160px; opacity: 0.5;">
@@ -693,36 +725,6 @@
     </div>
   </div>
   
-  <div id="smokeTakeover" class="hidden fixed inset-0 z-[20000] opacity-0 transition-opacity duration-500">
-    <div class="absolute inset-0 takeover-bg backdrop-blur-2xl cursor-pointer" onclick="window.closeSmokeTakeover()"></div>
-    <button onclick="window.cancelSmokeTakeover(event)" class="absolute top-14 right-6 z-[20001] px-4 py-2 bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-bold uppercase tracking-wider rounded-full backdrop-blur-md flex items-center gap-1.5 active:scale-95 transition-all"><i data-lucide="x" class="w-3 h-3"></i> Cancel</button>
-    <div class="absolute inset-0 flex flex-col justify-between pointer-events-none">
-      <div class="flex-1 flex flex-col items-center justify-center p-6 space-y-8 mt-10">
-        <p class="text-[var(--text-main)] font-bold tracking-widest uppercase text-xs opacity-90">Light your cigarette.</p>
-        <div class="relative flex justify-center items-center w-40 h-40">
-          <svg class="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 120 120"><circle cx="60" cy="60" r="54" fill="transparent" stroke="var(--card-border)" stroke-width="4"></circle><circle id="takeoverRing" cx="60" cy="60" r="54" fill="transparent" stroke="var(--accent)" stroke-width="6" stroke-dasharray="339.29" stroke-dashoffset="339.29" stroke-linecap="round" style="transition: stroke-dashoffset 1s linear; filter: drop-shadow(0 0 12px var(--accent-glow));"></circle></svg>
-          <span id="takeoverNumber" class="numeric-display text-6xl font-light z-10" style="color: var(--text-main);">6</span>
-        </div>
-        <p id="takeoverFact" class="text-[11px] font-medium text-center text-gray-400 opacity-0 transition-opacity duration-1000 max-w-[200px] leading-relaxed">It's been -- since your last one.</p>
-      </div>
-      <div class="p-6 pb-10 w-full max-w-md mx-auto pointer-events-auto bg-gradient-to-t from-[var(--bg-body)] to-transparent">
-        <div class="mb-5 text-center">
-          <p class="text-[10px] uppercase tracking-widest font-bold mb-2" style="color: var(--text-muted);">Craving Intensity</p>
-          <div class="flex justify-center gap-2">
-            <button onclick="window.setTakeoverIntensity(1)" id="toInt1" class="w-9 h-9 rounded-full border text-xs font-bold transition-all" style="border-color: var(--card-border); color: var(--text-main);">1</button>
-            <button onclick="window.setTakeoverIntensity(2)" id="toInt2" class="w-9 h-9 rounded-full border text-xs font-bold transition-all" style="border-color: var(--card-border); color: var(--text-main);">2</button>
-            <button onclick="window.setTakeoverIntensity(3)" id="toInt3" class="w-9 h-9 rounded-full border text-xs font-bold transition-all" style="border-color: var(--card-border); color: var(--text-main);">3</button>
-            <button onclick="window.setTakeoverIntensity(4)" id="toInt4" class="w-9 h-9 rounded-full border text-xs font-bold transition-all" style="border-color: var(--card-border); color: var(--text-main);">4</button>
-            <button onclick="window.setTakeoverIntensity(5)" id="toInt5" class="w-9 h-9 rounded-full border text-xs font-bold transition-all" style="border-color: var(--card-border); color: var(--text-main);">5</button>
-          </div>
-          <p id="takeoverIntensityLabel" class="text-[9px] font-bold mt-1.5" style="color: var(--accent);">Moderate</p>
-        </div>
-        <p class="text-[10px] uppercase tracking-widest text-center text-gray-500 font-bold mb-2">Tap to tag (optional)</p>
-        <div id="takeoverTagsGrid" class="flex flex-wrap justify-center gap-2.5"></div>
-      </div>
-    </div>
-  </div>
-
   <div id="statDetailModal" class="hidden fixed inset-0 backdrop-blur-sm z-50 flex flex-col justify-end transition-opacity" style="background-color: var(--overlay-bg);" onclick="if(event.target===this) window.closeStatDetail()">
     <div class="p-6 rounded-t-3xl space-y-5 max-w-md mx-auto w-full border-t shadow-2xl" style="background-color: var(--modal-bg); border-color: var(--card-border);">
       <div class="flex justify-between items-start">
@@ -735,9 +737,7 @@
         </div>
         <button onclick="window.closeStatDetail()" class="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style="background-color: var(--input-bg); color: var(--text-muted);"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
-
       <p id="statDetailDesc" class="text-xs font-medium leading-relaxed p-3.5 rounded-2xl border" style="background-color: var(--input-bg); border-color: var(--card-border); color: var(--text-main);"></p>
-
       <div id="statDetailProgressBox" class="space-y-1.5 hidden">
         <div class="flex justify-between text-[10px] font-bold uppercase tracking-wider" style="color: var(--text-muted);">
           <span id="statProgressLabel">Goal Progress</span>
@@ -747,7 +747,6 @@
           <div id="statProgressBar" class="h-full rounded-full transition-all duration-500" style="width: 0%; background-color: var(--accent);"></div>
         </div>
       </div>
-
       <div id="statDetailExtra" class="space-y-2 text-xs pt-2"></div>
     </div>
   </div>
