@@ -201,22 +201,22 @@
           <div id="watchContainer" class="w-full relative min-h-[220px] flex items-center justify-center touch-pan-x" ontouchstart="window.touchStartX(event)" ontouchend="window.touchEndX(event)">
             
             <!-- WATCH 1: THE CLIMB (Scaled up to match Horizon space) -->
-            <div id="watchStyle1" onclick="window.showStatDetail('currentGap')" class="w-full max-w-[340px] mx-auto active:scale-[0.98] transition-all relative flex flex-col items-center justify-center">
-              <div class="flex items-center gap-2 mb-2">
-                <span class="text-[10px] font-bold uppercase tracking-widest flex items-center gap-1" style="color: var(--text-muted);"><i data-lucide="gauge" class="w-3.5 h-3.5 text-amber-500"></i> The Ascent</span>
-                <span id="heroClimbStatus" class="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">Pacing</span>
-              </div>
-              <div class="relative flex justify-center" style="width: 260px; height: 130px;">
-                <svg viewBox="0 0 200 110" class="absolute inset-0 w-full h-full overflow-visible">
-                  <path d="M 15 100 A 85 85 0 0 1 185 100" fill="none" stroke="var(--input-bg)" stroke-width="16" stroke-linecap="round"></path>
-                  <path id="heroClimbFill" d="M 15 100 A 85 85 0 0 1 185 100" fill="none" stroke="var(--accent)" stroke-width="16" stroke-linecap="round" stroke-dasharray="267.04" stroke-dashoffset="267.04" style="transition: stroke-dashoffset 1s ease-out, stroke 0.5s, filter 0.5s;"></path>
-                </svg>
-                <div class="absolute bottom-2 left-0 right-0 flex flex-col items-center">
-                  <div id="stopwatch1" class="numeric-display text-4xl sm:text-5xl font-black tracking-tighter" style="color: var(--text-main);">00:00:00</div>
-                  <div id="heroRecordBadge1" class="hidden mt-1 text-[8px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.2)] w-max">🏆 NEW RECORD ZONE</div>
-                  <p id="heroClimbSub" class="text-[10px] font-bold text-amber-500 leading-tight mt-1">Target Avg: --</p>
-                </div>
-              </div>
+            <div id="watchStyle1" onclick="window.showStatDetail('currentGap')" class="w-full max-w-[340px] mx-auto active:scale-[0.98] transition-all flex flex-col items-center justify-center relative">
+               <div class="relative flex justify-center items-center w-56 h-56 mb-1">
+                 <svg class="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 120 120">
+                   <circle cx="60" cy="60" r="50" fill="transparent" stroke="var(--input-bg)" stroke-width="6"></circle>
+                   <circle id="heroClimbFill" cx="60" cy="60" r="50" fill="transparent" stroke="#F59E0B" stroke-width="8" stroke-dasharray="314.16" stroke-dashoffset="314.16" stroke-linecap="round" style="transition: stroke-dashoffset 1s ease-out, stroke 0.5s, filter 0.5s;"></circle>
+                 </svg>
+                 <div class="absolute inset-0 flex flex-col items-center justify-center pt-1">
+                   <span id="heroClimbStatus" class="text-[9px] font-extrabold uppercase tracking-widest text-amber-500 mb-0.5">Pacing</span>
+                   <div id="stopwatch1" class="numeric-display text-4xl sm:text-5xl font-black tracking-tighter" style="color: var(--text-main);">00:00:00</div>
+                   <div id="heroRecordBadge1" class="hidden mt-1.5 text-[8px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.2)]">🏆 RECORD</div>
+                 </div>
+               </div>
+               <div class="flex items-center gap-1.5 justify-center w-full">
+                 <i data-lucide="trending-up" class="w-3.5 h-3.5 text-amber-500"></i>
+                 <p id="heroClimbSub" class="text-[10px] font-bold text-amber-500 leading-tight">Target Avg: --</p>
+               </div>
             </div>
 
             <!-- WATCH 2: THE ORBIT (Enlarged Apple-Watch Ring) -->

@@ -432,20 +432,20 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
   const badge3 = document.getElementById('heroRecordBadge1');
   const status3 = document.getElementById('heroClimbStatus');
   const sub3 = document.getElementById('heroClimbSub');
-  const CLIMB_ARC_LEN = 267.04;
+  const CLIMB_RING_CIRC = 314.16;
 
   if(fill3 && avgGapMs > 0) {
-      const arcOffset = CLIMB_ARC_LEN - (CLIMB_ARC_LEN * (pct / 100));
-      fill3.style.strokeDashoffset = arcOffset;
+      const ringOffset = CLIMB_RING_CIRC - (CLIMB_RING_CIRC * (pct / 100));
+      fill3.style.strokeDashoffset = ringOffset;
       if(isVictory) {
           fill3.style.stroke = '#10B981'; fill3.style.filter = "drop-shadow(0 0 8px rgba(16, 185, 129, 0.5))";
           if(badge3) badge3.classList.remove('hidden');
-          if(status3) { status3.innerText = "Victory Zone"; status3.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"; }
+          if(status3) { status3.innerText = "Victory Zone"; status3.className = "text-[9px] font-extrabold uppercase tracking-widest text-emerald-500 mb-0.5"; }
           if(sub3) sub3.innerText = `Record Extended: +${formatGap(extraMins)}`;
       } else {
-          fill3.style.stroke = 'var(--accent)'; fill3.style.filter = "none";
+          fill3.style.stroke = '#F59E0B'; fill3.style.filter = "none";
           if(badge3) badge3.classList.add('hidden');
-          if(status3) { status3.innerText = "Pacing"; status3.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20"; }
+          if(status3) { status3.innerText = "Pacing"; status3.className = "text-[9px] font-extrabold uppercase tracking-widest text-amber-500 mb-0.5"; }
           if(sub3) sub3.innerText = `Target Avg: ${formatGap(Math.round(avgGapMs/60000))} (${remMins}m left)`;
       }
   }
