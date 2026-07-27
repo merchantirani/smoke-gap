@@ -674,6 +674,74 @@
   </div>
 
   <!-- EXPANDED STAT MODAL -->
+  <div id="triggerModal" class="hidden fixed inset-0 backdrop-blur-sm z-50 flex flex-col justify-end transition-opacity" style="background-color: var(--overlay-bg);" onclick="if(event.target===this) window.closeTriggerModal()">
+    <div class="p-6 rounded-t-3xl space-y-4 max-w-md mx-auto w-full border-t shadow-2xl" style="background-color: var(--modal-bg); border-color: var(--card-border);">
+      <div class="flex justify-between items-center mb-1">
+        <button onclick="window.closeTriggerModal()" class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 active:scale-95 transition-transform" style="background-color: var(--input-bg); color: var(--text-muted);"><i data-lucide="x" class="w-4 h-4"></i></button>
+        <h3 class="text-xs font-bold uppercase tracking-widest text-center" style="color: var(--text-muted);">Edit Log Entry</h3>
+        <button onclick="window.saveTags()" class="text-xs font-bold text-white px-5 py-2 rounded-full shadow-lg active:scale-95 transition-all" style="background: var(--accent);">Save</button>
+      </div>
+      <div class="space-y-3 border-b pb-4 mb-2" style="border-color: var(--card-border);">
+        <div>
+          <label class="text-[10px] uppercase tracking-widest mb-1.5 block font-bold" style="color: var(--text-muted);">Date</label>
+          <div class="custom-input-wrapper border rounded-xl px-3.5 py-3" style="background-color: var(--input-bg); border-color: var(--card-border);"><input type="date" id="editLogDate" class="text-left font-bold" style="color: var(--text-main);"><i data-lucide="calendar" class="w-4 h-4 absolute right-3.5 pointer-events-none" style="color: var(--text-muted);"></i></div>
+        </div>
+        <div>
+          <label class="text-[10px] uppercase tracking-widest mb-1.5 block font-bold" style="color: var(--text-muted);">Time</label>
+          <div class="custom-input-wrapper border rounded-xl px-3.5 py-3" style="background-color: var(--input-bg); border-color: var(--card-border);"><input type="time" id="editLogTime" class="text-left font-bold" style="color: var(--text-main);"><i data-lucide="clock" class="w-4 h-4 absolute right-3.5 pointer-events-none" style="color: var(--text-muted);"></i></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-between items-center mb-2"><p class="text-[10px] uppercase tracking-widest font-bold" style="color: var(--text-muted);">Craving Intensity</p><p id="editIntensityLabel" class="text-[10px] font-bold" style="color: var(--accent);">Moderate</p></div>
+        <div class="flex justify-between gap-2 mb-4">
+          <button onclick="window.setEditIntensity(1)" id="editInt1" class="w-10 h-10 rounded-full border text-xs font-bold transition-all" style="border-color: var(--card-border); color: var(--text-main);">1</button>
+          <button onclick="window.setEditIntensity(2)" id="editInt2" class="w-10 h-10 rounded-full border text-xs font-bold transition-all" style="border-color: var(--card-border); color: var(--text-main);">2</button>
+          <button onclick="window.setEditIntensity(3)" id="editInt3" class="w-10 h-10 rounded-full border text-xs font-bold transition-all" style="border-color: var(--card-border); color: var(--text-main);">3</button>
+          <button onclick="window.setEditIntensity(4)" id="editInt4" class="w-10 h-10 rounded-full border text-xs font-bold transition-all" style="border-color: var(--card-border); color: var(--text-main);">4</button>
+          <button onclick="window.setEditIntensity(5)" id="editInt5" class="w-10 h-10 rounded-full border text-xs font-bold transition-all" style="border-color: var(--card-border); color: var(--text-main);">5</button>
+        </div>
+      </div>
+      <p class="text-[10px] uppercase tracking-widest font-bold -mb-1" style="color: var(--text-muted);">Tags</p>
+      <div id="modalTriggerGrid" class="flex flex-wrap gap-2.5 pt-1 mb-4"></div>
+      
+      <div class="pt-4 border-t" style="border-color: var(--card-border);">
+         <button onclick="window.deleteCurrentLog()" class="w-full py-3 rounded-xl text-xs font-bold text-red-500 bg-red-500/10 border border-red-500/20 active:scale-95 transition-all flex items-center justify-center gap-2">
+            <i data-lucide="trash-2" class="w-4 h-4"></i> Delete Entry
+         </button>
+      </div>
+    </div>
+  </div>
+  
+  <div id="smokeTakeover" class="hidden fixed inset-0 z-[20000] opacity-0 transition-opacity duration-500">
+    <div class="absolute inset-0 takeover-bg backdrop-blur-2xl cursor-pointer" onclick="window.closeSmokeTakeover()"></div>
+    <button onclick="window.cancelSmokeTakeover(event)" class="absolute top-14 right-6 z-[20001] px-4 py-2 bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-bold uppercase tracking-wider rounded-full backdrop-blur-md flex items-center gap-1.5 active:scale-95 transition-all"><i data-lucide="x" class="w-3 h-3"></i> Cancel</button>
+    <div class="absolute inset-0 flex flex-col justify-between pointer-events-none">
+      <div class="flex-1 flex flex-col items-center justify-center p-6 space-y-8 mt-10">
+        <p class="text-[var(--text-main)] font-bold tracking-widest uppercase text-xs opacity-90">Light your cigarette.</p>
+        <div class="relative flex justify-center items-center w-40 h-40">
+          <svg class="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 120 120"><circle cx="60" cy="60" r="54" fill="transparent" stroke="var(--card-border)" stroke-width="4"></circle><circle id="takeoverRing" cx="60" cy="60" r="54" fill="transparent" stroke="var(--accent)" stroke-width="6" stroke-dasharray="339.29" stroke-dashoffset="339.29" stroke-linecap="round" style="transition: stroke-dashoffset 1s linear; filter: drop-shadow(0 0 12px var(--accent-glow));"></circle></svg>
+          <span id="takeoverNumber" class="numeric-display text-6xl font-light z-10" style="color: var(--text-main);">6</span>
+        </div>
+        <p id="takeoverFact" class="text-[11px] font-medium text-center text-gray-400 opacity-0 transition-opacity duration-1000 max-w-[200px] leading-relaxed">It's been -- since your last one.</p>
+      </div>
+      <div class="p-6 pb-10 w-full max-w-md mx-auto pointer-events-auto bg-gradient-to-t from-[var(--bg-body)] to-transparent">
+        <div class="mb-5 text-center">
+          <p class="text-[10px] uppercase tracking-widest font-bold mb-2" style="color: var(--text-muted);">Craving Intensity</p>
+          <div class="flex justify-center gap-2">
+            <button onclick="window.setTakeoverIntensity(1)" id="toInt1" class="w-9 h-9 rounded-full border text-xs font-bold transition-all" style="border-color: var(--card-border); color: var(--text-main);">1</button>
+            <button onclick="window.setTakeoverIntensity(2)" id="toInt2" class="w-9 h-9 rounded-full border text-xs font-bold transition-all" style="border-color: var(--card-border); color: var(--text-main);">2</button>
+            <button onclick="window.setTakeoverIntensity(3)" id="toInt3" class="w-9 h-9 rounded-full border text-xs font-bold transition-all" style="border-color: var(--card-border); color: var(--text-main);">3</button>
+            <button onclick="window.setTakeoverIntensity(4)" id="toInt4" class="w-9 h-9 rounded-full border text-xs font-bold transition-all" style="border-color: var(--card-border); color: var(--text-main);">4</button>
+            <button onclick="window.setTakeoverIntensity(5)" id="toInt5" class="w-9 h-9 rounded-full border text-xs font-bold transition-all" style="border-color: var(--card-border); color: var(--text-main);">5</button>
+          </div>
+          <p id="takeoverIntensityLabel" class="text-[9px] font-bold mt-1.5" style="color: var(--accent);">Moderate</p>
+        </div>
+        <p class="text-[10px] uppercase tracking-widest text-center text-gray-500 font-bold mb-2">Tap to tag (optional)</p>
+        <div id="takeoverTagsGrid" class="flex flex-wrap justify-center gap-2.5"></div>
+      </div>
+    </div>
+  </div>
+
   <div id="statDetailModal" class="hidden fixed inset-0 backdrop-blur-sm z-50 flex flex-col justify-end transition-opacity" style="background-color: var(--overlay-bg);" onclick="if(event.target===this) window.closeStatDetail()">
     <div class="p-6 rounded-t-3xl space-y-5 max-w-md mx-auto w-full border-t shadow-2xl" style="background-color: var(--modal-bg); border-color: var(--card-border);">
       <div class="flex justify-between items-start">

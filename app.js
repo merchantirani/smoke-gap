@@ -613,6 +613,8 @@ function resetRideButton() {
   if(fillEl) fillEl.style.width = '0%';
   if(textEl) textEl.innerText = 'Ride It Out';
   if(iconEl) iconEl.classList.remove('hidden');
+  const svgWave = document.getElementById('waveSvgEl');
+  if(svgWave) { delete svgWave.dataset.wavePhase; svgWave.style.height = '60px'; svgWave.style.animationDuration = ''; }
 }
 
 function waveTick() {
@@ -632,18 +634,15 @@ function waveTick() {
     document.getElementById('waveCountdown').innerText = `${mm}:${ss}`;
     const elapsedFrac = Math.min(1, Math.max(0, (totalSecs - rem) / totalSecs));
     
-    // DYNAMIC OCEAN WAVE FORM & SPEED DAMPENING
+    // DYNAMIC OCEAN WAVE FORM & SPEED DAMPENING (only touch the style on phase change, not every tick - reassigning animation-duration restarts the CSS animation from 0%)
     const svgWave = document.getElementById('waveSvgEl');
     if(svgWave) {
-      if(elapsedFrac < 0.3) {
-        svgWave.style.height = "75px";
-        svgWave.style.animationDuration = "2s"; // Fast Turbulent Wave
-      } else if(elapsedFrac < 0.7) {
-        svgWave.style.height = "50px";
-        svgWave.style.animationDuration = "3.5s"; // Medium Steady Wave
-      } else {
-        svgWave.style.height = "25px";
-        svgWave.style.animationDuration = "6s"; // Flattens & Calms Down
+      const phase = elapsedFrac < 0.3 ? 0 : elapsedFrac < 0.7 ? 1 : 2;
+      if(svgWave.dataset.wavePhase !== String(phase)) {
+        svgWave.dataset.wavePhase = String(phase);
+        if(phase === 0) { svgWave.style.height = "75px"; svgWave.style.animationDuration = "2s"; } // Fast Turbulent Wave
+        else if(phase === 1) { svgWave.style.height = "50px"; svgWave.style.animationDuration = "3.5s"; } // Medium Steady Wave
+        else { svgWave.style.height = "25px"; svgWave.style.animationDuration = "6s"; } // Flattens & Calms Down
       }
     }
 
