@@ -78,7 +78,7 @@ let takeoverTimer = null;
 let takeoverCountdown = 6;
 let historyRenderLimit = 30;
 
-let currentWatchStyle = parseInt(localStorage.getItem('smoke_watch_style')) || 1;
+let currentWatchStyle = parseInt(localStorage.getItem('smoke_watch_style')) || 3;
 let touchStartXCoord = 0;
 
 function touchStartX(e) {
@@ -428,25 +428,18 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
       }
   }
 
-  const fill3 = document.getElementById('heroClimbFill');
   const badge3 = document.getElementById('heroRecordBadge1');
-  const status3 = document.getElementById('heroClimbStatus');
   const sub3 = document.getElementById('heroClimbSub');
-  const CLIMB_RING_CIRC = 314.16;
 
-  if(fill3 && avgGapMs > 0) {
-      const ringOffset = CLIMB_RING_CIRC - (CLIMB_RING_CIRC * (pct / 100));
-      fill3.style.strokeDashoffset = ringOffset;
+  if(sub3 && avgGapMs > 0) {
       if(isVictory) {
-          fill3.style.stroke = '#10B981'; fill3.style.filter = "drop-shadow(0 0 8px rgba(16, 185, 129, 0.5))";
           if(badge3) badge3.classList.remove('hidden');
-          if(status3) { status3.innerText = "Victory Zone"; status3.className = "text-[9px] font-extrabold uppercase tracking-widest text-emerald-500 mb-0.5"; }
-          if(sub3) sub3.innerText = `Record Extended: +${formatGap(extraMins)}`;
+          sub3.innerText = `Record Extended: +${formatGap(extraMins)}`;
+          sub3.className = "mt-2.5 text-[10px] font-bold text-emerald-500 leading-tight";
       } else {
-          fill3.style.stroke = '#F59E0B'; fill3.style.filter = "none";
           if(badge3) badge3.classList.add('hidden');
-          if(status3) { status3.innerText = "Pacing"; status3.className = "text-[9px] font-extrabold uppercase tracking-widest text-amber-500 mb-0.5"; }
-          if(sub3) sub3.innerText = `Target Avg: ${formatGap(Math.round(avgGapMs/60000))} (${remMins}m left)`;
+          sub3.innerText = `Target Avg: ${formatGap(Math.round(avgGapMs/60000))} (${remMins}m left)`;
+          sub3.className = "mt-2.5 text-[10px] font-bold text-amber-500 leading-tight";
       }
   }
 
@@ -726,6 +719,8 @@ function resetRideButton() {
   if(fillEl) fillEl.style.width = '0%';
   if(textEl) textEl.innerText = 'Ride It Out';
   if(iconEl) iconEl.classList.remove('hidden');
+  const svgWave = document.getElementById('waveSvgEl');
+  if(svgWave) { delete svgWave.dataset.wavePhase; svgWave.style.height = '130px'; svgWave.style.opacity = '0.5'; }
 }
 
 function waveTick() {
@@ -745,6 +740,17 @@ function waveTick() {
     document.getElementById('waveCountdown').innerText = `${mm}:${ss}`;
     const elapsedFrac = Math.min(1, Math.max(0, (totalSecs - rem) / totalSecs));
     
+    const svgWave = document.getElementById('waveSvgEl');
+    if(svgWave) {
+      const phase = elapsedFrac < 0.3 ? 0 : elapsedFrac < 0.7 ? 1 : 2;
+      if(svgWave.dataset.wavePhase !== String(phase)) {
+        svgWave.dataset.wavePhase = String(phase);
+        if(phase === 0) { svgWave.style.height = "130px"; svgWave.style.opacity = "0.5"; }
+        else if(phase === 1) { svgWave.style.height = "100px"; svgWave.style.opacity = "0.4"; }
+        else { svgWave.style.height = "40px"; svgWave.style.opacity = "0.2"; }
+      }
+    }
+
     const fillEl = document.getElementById('rideProgressFill'), textEl = document.getElementById('rideText'), iconEl = document.getElementById('rideIcon');
     if(fillEl) fillEl.style.width = `${elapsedFrac*100}%`;
     if(textEl) textEl.innerText = `${mm}:${ss}`;
