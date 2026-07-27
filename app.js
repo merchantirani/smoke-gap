@@ -386,7 +386,7 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
 
   const fill1 = document.getElementById('heroHorizonFill');
   const marker1 = document.getElementById('heroHorizonMarker');
-  const badge1 = document.getElementById('heroRecordBadge1');
+  const badge1 = document.getElementById('heroRecordBadge3');
   const status1 = document.getElementById('heroHorizonStatus');
   const sub1 = document.getElementById('heroHorizonSub');
 
@@ -430,7 +430,7 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
 
   const fill3 = document.getElementById('heroClimbFill');
   const marker3 = document.getElementById('heroClimbMarker');
-  const badge3 = document.getElementById('heroRecordBadge3');
+  const badge3 = document.getElementById('heroRecordBadge1');
   const status3 = document.getElementById('heroClimbStatus');
   const sub3 = document.getElementById('heroClimbSub');
 
