@@ -1,6 +1,4 @@
 // PAUSE APP SERVICE WORKER
-const CACHE_NAME = 'pause-v1.6';
-
 self.addEventListener('install', (e) => {
   self.skipWaiting();
 });
@@ -16,7 +14,7 @@ self.addEventListener('notificationclick', (e) => {
       for (let client of clientList) {
         if (client.url && 'focus' in client) return client.focus();
       }
-      if (clients.openWindow) return clients.openWindow('/');
+      if (clients.openWindow) return clients.openWindow('./');
     })
   );
 });

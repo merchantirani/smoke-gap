@@ -8,15 +8,15 @@ try {
 
 const DEFAULT_SETTINGS = { 
   theme: 'white', haptics: true, dailyLimit: 15, lockSecs: 300, packPrice: 20, packSize: 20, currency: 'AED', timeFormat: '12h', motivation: '', autoReduce: false,
-  notifWaveComplete: true, notifGapWidened: true, notifInactivity: true, notifPredictive: true
+  notifWaveComplete: true, notifGapWidened: true, notifInactivity: true, notifPredictive: true, notifEnableSos: false
 };
 let settings = Object.assign({}, DEFAULT_SETTINGS, JSON.parse(localStorage.getItem('smoke_settings')) || {});
 if (!settings.packSize || settings.packSize <= 0) settings.packSize = 20;
 if (!settings.timeFormat) settings.timeFormat = '12h';
 
-// Register Service Worker for Closed-App Notifications
+// REGISTER RELATIVE SERVICE WORKER
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').then(() => {
+  navigator.serviceWorker.register('sw.js').then(() => {
     console.log("Service Worker registered successfully.");
   }).catch(err => console.log("SW registration failed", err));
 }
@@ -61,11 +61,9 @@ let lastPeakNudgeDate = localStorage.getItem('smoke_peak_nudge') || '';
 let gapWidenedNotified = false;
 let inactivityNotified = false;
 
-// SOS CRAVING INTERRUPTER STATE
+// SOS CRAVING INTERRUPTER TIMER
 let sosTimer = null;
 let sosSecs = 15;
-let pendingLogIndex = null;
-let pendingWaveActive = false;
 
 function hashPin(p) { let h = 0; for (let i = 0; i < p.length; i++) { h = ((h << 5) - h) + p.charCodeAt(i); h |= 0; } return h.toString(36); }
 function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -83,8 +81,6 @@ let currentIntensity = 3;
 let takeoverTimer = null;
 let takeoverCountdown = 6;
 let historyRenderLimit = 30;
-
-let activeHeroStyle = parseInt(localStorage.getItem('smoke_hero_style')) || 0;
 
 // HOLD BUTTON LOGIC
 let holdTimerId = null;
@@ -121,7 +117,13 @@ window.startHold = function(e) {
       if(textEl) textEl.innerText = "Done";
       if (settings.haptics && navigator.vibrate) navigator.vibrate([30, 50, 30]);
       
-      try { triggerSosInterrupterFirst(); } catch(err) { console.error("Error logging", err); } 
+      try { 
+        if(settings.notifEnableSos) {
+          triggerSosInterrupterFirst(); 
+        } else {
+          handleLogClick();
+        }
+      } catch(err) { console.error("Error logging", err); } 
       finally {
         setTimeout(() => { 
           if(progressEl) progressEl.style.width = '0%'; 
@@ -174,7 +176,7 @@ window.onload = () => {
     document.getElementById('motivationInput').value = settings.motivation || '';
     document.getElementById('autoReduceInput').checked = settings.autoReduce || false;
 
-    const notifKeys = ['notifWaveComplete', 'notifGapWidened', 'notifInactivity', 'notifPredictive'];
+    const notifKeys = ['notifWaveComplete', 'notifGapWidened', 'notifInactivity', 'notifPredictive', 'notifEnableSos'];
     notifKeys.forEach(k => {
       const el = document.getElementById(k + 'Input');
       if(el) el.checked = settings[k] !== false;
@@ -183,7 +185,6 @@ window.onload = () => {
   updateCostPerCigDisplay();
   
   loadChartOrder(); initDragAndDrop(); renderTriggerSettingsList();
-  setupCarouselSwipe(); setHeroStyle(activeHeroStyle);
   
   const filterSelect = document.getElementById('historyTagFilter');
   if(filterSelect) {
@@ -227,7 +228,7 @@ function toggleNotifSetting(key) {
   }
 }
 
-// SOS CRAVING INTERRUPTER (15s Micro-Action)
+// SOS CRAVING INTERRUPTER (RADAR PULSE TIMER)
 function triggerSosInterrupterFirst() {
   const actions = [
     "Drink a full glass of cold water 💧",
@@ -239,9 +240,9 @@ function triggerSosInterrupterFirst() {
 
   sosSecs = 15;
   const numEl = document.getElementById('sosTimerNum');
-  const ringEl = document.getElementById('sosTimerRing');
+  const proceedBtn = document.getElementById('sosProceedBtn');
   if(numEl) numEl.innerText = sosSecs;
-  if(ringEl) ringEl.style.strokeDashoffset = '0';
+  if(proceedBtn) { proceedBtn.classList.add('opacity-60'); proceedBtn.innerText = "Skip & Proceed to Log"; }
 
   document.getElementById('sosInterrupterModal').classList.remove('hidden');
   if(window.lucide) window.lucide.createIcons();
@@ -250,12 +251,13 @@ function triggerSosInterrupterFirst() {
   sosTimer = setInterval(() => {
     sosSecs--;
     if(numEl) numEl.innerText = sosSecs;
-    if(ringEl) {
-      let offset = 138.23 - (138.23 * (sosSecs / 15));
-      ringEl.style.strokeDashoffset = offset;
-    }
     if(sosSecs <= 0) {
       clearInterval(sosTimer);
+      if(proceedBtn) { 
+        proceedBtn.classList.remove('opacity-60'); 
+        proceedBtn.classList.add('bg-amber-500', 'text-white', 'shadow-md');
+        proceedBtn.innerText = "Ready to Proceed to Log →"; 
+      }
     }
   }, 1000);
 }
@@ -292,7 +294,7 @@ function bootCore() {
       const allGaps = logs.map(l => l.gap).filter(g => g !== null && g !== undefined);
       const avgGapMs = allGaps.length ? (allGaps.reduce((a,b)=>a+b, 0) / allGaps.length) * 60000 : 3600000;
 
-      // NOTIFICATIONS RUN IN BACKGROUND
+      // BACKGROUND NOTIFICATIONS
       if (prevGapMs > 0 && diff >= prevGapMs && !gapWidenedNotified) {
         gapWidenedNotified = true;
         sendSystemNotification("🎉 Gap Widened!", `Great progress! You just beat your previous gap (${formatGap(Math.round(prevGapMs/60000))}). You're setting a personal best.`, 'notifGapWidened');
@@ -302,12 +304,12 @@ function bootCore() {
         sendSystemNotification("🚬 Did you forget to log?", "It's been longer than your average gap. Log your stick or keep widening the gap!", 'notifInactivity');
       }
 
-      if (document.hidden) return; // UI updates skipped when tab hidden
+      if (document.hidden) return; // Skip UI updates while tab is hidden
 
       const stopwatchEl = document.getElementById('stopwatch');
       if(stopwatchEl) stopwatchEl.innerText = `${Math.floor(diff/3600000).toString().padStart(2,'0')}:${Math.floor((diff%3600000)/60000).toString().padStart(2,'0')}:${Math.floor((diff%60000)/1000).toString().padStart(2,'0')}`;
 
-      // HERO DISPLAY ENGINE (Gauge vs Linear vs Circle)
+      // HERO DISPLAY ENGINE: GROWTH THERMOMETER GAUGE
       updateHeroDisplay(diff, prevGapMs, avgGapMs);
 
     } catch(err) {}
@@ -315,65 +317,39 @@ function bootCore() {
 }
 
 function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
-  const circle = document.getElementById('heroProgressCircle');
-  const milestoneCircle = document.getElementById('heroMilestoneCircle');
-  const gaugeArc = document.getElementById('heroGaugeArc');
-  const linearBar = document.getElementById('heroLinearBar');
-  const linearSub = document.getElementById('heroLinearSub');
-  const statusWrapper = document.getElementById('smartStatusWrapper');
-  const statusText = document.getElementById('smartStatusText');
+  const gaugeBar = document.getElementById('heroGaugeBar');
+  const gaugeMarker = document.getElementById('heroGaugeMarker');
+  const targetText = document.getElementById('heroGaugeTargetText');
+  const gaugeStatus = document.getElementById('heroGaugeStatus');
   const liveDot = document.getElementById('headerLiveDot');
-
-  const dashMax = 289.02;
-  const gaugeMax = 165; // Speedometer arc length
 
   let dotColor = '#9CA3AF', newClass = '', newHtml = '';
 
-  // 1. SPEEDOMETER GAUGE (Option A)
-  if (activeHeroStyle === 0 && gaugeArc) {
-    let ratio = avgGapMs > 0 ? diff / avgGapMs : 0;
-    let pct = Math.min(ratio, 1.0);
-    gaugeArc.style.strokeDashoffset = (gaugeMax - (gaugeMax * pct)).toFixed(2);
-    if(ratio >= 1.0) {
-      gaugeArc.style.stroke = '#10B981'; // Green Victory Zone
-      document.getElementById('heroSubLabel').classList.remove('hidden');
-      document.getElementById('heroSubLabel').innerText = `VICTORY ZONE (+${formatGap(Math.floor((diff - avgGapMs)/60000))})`;
-    } else {
-      gaugeArc.style.stroke = 'var(--accent)';
-      document.getElementById('heroSubLabel').classList.add('hidden');
-    }
-  }
+  if (gaugeBar && avgGapMs > 0) {
+    let pct = Math.min(100, Math.round((diff / avgGapMs) * 100));
+    gaugeBar.style.width = `${pct}%`;
 
-  // 2. LINEAR COUNTDOWN (Option B)
-  if (activeHeroStyle === 1 && linearBar && linearSub) {
-    let ratio = avgGapMs > 0 ? Math.min(1.0, diff / avgGapMs) : 0;
-    linearBar.style.width = `${ratio * 100}%`;
-    linearBar.style.backgroundColor = ratio >= 1.0 ? '#10B981' : 'var(--accent)';
-    if(diff >= avgGapMs) {
-      linearSub.innerText = `Record Beat (+${formatGap(Math.floor((diff - avgGapMs)/60000))})`;
-      linearSub.className = "text-[8px] font-bold text-center uppercase tracking-wider text-emerald-500 truncate";
-    } else {
-      let remMins = Math.ceil((avgGapMs - diff)/60000);
-      linearSub.innerText = `Target: ${formatGap(Math.round(avgGapMs/60000))} (${remMins}m left)`;
-      linearSub.className = "text-[8px] font-bold text-center uppercase tracking-wider text-amber-500 truncate";
+    if (gaugeMarker) {
+      gaugeMarker.style.left = '100%';
+      gaugeMarker.classList.remove('hidden');
     }
-  }
 
-  // 3. MILESTONE RING (Option C)
-  if (activeHeroStyle === 2 && circle && milestoneCircle) {
-    let ratio = diff / avgGapMs;
-    let p1 = Math.min(ratio, 1.0);
-    circle.style.stroke = p1 >= 1.0 ? '#10B981' : 'var(--accent)';
-    circle.style.strokeDashoffset = dashMax - (dashMax * p1);
-    if (ratio > 1.0) {
-      milestoneCircle.classList.remove('hidden');
-      let p2 = Math.min(ratio - 1.0, 1.0);
-      milestoneCircle.style.strokeDashoffset = 251.32 - (251.32 * p2);
-      document.getElementById('heroSubLabel').classList.remove('hidden');
-      document.getElementById('heroSubLabel').innerText = `BEATING AVG BY +${formatGap(Math.floor((diff - avgGapMs)/60000))}`;
+    if (diff >= avgGapMs) {
+      let extraMins = Math.floor((diff - avgGapMs) / 60000);
+      gaugeBar.style.backgroundColor = '#10B981'; // Emerald Victory Zone
+      if (gaugeStatus) {
+        gaugeStatus.innerText = `Victory Zone (+${formatGap(extraMins)})`;
+        gaugeStatus.className = "text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20";
+      }
+      if (targetText) targetText.innerText = `Personal Best!`;
     } else {
-      milestoneCircle.classList.add('hidden');
-      document.getElementById('heroSubLabel').classList.add('hidden');
+      let remMins = Math.ceil((avgGapMs - diff) / 60000);
+      gaugeBar.style.backgroundColor = 'var(--accent)';
+      if (gaugeStatus) {
+        gaugeStatus.innerText = "Pacing Zone";
+        gaugeStatus.className = "text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20";
+      }
+      if (targetText) targetText.innerText = `Avg Target: ${formatGap(Math.round(avgGapMs/60000))} (${remMins}m left)`;
     }
   }
 
@@ -398,57 +374,9 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
   }
 
   if(liveDot) { liveDot.style.backgroundColor = dotColor; liveDot.style.boxShadow = `0 0 8px ${dotColor}`; }
+  const statusWrapper = document.getElementById('smartStatusWrapper');
+  const statusText = document.getElementById('smartStatusText');
   if (statusText && statusText.dataset.rawHtml !== newHtml) { statusWrapper.className = newClass; statusText.innerHTML = newHtml; statusText.dataset.rawHtml = newHtml; if(window.lucide) window.lucide.createIcons(); }
-}
-
-function setHeroStyle(idx) {
-  activeHeroStyle = idx;
-  localStorage.setItem('smoke_hero_style', activeHeroStyle);
-  
-  const dot0 = document.getElementById('carouselDot0'), dot1 = document.getElementById('carouselDot1'), dot2 = document.getElementById('carouselDot2');
-  const label = document.getElementById('heroLabelText');
-  const svgCircle = document.getElementById('heroSvgDisplay');
-  const svgGauge = document.getElementById('heroGaugeSvg');
-  const linearBox = document.getElementById('heroLinearBox');
-
-  if(dot0 && dot1 && dot2) {
-    dot0.className = `w-2 h-2 rounded-full transition-all ${idx === 0 ? 'bg-amber-500 w-4' : 'bg-gray-500/40'}`;
-    dot1.className = `w-2 h-2 rounded-full transition-all ${idx === 1 ? 'bg-amber-500 w-4' : 'bg-gray-500/40'}`;
-    dot2.className = `w-2 h-2 rounded-full transition-all ${idx === 2 ? 'bg-amber-500 w-4' : 'bg-gray-500/40'}`;
-  }
-
-  if (idx === 0) { // OPTION A: SPEEDOMETER GAUGE
-    if(svgGauge) svgGauge.classList.remove('hidden');
-    if(svgCircle) svgCircle.classList.add('hidden');
-    if(linearBox) linearBox.classList.add('hidden');
-    if(label) label.innerHTML = `<i data-lucide="gauge" class="w-3 h-3 text-amber-500"></i> Speedometer Gauge`;
-  } else if (idx === 1) { // OPTION B: LINEAR COUNTDOWN
-    if(svgGauge) svgGauge.classList.add('hidden');
-    if(svgCircle) svgCircle.classList.add('hidden');
-    if(linearBox) linearBox.classList.remove('hidden');
-    if(label) label.innerHTML = `<i data-lucide="clock" class="w-3 h-3 text-sky-500"></i> Linear Target Timer`;
-  } else { // OPTION C: CIRCULAR RING
-    if(svgGauge) svgGauge.classList.add('hidden');
-    if(svgCircle) svgCircle.classList.remove('hidden');
-    if(linearBox) linearBox.classList.add('hidden');
-    if(label) label.innerHTML = `<i data-lucide="target" class="w-3 h-3 text-emerald-500"></i> Milestone Ring`;
-  }
-
-  if(window.lucide) window.lucide.createIcons();
-}
-
-let touchStartX = 0;
-function setupCarouselSwipe() {
-  const el = document.getElementById('heroCarousel');
-  if(!el) return;
-  el.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, {passive: true});
-  el.addEventListener('touchend', e => {
-    let diffX = e.changedTouches[0].screenX - touchStartX;
-    if (Math.abs(diffX) > 40) {
-      if (diffX < 0) setHeroStyle((activeHeroStyle + 1) % 3);
-      else setHeroStyle((activeHeroStyle + 2) % 3);
-    }
-  }, {passive: true});
 }
 
 function checkPeakNudge() {
@@ -670,7 +598,6 @@ function resetRideButton() {
   if(iconEl) iconEl.classList.remove('hidden');
 }
 
-const WAVE_RING_CIRCUMFERENCE = 213.63;
 function waveTick() {
   const o = document.getElementById('waveOverlay'); if(!o) return;
   let rem = Math.ceil((waveEndTime - new Date().getTime())/1000); let totalSecs = waveDurationMs / 1000;
@@ -680,7 +607,6 @@ function waveTick() {
     waves.push(Date.now()); localStorage.setItem('smoke_waves', JSON.stringify(waves)); logWaveAttempt('won'); showToast("🛡️ Craving Defeated! +1 Shield");
     
     sendSystemNotification("🛡️ Craving Defeated!", "Awesome job! You successfully rode out the craving wave. +1 Shield unlocked.", 'notifWaveComplete');
-    
     celebrateBadgeIfUnlocked();
     if (window.posthog) posthog.capture('ride_wave_completed', { duration_mins: waveDurationMs / 60000 });
     try { updateUI(); } catch(e){}
@@ -688,7 +614,6 @@ function waveTick() {
     const mm = Math.floor(rem/60).toString().padStart(2,'0'), ss = (rem%60).toString().padStart(2,'0');
     document.getElementById('waveCountdown').innerText = `${mm}:${ss}`;
     const elapsedFrac = Math.min(1, Math.max(0, (totalSecs - rem) / totalSecs));
-    const ring = document.getElementById('waveRing'); if(ring) ring.style.strokeDashoffset = (WAVE_RING_CIRCUMFERENCE * elapsedFrac).toFixed(2);
     const fillEl = document.getElementById('rideProgressFill'), textEl = document.getElementById('rideText'), iconEl = document.getElementById('rideIcon');
     if(fillEl) fillEl.style.width = `${elapsedFrac*100}%`;
     if(textEl) textEl.innerText = `${mm}:${ss}`;
@@ -780,7 +705,6 @@ function updateUI() {
   document.getElementById('homeStreak').innerText = `🔥 ${streak} Day Streak`;
 
   const today = logs.filter(l => l.timestamp && new Date(l.timestamp).toDateString() === todayStr);
-  const overLimit = today.length >= settings.dailyLimit;
   const todayCountTextEl = document.getElementById('todayCountText'); if(todayCountTextEl) todayCountTextEl.innerText = `${today.length} / ${settings.dailyLimit} Sticks`;
   
   // NICOTINE WILLPOWER BATTERY METER LOGIC
@@ -1450,6 +1374,6 @@ window.renderAllCharts = renderAllCharts; window.openMapModal = openMapModal; wi
 window.showStatDetail = showStatDetail; window.closeStatDetail = closeStatDetail; window.showShieldDashboard = showShieldDashboard; window.closeShieldDashboard = closeShieldDashboard;
 window.exportLogsCSV = exportLogsCSV; window.addCustomTrigger = addCustomTrigger; window.removeCustomTrigger = removeCustomTrigger;
 window.closeConfirmModal = closeConfirmModal; window.confirmYes = confirmYes; window.setTakeoverIntensity = setTakeoverIntensity; window.exportJSON = exportJSON; window.importJSON = importJSON;
-window.closePinSetupModal = closePinSetupModal; window.savePinSetup = savePinSetup; window.setHeroStyle = setHeroStyle;
+window.closePinSetupModal = closePinSetupModal; window.savePinSetup = savePinSetup;
 window.requestNotifPermission = requestNotifPermission; window.toggleNotifSetting = toggleNotifSetting;
 window.closeSosInterrupter = closeSosInterrupter;
