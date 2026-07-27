@@ -384,21 +384,21 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
     }
   }
 
-  const fill1 = document.getElementById('heroClimbFill');
-  const marker1 = document.getElementById('heroClimbMarker');
+  const fill1 = document.getElementById('heroHorizonFill');
+  const marker1 = document.getElementById('heroHorizonMarker');
   const badge1 = document.getElementById('heroRecordBadge1');
-  const status1 = document.getElementById('heroClimbStatus');
-  const sub1 = document.getElementById('heroClimbSub');
+  const status1 = document.getElementById('heroHorizonStatus');
+  const sub1 = document.getElementById('heroHorizonSub');
 
   if(fill1 && avgGapMs > 0) {
-    if(marker1) { marker1.style.bottom = '70%'; marker1.classList.remove('hidden'); }
+    if(marker1) { marker1.classList.remove('hidden'); }
     if(isVictory) {
-      fill1.style.height = `${pct}%`; fill1.style.backgroundColor = '#10B981'; fill1.style.boxShadow = "0 0 15px rgba(16, 185, 129, 0.4)";
+      fill1.style.width = `${pct}%`; fill1.style.backgroundColor = '#10B981'; fill1.style.boxShadow = "0 0 15px rgba(16, 185, 129, 0.4)";
       if(badge1) badge1.classList.remove('hidden');
       if(status1) { status1.innerText = "Victory Zone"; status1.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"; }
       if(sub1) sub1.innerText = `Record Extended: +${formatGap(extraMins)}`;
     } else {
-      fill1.style.height = `${pct}%`; fill1.style.backgroundColor = 'var(--accent)'; fill1.style.boxShadow = "none";
+      fill1.style.width = `${pct}%`; fill1.style.backgroundColor = 'var(--accent)'; fill1.style.boxShadow = "none";
       if(badge1) badge1.classList.add('hidden');
       if(status1) { status1.innerText = "Pacing"; status1.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20"; }
       if(sub1) sub1.innerText = `Target Avg: ${formatGap(Math.round(avgGapMs/60000))} (${remMins}m left)`;
@@ -418,23 +418,21 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
       if(isVictory) {
           ringFill.style.stroke = '#10B981'; ringFill.style.filter = "drop-shadow(0 0 8px rgba(16, 185, 129, 0.5))";
           if(badge2) badge2.classList.remove('hidden');
-          if(status2) { status2.innerText = "Victory Zone"; status2.className = "text-[9px] font-extrabold uppercase tracking-widest text-emerald-500 mb-0.5"; }
-          if(sub2) { sub2.innerText = `Target Beaten: +${formatGap(extraMins)}`; sub2.className = "text-[10px] font-bold text-emerald-500 leading-tight"; }
-          const i2 = sub2 ? sub2.previousElementSibling : null; if(i2) { i2.setAttribute('data-lucide', 'check-circle-2'); i2.className = "w-3.5 h-3.5 text-emerald-500"; if(window.lucide) window.lucide.createIcons(); }
+          if(status2) { status2.innerText = "Victory Zone"; status2.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"; }
+          if(sub2) sub2.innerText = `Target Beaten: +${formatGap(extraMins)}`;
       } else {
           ringFill.style.stroke = 'var(--accent)'; ringFill.style.filter = "drop-shadow(0 0 8px var(--accent-glow))";
           if(badge2) badge2.classList.add('hidden');
-          if(status2) { status2.innerText = "Pacing"; status2.className = "text-[9px] font-extrabold uppercase tracking-widest text-amber-500 mb-0.5"; }
-          if(sub2) { sub2.innerText = `Avg Target: ${formatGap(Math.round(avgGapMs/60000))} (${remMins}m left)`; sub2.className = "text-[10px] font-bold text-amber-500 leading-tight"; }
-          const i2 = sub2 ? sub2.previousElementSibling : null; if(i2 && i2.getAttribute('data-lucide') !== 'aperture') { i2.setAttribute('data-lucide', 'aperture'); i2.className = "w-3.5 h-3.5 text-amber-500"; if(window.lucide) window.lucide.createIcons(); }
+          if(status2) { status2.innerText = "Pacing"; status2.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20"; }
+          if(sub2) sub2.innerText = `Target: ${formatGap(Math.round(avgGapMs/60000))} (${remMins}m left)`;
       }
   }
 
-  const fill3 = document.getElementById('heroHorizonFill');
-  const marker3 = document.getElementById('heroHorizonMarker');
+  const fill3 = document.getElementById('heroClimbFill');
+  const marker3 = document.getElementById('heroClimbMarker');
   const badge3 = document.getElementById('heroRecordBadge3');
-  const status3 = document.getElementById('heroHorizonStatus');
-  const sub3 = document.getElementById('heroHorizonSub');
+  const status3 = document.getElementById('heroClimbStatus');
+  const sub3 = document.getElementById('heroClimbSub');
 
   if(fill3 && avgGapMs > 0) {
       if(marker3) { marker3.classList.remove('hidden'); }
@@ -442,12 +440,12 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
           fill3.style.width = `${pct}%`; fill3.style.backgroundColor = '#10B981'; fill3.style.boxShadow = "0 0 15px rgba(16, 185, 129, 0.4)";
           if(badge3) badge3.classList.remove('hidden');
           if(status3) { status3.innerText = "Victory Zone"; status3.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"; }
-          if(sub3) { sub3.innerText = `Record Extended: +${formatGap(extraMins)}`; sub3.className = "text-[10px] font-bold text-emerald-500 leading-tight"; }
+          if(sub3) sub3.innerText = `Record Extended: +${formatGap(extraMins)}`;
       } else {
           fill3.style.width = `${pct}%`; fill3.style.backgroundColor = 'var(--accent)'; fill3.style.boxShadow = "none";
           if(badge3) badge3.classList.add('hidden');
           if(status3) { status3.innerText = "Pacing"; status3.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20"; }
-          if(sub3) { sub3.innerText = `Target Avg: ${formatGap(Math.round(avgGapMs/60000))} (${remMins}m left)`; sub3.className = "text-[10px] font-bold text-amber-500 leading-tight"; }
+          if(sub3) sub3.innerText = `Target Avg: ${formatGap(Math.round(avgGapMs/60000))} (${remMins}m left)`;
       }
   }
 
