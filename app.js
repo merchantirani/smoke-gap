@@ -429,20 +429,21 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
   }
 
   const fill3 = document.getElementById('heroClimbFill');
-  const marker3 = document.getElementById('heroClimbMarker');
   const badge3 = document.getElementById('heroRecordBadge1');
   const status3 = document.getElementById('heroClimbStatus');
   const sub3 = document.getElementById('heroClimbSub');
+  const CLIMB_ARC_LEN = 267.04;
 
   if(fill3 && avgGapMs > 0) {
-      if(marker3) { marker3.classList.remove('hidden'); }
+      const arcOffset = CLIMB_ARC_LEN - (CLIMB_ARC_LEN * (pct / 100));
+      fill3.style.strokeDashoffset = arcOffset;
       if(isVictory) {
-          fill3.style.width = `${pct}%`; fill3.style.backgroundColor = '#10B981'; fill3.style.boxShadow = "0 0 15px rgba(16, 185, 129, 0.4)";
+          fill3.style.stroke = '#10B981'; fill3.style.filter = "drop-shadow(0 0 8px rgba(16, 185, 129, 0.5))";
           if(badge3) badge3.classList.remove('hidden');
           if(status3) { status3.innerText = "Victory Zone"; status3.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"; }
           if(sub3) sub3.innerText = `Record Extended: +${formatGap(extraMins)}`;
       } else {
-          fill3.style.width = `${pct}%`; fill3.style.backgroundColor = 'var(--accent)'; fill3.style.boxShadow = "none";
+          fill3.style.stroke = 'var(--accent)'; fill3.style.filter = "none";
           if(badge3) badge3.classList.add('hidden');
           if(status3) { status3.innerText = "Pacing"; status3.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20"; }
           if(sub3) sub3.innerText = `Target Avg: ${formatGap(Math.round(avgGapMs/60000))} (${remMins}m left)`;
@@ -725,8 +726,6 @@ function resetRideButton() {
   if(fillEl) fillEl.style.width = '0%';
   if(textEl) textEl.innerText = 'Ride It Out';
   if(iconEl) iconEl.classList.remove('hidden');
-  const svgWave = document.getElementById('waveSvgEl');
-  if(svgWave) { delete svgWave.dataset.wavePhase; svgWave.style.height = '160px'; svgWave.style.opacity = '0.5'; }
 }
 
 function waveTick() {
@@ -746,17 +745,6 @@ function waveTick() {
     document.getElementById('waveCountdown').innerText = `${mm}:${ss}`;
     const elapsedFrac = Math.min(1, Math.max(0, (totalSecs - rem) / totalSecs));
     
-    const svgWave = document.getElementById('waveSvgEl');
-    if(svgWave) {
-      const phase = elapsedFrac < 0.3 ? 0 : elapsedFrac < 0.7 ? 1 : 2;
-      if(svgWave.dataset.wavePhase !== String(phase)) {
-        svgWave.dataset.wavePhase = String(phase);
-        if(phase === 0) { svgWave.style.height = "160px"; svgWave.style.opacity = "0.5"; }
-        else if(phase === 1) { svgWave.style.height = "100px"; svgWave.style.opacity = "0.4"; }
-        else { svgWave.style.height = "40px"; svgWave.style.opacity = "0.2"; }
-      }
-    }
-
     const fillEl = document.getElementById('rideProgressFill'), textEl = document.getElementById('rideText'), iconEl = document.getElementById('rideIcon');
     if(fillEl) fillEl.style.width = `${elapsedFrac*100}%`;
     if(textEl) textEl.innerText = `${mm}:${ss}`;

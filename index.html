@@ -198,23 +198,23 @@
         <!-- BALANCED FULL-SPACE UNIFIED WATCH CAROUSEL (SWIPE / TAP) -->
         <div id="heroCarousel" class="relative flex flex-col items-center justify-center pt-1 pb-3">
           
-          <div id="watchContainer" class="w-full relative min-h-[220px] flex items-center justify-center touch-pan-x cursor-pointer" ontouchstart="window.touchStartX(event)" ontouchend="window.touchEndX(event)" onclick="window.cycleNextWatch()">
+          <div id="watchContainer" class="w-full relative min-h-[220px] flex items-center justify-center touch-pan-x" ontouchstart="window.touchStartX(event)" ontouchend="window.touchEndX(event)">
             
             <!-- WATCH 1: THE CLIMB (Scaled up to match Horizon space) -->
-            <div id="watchStyle1" onclick="window.showStatDetail('currentGap')" class="w-full max-w-[340px] mx-auto active:scale-[0.98] transition-all relative flex flex-col items-center">
-              <div class="flex items-center gap-6 justify-center w-full px-2">
-                <div class="relative shrink-0 w-5 h-32 rounded-full overflow-hidden border flex flex-col justify-end shadow-inner" style="background-color: var(--input-bg); border-color: var(--card-border);">
-                  <div id="heroClimbFill" class="w-full transition-all duration-1000 ease-out" style="height: 0%; background-color: var(--accent);"></div>
-                  <div id="heroClimbMarker" class="absolute left-0 right-0 h-0.5 bg-white shadow-[0_0_6px_#fff] z-10 hidden"></div>
-                </div>
-                <div class="space-y-1.5 text-left">
-                  <div class="flex items-center gap-2">
-                    <span class="text-[10px] font-bold uppercase tracking-widest flex items-center gap-1" style="color: var(--text-muted);"><i data-lucide="trending-up" class="w-3.5 h-3.5 text-amber-500"></i> The Climb</span>
+            <div id="watchStyle1" onclick="window.showStatDetail('currentGap')" class="w-full max-w-[340px] mx-auto active:scale-[0.98] transition-all relative flex flex-col items-center justify-center">
+              <div class="relative flex justify-center items-end" style="width: 260px; height: 150px;">
+                <svg viewBox="0 0 200 110" class="absolute inset-0 w-full h-full overflow-visible">
+                  <path d="M 15 100 A 85 85 0 0 1 185 100" fill="none" stroke="var(--input-bg)" stroke-width="16" stroke-linecap="round"></path>
+                  <path id="heroClimbFill" d="M 15 100 A 85 85 0 0 1 185 100" fill="none" stroke="var(--accent)" stroke-width="16" stroke-linecap="round" stroke-dasharray="267.04" stroke-dashoffset="267.04" style="transition: stroke-dashoffset 1s ease-out, stroke 0.5s, filter 0.5s;"></path>
+                </svg>
+                <div class="relative z-10 flex flex-col items-center pb-1">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="text-[10px] font-bold uppercase tracking-widest flex items-center gap-1" style="color: var(--text-muted);"><i data-lucide="gauge" class="w-3.5 h-3.5 text-amber-500"></i> The Ascent</span>
                     <span id="heroClimbStatus" class="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">Pacing</span>
                   </div>
                   <div id="stopwatch1" class="numeric-display text-4xl sm:text-5xl font-black tracking-tighter" style="color: var(--text-main);">00:00:00</div>
-                  <div id="heroRecordBadge1" class="hidden text-[8px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.2)] w-max">🏆 NEW RECORD ZONE</div>
-                  <p id="heroClimbSub" class="text-[10px] font-bold text-amber-500 leading-tight">Target Avg: --</p>
+                  <div id="heroRecordBadge1" class="hidden mt-1 text-[8px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.2)] w-max">🏆 NEW RECORD ZONE</div>
+                  <p id="heroClimbSub" class="text-[10px] font-bold text-amber-500 leading-tight mt-1">Target Avg: --</p>
                 </div>
               </div>
             </div>
@@ -297,18 +297,18 @@
           </button>
         </div>
 
-        <div id="waveOverlay" class="hidden premium-card relative overflow-hidden border flex flex-col items-center justify-center text-center shadow-2xl transition-all duration-500" style="border-color: rgba(14,165,233,0.4); min-height: 280px; background: linear-gradient(180deg, var(--card-bg) 0%, rgba(14,165,233,0.05) 100%);">
+        <div id="waveOverlay" class="hidden premium-card relative overflow-hidden border flex flex-col items-center justify-center text-center shadow-2xl transition-all duration-500" style="border-color: rgba(14,165,233,0.4); min-height: 170px; background: linear-gradient(180deg, var(--card-bg) 0%, rgba(14,165,233,0.05) 100%);">
           <div class="absolute inset-0 pointer-events-none flex items-end">
-            <svg viewBox="0 0 1200 120" preserveAspectRatio="none" class="w-[200%] animate-wave transition-all duration-1000 ease-in-out" id="waveSvgEl" style="height: 160px; opacity: 0.5;">
+            <svg viewBox="0 0 1200 120" preserveAspectRatio="none" class="w-[200%] animate-wave" id="waveSvgEl" style="height: 70px; opacity: 0.35;">
               <path d="M 0,60 Q 150,10 300,60 T 600,60 Q 750,10 900,60 T 1200,60 V 120 H 0 Z" fill="#0EA5E9"></path>
             </svg>
           </div>
-          <div class="relative z-10 w-full flex flex-col items-center py-6">
-            <i data-lucide="waves" class="w-12 h-12 text-sky-400 animate-pulse mb-3"></i>
-            <p class="text-[10px] font-bold text-sky-500 uppercase tracking-widest mb-1">Riding the Wave</p>
-            <span id="waveCountdown" class="numeric-display text-6xl font-black tracking-tighter drop-shadow-md mb-2" style="color: var(--text-main);">--:--</span>
-            <p id="waveMotivationalText" class="text-xs font-medium mt-2 mb-6 leading-snug px-6" style="color: var(--text-muted);">Breathe in... Hold... Exhale...</p>
-            <button onclick="window.cancelActiveWave()" class="px-6 py-3 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 border backdrop-blur-md flex items-center gap-1.5" style="background: var(--input-bg); border-color: var(--card-border); color: var(--text-main);"><i data-lucide="x" class="w-3.5 h-3.5"></i> Cancel Wave</button>
+          <div class="relative z-10 w-full flex flex-col items-center py-4">
+            <i data-lucide="waves" class="w-7 h-7 text-sky-400 animate-pulse mb-1.5"></i>
+            <p class="text-[9px] font-bold text-sky-500 uppercase tracking-widest mb-1">Riding the Wave</p>
+            <span id="waveCountdown" class="numeric-display text-4xl font-black tracking-tighter drop-shadow-md mb-1.5" style="color: var(--text-main);">--:--</span>
+            <p id="waveMotivationalText" class="text-[10px] font-medium mt-1 mb-3 leading-snug px-6" style="color: var(--text-muted);">Breathe in... Hold... Exhale...</p>
+            <button onclick="window.cancelActiveWave()" class="px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 border backdrop-blur-md flex items-center gap-1.5" style="background: var(--input-bg); border-color: var(--card-border); color: var(--text-main);"><i data-lucide="x" class="w-3.5 h-3.5"></i> Cancel Wave</button>
           </div>
         </div>
 
