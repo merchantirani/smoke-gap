@@ -395,13 +395,13 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
     if(isVictory) {
       fill1.style.height = `${pct}%`; fill1.style.backgroundColor = '#10B981'; fill1.style.boxShadow = "0 0 15px rgba(16, 185, 129, 0.4)";
       if(badge1) badge1.classList.remove('hidden');
-      if(status1) { status1.innerText = "Victory Zone"; status1.className = "text-[8px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"; }
+      if(status1) { status1.innerText = "Victory Zone"; status1.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"; }
       if(sub1) sub1.innerText = `Record Extended: +${formatGap(extraMins)}`;
     } else {
       fill1.style.height = `${pct}%`; fill1.style.backgroundColor = 'var(--accent)'; fill1.style.boxShadow = "none";
       if(badge1) badge1.classList.add('hidden');
-      if(status1) { status1.innerText = "Pacing"; status1.className = "text-[8px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20"; }
-      if(sub1) sub1.innerText = `Avg Target: ${formatGap(Math.round(avgGapMs/60000))} (${remMins}m left)`;
+      if(status1) { status1.innerText = "Pacing"; status1.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20"; }
+      if(sub1) sub1.innerText = `Target Avg: ${formatGap(Math.round(avgGapMs/60000))} (${remMins}m left)`;
     }
   }
 
@@ -412,21 +412,21 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
   
   if(ringFill && avgGapMs > 0) {
       let ringPct = isVictory ? Math.min(100, 70 + bonusPct) : pct;
-      const offset = 326.72 - (326.72 * (ringPct / 100));
+      const offset = 314.16 - (314.16 * (ringPct / 100));
       ringFill.style.strokeDashoffset = offset;
 
       if(isVictory) {
           ringFill.style.stroke = '#10B981'; ringFill.style.filter = "drop-shadow(0 0 8px rgba(16, 185, 129, 0.5))";
           if(badge2) badge2.classList.remove('hidden');
-          if(status2) { status2.innerText = "Victory Zone"; status2.className = "text-[8px] font-extrabold uppercase tracking-widest text-emerald-500 mb-0.5"; }
+          if(status2) { status2.innerText = "Victory Zone"; status2.className = "text-[9px] font-extrabold uppercase tracking-widest text-emerald-500 mb-0.5"; }
           if(sub2) { sub2.innerText = `Target Beaten: +${formatGap(extraMins)}`; sub2.className = "text-[10px] font-bold text-emerald-500 leading-tight"; }
-          const i2 = sub2 ? sub2.previousElementSibling : null; if(i2) { i2.setAttribute('data-lucide', 'check-circle-2'); i2.className = "w-3 h-3 text-emerald-500"; if(window.lucide) window.lucide.createIcons(); }
+          const i2 = sub2 ? sub2.previousElementSibling : null; if(i2) { i2.setAttribute('data-lucide', 'check-circle-2'); i2.className = "w-3.5 h-3.5 text-emerald-500"; if(window.lucide) window.lucide.createIcons(); }
       } else {
           ringFill.style.stroke = 'var(--accent)'; ringFill.style.filter = "drop-shadow(0 0 8px var(--accent-glow))";
           if(badge2) badge2.classList.add('hidden');
-          if(status2) { status2.innerText = "Pacing"; status2.className = "text-[8px] font-extrabold uppercase tracking-widest text-amber-500 mb-0.5"; }
+          if(status2) { status2.innerText = "Pacing"; status2.className = "text-[9px] font-extrabold uppercase tracking-widest text-amber-500 mb-0.5"; }
           if(sub2) { sub2.innerText = `Avg Target: ${formatGap(Math.round(avgGapMs/60000))} (${remMins}m left)`; sub2.className = "text-[10px] font-bold text-amber-500 leading-tight"; }
-          const i2 = sub2 ? sub2.previousElementSibling : null; if(i2 && i2.getAttribute('data-lucide') !== 'aperture') { i2.setAttribute('data-lucide', 'aperture'); i2.className = "w-3 h-3 text-amber-500"; if(window.lucide) window.lucide.createIcons(); }
+          const i2 = sub2 ? sub2.previousElementSibling : null; if(i2 && i2.getAttribute('data-lucide') !== 'aperture') { i2.setAttribute('data-lucide', 'aperture'); i2.className = "w-3.5 h-3.5 text-amber-500"; if(window.lucide) window.lucide.createIcons(); }
       }
   }
 
@@ -441,12 +441,12 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
       if(isVictory) {
           fill3.style.width = `${pct}%`; fill3.style.backgroundColor = '#10B981'; fill3.style.boxShadow = "0 0 15px rgba(16, 185, 129, 0.4)";
           if(badge3) badge3.classList.remove('hidden');
-          if(status3) { status3.innerText = "Victory Zone"; status3.className = "text-[8px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"; }
+          if(status3) { status3.innerText = "Victory Zone"; status3.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"; }
           if(sub3) { sub3.innerText = `Record Extended: +${formatGap(extraMins)}`; sub3.className = "text-[10px] font-bold text-emerald-500 leading-tight"; }
       } else {
           fill3.style.width = `${pct}%`; fill3.style.backgroundColor = 'var(--accent)'; fill3.style.boxShadow = "none";
           if(badge3) badge3.classList.add('hidden');
-          if(status3) { status3.innerText = "Pacing"; status3.className = "text-[8px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20"; }
+          if(status3) { status3.innerText = "Pacing"; status3.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20"; }
           if(sub3) { sub3.innerText = `Target Avg: ${formatGap(Math.round(avgGapMs/60000))} (${remMins}m left)`; sub3.className = "text-[10px] font-bold text-amber-500 leading-tight"; }
       }
   }
@@ -661,7 +661,7 @@ function showUndoToast(logIdx) {
   t.style.background = 'var(--card-bg)';
   t.innerHTML = `<span class="flex items-center gap-1.5" style="color: var(--text-main);"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-500"></i> Logged</span><div class="w-px h-3 bg-gray-500/30"></div><button onclick="window.undoLog(${logIdx}, this.parentElement)" class="text-sky-500 active:scale-95 transition-transform uppercase tracking-wider">Undo</button>`;
   c.prepend(t); if(window.lucide) window.lucide.createIcons();
-  requestAnimationFrame(() => { t.style.opacity = '1'; t.style.transform = 'translateY(0);'; });
+  requestAnimationFrame(() => { t.style.opacity = '1'; t.style.transform = 'translateY(0)'; });
   const autoHide = setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateY(10px)'; setTimeout(() => t.remove(), 300); }, 5000); t.dataset.timerId = autoHide;
 }
 
