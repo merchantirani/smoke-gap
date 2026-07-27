@@ -1,4 +1,4 @@
-// PAUSE APP SERVICE WORKER
+// PAUSE SERVICE WORKER
 self.addEventListener('install', (e) => {
   self.skipWaiting();
 });

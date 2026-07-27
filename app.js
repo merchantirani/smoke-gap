@@ -14,11 +14,11 @@ let settings = Object.assign({}, DEFAULT_SETTINGS, JSON.parse(localStorage.getIt
 if (!settings.packSize || settings.packSize <= 0) settings.packSize = 20;
 if (!settings.timeFormat) settings.timeFormat = '12h';
 
-// RELATIVE SERVICE WORKER REGISTRATION
+// SERVICE WORKER REGISTRATION (RELATIVE PATH)
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').then(() => {
-    console.log("Service Worker registered successfully.");
-  }).catch(err => console.log("SW registration failed", err));
+    console.log("Service Worker registered.");
+  }).catch(err => console.log("SW failed", err));
 }
 
 // Auto-Reduce Goal Logic
@@ -81,8 +81,6 @@ let currentIntensity = 3;
 let takeoverTimer = null;
 let takeoverCountdown = 6;
 let historyRenderLimit = 30;
-
-let activeHeroStyle = parseInt(localStorage.getItem('smoke_hero_style')) || 0;
 
 // HOLD BUTTON LOGIC
 let holdTimerId = null;
@@ -187,7 +185,6 @@ window.onload = () => {
   updateCostPerCigDisplay();
   
   loadChartOrder(); initDragAndDrop(); renderTriggerSettingsList();
-  setupCarouselSwipe(); setHeroStyle(activeHeroStyle);
   
   const filterSelect = document.getElementById('historyTagFilter');
   if(filterSelect) {
@@ -231,7 +228,7 @@ function toggleNotifSetting(key) {
   }
 }
 
-// SOS CRAVING INTERRUPTER (RADAR PULSE TIMER)
+// SOS CRAVING INTERRUPTER (SNAPPY METRONOME BEAT)
 function triggerSosInterrupterFirst() {
   const actions = [
     "Drink a full glass of cold water 💧",
@@ -244,10 +241,9 @@ function triggerSosInterrupterFirst() {
   sosSecs = 15;
   const numEl = document.getElementById('sosTimerNum');
   const proceedBtn = document.getElementById('sosProceedBtn');
-  if(numEl) numEl.innerText = sosSecs;
+  if(numEl) { numEl.innerText = sosSecs; numEl.style.transform = "scale(1)"; }
   if(proceedBtn) { 
-    proceedBtn.classList.add('opacity-60'); 
-    proceedBtn.classList.remove('bg-amber-500', 'text-white', 'shadow-md');
+    proceedBtn.className = "w-full py-3 rounded-xl font-bold text-xs border opacity-50 transition-all";
     proceedBtn.innerText = "Skip & Proceed to Log"; 
   }
 
@@ -257,12 +253,18 @@ function triggerSosInterrupterFirst() {
   if(sosTimer) clearInterval(sosTimer);
   sosTimer = setInterval(() => {
     sosSecs--;
-    if(numEl) numEl.innerText = sosSecs;
+    if(numEl) {
+      numEl.innerText = sosSecs;
+      // Snappy Pop Animation
+      numEl.style.transform = "scale(1.3)";
+      setTimeout(() => { if(numEl) numEl.style.transform = "scale(1)"; }, 150);
+      if(sosSecs <= 3) numEl.className = "numeric-display text-4xl font-black text-red-500 transition-transform duration-150";
+      else numEl.className = "numeric-display text-4xl font-black text-amber-500 transition-transform duration-150";
+    }
     if(sosSecs <= 0) {
       clearInterval(sosTimer);
       if(proceedBtn) { 
-        proceedBtn.classList.remove('opacity-60'); 
-        proceedBtn.classList.add('bg-amber-500', 'text-white', 'shadow-md');
+        proceedBtn.className = "w-full py-3 rounded-xl font-bold text-xs text-white bg-amber-500 shadow-lg active:scale-95 transition-all";
         proceedBtn.innerText = "Ready to Proceed to Log →"; 
       }
     }
@@ -311,12 +313,12 @@ function bootCore() {
         sendSystemNotification("🚬 Did you forget to log?", "It's been longer than your average gap. Log your stick or keep widening the gap!", 'notifInactivity');
       }
 
-      if (document.hidden) return; // Skip UI updates while tab is hidden
+      if (document.hidden) return; 
 
       const stopwatchEl = document.getElementById('stopwatch');
       if(stopwatchEl) stopwatchEl.innerText = `${Math.floor(diff/3600000).toString().padStart(2,'0')}:${Math.floor((diff%3600000)/60000).toString().padStart(2,'0')}:${Math.floor((diff%60000)/1000).toString().padStart(2,'0')}`;
 
-      // HERO DISPLAY ENGINE (3 WATCH STYLES RESTORED)
+      // HERO TIMER "THE CLIMB" (VERTICAL GAUGE) ENGINE
       updateHeroDisplay(diff, prevGapMs, avgGapMs);
 
     } catch(err) {}
@@ -324,63 +326,47 @@ function bootCore() {
 }
 
 function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
-  const circle = document.getElementById('heroProgressCircle');
-  const milestoneCircle = document.getElementById('heroMilestoneCircle');
-  const gaugeArc = document.getElementById('heroGaugeArc');
-  const linearBar = document.getElementById('heroLinearBar');
-  const linearSub = document.getElementById('heroLinearSub');
+  const fillBar = document.getElementById('heroClimbFill');
+  const markerLine = document.getElementById('heroClimbMarker');
+  const recordBadge = document.getElementById('heroRecordBadge');
+  const subText = document.getElementById('heroClimbSub');
+  const climbStatus = document.getElementById('heroClimbStatus');
   const liveDot = document.getElementById('headerLiveDot');
-
-  const dashMax = 289.02;
-  const gaugeMax = 165; 
 
   let dotColor = '#9CA3AF', newClass = '', newHtml = '';
 
-  // STYLE 0: SPEEDOMETER GAUGE
-  if (activeHeroStyle === 0 && gaugeArc) {
-    let ratio = avgGapMs > 0 ? diff / avgGapMs : 0;
-    let pct = Math.min(ratio, 1.0);
-    gaugeArc.style.strokeDashoffset = (gaugeMax - (gaugeMax * pct)).toFixed(2);
-    if(ratio >= 1.0) {
-      gaugeArc.style.stroke = '#10B981'; // Victory Green
-      document.getElementById('heroSubLabel').classList.remove('hidden');
-      document.getElementById('heroSubLabel').innerText = `VICTORY ZONE (+${formatGap(Math.floor((diff - avgGapMs)/60000))})`;
-    } else {
-      gaugeArc.style.stroke = 'var(--accent)';
-      document.getElementById('heroSubLabel').classList.add('hidden');
+  if (fillBar && avgGapMs > 0) {
+    if(markerLine) {
+      markerLine.style.bottom = '70%'; // 70% is the Target Milestone Line
+      markerLine.classList.remove('hidden');
     }
-  }
 
-  // STYLE 1: LINEAR COUNTDOWN & PROGRESS BAR
-  if (activeHeroStyle === 1 && linearBar && linearSub) {
-    let ratio = avgGapMs > 0 ? Math.min(1.0, diff / avgGapMs) : 0;
-    linearBar.style.width = `${ratio * 100}%`;
-    linearBar.style.backgroundColor = ratio >= 1.0 ? '#10B981' : 'var(--accent)';
-    if(diff >= avgGapMs) {
-      linearSub.innerText = `Record Beat (+${formatGap(Math.floor((diff - avgGapMs)/60000))})`;
-      linearSub.className = "text-[8px] font-bold text-center uppercase tracking-wider text-emerald-500 truncate";
-    } else {
-      let remMins = Math.ceil((avgGapMs - diff)/60000);
-      linearSub.innerText = `Target: ${formatGap(Math.round(avgGapMs/60000))} (${remMins}m left)`;
-      linearSub.className = "text-[8px] font-bold text-center uppercase tracking-wider text-amber-500 truncate";
-    }
-  }
+    if (diff >= avgGapMs) { // NEW RECORD / VICTORY ZONE
+      let extraMins = Math.floor((diff - avgGapMs) / 60000);
+      let bonusPct = Math.min(30, Math.round(((diff - avgGapMs) / avgGapMs) * 30));
+      fillBar.style.height = `${70 + bonusPct}%`;
+      fillBar.style.backgroundColor = '#10B981'; // Gold/Emerald Glow
+      fillBar.style.boxShadow = "0 0 15px rgba(16, 185, 129, 0.4)";
 
-  // STYLE 2: CIRCULAR MILESTONE RING
-  if (activeHeroStyle === 2 && circle && milestoneCircle) {
-    let ratio = avgGapMs > 0 ? diff / avgGapMs : 0;
-    let p1 = Math.min(ratio, 1.0);
-    circle.style.stroke = p1 >= 1.0 ? '#10B981' : 'var(--accent)';
-    circle.style.strokeDashoffset = dashMax - (dashMax * p1);
-    if (ratio > 1.0) {
-      milestoneCircle.classList.remove('hidden');
-      let p2 = Math.min(ratio - 1.0, 1.0);
-      milestoneCircle.style.strokeDashoffset = 251.32 - (251.32 * p2);
-      document.getElementById('heroSubLabel').classList.remove('hidden');
-      document.getElementById('heroSubLabel').innerText = `BEATING AVG BY +${formatGap(Math.floor((diff - avgGapMs)/60000))}`;
-    } else {
-      milestoneCircle.classList.add('hidden');
-      document.getElementById('heroSubLabel').classList.add('hidden');
+      if (recordBadge) recordBadge.classList.remove('hidden');
+      if (climbStatus) {
+        climbStatus.innerText = "Victory Zone";
+        climbStatus.className = "text-[8px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20";
+      }
+      if (subText) subText.innerText = `Record Extended: +${formatGap(extraMins)}`;
+    } else { // PACING ZONE
+      let pct = Math.min(70, Math.round((diff / avgGapMs) * 70));
+      let remMins = Math.ceil((avgGapMs - diff) / 60000);
+      fillBar.style.height = `${pct}%`;
+      fillBar.style.backgroundColor = 'var(--accent)';
+      fillBar.style.boxShadow = "none";
+
+      if (recordBadge) recordBadge.classList.add('hidden');
+      if (climbStatus) {
+        climbStatus.innerText = "Pacing";
+        climbStatus.className = "text-[8px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20";
+      }
+      if (subText) subText.innerText = `Avg Target: ${formatGap(Math.round(avgGapMs/60000))} (${remMins}m left)`;
     }
   }
 
@@ -408,56 +394,6 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
   const statusWrapper = document.getElementById('smartStatusWrapper');
   const statusText = document.getElementById('smartStatusText');
   if (statusText && statusText.dataset.rawHtml !== newHtml) { statusWrapper.className = newClass; statusText.innerHTML = newHtml; statusText.dataset.rawHtml = newHtml; if(window.lucide) window.lucide.createIcons(); }
-}
-
-function setHeroStyle(idx) {
-  activeHeroStyle = idx;
-  localStorage.setItem('smoke_hero_style', activeHeroStyle);
-  
-  const dot0 = document.getElementById('carouselDot0'), dot1 = document.getElementById('carouselDot1'), dot2 = document.getElementById('carouselDot2');
-  const label = document.getElementById('heroLabelText');
-  const svgCircle = document.getElementById('heroSvgDisplay');
-  const svgGauge = document.getElementById('heroGaugeSvg');
-  const linearBox = document.getElementById('heroLinearBox');
-
-  if(dot0 && dot1 && dot2) {
-    dot0.className = `w-2 h-2 rounded-full transition-all ${idx === 0 ? 'bg-amber-500 w-4' : 'bg-gray-500/40'}`;
-    dot1.className = `w-2 h-2 rounded-full transition-all ${idx === 1 ? 'bg-amber-500 w-4' : 'bg-gray-500/40'}`;
-    dot2.className = `w-2 h-2 rounded-full transition-all ${idx === 2 ? 'bg-amber-500 w-4' : 'bg-gray-500/40'}`;
-  }
-
-  if (idx === 0) { // STYLE 0: SPEEDOMETER GAUGE
-    if(svgGauge) svgGauge.classList.remove('hidden');
-    if(svgCircle) svgCircle.classList.add('hidden');
-    if(linearBox) linearBox.classList.add('hidden');
-    if(label) label.innerHTML = `<i data-lucide="gauge" class="w-3 h-3 text-amber-500"></i> Speedometer Gauge`;
-  } else if (idx === 1) { // STYLE 1: LINEAR COUNTDOWN
-    if(svgGauge) svgGauge.classList.add('hidden');
-    if(svgCircle) svgCircle.classList.add('hidden');
-    if(linearBox) linearBox.classList.remove('hidden');
-    if(label) label.innerHTML = `<i data-lucide="clock" class="w-3 h-3 text-sky-500"></i> Linear Target Timer`;
-  } else { // STYLE 2: CIRCULAR MILESTONE RING
-    if(svgGauge) svgGauge.classList.add('hidden');
-    if(svgCircle) svgCircle.classList.remove('hidden');
-    if(linearBox) linearBox.classList.add('hidden');
-    if(label) label.innerHTML = `<i data-lucide="target" class="w-3 h-3 text-emerald-500"></i> Milestone Ring`;
-  }
-
-  if(window.lucide) window.lucide.createIcons();
-}
-
-let touchStartX = 0;
-function setupCarouselSwipe() {
-  const el = document.getElementById('heroCarousel');
-  if(!el) return;
-  el.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, {passive: true});
-  el.addEventListener('touchend', e => {
-    let diffX = e.changedTouches[0].screenX - touchStartX;
-    if (Math.abs(diffX) > 40) {
-      if (diffX < 0) setHeroStyle((activeHeroStyle + 1) % 3);
-      else setHeroStyle((activeHeroStyle + 2) % 3);
-    }
-  }, {passive: true});
 }
 
 function checkPeakNudge() {
@@ -695,6 +631,22 @@ function waveTick() {
     const mm = Math.floor(rem/60).toString().padStart(2,'0'), ss = (rem%60).toString().padStart(2,'0');
     document.getElementById('waveCountdown').innerText = `${mm}:${ss}`;
     const elapsedFrac = Math.min(1, Math.max(0, (totalSecs - rem) / totalSecs));
+    
+    // DYNAMIC OCEAN WAVE FORM & SPEED DAMPENING
+    const svgWave = document.getElementById('waveSvgEl');
+    if(svgWave) {
+      if(elapsedFrac < 0.3) {
+        svgWave.style.height = "75px";
+        svgWave.style.animationDuration = "2s"; // Fast Turbulent Wave
+      } else if(elapsedFrac < 0.7) {
+        svgWave.style.height = "50px";
+        svgWave.style.animationDuration = "3.5s"; // Medium Steady Wave
+      } else {
+        svgWave.style.height = "25px";
+        svgWave.style.animationDuration = "6s"; // Flattens & Calms Down
+      }
+    }
+
     const fillEl = document.getElementById('rideProgressFill'), textEl = document.getElementById('rideText'), iconEl = document.getElementById('rideIcon');
     if(fillEl) fillEl.style.width = `${elapsedFrac*100}%`;
     if(textEl) textEl.innerText = `${mm}:${ss}`;
@@ -718,7 +670,7 @@ function checkWave() {
   }
 }
 
-// BULLETPROOF TAB SWITCHING & HISTORY LOG
+// BULLETPROOF TAB SWITCHING & HISTORY LOG POPUP FIX
 function switchTab(t) {
   try {
     if(settings.haptics && navigator.vibrate) navigator.vibrate(20);
@@ -1044,14 +996,33 @@ window.setEditIntensity = function(val) {
 }
 
 function openTriggerModal(logIdx = null) {
-  editingLogIdx = logIdx !== null ? logIdx : logs.length - 1;
-  const log = logs[editingLogIdx]; 
-  if(!log) return;
-  if (Array.isArray(log.tags) && log.tags.length > 0) currentSelectedTags = [...log.tags]; else if (log.trigger) currentSelectedTags = [log.trigger]; else currentSelectedTags = [];
-  
-  window.setEditIntensity(log.intensity || 3);
-  const d = new Date(log.timestamp); document.getElementById('editLogDate').value = `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`; document.getElementById('editLogTime').value = `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
-  renderModalTriggerGrid(); document.getElementById('triggerModal').classList.remove('hidden'); if(window.lucide) window.lucide.createIcons();
+  try {
+    editingLogIdx = logIdx !== null ? logIdx : logs.length - 1;
+    const log = logs[editingLogIdx]; 
+    if(!log) return;
+    
+    if (Array.isArray(log.tags) && log.tags.length > 0) currentSelectedTags = [...log.tags];
+    else if (log.trigger) currentSelectedTags = [log.trigger];
+    else currentSelectedTags = [];
+    
+    window.setEditIntensity(log.intensity || 3);
+    const d = new Date(log.timestamp);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+
+    const dateInput = document.getElementById('editLogDate');
+    const timeInput = document.getElementById('editLogTime');
+    if(dateInput) dateInput.value = `${yyyy}-${mm}-${dd}`;
+    if(timeInput) timeInput.value = `${hh}:${min}`;
+
+    renderModalTriggerGrid(); 
+    const modal = document.getElementById('triggerModal');
+    if(modal) modal.classList.remove('hidden'); 
+    if(window.lucide) window.lucide.createIcons();
+  } catch(e) { console.error("openTriggerModal Error:", e); }
 }
 
 function renderModalTriggerGrid() {
@@ -1470,6 +1441,6 @@ window.renderAllCharts = renderAllCharts; window.openMapModal = openMapModal; wi
 window.showStatDetail = showStatDetail; window.closeStatDetail = closeStatDetail; window.showShieldDashboard = showShieldDashboard; window.closeShieldDashboard = closeShieldDashboard;
 window.exportLogsCSV = exportLogsCSV; window.addCustomTrigger = addCustomTrigger; window.removeCustomTrigger = removeCustomTrigger;
 window.closeConfirmModal = closeConfirmModal; window.confirmYes = confirmYes; window.setTakeoverIntensity = setTakeoverIntensity; window.exportJSON = exportJSON; window.importJSON = importJSON;
-window.closePinSetupModal = closePinSetupModal; window.savePinSetup = savePinSetup; window.setHeroStyle = setHeroStyle;
+window.closePinSetupModal = closePinSetupModal; window.savePinSetup = savePinSetup;
 window.requestNotifPermission = requestNotifPermission; window.toggleNotifSetting = toggleNotifSetting;
 window.closeSosInterrupter = closeSosInterrupter;

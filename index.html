@@ -11,7 +11,7 @@
   <script>
     !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}
     (p=t.createElement("script")).type="text/javascript",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);
-    var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="capture identify alias people.set people.set_once set_config register register_once unregister opt_out_capturing has_opted_out_capturing opt_in_capturing reset isFeatureEnabled onFeatureFlags getFeatureFlag getFeatureFlagPayload reloadFeatureFlags group groupIdentify".split(" "),n=0;n<o.length;n++)g(u,o[n]);
+    var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="capture identify alias people.set people.set_once set_config register register_once unregister opt_out_capturing has_opted_out_capturing opt_in_capturing reset isFeatureEnabled onFeatureFlags getFeatureFlag getFeatureFlagPayload reloadFeatureFlags group Identify".split(" "),n=0;n<o.length;n++)g(u,o[n]);
     e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
 
     posthog.init('phc_zKxDjX5K3qKcANYGwRWdTVeGfVwBgFygbFuymtRCCbYM', {
@@ -40,7 +40,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="icons/pause_icon_180.png">
 
   <link href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700&f[]=general-sans@400,500,600,700&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -94,9 +94,6 @@
       --overlay-bg: rgba(61, 58, 52, 0.25); --modal-bg: #FFFDF9; --input-bg: rgba(0, 0, 0, 0.03);
       --heat-0: rgba(0, 0, 0, 0.04); --heat-1: #C8D8CB; --heat-2: #9DB5A2; --heat-3: #7C9885; --heat-4: #4F6355;
     }
-    body.theme-aurora { position: relative; }
-    body.theme-aurora::before { content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.5; background: radial-gradient(circle at 15% 15%, rgba(167,139,250,0.25), transparent 40%), radial-gradient(circle at 85% 75%, rgba(56,189,248,0.18), transparent 45%); }
-    body.theme-aurora .app-container { position: relative; z-index: 1; }
     
     html, body { min-height: 100vh; background-color: var(--bg-body) !important; color: var(--text-main); font-family: 'General Sans', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
     button, .nav-btn, .drag-handle, .dock-bar { user-select: none; -webkit-user-select: none; }
@@ -117,11 +114,8 @@
     .chart-wrapper { position: relative; width: 100%; height: 180px; }
     .page-section { animation: fadeIn 0.3s ease-out forwards; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-    .shake-anim { animation: shakeDots 0.4s ease; }
-    @keyframes shakeDots { 0%,100% { transform: translateX(0); } 20%,60% { transform: translateX(-8px); } 40%,80% { transform: translateX(8px); } }
-    @keyframes pulse-breathe { 0%, 100% { transform: scale(0.8); opacity: 0.15; } 50% { transform: scale(1.6); opacity: 0.3; } }
-    @keyframes live-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.85); } }
     .live-dot { animation: live-pulse 2s infinite ease-in-out; }
+    @keyframes live-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.85); } }
     .takeover-bg { background: radial-gradient(circle at center, var(--accent-glow) 0%, var(--bg-body) 80%); }
     .custom-input-wrapper { position: relative; display: flex; align-items: center; width: 100%; }
     .custom-input-wrapper input[type="date"], .custom-input-wrapper input[type="time"] { width: 100%; background: transparent; border: none; outline: none; color: var(--text-main); font-weight: 700; font-size: 0.95rem; padding-right: 32px; appearance: none; -webkit-appearance: none; }
@@ -132,11 +126,11 @@
     .ride-btn { position: relative; overflow: hidden; }
     #rideProgressFill { position: absolute; bottom: 0; left: 0; height: 100%; width: 0%; background: rgba(255,255,255,0.18); pointer-events: none; transition: width 1s linear; }
 
-    /* SOS RADAR PULSE ANIMATION */
-    @keyframes radarPing { 0% { transform: scale(0.92); opacity: 0.9; } 50% { transform: scale(1.18); opacity: 0.3; } 100% { transform: scale(0.92); opacity: 0.9; } }
-    .sos-pulse-ring { animation: radarPing 1.2s infinite ease-in-out; }
+    /* SOS RADAR PULSE (SNAPPY METRONOME BEAT) */
+    @keyframes radarPing { 0% { transform: scale(0.88); opacity: 0.9; } 50% { transform: scale(1.22); opacity: 0.2; } 100% { transform: scale(0.88); opacity: 0.9; } }
+    .sos-pulse-ring { animation: radarPing 1s cubic-bezier(0,0,0.2,1) infinite; }
 
-    /* SMOOTH SEAMLESS WAVE ANIMATION */
+    /* SEAMLESS 100% INFINITE WAVE ANIMATION */
     @keyframes waveMotion { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
     .animate-wave { animation: waveMotion 3s linear infinite; }
 
@@ -207,50 +201,41 @@
           FOR: <span id="motivationText" style="color: var(--text-main);">--</span>
         </div>
 
-        <!-- HERO CAROUSEL CONTAINER (SWIPEABLE 3 WATCH STYLES) -->
-        <div id="heroCarousel" class="relative flex flex-col items-center justify-center pt-2 pb-2 touch-pan-y" style="touch-action: pan-y;">
-          <div onclick="window.showStatDetail('currentGap')" class="relative flex justify-center items-center w-64 h-64 mx-auto mb-2 cursor-pointer active:scale-95 transition-transform">
+        <!-- HERO STOPWATCH: "THE CLIMB" (VERTICAL GROWTH BAR) -->
+        <div id="heroCarousel" class="relative flex flex-col items-center justify-center pt-2 pb-2">
+          <div onclick="window.showStatDetail('currentGap')" class="premium-card p-5 w-full max-w-[320px] mx-auto cursor-pointer active:scale-[0.98] transition-all relative overflow-hidden border" style="border-color: var(--card-border);">
             
-            <!-- STYLE 0 & 2: SVG CIRCLE / MILESTONE RING -->
-            <svg id="heroSvgDisplay" class="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-              <circle cx="50" cy="50" r="46" fill="transparent" stroke="var(--card-border)" stroke-width="2.5"></circle>
-              <!-- Primary Progress Circle -->
-              <circle id="heroProgressCircle" cx="50" cy="50" r="46" fill="transparent" stroke="var(--accent)" stroke-width="4" stroke-dasharray="289.02" stroke-dashoffset="289.02" stroke-linecap="round" class="transition-all duration-1000 ease-linear"></circle>
-              <!-- Secondary Milestone Ring (Overflow Record) -->
-              <circle id="heroMilestoneCircle" cx="50" cy="50" r="40" fill="transparent" stroke="#10B981" stroke-width="3" stroke-dasharray="251.32" stroke-dashoffset="251.32" stroke-linecap="round" class="transition-all duration-1000 ease-linear hidden"></circle>
-            </svg>
-
-            <!-- STYLE 0: SPEEDOMETER GAUGE SVG -->
-            <svg id="heroGaugeSvg" class="absolute inset-0 w-full h-full hidden" viewBox="0 0 100 100">
-              <path d="M 12,68 A 42,42 0 1,1 88,68" fill="transparent" stroke="var(--card-border)" stroke-width="5" stroke-linecap="round"></path>
-              <path id="heroGaugeArc" d="M 12,68 A 42,42 0 1,1 88,68" fill="transparent" stroke="var(--accent)" stroke-width="5" stroke-dasharray="165" stroke-dashoffset="165" stroke-linecap="round" class="transition-all duration-1000 ease-linear"></path>
-              <circle cx="88" cy="68" r="3" fill="#10B981"></circle>
-            </svg>
-
-            <div class="z-10 flex flex-col items-center justify-center w-[200px] h-[200px] rounded-full" style="background: var(--card-bg); backdrop-filter: blur(20px); border: 1px solid var(--card-border); box-shadow: inset 0 0 30px rgba(0,0,0,0.15);">
-              <span id="heroLabelText" class="text-[10px] font-bold uppercase tracking-widest block mb-1 flex items-center gap-1" style="color: var(--text-muted);"><i data-lucide="gauge" class="w-3 h-3 text-amber-500"></i> Speedometer Gauge</span>
-              <div id="stopwatch" class="numeric-display text-3xl font-bold tracking-tighter" style="color: var(--text-main);">00:00:00</div>
-              
-              <!-- STYLE 1: LINEAR PROGRESS BAR BOX -->
-              <div id="heroLinearBox" class="w-36 mt-2 space-y-1 hidden">
-                <div class="w-full h-1.5 rounded-full overflow-hidden" style="background-color: var(--input-bg);">
-                  <div id="heroLinearBar" class="h-full rounded-full transition-all duration-500" style="width: 0%; background-color: var(--accent);"></div>
-                </div>
-                <p id="heroLinearSub" class="text-[8px] font-bold text-center uppercase tracking-wider text-amber-500 truncate">Target: --</p>
+            <div class="flex items-center gap-4">
+              <!-- VERTICAL CAPSULE THERMOMETER BAR -->
+              <div class="relative shrink-0 w-7 h-44 rounded-full overflow-hidden border flex flex-col justify-end" style="background-color: var(--input-bg); border-color: var(--card-border);">
+                <!-- Dynamic Fill Level -->
+                <div id="heroClimbFill" class="w-full transition-all duration-1000 ease-out" style="height: 0%; background-color: var(--accent);"></div>
+                <!-- Target Marker Line (Average Gap) -->
+                <div id="heroClimbMarker" class="absolute left-0 right-0 h-0.5 bg-white shadow-[0_0_6px_#fff] z-10 hidden"></div>
               </div>
 
-              <span id="heroSubLabel" class="text-[9px] font-bold uppercase tracking-wider text-amber-500 mt-1 hidden">--</span>
+              <!-- TIME & RECORD CONTENT -->
+              <div class="flex-1 min-w-0 space-y-1">
+                <div class="flex items-center justify-between">
+                  <span class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1" style="color: var(--text-muted);">
+                    <i data-lucide="trending-up" class="w-3 h-3 text-amber-500"></i> The Climb
+                  </span>
+                  <span id="heroClimbStatus" class="text-[8px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">Pacing</span>
+                </div>
+
+                <div id="stopwatch" class="numeric-display text-3xl font-black tracking-tighter" style="color: var(--text-main);">00:00:00</div>
+
+                <div id="heroRecordBadge" class="hidden text-[8px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.2)]">
+                  🏆 NEW RECORD ZONE
+                </div>
+
+                <p id="heroClimbSub" class="text-[10px] font-bold text-amber-500 leading-tight">Target Avg: --</p>
+              </div>
             </div>
+
           </div>
 
-          <!-- Carousel Dots (3 Distinct Clock Styles) -->
-          <div class="flex items-center gap-2 mb-4">
-            <button onclick="window.setHeroStyle(0)" id="carouselDot0" class="w-2 h-2 rounded-full transition-all bg-amber-500" title="Style 1: Speedometer Gauge"></button>
-            <button onclick="window.setHeroStyle(1)" id="carouselDot1" class="w-2 h-2 rounded-full transition-all bg-gray-500/40" title="Style 2: Linear Target Countdown"></button>
-            <button onclick="window.setHeroStyle(2)" id="carouselDot2" class="w-2 h-2 rounded-full transition-all bg-gray-500/40" title="Style 3: Milestone Ring"></button>
-          </div>
-          
-          <div id="smartStatusWrapper" class="px-5 py-2.5 rounded-full border transition-all duration-500 bg-gray-500/10 border-gray-500/20 text-gray-400">
+          <div id="smartStatusWrapper" class="mt-3 px-5 py-2.5 rounded-full border transition-all duration-500 bg-gray-500/10 border-gray-500/20 text-gray-400">
             <span id="smartStatusText" class="text-[11px] font-bold uppercase tracking-wider flex items-center gap-2">
               <i data-lucide="info" class="w-3.5 h-3.5"></i> Waiting for first log
             </span>
@@ -280,13 +265,13 @@
           </button>
         </div>
 
-        <!-- RIDE IT OUT SMOOTH SEAMLESS OCEAN WAVE MODAL -->
+        <!-- RIDE IT OUT: 100% SEAMLESS DYNAMIC OCEAN WAVE MODAL -->
         <div id="waveOverlay" class="hidden premium-card p-4 relative overflow-hidden border" style="border-color: rgba(14,165,233,0.3);">
           
-          <!-- Continuous Loop SVG Wave Background -->
-          <div class="absolute inset-0 pointer-events-none opacity-25 overflow-hidden flex items-end">
-            <svg viewBox="0 0 1200 120" preserveAspectRatio="none" class="w-[200%] h-20 animate-wave">
-              <path d="M 0,60 C 150,110 350,10 600,60 C 850,110 1050,10 1200,60 L 1200,120 L 0,120 Z" fill="#0EA5E9"></path>
+          <!-- Continuous 100% Seamless Double Sine Wave SVG -->
+          <div class="absolute inset-0 pointer-events-none opacity-30 overflow-hidden flex items-end">
+            <svg viewBox="0 0 1200 120" preserveAspectRatio="none" class="w-[200%] animate-wave" id="waveSvgEl" style="height: 60px;">
+              <path d="M 0,60 Q 150,10 300,60 T 600,60 Q 750,10 900,60 T 1200,60 V 120 H 0 Z" fill="#0EA5E9"></path>
             </svg>
           </div>
 
@@ -529,7 +514,6 @@
           </div>
           
           <div class="space-y-3 pt-1">
-            <!-- OPTION A: SOS INTERRUPTER TOGGLE -->
             <div class="flex justify-between items-center">
               <div>
                 <label class="text-xs font-semibold block" style="color: var(--text-main);">⚡ SOS Interrupter Screen</label>
@@ -670,10 +654,11 @@
       </div>
 
       <!-- RADAR PULSE / FLASH TIMER CONTAINER -->
-      <div class="relative w-24 h-24 mx-auto flex items-center justify-center my-2">
-        <div class="absolute inset-0 rounded-full border-2 border-amber-500/30 sos-pulse-ring"></div>
-        <div class="w-20 h-20 rounded-full bg-amber-500/10 border border-amber-500/40 flex items-center justify-center shadow-[0_0_20px_var(--accent-glow)]">
-          <span id="sosTimerNum" class="numeric-display text-3xl font-extrabold text-amber-500">15</span>
+      <div class="relative w-28 h-28 mx-auto flex items-center justify-center my-3">
+        <div id="sosPulseRing1" class="absolute inset-0 rounded-full border-2 border-amber-500/40 sos-pulse-ring"></div>
+        <div id="sosPulseRing2" class="absolute -inset-3 rounded-full border border-amber-500/20 sos-pulse-ring" style="animation-delay: 0.4s;"></div>
+        <div class="w-20 h-20 rounded-full bg-amber-500/15 border-2 border-amber-500 flex items-center justify-center shadow-[0_0_25px_var(--accent-glow)] z-10">
+          <span id="sosTimerNum" class="numeric-display text-4xl font-black text-amber-500 transition-transform duration-200">15</span>
         </div>
       </div>
 
