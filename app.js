@@ -49,6 +49,7 @@ try { waveAttempts = JSON.parse(localStorage.getItem('smoke_wave_attempts')) || 
 function logWaveAttempt(outcome, customDurationMs) {
   const durMs = customDurationMs !== undefined ? customDurationMs : waveDurationMs;
   const mins = customDurationMs !== undefined ? +(durMs / 60000).toFixed(2) : Math.round(durMs / 60000);
+  waveAttempts.push({ outcome, timestamp: Date.now(), durationMs: durMs, minutes: mins });
   if(waveAttempts.length > 500) waveAttempts = waveAttempts.slice(-500);
   localStorage.setItem('smoke_wave_attempts', JSON.stringify(waveAttempts));
 }
@@ -635,6 +636,7 @@ function cancelSmokeTakeover(e) {
   if (editingLogIdx >= 0 && editingLogIdx === logs.length - 1 && logs[editingLogIdx] && Array.isArray(logs[editingLogIdx].tags) && logs[editingLogIdx].tags.length === 0 && logs[editingLogIdx].lat === null) {
     logs.pop(); localStorage.setItem('smoke_logs', JSON.stringify(logs));
     lockEndTime = 0; localStorage.setItem('smoke_lock_end', lockEndTime);
+    if(cooldownTimer) { clearInterval(cooldownTimer); cooldownTimer = null; }
     try { updateUI(); } catch(err){} checkLock();
   }
   if (window.posthog) posthog.capture('takeover_cancelled');
@@ -674,6 +676,7 @@ window.undoLog = function(idx, element) {
     for (let i = 1; i < logs.length; i++) { logs[i].gap = Math.round((logs[i].timestamp - logs[i-1].timestamp)/60000); }
     if (logs.length > 0) logs[0].gap = null;
     localStorage.setItem('smoke_logs', JSON.stringify(logs)); lockEndTime = 0; localStorage.setItem('smoke_lock_end', lockEndTime);
+    if(cooldownTimer) { clearInterval(cooldownTimer); cooldownTimer = null; }
     if (window.posthog) posthog.capture('log_undone');
     try { updateUI(); } catch(err){} checkLock();
     if(!document.getElementById('page-insights').classList.contains('hidden')) renderAllCharts();
