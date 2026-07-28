@@ -922,7 +922,7 @@ function renderWeeklyPaceChart() {
   let barsHtml = '';
   days.forEach(d => {
     const heightPct = Math.max(8, Math.round((d.count / maxCount) * 100));
-    let color = 'var(--input-bg)';
+    let color = 'rgba(148,163,184,0.35)';
     if(d.isToday && hasEnoughHistory) {
       if(todayCount < priorAvg * 0.85) color = '#10B981';
       else if(todayCount > priorAvg * 1.15) color = '#F59E0B';
@@ -1240,7 +1240,7 @@ function renderHistory(tId='fullHistoryList') {
         let headerLabel = k;
         if (k === todayStr) headerLabel = 'TODAY'; else if (k === yestStr) headerLabel = 'YESTERDAY';
         else { const d = new Date(k); headerLabel = `${d.toLocaleDateString('en-US', {weekday:'short'}).toUpperCase()}, ${d.toLocaleDateString('en-US', {month:'short', day:'numeric'}).toUpperCase()}`; }
-        html += `<div class="pt-4 pb-1 flex items-center justify-between"><h4 class="text-[10px] font-bold uppercase tracking-widest text-gray-500">${headerLabel}</h4><span class="text-[10px] font-black px-2 py-0.5 rounded-full" style="background: var(--input-bg); color: var(--accent);">${groups[k].length} ${groups[k].length === 1 ? 'cig' : 'cigs'}</span></div>`;
+        html += `<div class="pt-4 pb-1 flex items-center justify-between"><h4 class="text-[10px] font-bold uppercase tracking-widest text-gray-500">${headerLabel}</h4><span class="text-xs font-black px-2.5 py-1 rounded-full" style="background: var(--input-bg); color: var(--accent);">${groups[k].length} ${groups[k].length === 1 ? 'cig' : 'cigs'}</span></div>`;
         html += `<div class="space-y-3">` + groups[k].map(l => renderHistoryItem(l)).join('') + `</div>`;
       }
       c.innerHTML = html;
