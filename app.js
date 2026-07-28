@@ -192,7 +192,7 @@ const centerTextPlugin = { id: 'centerText', beforeDraw: chart => { if (chart.co
 
 function formatAppTime(dateObj) { return dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: settings.timeFormat === '12h' }); }
 
-window.onload = () => {
+function bootApp() {
   applyTheme(settings.theme);
   try {
     document.getElementById('dailyLimitInput').value = settings.dailyLimit;
@@ -223,9 +223,9 @@ window.onload = () => {
   }
 
   if(window.lucide) window.lucide.createIcons();
-  setTimeout(() => { const skel = document.getElementById('appSkeleton'); if(skel) { skel.style.opacity = '0'; setTimeout(()=>skel.remove(), 500); } }, 100);
+  setTimeout(() => { const skel = document.getElementById('appSkeleton'); if(skel) { skel.style.opacity = '0'; setTimeout(()=>skel.remove(), 500); } }, 400);
   if(hasPin) { document.getElementById('lockScreen').classList.remove('hidden'); document.getElementById('pinStatusBtn').innerText = "Remove PIN"; } else { bootCore(); }
-};
+}
 
 window.switchWatchStyle = function(styleNum) {
     if(settings.haptics && navigator.vibrate) navigator.vibrate(10);
@@ -341,6 +341,7 @@ function bootCore() {
   window.switchWatchStyle(currentWatchStyle);
   try { updateUI(); } catch(e) { console.error("updateUI error on boot", e); }
   checkLock(); checkWave();
+  // The interval below handles ongoing updates
   
   if(mainTimer) clearInterval(mainTimer);
   mainTimer = setInterval(() => {
@@ -1629,3 +1630,5 @@ window.closeConfirmModal = closeConfirmModal; window.confirmYes = confirmYes; wi
 window.closePinSetupModal = closePinSetupModal; window.savePinSetup = savePinSetup;
 window.requestNotifPermission = requestNotifPermission; window.toggleNotifSetting = toggleNotifSetting;
 window.closeSosInterrupter = closeSosInterrupter;
+
+bootApp();
