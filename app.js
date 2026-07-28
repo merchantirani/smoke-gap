@@ -78,7 +78,7 @@ let takeoverTimer = null;
 let takeoverCountdown = 6;
 let historyRenderLimit = 30;
 
-let currentWatchStyle = parseInt(localStorage.getItem('smoke_watch_style')) || 3;
+let currentWatchStyle = parseInt(localStorage.getItem('smoke_watch_style')) || 1;
 let touchStartXCoord = 0;
 
 function touchStartX(e) {
@@ -405,11 +405,11 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
     }
   }
 
-  const badge2 = document.getElementById('heroRecordBadge2');
-  const sub2 = document.getElementById('heroRingSub');
   const ringFill = document.getElementById('heroRingFill');
+  const badge2 = document.getElementById('heroRecordBadge2');
   const status2 = document.getElementById('heroRingStatus');
-
+  const sub2 = document.getElementById('heroRingSub');
+  
   if(ringFill && avgGapMs > 0) {
       let ringPct = isVictory ? Math.min(100, 70 + bonusPct) : pct;
       const offset = 314.16 - (314.16 * (ringPct / 100));
@@ -418,28 +418,33 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
       if(isVictory) {
           ringFill.style.stroke = '#10B981'; ringFill.style.filter = "drop-shadow(0 0 8px rgba(16, 185, 129, 0.5))";
           if(badge2) badge2.classList.remove('hidden');
-          if(status2) { status2.innerText = "Victory Zone"; status2.className = "text-[10px] font-extrabold uppercase tracking-widest text-emerald-500 mb-1"; }
+          if(status2) { status2.innerText = "Victory Zone"; status2.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"; }
           if(sub2) sub2.innerText = `Target Beaten: +${formatGap(extraMins)}`;
       } else {
           ringFill.style.stroke = 'var(--accent)'; ringFill.style.filter = "drop-shadow(0 0 8px var(--accent-glow))";
           if(badge2) badge2.classList.add('hidden');
-          if(status2) { status2.innerText = "Pacing"; status2.className = "text-[10px] font-extrabold uppercase tracking-widest text-amber-500 mb-1"; }
+          if(status2) { status2.innerText = "Pacing"; status2.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20"; }
           if(sub2) sub2.innerText = `Target: ${formatGap(Math.round(avgGapMs/60000))} (${remMins}m left)`;
       }
   }
 
+  const fill3 = document.getElementById('heroClimbFill');
   const badge3 = document.getElementById('heroRecordBadge1');
+  const status3 = document.getElementById('heroClimbStatus');
   const sub3 = document.getElementById('heroClimbSub');
 
-  if(sub3 && avgGapMs > 0) {
+  if(fill3 && avgGapMs > 0) {
+      fill3.style.height = `${pct}%`;
       if(isVictory) {
+          fill3.style.background = 'linear-gradient(180deg, #34D399, #10B981)'; fill3.style.boxShadow = "0 0 15px rgba(16, 185, 129, 0.5)";
           if(badge3) badge3.classList.remove('hidden');
-          sub3.innerText = `Record Extended: +${formatGap(extraMins)}`;
-          sub3.className = "mt-2.5 text-[10px] font-bold text-emerald-500 leading-tight";
+          if(status3) { status3.innerText = "Victory Zone"; status3.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 w-max"; }
+          if(sub3) sub3.innerText = `Record Extended: +${formatGap(extraMins)}`;
       } else {
+          fill3.style.background = 'linear-gradient(180deg, #FBBF24, #F59E0B)'; fill3.style.boxShadow = "0 0 12px rgba(245,158,11,0.4) inset";
           if(badge3) badge3.classList.add('hidden');
-          sub3.innerText = `Target Avg: ${formatGap(Math.round(avgGapMs/60000))} (${remMins}m left)`;
-          sub3.className = "mt-2.5 text-[10px] font-bold text-amber-500 leading-tight";
+          if(status3) { status3.innerText = "Pacing"; status3.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 w-max"; }
+          if(sub3) sub3.innerText = `Target: ${formatGap(Math.round(avgGapMs/60000))} (${remMins}m left)`;
       }
   }
 
@@ -719,8 +724,6 @@ function resetRideButton() {
   if(fillEl) fillEl.style.width = '0%';
   if(textEl) textEl.innerText = 'Ride It Out';
   if(iconEl) iconEl.classList.remove('hidden');
-  const svgWave = document.getElementById('waveSvgEl');
-  if(svgWave) { delete svgWave.dataset.wavePhase; svgWave.style.height = '130px'; svgWave.style.opacity = '0.5'; }
 }
 
 function waveTick() {
@@ -740,17 +743,6 @@ function waveTick() {
     document.getElementById('waveCountdown').innerText = `${mm}:${ss}`;
     const elapsedFrac = Math.min(1, Math.max(0, (totalSecs - rem) / totalSecs));
     
-    const svgWave = document.getElementById('waveSvgEl');
-    if(svgWave) {
-      const phase = elapsedFrac < 0.3 ? 0 : elapsedFrac < 0.7 ? 1 : 2;
-      if(svgWave.dataset.wavePhase !== String(phase)) {
-        svgWave.dataset.wavePhase = String(phase);
-        if(phase === 0) { svgWave.style.height = "130px"; svgWave.style.opacity = "0.5"; }
-        else if(phase === 1) { svgWave.style.height = "100px"; svgWave.style.opacity = "0.4"; }
-        else { svgWave.style.height = "40px"; svgWave.style.opacity = "0.2"; }
-      }
-    }
-
     const fillEl = document.getElementById('rideProgressFill'), textEl = document.getElementById('rideText'), iconEl = document.getElementById('rideIcon');
     if(fillEl) fillEl.style.width = `${elapsedFrac*100}%`;
     if(textEl) textEl.innerText = `${mm}:${ss}`;
