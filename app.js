@@ -1323,21 +1323,20 @@ function renderHeatmapCalendar(logsArray) {
       const today = new Date();
       today.setHours(0,0,0,0);
 
-      let startDate = new Date(today);
+      // Always show minimum 28 days, extend up to 56 based on actual data range
+      let rangeDays = 27;
       if (logsArray.length > 0) {
         const oldest = new Date(logsArray[0].timestamp);
         oldest.setHours(0,0,0,0);
-        const numDays = Math.round((today - oldest) / 86400000) + 1;
-        startDate.setDate(today.getDate() - Math.min(Math.max(numDays, 7), 56) + 1);
-      } else {
-        startDate.setDate(today.getDate() - 27);
+        const dataDays = Math.round((today - oldest) / 86400000) + 1;
+        rangeDays = Math.max(27, Math.min(dataDays, 55));
       }
+      const startDate = new Date(today);
+      startDate.setDate(today.getDate() - rangeDays);
 
       let dailyCounts = {};
-      let dayLabels = {};
       for (let d = new Date(startDate); d <= today; d.setDate(d.getDate() + 1)) {
         dailyCounts[d.toDateString()] = 0;
-        dayLabels[d.toDateString()] = d.toLocaleDateString('en-US', { weekday: 'narrow' });
       }
 
       logsArray.forEach(l => {
