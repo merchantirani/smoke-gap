@@ -66,7 +66,7 @@ let sosTimer = null;
 let sosSecs = 15;
 
 function hashPin(p) { let h = 0; for (let i = 0; i < p.length; i++) { h = ((h << 5) - h) + p.charCodeAt(i); h |= 0; } return h.toString(36); }
-function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function esc(s) { return String(s ?? '').replace(/[&<>"'`]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','`':'&#96;'}[c])); }
 
 let storedPinHash = localStorage.getItem('smoke_pin_hash');
 let hasPin = !!storedPinHash;
@@ -83,6 +83,7 @@ let takeoverCountdown = 6;
 let historyRenderLimit = 30;
 
 let currentWatchStyle = parseInt(localStorage.getItem('smoke_watch_style')) || 1;
+if (currentWatchStyle < 1 || currentWatchStyle > 3) currentWatchStyle = 1;
 let touchStartXCoord = 0;
 
 function touchStartX(e) {
@@ -182,8 +183,10 @@ window.cancelHold = function(e) {
   if(iconEl) { iconEl.classList.add('text-gray-400'); iconEl.classList.remove('text-red-500'); }
 }
 
-Chart.defaults.color = '#64748B';
-Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif';
+if (typeof Chart !== 'undefined') {
+  try { Chart.defaults.color = '#64748B'; } catch(e) {}
+  try { Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif'; } catch(e) {}
+}
 const crosshairPlugin = { id: 'crosshair', afterDraw: chart => { if (chart.tooltip?._active?.length && (chart.config.type === 'line' || chart.config.type === 'bar')) { const activePoint = chart.tooltip._active[0]; const ctx = chart.ctx; const x = activePoint.element.x; ctx.save(); ctx.beginPath(); ctx.moveTo(x, chart.scales.y.top); ctx.lineTo(x, chart.scales.y.bottom); ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)'; ctx.setLineDash([4, 4]); ctx.stroke(); ctx.restore(); } } };
 const centerTextPlugin = { id: 'centerText', beforeDraw: chart => { if (chart.config.type === 'doughnut') { const ctx = chart.ctx; ctx.restore(); let text = ""; if (chart.canvas.id === 'chart4') { const smoked = chart.data.datasets[0].data[0] || 0; const resisted = chart.data.datasets[0].data[1] || 0; const total = smoked + resisted; text = total > 0 ? Math.round((resisted/total)*100) + "%" : "0%"; } else { const total = chart.data.datasets[0].data.reduce((a,b)=>a+b, 0); text = total > 0 ? total + " Logs" : "No Data"; } ctx.font = "bold " + (chart.canvas.id === 'chart4' ? '26px' : '16px') + " sans-serif"; const x = chart.chartArea.left + (chart.chartArea.right - chart.chartArea.left) / 2; const y = chart.chartArea.top + (chart.chartArea.bottom - chart.chartArea.top) / 2; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = (isLightTheme()) ? "#64748B" : "#F3F4F6"; ctx.fillText(text, x, y); ctx.save(); } } };
 
@@ -210,8 +213,9 @@ window.onload = () => {
     });
   } catch(e) {}
   updateCostPerCigDisplay();
-  
-  loadChartOrder(); initDragAndDrop(); renderTriggerSettingsList();
+
+  try { loadChartOrder(); } catch(e) { console.warn("Chart order load failed", e); }
+  try { initDragAndDrop(); } catch(e) { console.warn("Drag-and-drop init failed", e); } renderTriggerSettingsList();
   
   const filterSelect = document.getElementById('historyTagFilter');
   if(filterSelect) {
@@ -504,7 +508,7 @@ function checkPeakNudge() {
 
 function enterPin(n) {
   if(enteredPin.length < 4) { enteredPin += n; document.querySelectorAll('.pin-dot').forEach((el, i) => { el.classList.toggle('bg-gray-400', i < enteredPin.length); el.classList.toggle('bg-gray-500', i >= enteredPin.length); }); }
-  if(enteredPin.length === 4) { setTimeout(() => { if(hashPin(enteredPin) === storedPinHash) { document.getElementById('lockScreen').classList.add('hidden'); bootCore(); } else { showToast("Wrong PIN"); shakePinDots(); clearPin(); } }, 200); }
+  if(enteredPin.length === 4) { const pinCheck = enteredPin; setTimeout(() => { if(hashPin(pinCheck) === storedPinHash) { document.getElementById('lockScreen').classList.add('hidden'); bootCore(); } else { showToast("Wrong PIN"); shakePinDots(); clearPin(); } }, 200); }
 }
 function clearPin() { enteredPin = ""; document.querySelectorAll('.pin-dot').forEach(el => { el.classList.remove('bg-gray-400'); el.classList.add('bg-gray-500'); }); }
 function shakePinDots() { const d = document.getElementById('pinDots'); if(!d) return; d.classList.add('shake-anim'); setTimeout(() => d.classList.remove('shake-anim'), 400); }
@@ -544,8 +548,10 @@ function handleLogClick() {
   checkLock(); startSmokeTakeover(newLogIdx, gap, waveWasActive);
 
   if(navigator.geolocation) {
+    const logTimestamp = now;
     navigator.geolocation.getCurrentPosition(p => {
-      if(logs[newLogIdx]) { logs[newLogIdx].lat = p.coords.latitude; logs[newLogIdx].lng = p.coords.longitude; localStorage.setItem('smoke_logs', JSON.stringify(logs)); if(!document.getElementById('page-insights').classList.contains('hidden')) renderHeatMap('mapContainer', getFilteredLogs()); }
+      const entry = logs.find(l => l.timestamp === logTimestamp);
+      if(entry) { entry.lat = p.coords.latitude; entry.lng = p.coords.longitude; localStorage.setItem('smoke_logs', JSON.stringify(logs)); if(!document.getElementById('page-insights').classList.contains('hidden')) renderHeatMap('mapContainer', getFilteredLogs()); }
     }, () => {}, {timeout: 10000, maximumAge: 60000});
   }
 }
@@ -604,7 +610,7 @@ function renderTakeoverTags() {
     const isActive = currentSelectedTags.includes(t);
     const activeClasses = isActive ? 'bg-amber-500/20 border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)]' : 'bg-white/5 border-white/10';
     const textStyle = isActive ? 'style="color: var(--accent);"' : 'style="color: var(--text-main);"';
-    const safeId = 'tagBtn_' + btoa(unescape(encodeURIComponent(t))).replace(/=/g, '');
+    const safeId = 'tagBtn_' + t.replace(/[^a-zA-Z0-9]/g, '_').replace(/_{2,}/g, '_').replace(/_+$/, '').substring(0, 50) || 'trigger';
     return `<button id="${safeId}" onclick="window.toggleTakeoverTag('${esc(t)}')" class="px-4 py-2.5 rounded-full border text-xs font-semibold backdrop-blur-md transition-all active:scale-95 ${activeClasses}" ${textStyle}>${esc(t)}</button>`;
   }).join('');
 }
@@ -615,7 +621,7 @@ function toggleTakeoverTag(t) {
   if (isAdding) currentSelectedTags.push(t);
   else currentSelectedTags = currentSelectedTags.filter(tag => tag !== t);
 
-  const safeId = 'tagBtn_' + btoa(unescape(encodeURIComponent(t))).replace(/=/g, '');
+  const safeId = 'tagBtn_' + t.replace(/[^a-zA-Z0-9]/g, '_').replace(/_{2,}/g, '_').replace(/_+$/, '').substring(0, 50) || 'trigger';
   const btn = document.getElementById(safeId);
   if (btn) {
     if (isAdding) {
@@ -689,7 +695,7 @@ function checkLock() {
     btn.disabled=true; btn.style.opacity = '0.5';
     if(cooldownTimer) clearInterval(cooldownTimer);
     cooldownTimer = setInterval(() => {
-      let rem = Math.ceil((lockEndTime - new Date().getTime())/1000); const textEl = document.getElementById('holdText');
+      let rem = Math.max(0, Math.ceil((lockEndTime - new Date().getTime())/1000)); const textEl = document.getElementById('holdText');
       if(rem<=0) { clearInterval(cooldownTimer); btn.disabled=false; btn.style.opacity = '1'; if(textEl) textEl.innerText='Hold to Smoke'; }
       else if(textEl) textEl.innerText=`COOLDOWN (${Math.floor(rem/60)}:${(rem%60).toString().padStart(2,'0')})`;
     }, 1000);
@@ -1313,48 +1319,63 @@ function renderHeatmapCalendar(logsArray) {
     try {
       const container = document.getElementById('calendarHeatmap');
       if(!container) return;
-      
-      let dailyCounts = {};
+
       const today = new Date();
       today.setHours(0,0,0,0);
-      
-      for (let i = 27; i >= 0; i--) {
-          let d = new Date(today);
-          d.setDate(today.getDate() - i);
-          dailyCounts[d.toDateString()] = 0;
+
+      let startDate = new Date(today);
+      if (logsArray.length > 0) {
+        const oldest = new Date(logsArray[0].timestamp);
+        oldest.setHours(0,0,0,0);
+        const numDays = Math.round((today - oldest) / 86400000) + 1;
+        startDate.setDate(today.getDate() - Math.min(Math.max(numDays, 7), 56) + 1);
+      } else {
+        startDate.setDate(today.getDate() - 27);
       }
-      
+
+      let dailyCounts = {};
+      let dayLabels = {};
+      for (let d = new Date(startDate); d <= today; d.setDate(d.getDate() + 1)) {
+        dailyCounts[d.toDateString()] = 0;
+        dayLabels[d.toDateString()] = d.toLocaleDateString('en-US', { weekday: 'narrow' });
+      }
+
       logsArray.forEach(l => {
           let dStr = new Date(l.timestamp).toDateString();
           if(dailyCounts[dStr] !== undefined) dailyCounts[dStr]++;
       });
 
-      let maxVal = Math.max(...Object.values(dailyCounts));
-      if (maxVal === 0) maxVal = 1;
+      let maxVal = Math.max(...Object.values(dailyCounts), 1);
 
       let html = '';
       let dayCount = 0;
       let currentCol = '';
-      
+
+      const weekLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      html += `<div class="heat-col" style="gap: 2px;">` + weekLabels.map(d => `<span class="text-[7px] font-bold text-gray-500" style="height:13px;display:flex;align-items:center">${d}</span>`).join('') + `</div>`;
+
       Object.keys(dailyCounts).forEach((dStr) => {
           const count = dailyCounts[dStr];
           let intensity = 0;
           if (count > 0) {
               let ratio = count / maxVal;
-              intensity = Math.ceil(ratio * 4); 
+              intensity = Math.ceil(ratio * 4);
               if(intensity === 0) intensity = 1;
           }
-          
-          currentCol += `<div class="heat-cell" style="background-color: var(--heat-${intensity});" title="${count} cigarettes on ${dStr}"></div>`;
+
+          currentCol += `<div class="heat-cell" style="background-color: var(--heat-${intensity});" title="${count} cigarette${count !== 1 ? 's' : ''} on ${dStr}"></div>`;
           dayCount++;
-          
+
           if (dayCount % 7 === 0) {
               html += `<div class="heat-col">${currentCol}</div>`;
               currentCol = '';
           }
       });
-      
-      if (currentCol !== '') html += `<div class="heat-col">${currentCol}</div>`;
+
+      if (currentCol !== '') {
+        while (dayCount % 7 !== 0) { currentCol += `<div class="heat-cell" style="visibility:hidden;"></div>`; dayCount++; }
+        html += `<div class="heat-col">${currentCol}</div>`;
+      }
       container.innerHTML = html;
     } catch(e) {}
 }
