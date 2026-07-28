@@ -26,8 +26,10 @@ if (settings.autoReduce) {
         localStorage.setItem('smoke_last_reduce_date', nowStr);
     } else {
         let diffDays = Math.floor((new Date() - new Date(lastReduceDate)) / (1000 * 60 * 60 * 24));
-        if (diffDays >= 7 && settings.dailyLimit > 1) {
-            settings.dailyLimit -= 1;
+        let weeksMissed = Math.floor(diffDays / 7);
+        if (weeksMissed > 0 && settings.dailyLimit > 1) {
+            let decrement = Math.min(weeksMissed, settings.dailyLimit - 1);
+            settings.dailyLimit -= decrement;
             localStorage.setItem('smoke_settings', JSON.stringify(settings));
             localStorage.setItem('smoke_last_reduce_date', nowStr);
         }
@@ -44,8 +46,9 @@ try { waves = JSON.parse(localStorage.getItem('smoke_waves')) || []; if(!Array.i
 
 let waveAttempts = [];
 try { waveAttempts = JSON.parse(localStorage.getItem('smoke_wave_attempts')) || []; if(!Array.isArray(waveAttempts)) waveAttempts = []; } catch(e) { waveAttempts = []; }
-function logWaveAttempt(outcome) {
-  waveAttempts.push({ timestamp: Date.now(), outcome, mins: Math.round(waveDurationMs / 60000) });
+function logWaveAttempt(outcome, customDurationMs) {
+  const durMs = customDurationMs !== undefined ? customDurationMs : waveDurationMs;
+  const mins = customDurationMs !== undefined ? +(durMs / 60000).toFixed(2) : Math.round(durMs / 60000);
   if(waveAttempts.length > 500) waveAttempts = waveAttempts.slice(-500);
   localStorage.setItem('smoke_wave_attempts', JSON.stringify(waveAttempts));
 }
@@ -55,7 +58,7 @@ let waveEndTime = parseInt(localStorage.getItem('smoke_wave_end')) || 0;
 let waveDurationMs = parseInt(localStorage.getItem('smoke_wave_duration')) || 600000;
 let lastPeakNudgeDate = localStorage.getItem('smoke_peak_nudge') || '';
 
-let gapWidenedNotified = false;
+let gapWidenedNotified = localStorage.getItem('smoke_gap_widened_notified') === 'true';
 let inactivityNotified = false;
 
 let sosTimer = null;
@@ -320,7 +323,7 @@ function closeSosInterrupter(cravingPassed) {
   if(cravingPassed) {
     waves.push(Date.now());
     localStorage.setItem('smoke_waves', JSON.stringify(waves));
-    logWaveAttempt('won');
+    logWaveAttempt('won', 15000);
     showToast("🛡️ Craving Defeated! +1 Shield");
     if(window.confetti) confetti({particleCount: 80, spread: 60, origin: {y: 0.6}});
     try { updateUI(); } catch(e){}
@@ -348,6 +351,7 @@ function bootCore() {
 
       if (prevGapMs > 0 && diff >= prevGapMs && !gapWidenedNotified) {
         gapWidenedNotified = true;
+        localStorage.setItem('smoke_gap_widened_notified', 'true');
         sendSystemNotification("🎉 Gap Widened!", `Great progress! You just beat your previous gap (${formatGap(Math.round(prevGapMs/60000))}). You're setting a personal best.`, 'notifGapWidened');
       }
       if (avgGapMs > 0 && diff >= avgGapMs * 1.5 && waveEndTime <= 0 && !inactivityNotified) {
@@ -359,7 +363,7 @@ function bootCore() {
 
       updateHeroDisplay(diff, prevGapMs, avgGapMs);
 
-    } catch(err) {}
+    } catch(err) { console.error('Main timer error:', err); }
   }, 1000);
 }
 
@@ -510,6 +514,7 @@ function savePinSetup() { const p = document.getElementById('pinSetupInput').val
 function handleLogClick() {
   gapWidenedNotified = false;
   inactivityNotified = false;
+  localStorage.setItem('smoke_gap_widened_notified', 'false');
 
   let waveWasActive = false;
   if(waveEndTime > 0) { 
@@ -627,7 +632,7 @@ function toggleTakeoverTag(t) {
 function cancelSmokeTakeover(e) {
   if(e) e.stopPropagation(); if(takeoverTimer) clearInterval(takeoverTimer);
   const overlay = document.getElementById('smokeTakeover'); overlay.classList.remove('opacity-100'); overlay.classList.add('opacity-0');
-  if (editingLogIdx === logs.length - 1) {
+  if (editingLogIdx >= 0 && editingLogIdx === logs.length - 1 && logs[editingLogIdx] && Array.isArray(logs[editingLogIdx].tags) && logs[editingLogIdx].tags.length === 0 && logs[editingLogIdx].lat === null) {
     logs.pop(); localStorage.setItem('smoke_logs', JSON.stringify(logs));
     lockEndTime = 0; localStorage.setItem('smoke_lock_end', lockEndTime);
     try { updateUI(); } catch(err){} checkLock();
@@ -822,7 +827,12 @@ function updateSettings() {
   settings.theme = document.getElementById('themeSelect').value; settings.timeFormat = document.getElementById('timeFormatSelect').value; settings.currency = document.getElementById('currencySelect').value;
   settings.dailyLimit = parseInt(document.getElementById('dailyLimitInput').value) || 15; settings.packPrice = parseFloat(document.getElementById('packPriceInput').value) || 20; settings.packSize = parseInt(document.getElementById('packSizeInput').value) || 20;
   settings.lockSecs = parseInt(document.getElementById('lockSecsInput').value) || 300; settings.haptics = document.getElementById('hapticsInput').checked;
-  settings.motivation = document.getElementById('motivationInput').value; settings.autoReduce = document.getElementById('autoReduceInput').checked;
+  settings.motivation = document.getElementById('motivationInput').value;
+  const prevAutoReduce = settings.autoReduce;
+  settings.autoReduce = document.getElementById('autoReduceInput').checked;
+  if (settings.autoReduce && !prevAutoReduce) {
+    localStorage.setItem('smoke_last_reduce_date', new Date().toDateString());
+  }
   if (settings.packSize <= 0) settings.packSize = 20;
   localStorage.setItem('smoke_settings', JSON.stringify(settings)); 
   if (window.posthog) posthog.capture('settings_updated', { theme: settings.theme, dailyLimit: settings.dailyLimit, autoReduce: settings.autoReduce });
@@ -1073,6 +1083,7 @@ function exportJSON() {
 
 function importJSON(event) {
   const file = event.target.files && event.target.files[0]; if(!file) return;
+  showToast("Restoring data, please wait...");
   const reader = new FileReader();
   reader.onload = (e) => {
     try {
@@ -1205,7 +1216,7 @@ window.loadMoreHistory = function() {
     renderHistory('fullHistoryList');
 }
 
-function renderHistory(tId='fullHistoryList') {
+function renderHistory(tId = 'fullHistoryList', homeLimit = 3) {
   try {
     const c = document.getElementById(tId); if(!c) return;
     if(!logs || logs.length===0) { c.innerHTML="<p class='text-center py-6 text-xs flex flex-col items-center gap-2' style='color: var(--text-muted);'><i data-lucide='inbox' class='w-6 h-6 opacity-50'></i> No logs recorded yet.</p>"; if(window.lucide) window.lucide.createIcons(); return; }
@@ -1223,7 +1234,7 @@ function renderHistory(tId='fullHistoryList') {
         if(filteredLogs.length===0) { c.innerHTML="<p class='text-center py-6 text-xs flex flex-col items-center gap-2' style='color: var(--text-muted);'><i data-lucide='filter' class='w-6 h-6 opacity-50'></i> No logs match this tag.</p>"; document.getElementById('historyLoadMore').classList.add('hidden'); if(window.lucide) window.lucide.createIcons(); return; }
     }
 
-    let mappedLogs = tId === 'homeRecentLogs' ? filteredLogs.slice(0, 3) : filteredLogs.slice(0, historyRenderLimit);
+    let mappedLogs = tId === 'homeRecentLogs' ? filteredLogs.slice(0, homeLimit) : filteredLogs.slice(0, historyRenderLimit);
     
     const btnBox = document.getElementById('historyLoadMore');
     if (btnBox && tId === 'fullHistoryList') {
@@ -1287,9 +1298,10 @@ function renderHistoryItem(l) {
 
 function getFilteredLogs() {
   const filter = document.getElementById('insightsDateFilter').value, now = new Date();
-  if(filter === 'today') return logs.filter(l => l.timestamp >= new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime());
-  if(filter === '7days') return logs.filter(l => l.timestamp >= new Date(now.getTime() - (7 * 86400000)).getTime());
-  if(filter === '1month') return logs.filter(l => l.timestamp >= new Date(now.getTime() - (30 * 86400000)).getTime());
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  if(filter === 'today') return logs.filter(l => l.timestamp >= todayStart);
+  if(filter === '7days') return logs.filter(l => l.timestamp >= todayStart - (6 * 86400000));
+  if(filter === '1month') return logs.filter(l => l.timestamp >= todayStart - (29 * 86400000));
   return logs;
 }
 function setBadge(id, text, colorClass) { const b = document.getElementById(id); if(b) { if(text) { b.innerText = text; b.className = `text-[9px] font-bold px-2 py-0.5 rounded border ${colorClass}`; b.classList.remove('hidden'); } else b.classList.add('hidden'); } }
@@ -1547,7 +1559,7 @@ function renderAllCharts() {
     }
   } catch(e){}
   
-  renderHeatmapCalendar(logs);
+  renderHeatmapCalendar(activeLogs);
   renderHeatMap('mapContainer', activeLogs);
 }
 
