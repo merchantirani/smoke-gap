@@ -929,6 +929,7 @@ function renderWeeklyPaceChart() {
       else color = 'var(--accent)';
     } else if(d.isToday) { color = 'var(--accent)'; }
     barsHtml += `<div class="flex-1 flex flex-col items-center justify-end gap-1 h-full">
+      <span class="numeric-display text-[10px] font-black" style="color: ${d.isToday ? 'var(--text-main)' : 'var(--text-muted)'};">${d.count}</span>
       <div class="w-full rounded-t-md transition-all duration-500" style="height: ${heightPct}%; background: ${color}; min-height: 4px;"></div>
       <span class="text-[8px] font-bold" style="color: ${d.isToday ? 'var(--text-main)' : 'var(--text-muted)'};">${d.label}</span>
     </div>`;
