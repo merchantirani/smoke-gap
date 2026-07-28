@@ -895,8 +895,55 @@ function updateUI() {
   }
 
   computeMomentumScore(today, todayWaves);
+  renderWeeklyPaceChart();
   checkBackupReminder();
   renderHistory('homeRecentLogs', 3);
+}
+
+function renderWeeklyPaceChart() {
+  const barsRow = document.getElementById('paceBarsRow');
+  const labelEl = document.getElementById('paceCompareLabel');
+  if(!barsRow || !labelEl) return;
+
+  const days = [];
+  for(let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i); d.setHours(0,0,0,0);
+    const dStr = d.toDateString();
+    const count = logs.filter(l => new Date(l.timestamp).toDateString() === dStr).length;
+    days.push({ count, isToday: i === 0, label: d.toLocaleDateString([], {weekday:'narrow'}) });
+  }
+
+  const maxCount = Math.max(1, ...days.map(d => d.count));
+  const priorDays = days.slice(0, 6);
+  const priorAvg = priorDays.reduce((a,b) => a + b.count, 0) / 6;
+  const todayCount = days[6].count;
+  const hasEnoughHistory = logs.length >= 8 && priorDays.filter(d => d.count > 0).length >= 3;
+
+  let barsHtml = '';
+  days.forEach(d => {
+    const heightPct = Math.max(8, Math.round((d.count / maxCount) * 100));
+    let color = 'var(--input-bg)';
+    if(d.isToday && hasEnoughHistory) {
+      if(todayCount < priorAvg * 0.85) color = '#10B981';
+      else if(todayCount > priorAvg * 1.15) color = '#F59E0B';
+      else color = 'var(--accent)';
+    } else if(d.isToday) { color = 'var(--accent)'; }
+    barsHtml += `<div class="flex-1 flex flex-col items-center justify-end gap-1 h-full">
+      <div class="w-full rounded-t-md transition-all duration-500" style="height: ${heightPct}%; background: ${color}; min-height: 4px;"></div>
+      <span class="text-[8px] font-bold" style="color: ${d.isToday ? 'var(--text-main)' : 'var(--text-muted)'};">${d.label}</span>
+    </div>`;
+  });
+  barsRow.innerHTML = barsHtml;
+
+  if(!hasEnoughHistory) {
+    labelEl.innerText = 'Building Pattern'; labelEl.style.background = 'var(--input-bg)'; labelEl.style.color = 'var(--text-muted)';
+  } else if(todayCount < priorAvg * 0.85) {
+    labelEl.innerText = '🟢 Better than usual'; labelEl.style.background = 'rgba(16,185,129,0.12)'; labelEl.style.color = '#10B981';
+  } else if(todayCount > priorAvg * 1.15) {
+    labelEl.innerText = '🟠 Faster than usual'; labelEl.style.background = 'rgba(245,158,11,0.12)'; labelEl.style.color = '#F59E0B';
+  } else {
+    labelEl.innerText = 'On your normal pace'; labelEl.style.background = 'var(--input-bg)'; labelEl.style.color = 'var(--text-main)';
+  }
 }
 
 function computeMomentumScore(today, todayWaves) {
@@ -1193,7 +1240,7 @@ function renderHistory(tId='fullHistoryList') {
         let headerLabel = k;
         if (k === todayStr) headerLabel = 'TODAY'; else if (k === yestStr) headerLabel = 'YESTERDAY';
         else { const d = new Date(k); headerLabel = `${d.toLocaleDateString('en-US', {weekday:'short'}).toUpperCase()}, ${d.toLocaleDateString('en-US', {month:'short', day:'numeric'}).toUpperCase()}`; }
-        html += `<div class="pt-4 pb-1"><h4 class="text-[10px] font-bold uppercase tracking-widest text-gray-500">${headerLabel}</h4></div>`;
+        html += `<div class="pt-4 pb-1 flex items-center justify-between"><h4 class="text-[10px] font-bold uppercase tracking-widest text-gray-500">${headerLabel}</h4><span class="text-[10px] font-black px-2 py-0.5 rounded-full" style="background: var(--input-bg); color: var(--accent);">${groups[k].length} ${groups[k].length === 1 ? 'cig' : 'cigs'}</span></div>`;
         html += `<div class="space-y-3">` + groups[k].map(l => renderHistoryItem(l)).join('') + `</div>`;
       }
       c.innerHTML = html;
