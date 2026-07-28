@@ -363,6 +363,20 @@ function bootCore() {
   }, 1000);
 }
 
+function updateFlipUnit(id, value) {
+  const el = document.getElementById(id);
+  if(!el) return;
+  const face = el.querySelector('.flip-face');
+  if(!face) return;
+  if(face.dataset.val !== value) {
+    face.dataset.val = value;
+    face.innerText = value;
+    el.classList.remove('flip-anim');
+    void el.offsetWidth;
+    el.classList.add('flip-anim');
+  }
+}
+
 function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
   const timeStr = `${Math.floor(diff/3600000).toString().padStart(2,'0')}:${Math.floor((diff%3600000)/60000).toString().padStart(2,'0')}:${Math.floor((diff%60000)/1000).toString().padStart(2,'0')}`;
   
@@ -370,6 +384,13 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
     const sw = document.getElementById('stopwatch'+i);
     if(sw) sw.innerText = timeStr;
   }
+
+  const hh = Math.floor(diff/3600000).toString().padStart(2,'0');
+  const mm = Math.floor((diff%3600000)/60000).toString().padStart(2,'0');
+  const ss = Math.floor((diff%60000)/1000).toString().padStart(2,'0');
+  updateFlipUnit('flipHH', hh);
+  updateFlipUnit('flipMM', mm);
+  updateFlipUnit('flipSS', ss);
 
   let pct = 0, bonusPct = 0, isVictory = false, extraMins = 0, remMins = 0;
   if(avgGapMs > 0) {
@@ -405,26 +426,18 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
     }
   }
 
-  const ringFill = document.getElementById('heroRingFill');
   const badge2 = document.getElementById('heroRecordBadge2');
-  const status2 = document.getElementById('heroRingStatus');
   const sub2 = document.getElementById('heroRingSub');
-  
-  if(ringFill && avgGapMs > 0) {
-      let ringPct = isVictory ? Math.min(100, 70 + bonusPct) : pct;
-      const offset = 314.16 - (314.16 * (ringPct / 100));
-      ringFill.style.strokeDashoffset = offset;
 
+  if(sub2 && avgGapMs > 0) {
       if(isVictory) {
-          ringFill.style.stroke = '#10B981'; ringFill.style.filter = "drop-shadow(0 0 8px rgba(16, 185, 129, 0.5))";
           if(badge2) badge2.classList.remove('hidden');
-          if(status2) { status2.innerText = "Victory Zone"; status2.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"; }
-          if(sub2) sub2.innerText = `Target Beaten: +${formatGap(extraMins)}`;
+          sub2.innerText = `Target Beaten: +${formatGap(extraMins)}`;
+          sub2.className = "mt-2.5 text-[10px] font-bold text-emerald-500 leading-tight";
       } else {
-          ringFill.style.stroke = 'var(--accent)'; ringFill.style.filter = "drop-shadow(0 0 8px var(--accent-glow))";
           if(badge2) badge2.classList.add('hidden');
-          if(status2) { status2.innerText = "Pacing"; status2.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20"; }
-          if(sub2) sub2.innerText = `Target: ${formatGap(Math.round(avgGapMs/60000))} (${remMins}m left)`;
+          sub2.innerText = `Target: ${formatGap(Math.round(avgGapMs/60000))} (${remMins}m left)`;
+          sub2.className = "mt-2.5 text-[10px] font-bold text-amber-500 leading-tight";
       }
   }
 
