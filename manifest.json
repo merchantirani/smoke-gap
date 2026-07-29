@@ -1,0 +1,25 @@
+{
+  "name": "pause — Widen the gap",
+  "short_name": "pause",
+  "description": "Track your smoking habit, widen the gap between cigarettes, and build healthier patterns.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F8FAFC",
+  "theme_color": "#F8FAFC",
+  "categories": ["health", "lifestyle"],
+  "icons": [
+    {
+      "src": "icons/pause_icon_192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/pause_icon_512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -19,6 +19,60 @@ if ('serviceWorker' in navigator) {
   }).catch(err => console.log("SW failed", err));
 }
 
+// PWA Install Prompt
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  setTimeout(() => {
+    if (deferredInstallPrompt && logs.length >= 3) {
+      showInstallBanner();
+    }
+  }, 5000);
+});
+
+window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
+  const banner = document.getElementById('installBanner');
+  if (banner) banner.classList.add('hidden');
+  showToast('pause installed! 🎉');
+});
+
+function showInstallBanner() {
+  const existing = document.getElementById('installBanner');
+  if (existing) return;
+  const banner = document.createElement('div');
+  banner.id = 'installBanner';
+  banner.className = 'fixed bottom-36 left-4 right-4 z-[10002] premium-card p-4 flex items-center gap-3 mx-auto max-w-md shadow-2xl';
+  banner.style.background = 'var(--modal-bg)';
+  banner.innerHTML = `
+    <div class="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0" style="background: var(--accent-glow);">
+      <i data-lucide="download" class="w-5 h-5" style="color: var(--accent);"></i>
+    </div>
+    <div class="flex-1 min-w-0">
+      <p class="text-xs font-bold" style="color: var(--text-main);">Install pause</p>
+      <p class="text-[10px]" style="color: var(--text-muted);">Add to your home screen for quick access</p>
+    </div>
+    <button onclick="window.installApp()" class="px-4 py-2 rounded-xl text-xs font-bold text-white shrink-0 active:scale-95 transition-transform" style="background: var(--accent);">Install</button>
+    <button onclick="this.closest('#installBanner').remove()" class="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style="color: var(--text-muted);"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+  `;
+  document.body.appendChild(banner);
+  if (window.lucide) window.lucide.createIcons();
+}
+
+window.installApp = function() {
+  if (!deferredInstallPrompt) { showToast('Already installed or not supported'); return; }
+  deferredInstallPrompt.prompt();
+  deferredInstallPrompt.userChoice.then(result => {
+    if (result.outcome === 'accepted') {
+      showToast('Installing pause...');
+    }
+    deferredInstallPrompt = null;
+    const banner = document.getElementById('installBanner');
+    if (banner) banner.remove();
+  });
+}
+
 let lastReduceDate = localStorage.getItem('smoke_last_reduce_date');
 if (settings.autoReduce) {
     let nowStr = new Date().toDateString();
@@ -224,6 +278,51 @@ function bootApp() {
 
   if(window.lucide) window.lucide.createIcons();
   setTimeout(() => { const skel = document.getElementById('appSkeleton'); if(skel) { skel.style.opacity = '0'; setTimeout(()=>skel.remove(), 500); } }, 400);
+
+  // Check onboarding
+  const onboardingDone = localStorage.getItem('smoke_onboarding_done');
+  if (!onboardingDone && logs.length === 0) {
+    showOnboarding();
+    return;
+  }
+
+  if(hasPin) { document.getElementById('lockScreen').classList.remove('hidden'); document.getElementById('pinStatusBtn').innerText = "Remove PIN"; } else { bootCore(); }
+}
+
+// Onboarding state
+let onboardingStep = 1;
+
+function showOnboarding() {
+  document.getElementById('onboardingOverlay').classList.remove('hidden');
+  if(window.lucide) window.lucide.createIcons();
+}
+
+window.onboardingNext = function() {
+  if (onboardingStep < 4) {
+    document.getElementById('onboardSlide' + onboardingStep).classList.add('hidden');
+    document.getElementById('onboardDot' + onboardingStep).className = 'w-2.5 h-2.5 rounded-full transition-all';
+    document.getElementById('onboardDot' + onboardingStep).style.backgroundColor = 'rgba(156,163,175,0.3)';
+    onboardingStep++;
+    document.getElementById('onboardSlide' + onboardingStep).classList.remove('hidden');
+    document.getElementById('onboardDot' + onboardingStep).className = 'w-2.5 h-2.5 rounded-full transition-all';
+    document.getElementById('onboardDot' + onboardingStep).style.backgroundColor = 'var(--accent)';
+    document.getElementById('onboardDot' + onboardingStep).style.width = '20px';
+
+    if (onboardingStep === 4) {
+      document.getElementById('onboardNextBtn').innerText = 'Get Started';
+    }
+  } else {
+    finishOnboarding();
+  }
+}
+
+window.onboardingSkip = function() {
+  finishOnboarding();
+}
+
+function finishOnboarding() {
+  localStorage.setItem('smoke_onboarding_done', 'true');
+  document.getElementById('onboardingOverlay').classList.add('hidden');
   if(hasPin) { document.getElementById('lockScreen').classList.remove('hidden'); document.getElementById('pinStatusBtn').innerText = "Remove PIN"; } else { bootCore(); }
 }
 
@@ -381,6 +480,13 @@ function actuallyLogCigarette() {
 
 function bootCore() {
   window.switchWatchStyle(currentWatchStyle);
+
+  // Restore last active tab
+  const savedTab = localStorage.getItem('smoke_active_tab');
+  if (savedTab && ['tracker','insights','history','settings'].includes(savedTab)) {
+    window.switchTab(savedTab);
+  }
+
   try { updateUI(); } catch(e) { console.error("updateUI error on boot", e); }
   checkLock(); checkWave();
   setTimeout(() => showDailyRecap(), 1000);
@@ -817,6 +923,7 @@ function switchTab(t) {
     if(activeBtn) activeBtn.classList.add('nav-active');
 
     if (window.posthog) posthog.capture('tab_switched', { tab_name: t });
+    localStorage.setItem('smoke_active_tab', t);
     if(t === 'history') renderHistory('fullHistoryList'); 
     if(t === 'insights') requestAnimationFrame(() => renderAllCharts());
     if(window.lucide) window.lucide.createIcons();
@@ -1495,6 +1602,7 @@ function renderHistoryItem(l) {
 
   return `
   <div onclick="window.openTriggerModal(${l.origIdx})" class="premium-card p-4 flex justify-between items-center relative overflow-hidden cursor-pointer active:scale-[0.98] transition-transform hover:bg-gray-500/5">
+    <button onclick="event.stopPropagation();window.deleteLogFromHistory(${l.origIdx})" class="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center active:scale-90 transition-all z-10 hover:bg-red-500/10" style="color: rgba(239,68,68,0.4);" title="Delete this log"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
     <div class="flex items-start gap-3 flex-1 min-w-0 pr-3">
       <div class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${trendClass}"><i data-lucide="${trendIcon}" class="w-3.5 h-3.5"></i></div>
       <div class="flex-1 min-w-0">
@@ -1831,4 +1939,15 @@ window.closePinSetupModal = closePinSetupModal; window.savePinSetup = savePinSet
 window.requestNotifPermission = requestNotifPermission; window.toggleNotifSetting = toggleNotifSetting;
 window.closeSosInterrupter = closeSosInterrupter;
 
+
+
+window.deleteLogFromHistory = function(idx) {
+  if (logs[idx]) {
+    showConfirm("Delete this log?", "This cannot be undone.", () => {
+      window.undoLog(idx, null);
+      showToast("Log deleted");
+      renderHistory('fullHistoryList');
+    });
+  }
+}
 bootApp();
