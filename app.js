@@ -383,12 +383,15 @@ function bootCore() {
   window.switchWatchStyle(currentWatchStyle);
   try { updateUI(); } catch(e) { console.error("updateUI error on boot", e); }
   checkLock(); checkWave();
+  setTimeout(() => showDailyRecap(), 1000);
   // The interval below handles ongoing updates
   
   if(mainTimer) clearInterval(mainTimer);
   mainTimer = setInterval(() => {
     try {
       checkPeakNudge();
+      updateLastSmokeDisplay();
+
       if(!logs || logs.length === 0) return;
       const diff = new Date().getTime() - logs[logs.length-1].timestamp;
 
@@ -401,6 +404,10 @@ function bootCore() {
         gapWidenedNotified = true;
         localStorage.setItem('smoke_gap_widened_notified', 'true');
         sendSystemNotification("🎉 Gap Widened!", `Great progress! You just beat your previous gap (${formatGap(Math.round(prevGapMs/60000))}). You're setting a personal best.`, 'notifGapWidened');
+	        if (window.confetti) {
+	          confetti({ particleCount: 80, spread: 70, origin: { y: 0.5 } });
+	          setTimeout(() => confetti({ particleCount: 40, spread: 40, origin: { y: 0.6 } }), 200);
+	        }
       }
       if (avgGapMs > 0 && diff >= avgGapMs * 1.5 && waveEndTime <= 0 && !inactivityNotified) {
         inactivityNotified = true;
@@ -709,7 +716,7 @@ function checkLock() {
     if(cooldownTimer) clearInterval(cooldownTimer);
     cooldownTimer = setInterval(() => {
       let rem = Math.max(0, Math.ceil((lockEndTime - new Date().getTime())/1000)); const textEl = document.getElementById('holdText');
-      if(rem<=0) { clearInterval(cooldownTimer); btn.disabled=false; btn.style.opacity = '1'; if(textEl) textEl.innerText='Hold to Smoke'; }
+      if(rem<=0) { clearInterval(cooldownTimer); btn.disabled=false; btn.style.opacity = '1'; if(textEl) textEl.innerText='Hold to Smoke'; if(settings.haptics && navigator.vibrate) navigator.vibrate([30, 50, 30]); showToast("Ready to log 🔓"); }
       else if(textEl) textEl.innerText=`COOLDOWN (${Math.floor(rem/60)}:${(rem%60).toString().padStart(2,'0')})`;
     }, 1000);
   }
@@ -931,6 +938,7 @@ function updateUI() {
   checkBackupReminder();
   renderHistory('homeRecentLogs', 3);
   updateDynamicTagline();
+  updateLastSmokeDisplay();
 }
 
 function renderWeeklyPaceChart() {
@@ -1022,28 +1030,31 @@ function updateDynamicTagline() {
   const tagline = document.getElementById('headerTagline');
   if (!tagline) return;
 
-  const diff = logs.length > 0 ? (new Date().getTime() - logs[logs.length - 1].timestamp) : 0;
-  const prevGapMs = logs.length > 1 && logs[logs.length - 1].gap ? logs[logs.length - 1].gap * 60000 : 0;
+  const today = logs.filter(l => l.timestamp && new Date(l.timestamp).toDateString() === new Date().toDateString());
   const todayWaves = waves.filter(w => new Date(w).toDateString() === new Date().toDateString());
+
+  const lastLog = logs.length > 0 ? logs[logs.length - 1] : null;
+  const lastGap = lastLog && lastLog.gap ? lastLog.gap : null; // gap in minutes
+  const currentGap = lastLog ? Math.round((new Date().getTime() - lastLog.timestamp) / 60000) : 0;
+  const allGaps = logs.map(l => l.gap).filter(g => g !== null && g !== undefined);
+  const avgGap = allGaps.length ? allGaps.reduce((a, b) => a + b, 0) / allGaps.length : 0;
 
   let newText = '';
   let newColor = '';
 
-  if (logs.length === 0) {
-    newText = 'Widen the gap.';
-    newColor = '';
-  } else if (diff > prevGapMs && prevGapMs > 0) {
+  // "You're on fire" — jab short gap ho (jald jald pee raha hai)
+  if (logs.length >= 2 && lastGap !== null && lastGap <= 30) {
     newText = "You're on fire.";
-    newColor = '#F97316';
-    tagline.style.color = '#F97316';
-    tagline.style.textShadow = '0 0 12px rgba(249,115,22,0.3)';
-    return;
+    newColor = '#EF4444';
+  } else if (today.length >= Math.ceil(settings.dailyLimit * 0.8)) {
+    newText = "You're on fire.";
+    newColor = '#EF4444';
+  } else if (today.length === 0 && logs.length > 0 && currentGap > avgGap) {
+    newText = 'Building momentum.';
+    newColor = '#10B981';
   } else if (todayWaves.length >= 2) {
     newText = 'Stronger every wave.';
     newColor = '#0EA5E9';
-  } else if (logs.length >= 3) {
-    newText = 'Building momentum.';
-    newColor = '#10B981';
   } else {
     newText = 'Widen the gap.';
     newColor = '';
@@ -1052,6 +1063,78 @@ function updateDynamicTagline() {
   tagline.innerText = newText;
   tagline.style.color = newColor || '';
   tagline.style.textShadow = newColor ? `0 0 8px ${newColor}40` : 'none';
+}
+
+function updateLastSmokeDisplay() {
+  const row = document.getElementById('lastSmokeRow');
+  const text = document.getElementById('lastSmokeText');
+  const count = document.getElementById('todayCountHeader');
+  if (!row || !text || !count) return;
+
+  if (!logs || logs.length === 0) {
+    row.style.display = 'none';
+    return;
+  }
+
+  row.style.display = 'flex';
+
+  const last = logs[logs.length - 1];
+  const diff = new Date().getTime() - last.timestamp;
+  const mins = Math.floor(diff / 60000);
+
+  let durationStr;
+  if (mins < 1) {
+    durationStr = 'Just now';
+  } else if (mins < 60) {
+    durationStr = `${mins}m ago`;
+  } else {
+    const hours = Math.floor(mins / 60);
+    const remMins = mins % 60;
+    durationStr = remMins > 0 ? `${hours}h ${remMins}m ago` : `${hours}h ago`;
+  }
+
+  text.innerText = `Last: ${durationStr}`;
+
+  // Color code by gap length
+  text.style.color = mins <= 30 ? '#EF4444' : mins <= 120 ? '#F59E0B' : '#10B981';
+  text.style.textShadow = mins <= 30 ? '0 0 8px rgba(239,68,68,0.3)' : 'none';
+
+  const todayCount = logs.filter(l => new Date(l.timestamp).toDateString() === new Date().toDateString()).length;
+  count.innerText = `Today: ${todayCount}`;
+
+  // Auto-log nudge: if gap > 1.5x average, add reminder indicator
+  const allGaps = logs.map(l => l.gap).filter(g => g !== null && g !== undefined);
+  const avgGap = allGaps.length ? allGaps.reduce((a, b) => a + b, 0) / allGaps.length : 0;
+  const nudgeEl = document.getElementById('autoLogNudge');
+  if (avgGap > 0 && mins > avgGap * 1.5 && waveEndTime <= 0 && !inactivityNotified) {
+    if (!nudgeEl) {
+      const pill = document.createElement('span');
+      pill.id = 'autoLogNudge';
+      pill.className = 'text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full animate-pulse';
+      pill.style.cssText = 'background: rgba(249,115,22,0.15); color: #F97316; border: 1px solid rgba(249,115,22,0.3);';
+      pill.innerText = '⏰ Log?';
+      row.appendChild(pill);
+    }
+  } else if (nudgeEl) {
+    nudgeEl.remove();
+  }
+}
+
+function showDailyRecap() {
+  const todayStr = new Date().toDateString();
+  const lastOpen = localStorage.getItem('smoke_last_open');
+  if (lastOpen !== todayStr) {
+    localStorage.setItem('smoke_last_open', todayStr);
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toDateString();
+    const yesterdayCount = logs.filter(l => new Date(l.timestamp).toDateString() === yesterdayStr).length;
+    if (yesterdayCount > 0) {
+      setTimeout(() => {
+        showToast(`📊 Yesterday: ${yesterdayCount} stick${yesterdayCount > 1 ? 's' : ''}`);
+      }, 2500);
+    }
+  }
 }
 
 function showStatDetail(type) {
