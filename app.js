@@ -943,14 +943,32 @@ function renderWeeklyPaceChart() {
   days.forEach(d => {
     const heightPct = Math.max(8, Math.round((d.count / maxCount) * 100));
     let color = 'rgba(148,163,184,0.35)';
-    if(d.isToday && hasEnoughHistory) {
-      if(todayCount < priorAvg * 0.85) color = '#10B981';
-      else if(todayCount > priorAvg * 1.15) color = '#F59E0B';
-      else color = 'var(--accent)';
-    } else if(d.isToday) { color = 'var(--accent)'; }
+
+    // Color all bars based on performance vs daily limit
+    if(d.count === 0) {
+      color = '#10B981'; // Green for zero cigarettes
+    } else if(d.count < settings.dailyLimit * 0.7) {
+      color = '#10B981'; // Green for well under limit
+    } else if(d.count < settings.dailyLimit) {
+      color = '#3B82F6'; // Blue for under limit
+    } else if(d.count === settings.dailyLimit) {
+      color = '#F59E0B'; // Amber for exactly at limit
+    } else {
+      color = '#EF4444'; // Red for over limit
+    }
+
+    // Today gets extra emphasis
+    if(d.isToday) {
+      color = hasEnoughHistory ? (
+        todayCount < priorAvg * 0.85 ? '#10B981' :
+        todayCount > priorAvg * 1.15 ? '#F59E0B' :
+        'var(--accent)'
+      ) : 'var(--accent)';
+    }
+
     barsHtml += `<div class="flex-1 flex flex-col items-center justify-end gap-1 h-full">
       <span class="numeric-display text-[10px] font-black" style="color: ${d.isToday ? 'var(--text-main)' : 'var(--text-muted)'};">${d.count}</span>
-      <div class="w-full rounded-t-md transition-all duration-500" style="height: ${heightPct}%; background: ${color}; min-height: 4px;"></div>
+      <div class="w-full rounded-t-md transition-all duration-500" style="height: ${heightPct}%; background: ${color}; min-height: 4px; ${d.isToday ? 'box-shadow: 0 0 16px ' + color + '40;' : ''}"></div>
       <span class="text-[8px] font-bold" style="color: ${d.isToday ? 'var(--text-main)' : 'var(--text-muted)'};">${d.label}</span>
     </div>`;
   });

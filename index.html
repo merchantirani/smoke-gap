@@ -50,13 +50,14 @@
   <link href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700&f[]=general-sans@400,500,600,700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>window.tailwindLoaded=false;</script>
+  <script src="https://cdn.tailwindcss.com" onload="window.tailwindLoaded=true"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-  <script defer src="https://unpkg.com/lucide@latest"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <script defer src="https://unpkg.com/lucide@0.263.1/dist/umd/lucide.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   
   <style>
@@ -103,35 +104,40 @@
       --heat-0: rgba(0, 0, 0, 0.04); --heat-1: #C8D8CB; --heat-2: #9DB5A2; --heat-3: #7C9885; --heat-4: #4F6355;
     }
     
-    html, body { min-height: 100vh; background-color: var(--bg-body) !important; color: var(--text-main); font-family: 'General Sans', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; transition: background-color 0.35s ease, color 0.35s ease; }
+    html, body { min-height: 100vh; background-color: var(--bg-body) !important; color: var(--text-main); font-family: 'General Sans', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; transition: background-color 0.35s ease, color 0.35s ease; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
     button, .nav-btn, .drag-handle, .dock-bar { user-select: none; -webkit-user-select: none; }
-    
-    .brand-title { font-family: 'Clash Display', sans-serif; font-weight: 700; letter-spacing: -0.03em; background: linear-gradient(135deg, var(--accent), var(--text-main)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-    .numeric-display { font-family: 'Space Grotesk', monospace; font-variant-numeric: tabular-nums; }
+
+    .brand-title { font-family: 'Clash Display', sans-serif; font-weight: 700; letter-spacing: -0.04em; background: linear-gradient(135deg, var(--accent) 0%, var(--text-main) 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 2px 8px var(--accent-glow)); }
+    .numeric-display { font-family: 'Space Grotesk', monospace; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
     .app-container { padding-bottom: 96px; min-height: 100vh; }
-    .premium-card { background: var(--card-bg); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid var(--card-border); box-shadow: 0 10px 30px rgba(0,0,0,0.04); border-radius: 1.5rem; transition: all 0.2s ease; }
-    .dock-bar { background: var(--card-bg); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); border-top: 1px solid var(--card-border); }
-    .nav-btn { color: var(--text-muted); transition: all 0.3s ease; }
-    .nav-active { color: var(--accent); }
-    .nav-active i { stroke-width: 2.5; filter: drop-shadow(0 0 8px var(--accent-glow)); }
+    .premium-card { background: var(--card-bg); backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px); border: 1px solid var(--card-border); box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.05); border-radius: 1.5rem; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .premium-card:active { transform: scale(0.98); box-shadow: 0 4px 16px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.06); }
+    .dock-bar { background: var(--card-bg); backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px); border-top: 1px solid var(--card-border); box-shadow: 0 -4px 24px rgba(0,0,0,0.08); }
+    .nav-btn { color: var(--text-muted); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); transform: scale(1); }
+    .nav-btn:active { transform: scale(0.92); }
+    .nav-active { color: var(--accent); transform: scale(1.05); }
+    .nav-active i { stroke-width: 2.8; filter: drop-shadow(0 0 12px var(--accent-glow)); }
     .drag-handle { touch-action: none; cursor: grab; padding: 8px; opacity: 0.4; }
     .drag-handle:active { cursor: grabbing; opacity: 1; }
     .sortable-ghost { opacity: 0.2; transform: scale(0.96); }
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     .chart-wrapper { position: relative; width: 100%; height: 180px; }
-    .page-section { animation: fadeIn 0.3s ease-out forwards; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-    .live-dot { animation: live-pulse 2s infinite ease-in-out; }
-    @keyframes live-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.85); } }
+    .page-section { animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    .live-dot { animation: live-pulse 2s infinite ease-in-out; box-shadow: 0 0 8px currentColor; }
+    @keyframes live-pulse { 0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 8px currentColor; } 50% { opacity: 0.5; transform: scale(0.9); box-shadow: 0 0 4px currentColor; } }
     .takeover-bg { background: radial-gradient(circle at center, var(--accent-glow) 0%, var(--bg-body) 80%); }
     .custom-input-wrapper { position: relative; display: flex; align-items: center; width: 100%; }
     .custom-input-wrapper input[type="date"], .custom-input-wrapper input[type="time"] { width: 100%; background: transparent; border: none; outline: none; color: var(--text-main); font-weight: 700; font-size: 0.95rem; padding-right: 32px; appearance: none; -webkit-appearance: none; }
     .custom-input-wrapper input::-webkit-calendar-picker-indicator { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); opacity: 0.6; cursor: pointer; }
-    .hold-btn { position: relative; overflow: hidden; user-select: none; -webkit-touch-callout: none; touch-action: none; }
+    .hold-btn { position: relative; overflow: hidden; user-select: none; -webkit-touch-callout: none; touch-action: none; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .hold-btn:active { transform: scale(0.96); }
     #holdProgress { position: absolute; top: 0; left: 0; height: 100%; width: 0%; background: rgba(239, 68, 68, 0.55); pointer-events: none; transition: width 0.05s linear; }
-    .hold-btn.is-holding { border-color: rgba(239, 68, 68, 0.6) !important; box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12); }
-    .ride-btn { position: relative; overflow: hidden; }
+    .hold-btn.is-holding { border-color: rgba(239, 68, 68, 0.6) !important; box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.15), 0 8px 24px rgba(239, 68, 68, 0.3); transform: scale(1.02); }
+    .ride-btn { position: relative; overflow: hidden; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .ride-btn:active { transform: scale(0.96); }
+    .ride-btn:hover { transform: scale(1.02); box-shadow: 0 12px 32px var(--accent-glow), 0 0 0 3px rgba(var(--accent), 0.1); }
     #rideProgressFill { position: absolute; bottom: 0; left: 0; height: 100%; width: 0%; background: rgba(255,255,255,0.18); pointer-events: none; }
 
     @keyframes radarPing { 0% { transform: scale(0.88); opacity: 0.9; } 50% { transform: scale(1.22); opacity: 0.2; } 100% { transform: scale(0.88); opacity: 0.9; } }
@@ -144,8 +150,9 @@
     .heat-cell { width: 13px; height: 13px; border-radius: 3px; flex-shrink: 0; transition: all 0.2s ease; }
     .heat-col { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; }
     .scroll-fade-right { mask-image: linear-gradient(to right, black 85%, transparent 100%); -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%); }
-    .pin-btn { transition: transform 0.12s ease; }
-    .pin-btn:active { transform: scale(0.92); }
+    .pin-btn { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+    .pin-btn:active { transform: scale(0.92); box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+    .pin-btn:hover { background: var(--input-bg); }
     .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
     .filter-select-wrapper { position: relative; display: inline-flex; align-items: center; }
     .filter-select-wrapper::after { content: ''; position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-left: 4.5px solid transparent; border-right: 4.5px solid transparent; border-top: 5px solid var(--accent); pointer-events: none; }
@@ -153,8 +160,15 @@
 </head>
 <body>
 
-  <div id="appSkeleton" class="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-[var(--bg-body)] transition-opacity duration-500 pointer-events-none">
-    <div class="w-12 h-12 border-4 border-gray-500/20 border-t-[var(--accent)] rounded-full animate-spin"></div>
+  <div id="appSkeleton" class="fixed inset-0 z-[99999] flex flex-col items-center justify-center gap-4 bg-[var(--bg-body)] transition-opacity duration-500 pointer-events-none">
+    <div class="relative">
+      <div class="w-16 h-16 border-4 border-gray-500/20 border-t-[var(--accent)] rounded-full animate-spin"></div>
+      <div class="absolute inset-0 w-16 h-16 border-4 border-transparent border-b-[var(--accent)] rounded-full animate-spin" style="animation-duration: 1.5s; animation-direction: reverse;"></div>
+    </div>
+    <div class="text-center space-y-2">
+      <h2 class="brand-title text-2xl tracking-tight">pause</h2>
+      <p class="text-[9px] font-bold uppercase tracking-[0.2em]" style="color: var(--text-muted);">Loading your data...</p>
+    </div>
   </div>
 
   <div id="lockScreen" class="fixed inset-0 flex flex-col items-center justify-center hidden" style="z-index: 10000; background-color: var(--bg-body);">
