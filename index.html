@@ -62,6 +62,23 @@
     window.addEventListener('load', function() {
       if (window.lucide) {
         window.lucide.createIcons();
+
+        // Add missing icons that aren't in default Lucide
+        const missingIcons = {
+          'trending-up': '<svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24"><polyline points="22,7 13.5,15.5 8.5,10.5 2,17"></polyline><polyline points="16,7 22,7 22,13"></polyline></svg>',
+          'target': '<svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>',
+          'star': '<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 24 24"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"></polygon></svg>',
+          'crown': '<svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M11.562 3.266a.5.5 0 0 1 .876 0L14.39 8.87a1 1 0 0 0 1.516.294L19.65 6.56a.5.5 0 0 1 .74.545L18.92 20.94a1 1 0 0 1-.99.86H6.07a1 1 0 0 1-.99-.86L3.61 7.105a.5.5 0 0 1 .74-.545l3.744 2.604a1 1 0 0 0 1.516-.294z"></path></svg>',
+          'gem': '<svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 13L2 9z"></path><path d="M11 3 8 9l4 13 4-13-3-6"></path><path d="M2 9h20"></path></svg>',
+          'infinity': '<svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M12 12c-2-2.67-4-4-6-4a4 4 0 1 0 0 8c2 0 4-1.33 6-4s4-4 6-4a4 4 0 1 0 0 8c-2 0-4-1.33-6-4z"></path></svg>'
+        };
+
+        // Apply missing icons
+        Object.keys(missingIcons).forEach(iconName => {
+          document.querySelectorAll(`[data-lucide="${iconName}"]`).forEach(el => {
+            el.innerHTML = missingIcons[iconName];
+          });
+        });
       }
     });
   </script>
@@ -829,7 +846,154 @@
     </div>
   </div>
 
-  <div id="shieldDashboardModal" class="hidden fixed inset-0 backdrop-blur-md z-50 flex flex-col justify-end transition-opacity" style="background-color: var(--overlay-bg);" onclick="if(event.target===this) window.closeShieldDashboard()"><div class="p-6 rounded-t-3xl space-y-6 max-w-md mx-auto w-full border-t border-sky-500/30 shadow-2xl" style="background-color: var(--modal-bg);"><div class="flex justify-between items-center mb-2"><h3 class="text-sm font-bold uppercase tracking-widest text-sky-500"><i data-lucide="shield-check" class="w-4 h-4 inline-block mr-1 -mt-0.5"></i> Wave Dashboard</h3><button onclick="window.closeShieldDashboard()" class="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style="background-color: var(--input-bg); color: var(--text-muted);"><i data-lucide="x" class="w-4 h-4"></i></button></div><div class="flex flex-col items-center justify-center py-4"><div class="relative flex justify-center items-center w-32 h-32 rounded-full bg-gray-500/10 shadow-[0_0_30px_rgba(14,165,233,0.2)] border-4 border-sky-500/20"><div class="absolute inset-0 rounded-full border-4 border-sky-500 border-t-transparent animate-spin opacity-50" style="animation-duration: 3s;"></div><div class="text-center z-10"><div id="modalShieldCount" class="numeric-display text-4xl font-bold text-sky-500">0</div><div class="text-[9px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Defeats</div></div></div><p id="modalShieldMins" class="mt-4 text-xs font-bold px-3 py-1 bg-sky-500/10 text-sky-500 rounded-full border border-sky-500/20">--</p><p id="modalSuccessRate" class="hidden mt-2 text-[10px] font-bold px-3 py-1 bg-emerald-500/10 text-emerald-500 rounded-full border border-emerald-500/20">--</p></div><div class="space-y-3 pt-2 border-t" style="border-color: var(--card-border);"><h4 class="text-[10px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Milestones & Badges</h4><div class="grid grid-cols-3 gap-3"><div id="badge1" class="relative flex flex-col items-center p-3 rounded-2xl opacity-30 grayscale transition-all duration-500 border" style="background-color: var(--input-bg); border-color: var(--card-border);"><i data-lucide="lock" class="badge-lock w-3 h-3 absolute top-2 right-2" style="color: var(--text-muted);"></i><i data-lucide="medal" class="w-8 h-8 text-amber-600 mb-1"></i><span class="text-[9px] font-bold text-center mt-1" style="color: var(--text-main);">First Win</span><span id="badge1Sub" class="text-[8px]" style="color: var(--text-muted);">1 Shield</span></div><div id="badge10" class="relative flex flex-col items-center p-3 rounded-2xl opacity-30 grayscale transition-all duration-500 border" style="background-color: var(--input-bg); border-color: var(--card-border);"><i data-lucide="lock" class="badge-lock w-3 h-3 absolute top-2 right-2" style="color: var(--text-muted);"></i><i data-lucide="award" class="w-8 h-8 text-gray-300 mb-1"></i><span class="text-[9px] font-bold text-center mt-1" style="color: var(--text-main);">Iron Will</span><span id="badge10Sub" class="text-[8px]" style="color: var(--text-muted);">10 Shields</span></div><div id="badge50" class="relative flex flex-col items-center p-3 rounded-2xl opacity-30 grayscale transition-all duration-500 border" style="background-color: var(--input-bg); border-color: var(--card-border);"><i data-lucide="lock" class="badge-lock w-3 h-3 absolute top-2 right-2" style="color: var(--text-muted);"></i><i data-lucide="trophy" class="w-8 h-8 text-amber-400 mb-1"></i><span class="text-[9px] font-bold text-center mt-1" style="color: var(--text-main);">Unshakable</span><span id="badge50Sub" class="text-[8px]" style="color: var(--text-muted);">50 Shields</span></div></div></div></div></div>
+  <div id="shieldDashboardModal" class="hidden fixed inset-0 backdrop-blur-md z-50 flex flex-col justify-end transition-opacity overflow-y-auto" style="background-color: var(--overlay-bg);" onclick="if(event.target===this) window.closeShieldDashboard()"><div class="p-4 rounded-t-3xl space-y-4 max-w-md mx-auto w-full border-t shadow-2xl" style="background-color: var(--modal-bg); border-color: var(--card-border);"><div class="flex justify-between items-center mb-2 sticky top-0" style="background-color: var(--modal-bg);"><h3 class="text-base font-bold uppercase tracking-widest flex items-center gap-2" style="color: var(--accent);"><i data-lucide="shield-check" class="w-5 h-5"></i> Victory Gallery</h3><button onclick="window.closeShieldDashboard()" class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 active:scale-95 transition-transform" style="background-color: var(--input-bg); color: var(--text-muted);"><i data-lucide="x" class="w-4 h-4"></i></button></div>
+
+    <!-- Main Stats -->
+    <div class="grid grid-cols-3 gap-2">
+      <div class="premium-card p-3 text-center">
+        <div id="modalShieldCount" class="numeric-display text-2xl font-bold text-sky-500">0</div>
+        <div class="text-[9px] font-bold uppercase tracking-wider mt-1" style="color: var(--text-muted);">Total Defeats</div>
+      </div>
+      <div class="premium-card p-3 text-center">
+        <div id="modalShieldStreak" class="numeric-display text-2xl font-bold text-amber-500">0</div>
+        <div class="text-[9px] font-bold uppercase tracking-wider mt-1" style="color: var(--text-muted);">Best Streak</div>
+      </div>
+      <div class="premium-card p-3 text-center">
+        <div id="modalShieldMins" class="numeric-display text-2xl font-bold text-emerald-500">0</div>
+        <div class="text-[9px] font-bold uppercase tracking-wider mt-1" style="color: var(--text-muted);">Time Resisted</div>
+      </div>
+    </div>
+
+    <!-- Progress Ring -->
+    <div class="flex flex-col items-center py-2">
+      <div class="relative flex justify-center items-center w-28 h-28 rounded-full" style="background: var(--input-bg);">
+        <svg class="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="44" fill="transparent" stroke="var(--card-border)" stroke-width="6"></circle>
+          <circle id="shieldProgressRing" cx="50" cy="50" r="44" fill="transparent" stroke="var(--accent)" stroke-width="6" stroke-dasharray="276.46" stroke-dashoffset="276.46" stroke-linecap="round" style="transition: stroke-dashoffset 0.8s ease-out;"></circle>
+        </svg>
+        <div class="text-center z-10">
+          <span id="nextBadgeName" class="text-[10px] font-bold uppercase tracking-wider block" style="color: var(--accent);">First Win</span>
+          <span id="progressToNext" class="text-xs font-bold" style="color: var(--text-main);">0/1</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tier 1: Quick Wins -->
+    <div class="space-y-2">
+      <div class="flex items-center gap-2 mb-2">
+        <div class="w-2 h-6 rounded-full" style="background: linear-gradient(180deg, #10B981, #34D399);"></div>
+        <h4 class="text-xs font-bold uppercase tracking-widest" style="color: var(--text-muted);">Quick Wins</h4>
+        <span class="text-[9px] px-2 py-0.5 rounded-full ml-auto" style="background: rgba(16,185,129,0.1); color: #10B981;">Getting Started</span>
+      </div>
+      <div class="grid grid-cols-3 gap-2">
+        <div id="badge1" class="badge-card relative flex flex-col items-center p-2 rounded-xl transition-all duration-500 border opacity-40 grayscale" data-shields="1" style="background: var(--input-bg); border-color: var(--card-border);">
+          <div class="absolute top-1 right-1"><i data-lucide="lock" class="badge-lock w-3 h-3" style="color: var(--text-muted);"></i></div>
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-1" style="background: linear-gradient(135deg, #10B981, #34D399);"><i data-lucide="zap" class="w-4 h-4 text-white"></i></div>
+          <span class="text-[9px] font-bold text-center leading-tight" style="color: var(--text-main);">First Victory</span>
+          <span class="text-[8px]" style="color: var(--text-muted);">1 Shield</span>
+        </div>
+        <div id="badge3" class="badge-card relative flex flex-col items-center p-2 rounded-xl transition-all duration-500 border opacity-40 grayscale" data-shields="3" style="background: var(--input-bg); border-color: var(--card-border);">
+          <div class="absolute top-1 right-1"><i data-lucide="lock" class="badge-lock w-3 h-3" style="color: var(--text-muted);"></i></div>
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-1" style="background: linear-gradient(135deg, #10B981, #34D399);"><i data-lucide="flame" class="w-4 h-4 text-white"></i></div>
+          <span class="text-[9px] font-bold text-center leading-tight" style="color: var(--text-main);">On Fire</span>
+          <span class="text-[8px]" style="color: var(--text-muted);">3 Shields</span>
+        </div>
+        <div id="badge5" class="badge-card relative flex flex-col items-center p-2 rounded-xl transition-all duration-500 border opacity-40 grayscale" data-shields="5" style="background: var(--input-bg); border-color: var(--card-border);">
+          <div class="absolute top-1 right-1"><i data-lucide="lock" class="badge-lock w-3 h-3" style="color: var(--text-muted);"></i></div>
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-1" style="background: linear-gradient(135deg, #10B981, #34D399);"><i data-lucide="trending-up" class="w-4 h-4 text-white"></i></div>
+          <span class="text-[9px] font-bold text-center leading-tight" style="color: var(--text-main);">Momentum</span>
+          <span class="text-[8px]" style="color: var(--text-muted);">5 Shields</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tier 2: Building Habit -->
+    <div class="space-y-2">
+      <div class="flex items-center gap-2 mb-2">
+        <div class="w-2 h-6 rounded-full" style="background: linear-gradient(180deg, #3B82F6, #60A5FA);"></div>
+        <h4 class="text-xs font-bold uppercase tracking-widest" style="color: var(--text-muted);">Building Habit</h4>
+        <span class="text-[9px] px-2 py-0.5 rounded-full ml-auto" style="background: rgba(59,130,246,0.1); color: #3B82F6;">Consistency</span>
+      </div>
+      <div class="grid grid-cols-3 gap-2">
+        <div id="badge10" class="badge-card relative flex flex-col items-center p-2 rounded-xl transition-all duration-500 border opacity-40 grayscale" data-shields="10" style="background: var(--input-bg); border-color: var(--card-border);">
+          <div class="absolute top-1 right-1"><i data-lucide="lock" class="badge-lock w-3 h-3" style="color: var(--text-muted);"></i></div>
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-1" style="background: linear-gradient(135deg, #3B82F6, #60A5FA);"><i data-lucide="award" class="w-4 h-4 text-white"></i></div>
+          <span class="text-[9px] font-bold text-center leading-tight" style="color: var(--text-main);">Iron Will</span>
+          <span class="text-[8px]" style="color: var(--text-muted);">10 Shields</span>
+        </div>
+        <div id="badge15" class="badge-card relative flex flex-col items-center p-2 rounded-xl transition-all duration-500 border opacity-40 grayscale" data-shields="15" style="background: var(--input-bg); border-color: var(--card-border);">
+          <div class="absolute top-1 right-1"><i data-lucide="lock" class="badge-lock w-3 h-3" style="color: var(--text-muted);"></i></div>
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-1" style="background: linear-gradient(135deg, #3B82F6, #60A5FA);"><i data-lucide="target" class="w-4 h-4 text-white"></i></div>
+          <span class="text-[9px] font-bold text-center leading-tight" style="color: var(--text-main);">Focused</span>
+          <span class="text-[8px]" style="color: var(--text-muted);">15 Shields</span>
+        </div>
+        <div id="badge25" class="badge-card relative flex flex-col items-center p-2 rounded-xl transition-all duration-500 border opacity-40 grayscale" data-shields="25" style="background: var(--input-bg); border-color: var(--card-border);">
+          <div class="absolute top-1 right-1"><i data-lucide="lock" class="badge-lock w-3 h-3" style="color: var(--text-muted);"></i></div>
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-1" style="background: linear-gradient(135deg, #3B82F6, #60A5FA);"><i data-lucide="shield" class="w-4 h-4 text-white"></i></div>
+          <span class="text-[9px] font-bold text-center leading-tight" style="color: var(--text-main);">Guardian</span>
+          <span class="text-[8px]" style="color: var(--text-muted);">25 Shields</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tier 3: Mastery -->
+    <div class="space-y-2">
+      <div class="flex items-center gap-2 mb-2">
+        <div class="w-2 h-6 rounded-full" style="background: linear-gradient(180deg, #8B5CF6, #A78BFA);"></div>
+        <h4 class="text-xs font-bold uppercase tracking-widest" style="color: var(--text-muted);">Mastery</h4>
+        <span class="text-[9px] px-2 py-0.5 rounded-full ml-auto" style="background: rgba(139,92,246,0.1); color: #8B5CF6;">Excellence</span>
+      </div>
+      <div class="grid grid-cols-3 gap-2">
+        <div id="badge50" class="badge-card relative flex flex-col items-center p-2 rounded-xl transition-all duration-500 border opacity-40 grayscale" data-shields="50" style="background: var(--input-bg); border-color: var(--card-border);">
+          <div class="absolute top-1 right-1"><i data-lucide="lock" class="badge-lock w-3 h-3" style="color: var(--text-muted);"></i></div>
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-1" style="background: linear-gradient(135deg, #8B5CF6, #A78BFA);"><i data-lucide="trophy" class="w-4 h-4 text-white"></i></div>
+          <span class="text-[9px] font-bold text-center leading-tight" style="color: var(--text-main);">Unshakable</span>
+          <span class="text-[8px]" style="color: var(--text-muted);">50 Shields</span>
+        </div>
+        <div id="badge75" class="badge-card relative flex flex-col items-center p-2 rounded-xl transition-all duration-500 border opacity-40 grayscale" data-shields="75" style="background: var(--input-bg); border-color: var(--card-border);">
+          <div class="absolute top-1 right-1"><i data-lucide="lock" class="badge-lock w-3 h-3" style="color: var(--text-muted);"></i></div>
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-1" style="background: linear-gradient(135deg, #8B5CF6, #A78BFA);"><i data-lucide="star" class="w-4 h-4 text-white"></i></div>
+          <span class="text-[9px] font-bold text-center leading-tight" style="color: var(--text-main);">Champion</span>
+          <span class="text-[8px]" style="color: var(--text-muted);">75 Shields</span>
+        </div>
+        <div id="badge100" class="badge-card relative flex flex-col items-center p-2 rounded-xl transition-all duration-500 border opacity-40 grayscale" data-shields="100" style="background: var(--input-bg); border-color: var(--card-border);">
+          <div class="absolute top-1 right-1"><i data-lucide="lock" class="badge-lock w-3 h-3" style="color: var(--text-muted);"></i></div>
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-1" style="background: linear-gradient(135deg, #8B5CF6, #A78BFA);"><i data-lucide="crown" class="w-4 h-4 text-white"></i></div>
+          <span class="text-[9px] font-bold text-center leading-tight" style="color: var(--text-main);">Master</span>
+          <span class="text-[8px]" style="color: var(--text-muted);">100 Shields</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tier 4: Elite -->
+    <div class="space-y-2 pb-4">
+      <div class="flex items-center gap-2 mb-2">
+        <div class="w-2 h-6 rounded-full" style="background: linear-gradient(180deg, #F59E0B, #FBBF24);"></div>
+        <h4 class="text-xs font-bold uppercase tracking-widest" style="color: var(--text-muted);">Elite</h4>
+        <span class="text-[9px] px-2 py-0.5 rounded-full ml-auto" style="background: rgba(245,158,11,0.1); color: #F59E0B;">Legendary</span>
+      </div>
+      <div class="grid grid-cols-3 gap-2">
+        <div id="badge150" class="badge-card relative flex flex-col items-center p-2 rounded-xl transition-all duration-500 border opacity-40 grayscale" data-shields="150" style="background: var(--input-bg); border-color: var(--card-border);">
+          <div class="absolute top-1 right-1"><i data-lucide="lock" class="badge-lock w-3 h-3" style="color: var(--text-muted);"></i></div>
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-1" style="background: linear-gradient(135deg, #F59E0B, #FBBF24);"><i data-lucide="gem" class="w-4 h-4 text-white"></i></div>
+          <span class="text-[9px] font-bold text-center leading-tight" style="color: var(--text-main);">Legendary</span>
+          <span class="text-[8px]" style="color: var(--text-muted);">150 Shields</span>
+        </div>
+        <div id="badge200" class="badge-card relative flex flex-col items-center p-2 rounded-xl transition-all duration-500 border opacity-40 grayscale" data-shields="200" style="background: var(--input-bg); border-color: var(--card-border);">
+          <div class="absolute top-1 right-1"><i data-lucide="lock" class="badge-lock w-3 h-3" style="color: var(--text-muted);"></i></div>
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-1" style="background: linear-gradient(135deg, #F59E0B, #FBBF24);"><i data-lucide="zap" class="w-4 h-4 text-white"></i></div>
+          <span class="text-[9px] font-bold text-center leading-tight" style="color: var(--text-main);">Invincible</span>
+          <span class="text-[8px]" style="color: var(--text-muted);">200 Shields</span>
+        </div>
+        <div id="badge300" class="badge-card relative flex flex-col items-center p-2 rounded-xl transition-all duration-500 border opacity-40 grayscale" data-shields="300" style="background: var(--input-bg); border-color: var(--card-border);">
+          <div class="absolute top-1 right-1"><i data-lucide="lock" class="badge-lock w-3 h-3" style="color: var(--text-muted);"></i></div>
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-1" style="background: linear-gradient(135deg, #F59E0B, #FBBF24);"><i data-lucide="infinity" class="w-4 h-4 text-white"></i></div>
+          <span class="text-[9px] font-bold text-center leading-tight" style="color: var(--text-main);">Transcendent</span>
+          <span class="text-[8px]" style="color: var(--text-muted);">300 Shields</span>
+        </div>
+      </div>
+    </div>
+  </div></div>
   <div id="waveModal" class="hidden fixed inset-0 backdrop-blur-sm z-50 flex flex-col justify-end transition-opacity" style="background-color: var(--overlay-bg);" onclick="if(event.target===this) window.closeWaveModal()"><div class="p-6 rounded-t-3xl space-y-5 max-w-md mx-auto w-full border-t border-sky-500/30 shadow-2xl" style="background-color: var(--modal-bg);"><div class="text-center space-y-1 mb-2"><h3 class="text-lg font-bold" style="color: var(--text-main);">Ride It Out</h3><p class="text-[11px] leading-relaxed" style="color: var(--text-muted);">Cravings usually peak and pass within 3 to 5 minutes.<br>How long do you want to hold on?</p></div><div class="grid grid-cols-3 gap-3"><button onclick="window.startWave(5)" class="relative py-4 flex flex-col items-center justify-center rounded-2xl bg-sky-500/10 border border-sky-500/20 active:scale-95 transition-transform text-sky-500 font-bold overflow-hidden"><div class="absolute top-0 inset-x-0 bg-sky-500 text-white text-[8px] uppercase tracking-widest py-0.5 font-bold">Recommended</div><span class="numeric-display text-xl mt-3">5</span><span class="text-[9px] uppercase tracking-wider">Mins</span></button><button onclick="window.startWave(10)" class="py-4 flex flex-col items-center justify-center rounded-2xl bg-sky-500/10 border border-sky-500/20 active:scale-95 transition-transform text-sky-500 font-bold"><span class="numeric-display text-xl">10</span><span class="text-[9px] uppercase tracking-wider">Mins</span></button><button onclick="window.startWave(20)" class="py-4 flex flex-col items-center justify-center rounded-2xl bg-sky-500/10 border border-sky-500/20 active:scale-95 transition-transform text-sky-500 font-bold"><span class="numeric-display text-xl">20</span><span class="text-[9px] uppercase tracking-wider">Mins</span></button></div><button onclick="window.closeWaveModal()" class="w-full py-3 mt-2 rounded-xl text-xs font-bold active:scale-95 transition-transform" style="background-color: var(--input-bg); color: var(--text-main);">Cancel</button></div></div>
   <div id="mapModal" class="hidden fixed inset-0 z-50 flex flex-col p-4 backdrop-blur-md" style="background-color: var(--overlay-bg);"><div class="flex justify-between items-center mb-4 mt-8 px-2"><h3 class="text-lg font-bold" style="color: var(--text-main);">Thermal View</h3><button onclick="window.closeMapModal()" class="text-xs px-4 py-2 rounded-full font-bold active:scale-95 border" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);">Done</button></div><div id="mapModalContainer" class="w-full flex-1 rounded-3xl overflow-hidden shadow-2xl" style="border: 1px solid var(--card-border);"></div></div>
   <div id="toastContainer" class="fixed bottom-32 left-0 right-0 z-[10001] flex flex-col items-center justify-end gap-2 pointer-events-none px-6"></div>

@@ -145,13 +145,13 @@ window.startHold = function(e) {
       if(textEl) textEl.innerText = "Done";
       if (settings.haptics && navigator.vibrate) navigator.vibrate([30, 50, 30]);
       
-      try { 
+      try {
         if(settings.notifEnableSos) {
-          triggerSosInterrupterFirst(); 
+          triggerSosInterrupterFirst();
         } else {
-          handleLogClick();
+          actuallyLogCigarette();
         }
-      } catch(err) { console.error("Error logging", err); } 
+      } catch(err) { console.error("Error logging", err); }
       finally {
         setTimeout(() => { 
           if(progressEl) progressEl.style.width = '0%'; 
@@ -1075,40 +1075,90 @@ function showStatDetail(type) {
 function closeStatDetail() { document.getElementById('statDetailModal').classList.add('hidden'); }
 
 function showShieldDashboard() {
-  document.getElementById('modalShieldCount').innerText = waves.length;
-  const now = new Date();
-  const todayWaves = waves.filter(w => new Date(w).toDateString() === now.toDateString());
-  const weekWaves = waves.filter(w => (now.getTime() - w) < 7 * 86400000);
-  document.getElementById('modalShieldMins').innerText = `${todayWaves.length} today · ${weekWaves.length} this week`;
+  const totalShields = waves.length;
+  document.getElementById('modalShieldCount').innerText = totalShields;
 
-  const successRateEl = document.getElementById('modalSuccessRate');
-  if(successRateEl) {
-    if(waveAttempts.length >= 3) {
-      const wonCount = waveAttempts.filter(a => a.outcome === 'won').length;
-      const rate = Math.round((wonCount / waveAttempts.length) * 100);
-      successRateEl.innerText = `${rate}% Success Rate (${wonCount}/${waveAttempts.length} attempts)`;
-      successRateEl.classList.remove('hidden');
-    } else { successRateEl.classList.add('hidden'); }
+  // Calculate streak (consecutive days with at least 1 shield)
+  let streak = 0;
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  for(let i = 0; i < 365; i++) {
+    const checkDate = new Date(today);
+    checkDate.setDate(checkDate.getDate() - i);
+    const dayStr = checkDate.toDateString();
+    const hasShield = waves.some(w => new Date(w).toDateString() === dayStr);
+    if(hasShield) streak++;
+    else if(i > 0) break; // Allow today to be empty
   }
+  document.getElementById('modalShieldStreak').innerText = streak;
 
-  const milestones = [ {id: 'badge1', target: 1, label: '1 Shield'}, {id: 'badge10', target: 10, label: '10 Shields'}, {id: 'badge50', target: 50, label: '50 Shields'} ];
+  // Total time resisted
+  let totalMins = 0;
+  waveAttempts.filter(a => a.outcome === 'won').forEach(a => totalMins += (a.minutes || 0));
+  const hours = Math.floor(totalMins / 60);
+  const mins = totalMins % 60;
+  document.getElementById('modalShieldMins').innerText = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+
+  // All 12 milestones with tier colors
+  const milestones = [
+    {id: 'badge1', target: 1, name: 'First Victory', tier: 1},
+    {id: 'badge3', target: 3, name: 'On Fire', tier: 1},
+    {id: 'badge5', target: 5, name: 'Momentum', tier: 1},
+    {id: 'badge10', target: 10, name: 'Iron Will', tier: 2},
+    {id: 'badge15', target: 15, name: 'Focused', tier: 2},
+    {id: 'badge25', target: 25, name: 'Guardian', tier: 2},
+    {id: 'badge50', target: 50, name: 'Unshakable', tier: 3},
+    {id: 'badge75', target: 75, name: 'Champion', tier: 3},
+    {id: 'badge100', target: 100, name: 'Master', tier: 3},
+    {id: 'badge150', target: 150, name: 'Legendary', tier: 4},
+    {id: 'badge200', target: 200, name: 'Invincible', tier: 4},
+    {id: 'badge300', target: 300, name: 'Transcendent', tier: 4}
+  ];
+
+  let nextBadge = null;
   milestones.forEach(m => {
-    const card = document.getElementById(m.id); if(!card) return;
-    const sub = document.getElementById(m.id + 'Sub'); const lock = card.querySelector('.badge-lock');
-    card.className = "relative flex flex-col items-center p-3 rounded-2xl transition-all duration-500 border" + (waves.length < m.target ? " opacity-30 grayscale" : "");
-    card.style.backgroundColor = "var(--input-bg)"; card.style.borderColor = "var(--card-border)";
-    if(waves.length >= m.target) {
-      card.classList.add('shadow-[0_0_15px_rgba(245,158,11,0.15)]');
+    const card = document.getElementById(m.id);
+    if(!card) return;
+
+    const lock = card.querySelector('.badge-lock');
+    const isUnlocked = totalShields >= m.target;
+
+    // Find next badge to unlock
+    if(!isUnlocked && !nextBadge) nextBadge = m;
+
+    // Apply unlock state
+    if(isUnlocked) {
+      card.classList.remove('opacity-40', 'grayscale');
+      card.classList.add('shadow-lg');
+      card.style.borderColor = 'var(--accent)';
       if(lock) lock.classList.add('hidden');
-      if(sub) sub.innerText = m.label;
-      if(m.id === 'badge10') { const i = card.querySelector('i[data-lucide="award"]'); if(i) i.classList.replace('text-gray-300', 'text-sky-400'); }
     } else {
+      card.classList.add('opacity-40', 'grayscale');
+      card.classList.remove('shadow-lg');
+      card.style.borderColor = 'var(--card-border)';
       if(lock) lock.classList.remove('hidden');
-      if(sub) sub.innerText = `${waves.length}/${m.target} to unlock`;
     }
   });
 
-  document.getElementById('shieldDashboardModal').classList.remove('hidden'); if(window.lucide) window.lucide.createIcons();
+  // Update progress ring
+  if(nextBadge) {
+    const progress = totalShields / nextBadge.target;
+    const circumference = 276.46;
+    const offset = circumference - (progress * circumference);
+    const ring = document.getElementById('shieldProgressRing');
+    if(ring) ring.style.strokeDashoffset = offset;
+    document.getElementById('nextBadgeName').innerText = nextBadge.name;
+    document.getElementById('progressToNext').innerText = `${totalShields}/${nextBadge.target}`;
+  } else {
+    // All badges unlocked!
+    const ring = document.getElementById('shieldProgressRing');
+    if(ring) ring.style.strokeDashoffset = '0';
+    document.getElementById('nextBadgeName').innerText = 'All Badges!';
+    document.getElementById('progressToNext').innerText = `${totalShields} 🎉`;
+  }
+
+  document.getElementById('shieldDashboardModal').classList.remove('hidden');
+  if(window.lucide) window.lucide.createIcons();
 }
 function closeShieldDashboard() { document.getElementById('shieldDashboardModal').classList.add('hidden'); }
 
