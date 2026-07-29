@@ -326,6 +326,7 @@ function closeSosInterrupter(cravingPassed) {
   document.getElementById('sosInterrupterModal').classList.add('hidden');
 
   if(cravingPassed) {
+    // User defeated the craving - add shield
     waves.push(Date.now());
     localStorage.setItem('smoke_waves', JSON.stringify(waves));
     logWaveAttempt('won', 15000);
@@ -333,7 +334,48 @@ function closeSosInterrupter(cravingPassed) {
     if(window.confetti) confetti({particleCount: 80, spread: 60, origin: {y: 0.6}});
     try { updateUI(); } catch(e){}
   } else {
-    handleLogClick();
+    // User skipped - proceed to log cigarette
+    actuallyLogCigarette();
+  }
+}
+
+function actuallyLogCigarette() {
+  gapWidenedNotified = false;
+  inactivityNotified = false;
+  localStorage.setItem('smoke_gap_widened_notified', 'false');
+
+  let waveWasActive = false;
+  if(waveEndTime > 0) {
+    waveWasActive = true; localStorage.removeItem('smoke_wave_end'); waveEndTime = 0; clearInterval(waveTimer);
+    document.getElementById('waveOverlay').classList.add('hidden');
+    logWaveAttempt('lost'); resetRideButton();
+  }
+
+  const now = new Date().getTime();
+  let gap = logs.length > 0 ? Math.round((now - logs[logs.length-1].timestamp)/60000) : null;
+  logs.push({timestamp: now, gap: gap, tags: [], lat: null, lng: null, intensity: 3});
+  const newLogIdx = logs.length - 1;
+  localStorage.setItem('smoke_logs', JSON.stringify(logs));
+  lockEndTime = now + (settings.lockSecs * 1000);
+  localStorage.setItem('smoke_lock_end', lockEndTime);
+
+  if (window.posthog) {
+    posthog.capture('cigarette_logged', {
+      gap_minutes: gap,
+      during_wave: waveWasActive,
+      total_logs_today: logs.filter(l => new Date(l.timestamp).toDateString() === new Date().toDateString()).length
+    });
+  }
+
+  try { updateUI(); } catch(e) {}
+  checkLock(); startSmokeTakeover(newLogIdx, gap, waveWasActive);
+
+  if(navigator.geolocation) {
+    const logTimestamp = now;
+    navigator.geolocation.getCurrentPosition(p => {
+      const entry = logs.find(l => l.timestamp === logTimestamp);
+      if(entry) { entry.lat = p.coords.latitude; entry.lng = p.coords.longitude; localStorage.setItem('smoke_logs', JSON.stringify(logs)); if(!document.getElementById('page-insights').classList.contains('hidden')) renderHeatMap('mapContainer', getFilteredLogs()); }
+    }, () => {}, {timeout: 10000, maximumAge: 60000});
   }
 }
 
@@ -518,42 +560,12 @@ function closePinSetupModal() { document.getElementById('pinSetupModal').classLi
 function savePinSetup() { const p = document.getElementById('pinSetupInput').value; if(/^\d{4}$/.test(p)) { localStorage.setItem('smoke_pin_hash', hashPin(p)); hasPin = true; storedPinHash = hashPin(p); closePinSetupModal(); document.getElementById('pinStatusBtn').innerText = "Remove PIN"; showToast("PIN saved"); } else { document.getElementById('pinSetupError').classList.remove('hidden'); } }
 
 function handleLogClick() {
-  gapWidenedNotified = false;
-  inactivityNotified = false;
-  localStorage.setItem('smoke_gap_widened_notified', 'false');
-
-  let waveWasActive = false;
-  if(waveEndTime > 0) { 
-    waveWasActive = true; localStorage.removeItem('smoke_wave_end'); waveEndTime = 0; clearInterval(waveTimer); 
-    document.getElementById('waveOverlay').classList.add('hidden'); 
-    logWaveAttempt('lost'); resetRideButton();
-  }
-  
-  const now = new Date().getTime();
-  let gap = logs.length > 0 ? Math.round((now - logs[logs.length-1].timestamp)/60000) : null;
-  logs.push({timestamp: now, gap: gap, tags: [], lat: null, lng: null, intensity: 3});
-  const newLogIdx = logs.length - 1;
-  localStorage.setItem('smoke_logs', JSON.stringify(logs));
-  lockEndTime = now + (settings.lockSecs * 1000);
-  localStorage.setItem('smoke_lock_end', lockEndTime);
-  
-  if (window.posthog) {
-    posthog.capture('cigarette_logged', {
-      gap_minutes: gap,
-      during_wave: waveWasActive,
-      total_logs_today: logs.filter(l => new Date(l.timestamp).toDateString() === new Date().toDateString()).length
-    });
-  }
-
-  try { updateUI(); } catch(e) {}
-  checkLock(); startSmokeTakeover(newLogIdx, gap, waveWasActive);
-
-  if(navigator.geolocation) {
-    const logTimestamp = now;
-    navigator.geolocation.getCurrentPosition(p => {
-      const entry = logs.find(l => l.timestamp === logTimestamp);
-      if(entry) { entry.lat = p.coords.latitude; entry.lng = p.coords.longitude; localStorage.setItem('smoke_logs', JSON.stringify(logs)); if(!document.getElementById('page-insights').classList.contains('hidden')) renderHeatMap('mapContainer', getFilteredLogs()); }
-    }, () => {}, {timeout: 10000, maximumAge: 60000});
+  // If SOS is enabled, show it first before logging
+  if(settings.notifEnableSos) {
+    triggerSosInterrupterFirst();
+  } else {
+    // If SOS is disabled, log directly
+    actuallyLogCigarette();
   }
 }
 

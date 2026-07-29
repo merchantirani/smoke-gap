@@ -61,47 +61,47 @@
   <script defer src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   
   <style>
-    :root { 
-      --bg-body: #090A0F; --text-main: #F3F4F6; --text-muted: #9CA3AF; 
-      --card-bg: rgba(22, 25, 35, 0.7); --card-border: rgba(255, 255, 255, 0.06); 
-      --accent: #F59E0B; --accent-glow: rgba(245, 158, 11, 0.2); 
+    :root {
+      --bg-body: #090A0F; --text-main: #F3F4F6; --text-muted: #9CA3AF;
+      --card-bg: rgba(22, 25, 35, 0.7); --card-border: rgba(255, 255, 255, 0.06);
+      --accent: #F59E0B; --accent-glow: rgba(245, 158, 11, 0.2);
       --overlay-bg: rgba(0, 0, 0, 0.75); --modal-bg: #11131A; --input-bg: rgba(255, 255, 255, 0.04);
       --heat-0: rgba(255, 255, 255, 0.03); --heat-1: #FDE68A; --heat-2: #F59E0B; --heat-3: #D97706; --heat-4: #92400E;
     }
-    html.theme-carbon, body.theme-carbon { 
-      --bg-body: #000000; --text-main: #FFFFFF; --text-muted: #6B7280; 
-      --card-bg: rgba(18, 18, 18, 0.85); --card-border: rgba(255, 255, 255, 0.05); 
-      --accent: #3B82F6; --accent-glow: rgba(59, 130, 246, 0.2); 
-      --overlay-bg: rgba(0, 0, 0, 0.85); --modal-bg: #121212; --input-bg: rgba(255, 255, 255, 0.06);
-      --heat-0: rgba(255, 255, 255, 0.04); --heat-1: #BFDBFE; --heat-2: #3B82F6; --heat-3: #1D4ED8; --heat-4: #1E3A8A;
-    }
-    html.theme-white, body.theme-white { 
-      --bg-body: #F8FAFC; --text-main: #0F172A; --text-muted: #64748B; 
-      --card-bg: rgba(255, 255, 255, 0.85); --card-border: rgba(203, 213, 225, 0.6); 
-      --accent: #2563EB; --accent-glow: rgba(37, 99, 235, 0.15); 
+    html.theme-white, body.theme-white {
+      --bg-body: #F8FAFC; --text-main: #0F172A; --text-muted: #64748B;
+      --card-bg: rgba(255, 255, 255, 0.85); --card-border: rgba(203, 213, 225, 0.6);
+      --accent: #2563EB; --accent-glow: rgba(37, 99, 235, 0.15);
       --overlay-bg: rgba(15, 23, 42, 0.25); --modal-bg: #FFFFFF; --input-bg: rgba(0, 0, 0, 0.03);
       --heat-0: rgba(0, 0, 0, 0.04); --heat-1: #93C5FD; --heat-2: #3B82F6; --heat-3: #1D4ED8; --heat-4: #1E3A8A;
     }
-    html.theme-aurora, body.theme-aurora { 
-      --bg-body: #0B0B14; --text-main: #F5F3FF; --text-muted: #A5A3C4; 
-      --card-bg: rgba(30, 27, 55, 0.6); --card-border: rgba(167, 139, 250, 0.18); 
-      --accent: #A78BFA; --accent-glow: rgba(167, 139, 250, 0.3); 
-      --overlay-bg: rgba(11, 11, 20, 0.82); --modal-bg: #16142A; --input-bg: rgba(255, 255, 255, 0.05);
-      --heat-0: rgba(255, 255, 255, 0.04); --heat-1: #DDD6FE; --heat-2: #A78BFA; --heat-3: #7C3AED; --heat-4: #4C1D95;
+    html.theme-paper, body.theme-paper {
+      --bg-body: #F5F1E8; --text-main: #2D2A24; --text-muted: #6B6558;
+      --card-bg: rgba(255, 253, 249, 0.9); --card-border: rgba(180, 160, 140, 0.3);
+      --accent: #C17D4F; --accent-glow: rgba(193, 125, 79, 0.25);
+      --overlay-bg: rgba(45, 42, 36, 0.3); --modal-bg: #FFFCF7; --input-bg: rgba(193, 125, 79, 0.05);
+      --heat-0: rgba(0, 0, 0, 0.03); --heat-1: #E8D4BE; --heat-2: #C9A779; --heat-3: #C17D4F; --heat-4: #8B5A3C;
     }
-    html.theme-oled, body.theme-oled { 
-      --bg-body: #000000; --text-main: #FFFFFF; --text-muted: #71717A; 
-      --card-bg: rgba(14, 14, 14, 0.75); --card-border: rgba(57, 255, 136, 0.12); 
-      --accent: #39FF88; --accent-glow: rgba(57, 255, 136, 0.25); 
-      --overlay-bg: rgba(0, 0, 0, 0.9); --modal-bg: #060606; --input-bg: rgba(255, 255, 255, 0.05);
-      --heat-0: rgba(255, 255, 255, 0.04); --heat-1: #A7F3D0; --heat-2: #39FF88; --heat-3: #16A34A; --heat-4: #065F46;
+    html.theme-oled, body.theme-oled {
+      --bg-body: #000000; --text-main: #FFFFFF; --text-muted: #9CA3AF;
+      --card-bg: rgba(18, 18, 18, 0.8); --card-border: rgba(100, 255, 218, 0.15);
+      --accent: #64FFDA; --accent-glow: rgba(100, 255, 218, 0.25);
+      --overlay-bg: rgba(0, 0, 0, 0.92); --modal-bg: #0A0A0A; --input-bg: rgba(255, 255, 255, 0.04);
+      --heat-0: rgba(255, 255, 255, 0.03); --heat-1: #B2F5EA; --heat-2: #64FFDA; --heat-3: #1DE9B6; --heat-4: #00BFA5;
     }
-    html.theme-paper, body.theme-paper { 
-      --bg-body: #FAF6F0; --text-main: #3D3A34; --text-muted: #8A8577; 
-      --card-bg: rgba(255, 253, 250, 0.85); --card-border: rgba(214, 205, 190, 0.5); 
-      --accent: #7C9885; --accent-glow: rgba(124, 152, 133, 0.2); 
-      --overlay-bg: rgba(61, 58, 52, 0.25); --modal-bg: #FFFDF9; --input-bg: rgba(0, 0, 0, 0.03);
-      --heat-0: rgba(0, 0, 0, 0.04); --heat-1: #C8D8CB; --heat-2: #9DB5A2; --heat-3: #7C9885; --heat-4: #4F6355;
+    html.theme-aurora, body.theme-aurora {
+      --bg-body: #120B1F; --text-main: #F8F5FF; --text-muted: #B8A8D8;
+      --card-bg: rgba(45, 25, 75, 0.65); --card-border: rgba(220, 120, 255, 0.2);
+      --accent: #DC78FF; --accent-glow: rgba(220, 120, 255, 0.35);
+      --overlay-bg: rgba(18, 11, 31, 0.85); --modal-bg: #1A0F2E; --input-bg: rgba(220, 120, 255, 0.08);
+      --heat-0: rgba(255, 255, 255, 0.04); --heat-1: #F3D9FF; --heat-2: #DC78FF; --heat-3: #B845FF; --heat-4: #8B2FC9;
+    }
+    html.theme-ocean, body.theme-ocean {
+      --bg-body: #0A1929; --text-main: #E7EBF0; --text-muted: #8796A5;
+      --card-bg: rgba(18, 35, 56, 0.75); --card-border: rgba(56, 189, 248, 0.15);
+      --accent: #38BDF8; --accent-glow: rgba(56, 189, 248, 0.3);
+      --overlay-bg: rgba(10, 25, 41, 0.8); --modal-bg: #132F4C; --input-bg: rgba(56, 189, 248, 0.06);
+      --heat-0: rgba(255, 255, 255, 0.03); --heat-1: #BAE6FD; --heat-2: #38BDF8; --heat-3: #0EA5E9; --heat-4: #0369A1;
     }
     
     html, body { min-height: 100vh; background-color: var(--bg-body) !important; color: var(--text-main); font-family: 'General Sans', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; transition: background-color 0.35s ease, color 0.35s ease; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
@@ -548,7 +548,7 @@
           </div>
           <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
             <label class="text-xs font-semibold" style="color: var(--text-main);">Theme Mode</label>
-            <select id="themeSelect" onchange="window.updateSettings()" class="text-xs p-2 rounded-xl font-semibold border outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);"><option value="white">Clean White & Blue (Default)</option><option value="default">Amber Glow</option><option value="carbon">Carbon Matrix</option><option value="aurora">Aurora</option><option value="oled">Pure OLED</option><option value="paper">Calm Paper</option></select>
+            <select id="themeSelect" onchange="window.updateSettings()" class="text-xs p-2 rounded-xl font-semibold border outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);"><option value="white">Clean White & Blue (Default)</option><option value="default">Amber Glow</option><option value="paper">Calm Paper</option><option value="oled">Pure OLED</option><option value="aurora">Aurora</option><option value="ocean">Midnight Ocean</option></select>
           </div>
           <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
             <label class="text-xs font-semibold" style="color: var(--text-main);">Time Format</label>
