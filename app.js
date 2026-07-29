@@ -930,6 +930,7 @@ function updateUI() {
   renderWeeklyPaceChart();
   checkBackupReminder();
   renderHistory('homeRecentLogs', 3);
+  updateDynamicTagline();
 }
 
 function renderWeeklyPaceChart() {
@@ -1016,6 +1017,42 @@ function computeMomentumScore(today, todayWaves) {
 }
 
 function formatGap(m) { if (m === null || m === undefined || isNaN(m)) return '—'; if (m < 60) return `${m}m`; return `${Math.floor(m / 60)}h ${m % 60 > 0 ? (m % 60) + 'm' : ''}`.trim(); }
+
+function updateDynamicTagline() {
+  const tagline = document.getElementById('headerTagline');
+  if (!tagline) return;
+
+  const diff = logs.length > 0 ? (new Date().getTime() - logs[logs.length - 1].timestamp) : 0;
+  const prevGapMs = logs.length > 1 && logs[logs.length - 1].gap ? logs[logs.length - 1].gap * 60000 : 0;
+  const todayWaves = waves.filter(w => new Date(w).toDateString() === new Date().toDateString());
+
+  let newText = '';
+  let newColor = '';
+
+  if (logs.length === 0) {
+    newText = 'Widen the gap.';
+    newColor = '';
+  } else if (diff > prevGapMs && prevGapMs > 0) {
+    newText = "You're on fire.";
+    newColor = '#F97316';
+    tagline.style.color = '#F97316';
+    tagline.style.textShadow = '0 0 12px rgba(249,115,22,0.3)';
+    return;
+  } else if (todayWaves.length >= 2) {
+    newText = 'Stronger every wave.';
+    newColor = '#0EA5E9';
+  } else if (logs.length >= 3) {
+    newText = 'Building momentum.';
+    newColor = '#10B981';
+  } else {
+    newText = 'Widen the gap.';
+    newColor = '';
+  }
+
+  tagline.innerText = newText;
+  tagline.style.color = newColor || '';
+  tagline.style.textShadow = newColor ? `0 0 8px ${newColor}40` : 'none';
+}
 
 function showStatDetail(type) {
   const today = logs.filter(l => new Date(l.timestamp).toDateString() === new Date().toDateString());
