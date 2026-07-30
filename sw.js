@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pause-v1';
+const CACHE_NAME = 'pause-v2';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

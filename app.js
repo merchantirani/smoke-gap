@@ -991,6 +991,29 @@ function switchTab(t) {
   } catch(err) { console.error("switchTab Error:", err); }
 }
 
+window.refreshAppCache = function() {
+  showConfirm("Refresh App Cache?", "This will clear old cached files and reload the app. Your data (logs, settings) will NOT be lost.", () => {
+    // Delete all service worker caches
+    if ('caches' in window) {
+      caches.keys().then(keys => {
+        return Promise.all(keys.map(k => caches.delete(k)));
+      }).then(() => {
+        // Unregister service worker
+        if (navigator.serviceWorker) {
+          navigator.serviceWorker.getRegistrations().then(regs => {
+            regs.forEach(r => r.unregister());
+          });
+        }
+        // Reload to fetch fresh files
+        window.location.reload();
+      });
+    } else {
+      // Fallback: just reload
+      window.location.reload();
+    }
+  });
+}
+
 function showToast(msg) {
   const c = document.getElementById('toastContainer'); if(!c) return;
   const t = document.createElement('div');
