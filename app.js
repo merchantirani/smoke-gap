@@ -94,8 +94,24 @@ let triggers = JSON.parse(localStorage.getItem('smoke_triggers')) || ['🏠 Home
 const CHART_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316', '#14B8A6', '#6366F1', '#F43F5E', '#84CC16', '#0EA5E9', '#D946EF', '#EAB308', '#1D4ED8', '#047857', '#B45309', '#BE123C', '#6D28D9'];
 
 const INTENSITY_LABELS = {1: 'Mild', 2: 'Light', 3: 'Moderate', 4: 'Severe', 5: 'Extreme'};
+const MOODS = [
+  {emoji: '😌', label: 'Calm'}, {emoji: '😊', label: 'Happy'},
+  {emoji: '😐', label: 'Neutral'}, {emoji: '😰', label: 'Anxious'},
+  {emoji: '😣', label: 'Stressed'}, {emoji: '😡', label: 'Frustrated'},
+  {emoji: '😢', label: 'Sad'}, {emoji: '🙏', label: 'Craving'}
+];
 
-let waves = [];
+const HEALTH_MILESTONES = [
+  {mins: 20, emoji: '❤️', title: 'Heart Rate Normalizes', desc: 'Blood pressure begins to drop after your last cigarette.'},
+  {mins: 120, emoji: '🫁', title: 'Oxygen Improves', desc: 'Oxygen levels in your blood return toward normal.'},
+  {mins: 480, emoji: '💨', title: 'CO Level Drops', desc: 'Carbon monoxide is cleared from your bloodstream.'},
+  {mins: 1440, emoji: '💪', title: 'Heart Attack Risk Drops', desc: 'Risk of heart attack begins to decrease.'},
+  {mins: 2880, emoji: '👅', title: 'Senses Heighten', desc: 'Nerve endings regrow. Taste and smell improve.'},
+  {mins: 4320, emoji: '🧘', title: 'Breathing Eases', desc: 'Bronchial tubes relax. Lung capacity improves.'},
+  {mins: 10080, emoji: '🧠', title: 'Mood Stabilizes', desc: 'Nicotine receptors return to normal levels.'},
+  {mins: 20160, emoji: '🏃', title: 'Circulation Boosts', desc: 'Blood circulation improves significantly.'},
+  {mins: 43200, emoji: '🌟', title: 'Lung Function Grows', desc: 'Cilia regrow and lung function increases.'},
+];
 try { waves = JSON.parse(localStorage.getItem('smoke_waves')) || []; if(!Array.isArray(waves)) waves = []; } catch(e) { waves = []; }
 
 let waveAttempts = [];
@@ -132,6 +148,7 @@ let mainTimer = null, waveTimer = null, cooldownTimer = null;
 let editingLogIdx = null;
 let currentSelectedTags = [];
 let currentIntensity = 3;
+let currentMood = null;
 let takeoverTimer = null;
 let takeoverCountdown = 6;
 let historyRenderLimit = 30;
@@ -452,7 +469,7 @@ function actuallyLogCigarette() {
 
   const now = new Date().getTime();
   let gap = logs.length > 0 ? Math.round((now - logs[logs.length-1].timestamp)/60000) : null;
-  logs.push({timestamp: now, gap: gap, tags: [], lat: null, lng: null, intensity: 3});
+  logs.push({timestamp: now, gap: gap, tags: [], lat: null, lng: null, intensity: 3, note: '', mood: null});
   const newLogIdx = logs.length - 1;
   localStorage.setItem('smoke_logs', JSON.stringify(logs));
   lockEndTime = now + (settings.lockSecs * 1000);
@@ -704,7 +721,9 @@ function setTakeoverIntensity(val) {
 }
 
 function startSmokeTakeover(logIdx, gap, waveWasActive) {
-  editingLogIdx = logIdx; currentSelectedTags = []; setTakeoverIntensity(3); takeoverCountdown = 6;
+  editingLogIdx = logIdx; currentSelectedTags = []; currentMood = null; setTakeoverIntensity(3); takeoverCountdown = 6;
+  const noteField = document.getElementById('takeoverNotes');
+  if (noteField) { noteField.value = ''; const c = document.getElementById('takeoverNotesCounter'); if(c) c.innerText = '0/200'; }
   const overlay = document.getElementById('smokeTakeover'); const numberEl = document.getElementById('takeoverNumber'); const ringEl = document.getElementById('takeoverRing'); const factEl = document.getElementById('takeoverFact');
   let factText = "";
   if(waveWasActive) factText = "It's okay to slip. What triggered this strong urge?";
@@ -713,6 +732,7 @@ function startSmokeTakeover(logIdx, gap, waveWasActive) {
   else factText = `It's been ${Math.floor(gap/60)}h ${gap%60}m since your last one.`;
   if(factEl) factEl.innerText = factText;
   renderTakeoverTags();
+  renderTakeoverMoods();
 
   const updateTick = () => {
     if(numberEl) numberEl.innerText = takeoverCountdown;
@@ -739,6 +759,34 @@ function renderTakeoverTags() {
     const safeId = 'tagBtn_' + t.replace(/[^a-zA-Z0-9]/g, '_').replace(/_{2,}/g, '_').replace(/_+$/, '').substring(0, 50) || 'trigger';
     return `<button id="${safeId}" onclick="window.toggleTakeoverTag('${esc(t)}')" class="px-4 py-2.5 rounded-full border text-xs font-semibold backdrop-blur-md transition-all active:scale-95 ${activeClasses}" ${textStyle}>${esc(t)}</button>`;
   }).join('');
+}
+
+function renderTakeoverMoods() {
+  const grid = document.getElementById('takeoverMoodGrid'); if(!grid) return;
+  grid.innerHTML = MOODS.map((m, idx) => {
+    const isActive = currentMood === m.emoji;
+    const cls = isActive ? 'bg-amber-500/20 border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)]' : 'bg-white/5 border-white/10';
+    return `<button onclick="window.toggleTakeoverMood(${idx})" class="px-3 py-1.5 rounded-full border text-sm backdrop-blur-md transition-all active:scale-95 ${cls}" style="color: var(--text-main);" title="${m.label}">${m.emoji}</button>`;
+  }).join('');
+}
+
+window.toggleTakeoverMood = function(idx) {
+  currentMood = currentMood === MOODS[idx].emoji ? null : MOODS[idx].emoji;
+  renderTakeoverMoods();
+}
+
+function renderEditMood() {
+  const grid = document.getElementById('editMoodGrid'); if(!grid) return;
+  grid.innerHTML = MOODS.map((m, idx) => {
+    const isActive = currentMood === m.emoji;
+    const inlineStyle = isActive ? 'background: var(--accent); border-color: var(--accent); box-shadow: 0 4px 15px var(--accent-glow);' : 'background: var(--input-bg); color: var(--text-main); border-color: var(--card-border);';
+    return `<button onclick="window.toggleEditMood(${idx})" class="px-3 py-1.5 rounded-full border text-sm font-semibold transition-all active:scale-95" style="${inlineStyle}">${m.emoji}</button>`;
+  }).join('');
+}
+
+window.toggleEditMood = function(idx) {
+  currentMood = currentMood === MOODS[idx].emoji ? null : MOODS[idx].emoji;
+  renderEditMood();
 }
 
 function toggleTakeoverTag(t) { 
@@ -780,6 +828,10 @@ function closeSmokeTakeover() {
   const overlay = document.getElementById('smokeTakeover'); overlay.classList.remove('opacity-100'); overlay.classList.add('opacity-0');
   if(editingLogIdx !== null && logs[editingLogIdx]) {
     logs[editingLogIdx].tags = [...currentSelectedTags]; logs[editingLogIdx].intensity = currentIntensity;
+    // Save journal note and mood from takeover
+    const noteEl = document.getElementById('takeoverNotes');
+    if (noteEl) logs[editingLogIdx].note = noteEl.value.trim().substring(0, 200);
+    logs[editingLogIdx].mood = currentMood;
     localStorage.setItem('smoke_logs', JSON.stringify(logs));
     if (window.posthog) {
       posthog.capture('takeover_saved', { tags: currentSelectedTags, intensity: currentIntensity });
@@ -1046,6 +1098,7 @@ function updateUI() {
   renderHistory('homeRecentLogs', 3);
   updateDynamicTagline();
   updateLastSmokeDisplay();
+  renderHealthTimeline();
 }
 
 function renderWeeklyPaceChart() {
@@ -1469,6 +1522,7 @@ function openTriggerModal(logIdx = null) {
     if (Array.isArray(log.tags) && log.tags.length > 0) currentSelectedTags = [...log.tags];
     else if (log.trigger) currentSelectedTags = [log.trigger];
     else currentSelectedTags = [];
+    currentMood = log.mood || null;
     
     window.setEditIntensity(log.intensity || 3);
     const d = new Date(log.timestamp);
@@ -1483,9 +1537,15 @@ function openTriggerModal(logIdx = null) {
     if(dateInput) dateInput.value = `${yyyy}-${mm}-${dd}`;
     if(timeInput) timeInput.value = `${hh}:${min}`;
 
-    renderModalTriggerGrid(); 
+    const noteInput = document.getElementById('editLogNote');
+    const noteCounter = document.getElementById('editLogNoteCounter');
+    if (noteInput) { noteInput.value = log.note || ''; }
+    if (noteCounter) noteCounter.innerText = `${(log.note || '').length}/200`;
+
+    renderModalTriggerGrid();
+    renderEditMood();
     const modal = document.getElementById('triggerModal');
-    if(modal) modal.classList.remove('hidden'); 
+    if(modal) modal.classList.remove('hidden');
     if(window.lucide) window.lucide.createIcons();
   } catch(e) { console.error("openTriggerModal Error:", e); }
 }
@@ -1506,7 +1566,9 @@ function saveTags() {
   if(editingLogIdx !== null && logs[editingLogIdx]) {
     const dateVal = document.getElementById('editLogDate').value; const timeVal = document.getElementById('editLogTime').value;
     if(dateVal && timeVal) { const dt = new Date(`${dateVal}T${timeVal}`); if(!isNaN(dt.getTime())) logs[editingLogIdx].timestamp = dt.getTime(); }
-    logs[editingLogIdx].tags = [...currentSelectedTags]; logs[editingLogIdx].intensity = currentIntensity;
+    logs[editingLogIdx].tags = [...currentSelectedTags]; logs[editingLogIdx].intensity = currentIntensity; logs[editingLogIdx].mood = currentMood;
+    const noteEl = document.getElementById('editLogNote');
+    if (noteEl) logs[editingLogIdx].note = noteEl.value.trim().substring(0, 200);
     logs.sort((a,b) => a.timestamp - b.timestamp);
     for (let i = 0; i < logs.length; i++) { logs[i].gap = i > 0 ? Math.round((logs[i].timestamp - logs[i-1].timestamp)/60000) : null; }
     localStorage.setItem('smoke_logs', JSON.stringify(logs));
@@ -1528,6 +1590,29 @@ window.deleteCurrentLog = function() {
 
 function closeTriggerModal() { document.getElementById('triggerModal').classList.add('hidden'); }
 
+window.toggleHistoryClearBtn = function() {
+    const searchVal = document.getElementById('historySearch')?.value.trim() || '';
+    const fromVal = document.getElementById('historyDateFrom')?.value || '';
+    const toVal = document.getElementById('historyDateTo')?.value || '';
+    const btn = document.getElementById('historyClearFilters');
+    if (btn) {
+        btn.classList.toggle('hidden', !(searchVal || fromVal || toVal));
+    }
+    renderHistory('fullHistoryList');
+}
+
+window.clearHistoryFilters = function() {
+    const search = document.getElementById('historySearch');
+    const from = document.getElementById('historyDateFrom');
+    const to = document.getElementById('historyDateTo');
+    const btn = document.getElementById('historyClearFilters');
+    if (search) search.value = '';
+    if (from) from.value = '';
+    if (to) to.value = '';
+    if (btn) btn.classList.add('hidden');
+    renderHistory('fullHistoryList');
+}
+
 window.loadMoreHistory = function() {
     historyRenderLimit += 30;
     renderHistory('fullHistoryList');
@@ -1537,9 +1622,41 @@ function renderHistory(tId = 'fullHistoryList', homeLimit = 3) {
   try {
     const c = document.getElementById(tId); if(!c) return;
     if(!logs || logs.length===0) { c.innerHTML="<p class='text-center py-6 text-xs flex flex-col items-center gap-2' style='color: var(--text-muted);'><i data-lucide='inbox' class='w-6 h-6 opacity-50'></i> No logs recorded yet.</p>"; if(window.lucide) window.lucide.createIcons(); return; }
-    
+
     let filteredLogs = logs.map((l, i) => ({ ...l, origIdx: i })).reverse();
-    
+
+    // Search filter
+    let searchVal = '';
+    if (tId === 'fullHistoryList') {
+        const searchInput = document.getElementById('historySearch');
+        searchVal = searchInput ? searchInput.value.trim().toLowerCase() : '';
+        if (searchVal) {
+            filteredLogs = filteredLogs.filter(l => {
+                let tagsArr = [];
+                if (Array.isArray(l.tags) && l.tags.length > 0) tagsArr = l.tags;
+                else if (l.trigger) tagsArr = [l.trigger];
+                const tagsText = tagsArr.join(' ').toLowerCase();
+                const dateText = l.timestamp ? new Date(l.timestamp).toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric', year:'numeric' }).toLowerCase() : '';
+                const timeText = l.timestamp ? formatAppTime(new Date(l.timestamp)).toLowerCase() : '';
+                return tagsText.includes(searchVal) || dateText.includes(searchVal) || timeText.includes(searchVal);
+            });
+        }
+
+        // Date range filter
+        const fromInput = document.getElementById('historyDateFrom');
+        const toInput = document.getElementById('historyDateTo');
+        const fromVal = fromInput ? fromInput.value : '';
+        const toVal = toInput ? toInput.value : '';
+        if (fromVal) {
+            const fromDate = new Date(fromVal + 'T00:00:00').getTime();
+            filteredLogs = filteredLogs.filter(l => l.timestamp >= fromDate);
+        }
+        if (toVal) {
+            const toDate = new Date(toVal + 'T23:59:59').getTime();
+            filteredLogs = filteredLogs.filter(l => l.timestamp <= toDate);
+        }
+    }
+
     const filterSelect = document.getElementById('historyTagFilter');
     if (filterSelect && tId === 'fullHistoryList' && filterSelect.value !== 'all') {
         filteredLogs = filteredLogs.filter(l => {
@@ -1548,7 +1665,17 @@ function renderHistory(tId = 'fullHistoryList', homeLimit = 3) {
             else if (l.trigger) tagsArr = [l.trigger];
             return tagsArr.includes(filterSelect.value);
         });
-        if(filteredLogs.length===0) { c.innerHTML="<p class='text-center py-6 text-xs flex flex-col items-center gap-2' style='color: var(--text-muted);'><i data-lucide='filter' class='w-6 h-6 opacity-50'></i> No logs match this tag.</p>"; document.getElementById('historyLoadMore').classList.add('hidden'); if(window.lucide) window.lucide.createIcons(); return; }
+    }
+
+    if(filteredLogs.length===0) {
+        const emptyMsg = searchVal || (document.getElementById('historyDateFrom') && document.getElementById('historyDateFrom').value) || (document.getElementById('historyDateTo') && document.getElementById('historyDateTo').value) || (document.getElementById('historyTagFilter') && document.getElementById('historyTagFilter').value !== 'all')
+            ? "<i data-lucide='filter' class='w-6 h-6 opacity-50'></i> No logs match your filters."
+            : "<i data-lucide='inbox' class='w-6 h-6 opacity-50'></i> No logs recorded yet.";
+        c.innerHTML = `<p class='text-center py-6 text-xs flex flex-col items-center gap-2' style='color: var(--text-muted);'>${emptyMsg}</p>`;
+        const btnBox = document.getElementById('historyLoadMore');
+        if(btnBox) btnBox.classList.add('hidden');
+        if(window.lucide) window.lucide.createIcons();
+        return;
     }
 
     let mappedLogs = tId === 'homeRecentLogs' ? filteredLogs.slice(0, homeLimit) : filteredLogs.slice(0, historyRenderLimit);
@@ -1599,6 +1726,8 @@ function renderHistoryItem(l) {
   for(let i=1; i<=5; i++) { intensityDots += `<div class="w-1.5 h-1.5 rounded-full" style="background-color: ${i <= intVal ? 'var(--accent)' : 'rgba(156,163,175,0.2)'};"></div>`; }
 
   const timeStr = l.timestamp ? formatAppTime(new Date(l.timestamp)) : '--:--';
+  const moodHtml = l.mood ? `<span class="mr-1" title="Mood: ${MOODS.find(m => m.emoji === l.mood)?.label || ''}">${l.mood}</span>` : '';
+  const noteHtml = l.note ? `<div class="flex items-start gap-1 mt-1.5"><i data-lucide="edit-3" class="w-2.5 h-2.5 shrink-0 mt-0.5" style="color: var(--text-muted);"></i><span class="text-[10px] leading-relaxed italic" style="color: var(--text-muted);">${esc(l.note.substring(0, 200))}</span></div>` : '';
 
   return `
   <div onclick="window.openTriggerModal(${l.origIdx})" class="premium-card p-4 flex justify-between items-center relative overflow-hidden cursor-pointer active:scale-[0.98] transition-transform hover:bg-gray-500/5">
@@ -1606,12 +1735,58 @@ function renderHistoryItem(l) {
     <div class="flex items-start gap-3 flex-1 min-w-0 pr-3">
       <div class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${trendClass}"><i data-lucide="${trendIcon}" class="w-3.5 h-3.5"></i></div>
       <div class="flex-1 min-w-0">
-        <div class="font-bold tracking-wide flex items-center gap-2" style="color: var(--text-main);">${timeStr}<div class="flex gap-0.5 ml-2">${intensityDots}</div></div>
+        <div class="font-bold tracking-wide flex items-center gap-2" style="color: var(--text-main);">${timeStr}${moodHtml}<div class="flex gap-0.5 ml-2">${intensityDots}</div></div>
         <div class="text-[10px] font-bold uppercase mt-0.5 flex items-start gap-1" style="color: var(--text-muted);"><i data-lucide="tag" class="w-3 h-3 shrink-0 mt-0.5"></i><span class="leading-relaxed whitespace-normal break-words">${tagsDisplay}</span></div>
+        ${noteHtml}
       </div>
     </div>
     <div class="numeric-display font-bold text-base shrink-0" style="color: ${valueColor};">${formatGap(l.gap)}</div>
   </div>`;
+}
+
+function renderHealthTimeline() {
+  const card = document.getElementById('healthTimelineCard');
+  const list = document.getElementById('milestoneList');
+  const countEl = document.getElementById('milestoneCount');
+  const bestGapEl = document.getElementById('milestoneBestGap');
+  if (!card || !list) return;
+
+  if (!logs || logs.length < 2) {
+    card.classList.add('hidden');
+    return;
+  }
+  card.classList.remove('hidden');
+
+  const allGaps = logs.map(l => l.gap).filter(g => g !== null && g !== undefined);
+  if (allGaps.length === 0) { card.classList.add('hidden'); return; }
+
+  const bestGapMins = Math.max(...allGaps);
+  if (bestGapEl) bestGapEl.innerText = formatGap(Math.round(bestGapMins));
+
+  let unlocked = 0;
+  list.innerHTML = HEALTH_MILESTONES.map(m => {
+    const isUnlocked = bestGapMins >= m.mins;
+    if (isUnlocked) unlocked++;
+    const label = isUnlocked ? 'Unlocked' : `${formatGap(m.mins)}`;
+    const labelColor = isUnlocked ? 'color: var(--accent);' : 'color: rgba(156,163,175,0.4);';
+    const emojiOpacity = isUnlocked ? '' : 'opacity-30';
+    const borderCls = isUnlocked ? 'border-amber-500/20' : 'border-transparent';
+    const bgCls = isUnlocked ? 'bg-amber-500/5' : '';
+    const titleColor = isUnlocked ? 'color: var(--text-main);' : 'color: var(--text-muted);';
+    const descColor = isUnlocked ? 'color: var(--text-muted);' : 'color: rgba(156,163,175,0.35);';
+    const gapColor = isUnlocked ? 'color: var(--accent);' : 'color: rgba(156,163,175,0.35);';
+    return `<div class="flex items-start gap-2.5 px-2 py-1.5 rounded-xl ${bgCls} ${borderCls} transition-all" style="border: 1px solid;">
+      <span class="text-base shrink-0 mt-0.5 ${emojiOpacity}">${m.emoji}</span>
+      <div class="flex-1 min-w-0">
+        <div class="text-[10px] font-bold" style="${titleColor}">${m.title}</div>
+        <div class="text-[9px] leading-tight" style="${descColor}">${m.desc}</div>
+      </div>
+      <span class="text-[9px] font-bold shrink-0 whitespace-nowrap" style="${labelColor}">${label}</span>
+    </div>`;
+  }).join('');
+
+  if (countEl) countEl.innerText = `${unlocked}/${HEALTH_MILESTONES.length}`;
+  if(window.lucide) window.lucide.createIcons();
 }
 
 function getFilteredLogs() {
@@ -1620,7 +1795,36 @@ function getFilteredLogs() {
   if(filter === 'today') return logs.filter(l => l.timestamp >= todayStart);
   if(filter === '7days') return logs.filter(l => l.timestamp >= todayStart - (6 * 86400000));
   if(filter === '1month') return logs.filter(l => l.timestamp >= todayStart - (29 * 86400000));
+  if(filter === 'custom') {
+      const fromVal = document.getElementById('insightsDateFrom')?.value || '';
+      const toVal = document.getElementById('insightsDateTo')?.value || '';
+      let filtered = logs;
+      if (fromVal) filtered = filtered.filter(l => l.timestamp >= new Date(fromVal + 'T00:00:00').getTime());
+      if (toVal) filtered = filtered.filter(l => l.timestamp <= new Date(toVal + 'T23:59:59').getTime());
+      return filtered;
+  }
   return logs;
+}
+
+window.toggleInsightsCustomRange = function() {
+    const sel = document.getElementById('insightsDateFilter');
+    const range = document.getElementById('insightsCustomRange');
+    if (sel && range) {
+        range.classList.toggle('hidden', sel.value !== 'custom');
+    }
+    renderAllCharts();
+}
+
+window.clearInsightsCustomRange = function() {
+    const from = document.getElementById('insightsDateFrom');
+    const to = document.getElementById('insightsDateTo');
+    const sel = document.getElementById('insightsDateFilter');
+    if (from) from.value = '';
+    if (to) to.value = '';
+    if (sel) sel.value = 'all';
+    const range = document.getElementById('insightsCustomRange');
+    if (range) range.classList.add('hidden');
+    renderAllCharts();
 }
 function setBadge(id, text, colorClass) { const b = document.getElementById(id); if(b) { if(text) { b.innerText = text; b.className = `text-[9px] font-bold px-2 py-0.5 rounded border ${colorClass}`; b.classList.remove('hidden'); } else b.classList.add('hidden'); } }
 
@@ -1692,7 +1896,7 @@ function renderAllCharts() {
   const activeLogs = getFilteredLogs();
   const filter = document.getElementById('insightsDateFilter').value;
   const filterEl = document.getElementById('selectedFilterLabel');
-  if(filterEl) filterEl.innerText = { today: 'Today', '7days': 'Last 7 Days', '1month': '1 Month', all: 'All Time' }[filter] || 'Selected Period';
+  if(filterEl) filterEl.innerText = { today: 'Today', '7days': 'Last 7 Days', '1month': '1 Month', all: 'All Time', custom: 'Custom Range' }[filter] || 'Selected Period';
 
   let activeWaves = waves;
   const now = new Date();
