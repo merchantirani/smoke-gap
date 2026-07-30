@@ -14,13 +14,11 @@
 | 8 | **Notes Per Log** | `index.html`, `app.js` |
 | 9 | **Mood / Withdrawal Tracking** | `index.html`, `app.js` |
 | 10 | **Health Benefits Timeline** | `index.html`, `app.js` |
+| 11 | **Progress Photos** | `index.html`, `app.js` |
 
 ## ❌ Remaining Updates
 
-### Phase 1: Missing Features
-| # | Feature | Details |
-|---|---|---|
-| 11 | **Progress Photos** | Upload compressed photos (max 5) |
+### Phase 2: UI/UX Improvements
 
 ### Phase 2: UI/UX Improvements
 | # | Feature | Details |

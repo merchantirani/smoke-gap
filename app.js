@@ -114,6 +114,9 @@ const HEALTH_MILESTONES = [
 ];
 try { waves = JSON.parse(localStorage.getItem('smoke_waves')) || []; if(!Array.isArray(waves)) waves = []; } catch(e) { waves = []; }
 
+let progressPhotos = [];
+try { progressPhotos = JSON.parse(localStorage.getItem('smoke_progress_photos')) || []; if(!Array.isArray(progressPhotos)) progressPhotos = []; } catch(e) { progressPhotos = []; }
+
 let waveAttempts = [];
 try { waveAttempts = JSON.parse(localStorage.getItem('smoke_wave_attempts')) || []; if(!Array.isArray(waveAttempts)) waveAttempts = []; } catch(e) { waveAttempts = []; }
 function logWaveAttempt(outcome, customDurationMs) {
@@ -259,7 +262,7 @@ if (typeof Chart !== 'undefined') {
   try { Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif'; } catch(e) {}
 }
 const crosshairPlugin = { id: 'crosshair', afterDraw: chart => { if (chart.tooltip?._active?.length && (chart.config.type === 'line' || chart.config.type === 'bar')) { const activePoint = chart.tooltip._active[0]; const ctx = chart.ctx; const x = activePoint.element.x; ctx.save(); ctx.beginPath(); ctx.moveTo(x, chart.scales.y.top); ctx.lineTo(x, chart.scales.y.bottom); ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)'; ctx.setLineDash([4, 4]); ctx.stroke(); ctx.restore(); } } };
-const centerTextPlugin = { id: 'centerText', beforeDraw: chart => { if (chart.config.type === 'doughnut') { const ctx = chart.ctx; ctx.restore(); let text = ""; if (chart.canvas.id === 'chart4') { const smoked = chart.data.datasets[0].data[0] || 0; const resisted = chart.data.datasets[0].data[1] || 0; const total = smoked + resisted; text = total > 0 ? Math.round((resisted/total)*100) + "%" : "0%"; } else { const total = chart.data.datasets[0].data.reduce((a,b)=>a+b, 0); text = total > 0 ? total + " Logs" : "No Data"; } ctx.font = "bold " + (chart.canvas.id === 'chart4' ? '26px' : '16px') + " sans-serif"; const x = chart.chartArea.left + (chart.chartArea.right - chart.chartArea.left) / 2; const y = chart.chartArea.top + (chart.chartArea.bottom - chart.chartArea.top) / 2; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = (isLightTheme()) ? "#64748B" : "#F3F4F6"; ctx.fillText(text, x, y); ctx.save(); } } };
+const centerTextPlugin = { id: 'centerText', beforeDraw: chart => { if (chart.config.type === 'doughnut') { const ctx = chart.ctx; ctx.restore(); let text = ""; if (chart.canvas.id === 'chart4') { const smoked = chart.data.datasets[0].data[0] || 0; const resisted = chart.data.datasets[0].data[1] || 0; const total = smoked + resisted; text = total > 0 ? Math.round((resisted/total)*100) + "%" : "🙌"; } else { const total = chart.data.datasets[0].data.reduce((a,b)=>a+b, 0); text = total > 0 ? total + " Logs" : "Keep\ngoing"; } ctx.font = "bold " + (chart.canvas.id === 'chart4' ? '26px' : '14px') + " sans-serif"; const x = chart.chartArea.left + (chart.chartArea.right - chart.chartArea.left) / 2; const y = chart.chartArea.top + (chart.chartArea.bottom - chart.chartArea.top) / 2; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = (isLightTheme()) ? "#64748B" : "#9CA3AF"; ctx.fillText(text, x, y); ctx.save(); } } };
 
 function formatAppTime(dateObj) { return dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: settings.timeFormat === '12h' }); }
 
@@ -1099,6 +1102,7 @@ function updateUI() {
   updateDynamicTagline();
   updateLastSmokeDisplay();
   renderHealthTimeline();
+  renderProgressPhotos();
 }
 
 function renderWeeklyPaceChart() {
@@ -1789,6 +1793,97 @@ function renderHealthTimeline() {
   if(window.lucide) window.lucide.createIcons();
 }
 
+function compressImage(file, maxW, maxH, quality, cb) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      let w = img.width, h = img.height;
+      if (w > maxW) { h *= maxW / w; w = maxW; }
+      if (h > maxH) { w *= maxH / h; h = maxH; }
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      cb(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+window.handlePhotoUpload = function(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  if (progressPhotos.length >= 5) { showToast('Maximum 5 photos allowed.'); e.target.value = ''; return; }
+  compressImage(file, 800, 800, 0.7, function(dataUrl) {
+    progressPhotos.push({id: Date.now(), dataUrl: dataUrl, timestamp: Date.now()});
+    localStorage.setItem('smoke_progress_photos', JSON.stringify(progressPhotos));
+    renderProgressPhotos();
+    showToast('Progress photo added!');
+  });
+  e.target.value = '';
+}
+
+function renderProgressPhotos() {
+  const section = document.getElementById('progressPhotosSection');
+  const grid = document.getElementById('photoGrid');
+  const countEl = document.getElementById('photoCount');
+  if (!section || !grid) return;
+
+  if (!progressPhotos || progressPhotos.length === 0) {
+    section.classList.add('hidden');
+    return;
+  }
+  section.classList.remove('hidden');
+  if (countEl) countEl.innerText = `${progressPhotos.length}/5`;
+
+  const sorted = [...progressPhotos].sort((a, b) => b.timestamp - a.timestamp);
+  grid.innerHTML = sorted.map(p => {
+    const d = new Date(p.timestamp);
+    const dateStr = d.toLocaleDateString([], {month:'short', day:'numeric'});
+    return `<div onclick="window.openPhotoViewer(${p.id})" class="relative rounded-xl overflow-hidden cursor-pointer active:scale-95 transition-all aspect-square" style="background: var(--input-bg); border: 1px solid var(--card-border);">
+      <img src="${p.dataUrl}" loading="lazy" class="w-full h-full object-cover" alt="Progress ${dateStr}">
+      <div class="absolute bottom-0 left-0 right-0 text-[8px] font-bold text-center py-1" style="background: rgba(0,0,0,0.5); color: #fff;">${dateStr}</div>
+    </div>`;
+  }).join('');
+  if(window.lucide) window.lucide.createIcons();
+}
+
+window.openPhotoViewer = function(id) {
+  const photo = progressPhotos.find(p => p.id === id);
+  if (!photo) return;
+  const img = document.getElementById('photoViewerImage');
+  const dateEl = document.getElementById('photoViewerDate');
+  const delBtn = document.getElementById('photoViewerDelete');
+  if (img) img.src = photo.dataUrl;
+  if (dateEl) dateEl.innerText = new Date(photo.timestamp).toLocaleDateString([], {weekday:'short', month:'short', day:'numeric', year:'numeric'});
+  if (delBtn) delBtn.dataset.photoid = id;
+  const modal = document.getElementById('photoViewerModal');
+  if (modal) modal.classList.remove('hidden');
+  if(window.lucide) window.lucide.createIcons();
+}
+
+window.closePhotoViewer = function() {
+  const modal = document.getElementById('photoViewerModal');
+  if (modal) modal.classList.add('hidden');
+  const img = document.getElementById('photoViewerImage');
+  if (img) img.src = '';
+}
+
+window.deleteViewedPhoto = function() {
+  const delBtn = document.getElementById('photoViewerDelete');
+  const id = parseInt(delBtn?.dataset?.photoid);
+  if (!id) return;
+  showConfirm("Delete this photo?", "This cannot be undone.", () => {
+    progressPhotos = progressPhotos.filter(p => p.id !== id);
+    localStorage.setItem('smoke_progress_photos', JSON.stringify(progressPhotos));
+    closePhotoViewer();
+    renderProgressPhotos();
+    showToast('Photo deleted.');
+  });
+}
+
 function getFilteredLogs() {
   const filter = document.getElementById('insightsDateFilter').value, now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
@@ -1916,7 +2011,7 @@ function renderAllCharts() {
   const gappedLogs = activeLogs.filter(l => l.gap !== null && l.gap !== undefined);
   document.getElementById('insightAvgGap').innerText = gappedLogs.length > 0 ? formatGap(Math.round(gappedLogs.reduce((a, b) => a + b.gap, 0) / gappedLogs.length)) : '--';
 
-  let smartText = "Keep tracking to generate insights.";
+  let smartText = activeLogs.length > 0 ? "Analyzing your patterns..." : "Log your first cigarette to unlock personalized insights about your habits.";
   
   if(activeLogs.length > 0) {
     let hours = {}; activeLogs.forEach(l => { let h = new Date(l.timestamp).getHours(); hours[h] = (hours[h]||0)+1; });
@@ -1988,8 +2083,8 @@ function renderAllCharts() {
     if (filter === 'today') return formatAppTime(d);
     if (filter === '7days') return d.toLocaleDateString([], {weekday:'short'});
     return d.toLocaleDateString([], {month:'short', day:'numeric'});
-  }) : ['No Data'];
-  
+  }) : ['Start logging to see your trend'];
+
   const gaps = activeLogs.length > 0 ? activeLogs.map(l => l.gap) : [0];
   const chartTextColor = (isLightTheme()) ? '#64748B' : '#9CA3AF';
 
