@@ -1092,7 +1092,7 @@ function updateUI() {
   const dataSumm = document.getElementById('dataSummaryText');
   if(dataSumm) {
       if(logs.length > 0) { const firstDate = new Date(logs[0].timestamp).toLocaleDateString([], {month:'short', day:'numeric', year:'numeric'}); dataSumm.innerText = `${logs.length} logs • Since ${firstDate}`; }
-      else { dataSumm.innerText = `0 logs • No data yet`; }
+      else { dataSumm.innerText = `0 logs • Log one to start tracking`; }
   }
 
   computeMomentumScore(today, todayWaves);
