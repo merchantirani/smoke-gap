@@ -340,6 +340,11 @@ window.onboardingSkip = function() {
   finishOnboarding();
 }
 
+window.restartOnboarding = function() {
+  localStorage.removeItem('smoke_onboarding_done');
+  location.reload();
+}
+
 function finishOnboarding() {
   localStorage.setItem('smoke_onboarding_done', 'true');
   document.getElementById('onboardingOverlay').classList.add('hidden');
@@ -851,9 +856,10 @@ function showUndoToast(logIdx) {
   t.className = 'premium-card px-4 py-3 rounded-full text-xs font-bold shadow-lg pointer-events-auto transition-all duration-300 flex items-center gap-3 border border-gray-500/20';
   t.style.background = 'var(--card-bg)';
   t.innerHTML = `<span class="flex items-center gap-1.5" style="color: var(--text-main);"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-500"></i> Logged</span><div class="w-px h-3 bg-gray-500/30"></div><button onclick="window.undoLog(${logIdx}, this.parentElement)" class="text-sky-500 active:scale-95 transition-transform uppercase tracking-wider">Undo</button>`;
-  c.prepend(t); if(window.lucide) window.lucide.createIcons();
+  t.style.opacity = '0'; t.style.transform = 'translateY(-10px)';
+  c.appendChild(t); if(window.lucide) window.lucide.createIcons();
   requestAnimationFrame(() => { t.style.opacity = '1'; t.style.transform = 'translateY(0)'; });
-  const autoHide = setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateY(10px)'; setTimeout(() => t.remove(), 300); }, 5000); t.dataset.timerId = autoHide;
+  const autoHide = setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateY(-10px)'; setTimeout(() => t.remove(), 300); }, 5000); t.dataset.timerId = autoHide;
 }
 
 window.undoLog = function(idx, element) {
@@ -989,9 +995,9 @@ function showToast(msg) {
   const c = document.getElementById('toastContainer'); if(!c) return;
   const t = document.createElement('div');
   t.className = 'premium-card px-4 py-2.5 rounded-full text-xs font-bold shadow-lg pointer-events-auto transition-all duration-300';
-  t.style.color = 'var(--text-main)'; t.style.opacity = '0'; t.style.transform = 'translateY(10px)'; t.innerText = msg;
-  c.prepend(t); requestAnimationFrame(() => { t.style.opacity = '1'; t.style.transform = 'translateY(0)'; });
-  setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateY(10px)'; setTimeout(() => t.remove(), 300); }, 2500);
+  t.style.color = 'var(--text-main)'; t.style.opacity = '0'; t.style.transform = 'translateY(-10px)'; t.innerText = msg;
+  c.appendChild(t); requestAnimationFrame(() => { t.style.opacity = '1'; t.style.transform = 'translateY(0)'; });
+  setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateY(-10px)'; setTimeout(() => t.remove(), 300); }, 2500);
 }
 
 let pendingConfirmCallback = null;
@@ -2093,8 +2099,11 @@ function renderAllCharts() {
 
   const gaps = activeLogs.length > 0 ? activeLogs.map(l => l.gap) : [0];
   const chartTextColor = (isLightTheme()) ? '#64748B' : '#9CA3AF';
+  const chartTooltipTheme = (isLightTheme())
+    ? { backgroundColor: 'rgba(255, 255, 255, 0.95)', titleColor: '#0F172A', bodyColor: '#10B981' }
+    : { backgroundColor: 'rgba(15, 23, 42, 0.95)', titleColor: '#FFFFFF', bodyColor: '#10B981' };
 
-  const proOptions = { responsive: true, maintainAspectRatio: false, animation: { duration: 600, easing: 'easeOutQuart' }, interaction: { mode: 'index', intersect: false }, layout: { padding: { left: 0, right: 0, top: 10, bottom: 0 } }, plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.95)', titleColor: '#FFFFFF', bodyColor: '#10B981', padding: 12, cornerRadius: 12, displayColors: false } }, scales: { x: { grid: { display: false }, ticks: { color: chartTextColor, font: { size: 9, weight: '600' }, maxTicksLimit: 4 } }, y: { beginAtZero: true, grid: { color: 'rgba(156, 163, 175, 0.05)', drawBorder: false }, ticks: { color: chartTextColor, font: { size: 9, weight: '600' }, padding: 6 } } } };
+  const proOptions = { responsive: true, maintainAspectRatio: false, animation: { duration: 600, easing: 'easeOutQuart' }, interaction: { mode: 'index', intersect: false }, layout: { padding: { left: 0, right: 0, top: 10, bottom: 0 } }, plugins: { legend: { display: false }, tooltip: { ...chartTooltipTheme, padding: 12, cornerRadius: 12, displayColors: false } }, scales: { x: { grid: { display: false }, ticks: { color: chartTextColor, font: { size: 9, weight: '600' }, maxTicksLimit: 4 } }, y: { beginAtZero: true, grid: { color: 'rgba(156, 163, 175, 0.05)', drawBorder: false }, ticks: { color: chartTextColor, font: { size: 9, weight: '600' }, padding: 6 } } } };
   const createGradient = (ctx, colorHex) => { let g = ctx.createLinearGradient(0, 0, 0, 180); g.addColorStop(0, colorHex); g.addColorStop(1, 'rgba(0,0,0,0)'); return g; };
   function upsertChart(key, ctx, config) { 
     try {
@@ -2249,10 +2258,38 @@ window.closeSosInterrupter = closeSosInterrupter;
 window.deleteLogFromHistory = function(idx) {
   if (logs[idx]) {
     showConfirm("Delete this log?", "This cannot be undone.", () => {
+      // Save the log data before deleting so we can restore it
+      const deletedLog = logs[idx];
       window.undoLog(idx, null);
-      showToast("Log deleted");
       renderHistory('fullHistoryList');
+
+      // Show undo toast
+      const c = document.getElementById('toastContainer'); if(!c) return;
+      const t = document.createElement('div');
+      t.className = 'premium-card px-4 py-3 rounded-full text-xs font-bold shadow-lg pointer-events-auto transition-all duration-300 flex items-center gap-3 border border-gray-500/20';
+      t.style.background = 'var(--card-bg)';
+      t.innerHTML = `<span class="flex items-center gap-1.5" style="color: var(--text-main);"><i data-lucide="trash-2" class="w-3.5 h-3.5 text-red-400"></i> Deleted</span><div class="w-px h-3 bg-gray-500/30"></div><button onclick="window.restoreDeletedLog(this)" data-log='${JSON.stringify(deletedLog).replace(/'/g, "&#39;")}' class="text-sky-500 active:scale-95 transition-transform uppercase tracking-wider">Undo</button>`;
+      t.style.opacity = '0'; t.style.transform = 'translateY(-10px)';
+      c.appendChild(t); if(window.lucide) window.lucide.createIcons();
+      requestAnimationFrame(() => { t.style.opacity = '1'; t.style.transform = 'translateY(0)'; });
+      const autoHide = setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateY(-10px)'; setTimeout(() => t.remove(), 300); }, 5000);
+      t.dataset.timerId = autoHide;
     });
   }
+}
+
+window.restoreDeletedLog = function(btn) {
+  const toast = btn.closest('.premium-card');
+  if (toast) { clearTimeout(toast.dataset.timerId); toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }
+  try {
+    const logData = JSON.parse(btn.getAttribute('data-log'));
+    logs.push(logData);
+    logs.sort((a, b) => a.timestamp - b.timestamp);
+    for (let i = 0; i < logs.length; i++) { logs[i].gap = i > 0 ? Math.round((logs[i].timestamp - logs[i-1].timestamp)/60000) : null; }
+    localStorage.setItem('smoke_logs', JSON.stringify(logs));
+    try { updateUI(); } catch(err){}
+    renderHistory('fullHistoryList');
+    showToast("Log restored");
+  } catch(e) { showToast("Could not restore"); }
 }
 bootApp();
