@@ -1993,6 +1993,12 @@ function renderAllCharts() {
   const filterEl = document.getElementById('selectedFilterLabel');
   if(filterEl) filterEl.innerText = { today: 'Today', '7days': 'Last 7 Days', '1month': '1 Month', all: 'All Time', custom: 'Custom Range' }[filter] || 'Selected Period';
 
+  // Show/hide chart empty state
+  const chartEmpty = document.getElementById('chartEmptyState');
+  const chartCards = document.querySelectorAll('#chartContainer > .premium-card:not(#chartEmptyState)');
+  if (chartEmpty) chartEmpty.classList.toggle('hidden', activeLogs.length > 0);
+  chartCards.forEach(c => c.classList.toggle('hidden', activeLogs.length === 0));
+
   let activeWaves = waves;
   const now = new Date();
   if(filter === 'today') activeWaves = waves.filter(w => w >= new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime());

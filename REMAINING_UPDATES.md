@@ -15,15 +15,13 @@
 | 9 | **Mood / Withdrawal Tracking** | `index.html`, `app.js` |
 | 10 | **Health Benefits Timeline** | `index.html`, `app.js` |
 | 11 | **Progress Photos** | `index.html`, `app.js` |
+| 12 | **Better Empty States for Charts** | `index.html`, `app.js` |
 
 ## ❌ Remaining Updates
 
 ### Phase 2: UI/UX Improvements
-
-### Phase 2: UI/UX Improvements
 | # | Feature | Details |
 |---|---|---|
-| 12 | **Better Empty States for Charts** | Meaningful messages instead of "No Data" |
 | 13 | **Last Smoke Row Persistent** | Always visible in header |
 | 14 | **Toast Position Fix** | Move to top-center, fix z-index |
 
