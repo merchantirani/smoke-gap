@@ -26,9 +26,9 @@
 | 3 | ✅ DONE | **Theme-Aware Chart Tooltips** | Tooltip background/title colors now adapt to light/dark theme via `isLightTheme()` check |
 | 4 | ✅ DONE | **Log Delete Undo** | Delete ke baad undo toast with log data stored in data attribute; `restoreDeletedLog` re-inserts, re-sorts, and recalculates gaps |
 | 5 | ✅ DONE | **Onboarding Replay** | Added "Show Tour Again" button in Settings → Data Backup section; `restartOnboarding()` clears flag and reloads |
-| 6 | ⏳ PENDING | **Keyboard Auto-Open for PIN** | Auto-open keyboard on mobile when PIN modal appears |
-| 7 | ⏳ PENDING | **Accessibility: Color-Only Indicators** | Add labels/patterns to heatmap, battery, intensity for color-blind users |
-| 8 | ⏳ PENDING | **Empty State Consistency** | Unify empty state tone and add CTA across all sections |
+| 6 | ✅ DONE | **Keyboard Auto-Open for PIN** | Added `inp.focus({preventScroll: true})` + `inp.click()` with 300ms delay for iOS Safari compatibility |
+| 7 | ✅ DONE | **Accessibility: Color-Only Indicators** | Heatmap cells now show count as text; battery shows Low/Moderate/High label; intensity already has numbered buttons |
+| 8 | ✅ DONE | **Empty State Consistency** | Unified premium card style with CTAs for chart empty state and history empty state (with/without filters) |
 | 9 | ⏳ PENDING | **Animation Performance** | Reduce `backdrop-filter: blur(40px)` or add `will-change` for low-end devices |
 | 10 | ⏳ PENDING | **Photo Storage Limit** | Switch from localStorage to IndexedDB for progress photos, or reduce compression |
 | 11 | ⏳ PENDING | **Chart Draggable Hint** | Add visual hint that charts can be drag-reordered |

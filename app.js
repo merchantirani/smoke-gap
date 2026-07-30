@@ -91,7 +91,7 @@ if (settings.autoReduce) {
 }
 
 let triggers = JSON.parse(localStorage.getItem('smoke_triggers')) || ['🏠 Home', '💼 Work', '🚗 Car / Commute', '🎉 Outside / Social', '😰 Stress', '🍽️ After Meal', '☕ Chai / Coffee', '📱 Boredom', '👥 Peer Pressure', '🍺 Alcohol', '😡 Anger', '🌙 Habit'];
-const CHART_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316', '#14B8A6', '#6366F1', '#F43F5E', '#84CC16', '#0EA5E9', '#D946EF', '#EAB308', '#1D4ED8', '#047857', '#B45309', '#BE123C', '#6D28D9'];
+const CHART_COLORS = ['#3B82F6', '#10B981', '#10B981', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316', '#14B8A6', '#6366F1', '#F43F5E', '#84CC16', '#0EA5E9', '#D946EF', '#EAB308', '#1D4ED8', '#047857', '#B45309', '#BE123C', '#6D28D9'];
 
 const INTENSITY_LABELS = {1: 'Mild', 2: 'Light', 3: 'Moderate', 4: 'Severe', 5: 'Extreme'};
 const MOODS = [
@@ -631,7 +631,7 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
           if(status3) { status3.innerText = "Victory Zone"; status3.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 w-max"; }
           if(sub3) sub3.innerText = `Record Extended: +${formatGap(extraMins)}`;
       } else {
-          fill3.style.background = 'linear-gradient(180deg, #FBBF24, #F59E0B)'; fill3.style.boxShadow = "0 0 12px rgba(245,158,11,0.4) inset";
+          fill3.style.background = 'linear-gradient(180deg, #FBBF24, #10B981)'; fill3.style.boxShadow = "0 0 12px rgba(245,158,11,0.4) inset";
           if(badge3) badge3.classList.add('hidden');
           if(status3) { status3.innerText = "Pacing"; status3.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 w-max"; }
           if(sub3) sub3.innerText = `Target: ${formatGap(Math.round(avgGapMs/60000))} (${remMins}m left)`;
@@ -647,7 +647,7 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
       let remMins = Math.ceil((prevGapMs - diff) / 60000);
       newClass = 'mt-3 px-5 py-2 rounded-full border transition-all duration-500 bg-amber-500/10 border-amber-500/20';
       newHtml = `<i data-lucide="alert-circle" class="w-3.5 h-3.5 text-amber-500"></i><span class="text-amber-500">${remMins} min${remMins>1?'s':''} left to beat previous gap</span>`;
-      dotColor = '#F59E0B';
+      dotColor = '#10B981';
     } else {
       let extraMins = Math.floor((diff - prevGapMs) / 60000);
       newClass = 'mt-3 px-5 py-2 rounded-full border transition-all duration-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.15)]';
@@ -693,7 +693,7 @@ function enterPin(n) {
 }
 function clearPin() { enteredPin = ""; document.querySelectorAll('.pin-dot').forEach(el => { el.classList.remove('bg-gray-400'); el.classList.add('bg-gray-500'); }); }
 function shakePinDots() { const d = document.getElementById('pinDots'); if(!d) return; d.classList.add('shake-anim'); setTimeout(() => d.classList.remove('shake-anim'), 400); }
-function setupPin() { if(hasPin) { showConfirm("Remove PIN?", "You won't need a PIN to open the app anymore.", () => { localStorage.removeItem('smoke_pin_hash'); hasPin=false; storedPinHash=null; location.reload(); }); } else { document.getElementById('pinSetupInput').value = ''; document.getElementById('pinSetupError').classList.add('hidden'); document.getElementById('pinSetupModal').classList.remove('hidden'); setTimeout(() => document.getElementById('pinSetupInput').focus(), 100); } }
+function setupPin() { if(hasPin) { showConfirm("Remove PIN?", "You won't need a PIN to open the app anymore.", () => { localStorage.removeItem('smoke_pin_hash'); hasPin=false; storedPinHash=null; location.reload(); }); } else { const inp = document.getElementById('pinSetupInput'); inp.value = ''; document.getElementById('pinSetupError').classList.add('hidden'); document.getElementById('pinSetupModal').classList.remove('hidden'); setTimeout(() => { inp.focus({preventScroll: true}); if (inp.click) inp.click(); }, 300); } }
 function closePinSetupModal() { document.getElementById('pinSetupModal').classList.add('hidden'); }
 function savePinSetup() { const p = document.getElementById('pinSetupInput').value; if(/^\d{4}$/.test(p)) { localStorage.setItem('smoke_pin_hash', hashPin(p)); hasPin = true; storedPinHash = hashPin(p); closePinSetupModal(); document.getElementById('pinStatusBtn').innerText = "Remove PIN"; showToast("PIN saved"); } else { document.getElementById('pinSetupError').classList.remove('hidden'); } }
 
@@ -1088,6 +1088,7 @@ function updateUI() {
   let remCap = Math.max(0, settings.dailyLimit - today.length);
   let battPct = Math.round((remCap / Math.max(1, settings.dailyLimit)) * 100);
 
+	  const battLabel = document.getElementById("batteryLevelLabel");
   if(fillBar && pctText) {
     pctText.innerText = `${battPct}%`;
     fillBar.style.width = `${battPct}%`;
@@ -1095,17 +1096,20 @@ function updateUI() {
       fillBar.className = "h-full rounded-full transition-all duration-500 bg-red-500";
       pctText.className = "numeric-display text-[10px] font-bold text-red-500";
       if(battIcon) battIcon.className = "w-3.5 h-3.5 text-red-500";
+	      if(battLabel) { battLabel.innerText = "Low — Almost depleted"; battLabel.style.color = "#EF4444"; }
       if(limitMsg) limitMsg.classList.remove('hidden');
     } else if(battPct <= 50) {
       fillBar.className = "h-full rounded-full transition-all duration-500 bg-amber-500";
       pctText.className = "numeric-display text-[10px] font-bold text-amber-500";
       if(battIcon) battIcon.className = "w-3.5 h-3.5 text-amber-500";
       if(limitMsg) limitMsg.classList.add('hidden');
+	      if(battLabel) { battLabel.innerText = "Moderate — Half remaining"; battLabel.style.color = "#F59E0B"; }
     } else {
       fillBar.className = "h-full rounded-full transition-all duration-500 bg-emerald-500";
       pctText.className = "numeric-display text-[10px] font-bold text-emerald-500";
       if(battIcon) battIcon.className = "w-3.5 h-3.5 text-emerald-500";
       if(limitMsg) limitMsg.classList.add('hidden');
+	      if(battLabel) { battLabel.innerText = "High — Plenty of willpower"; battLabel.style.color = "#10B981"; }
     }
   }
 
@@ -1224,7 +1228,7 @@ function updateLastSmokeDisplay() {
   text.innerText = `Last: ${durationStr}`;
 
   // Color code by gap length
-  text.style.color = mins <= 30 ? '#EF4444' : mins <= 120 ? '#F59E0B' : '#10B981';
+  text.style.color = mins <= 30 ? '#EF4444' : mins <= 120 ? '#10B981' : '#10B981';
   text.style.textShadow = mins <= 30 ? '0 0 8px rgba(239,68,68,0.3)' : 'none';
 
   const todayCount = logs.filter(l => new Date(l.timestamp).toDateString() === new Date().toDateString()).length;
@@ -1287,7 +1291,7 @@ function showStatDetail(type) {
     title.innerText = "Nicotine Willpower Battery"; value.innerText = `${battPct}% Remaining`; 
     desc.innerText = `Your daily limit is ${settings.dailyLimit} sticks. You have smoked ${today.length} stick(s) today. You have ${remCap} stick(s) left before depleting your willpower battery.`; 
     pBox.classList.remove('hidden'); pLabel.innerText = "Battery Capacity Remaining"; 
-    pPct.innerText = `${battPct}%`; pBar.style.width = `${battPct}%`; pBar.style.backgroundColor = battPct <= 20 ? '#EF4444' : battPct <= 50 ? '#F59E0B' : '#10B981';
+    pPct.innerText = `${battPct}%`; pBar.style.width = `${battPct}%`; pBar.style.backgroundColor = battPct <= 20 ? '#EF4444' : battPct <= 50 ? '#10B981' : '#10B981';
     extra.innerHTML = row('Daily Goal Cap', `${settings.dailyLimit} sticks`) + row('Sticks Smoked Today', `${today.length} sticks`) + row('Auto-Reduce Active', settings.autoReduce ? 'Yes (-1 stick/week)' : 'Disabled');
   } else if (type === 'bestGap') {
     iconClass = 'bg-emerald-500/10 text-emerald-500'; iconName = 'trophy'; title.innerText = "Today's Best Gap"; const todayGaps = today.map(l => l.gap).filter(g => g !== null && g !== undefined); const best = todayGaps.length ? Math.max(...todayGaps) : null; value.innerText = formatGap(best); 
@@ -1313,7 +1317,7 @@ function showStatDetail(type) {
     const score = Math.round(limitComponent*0.4 + waveComponent*0.3 + gapComponent*0.3);
     iconClass = 'bg-amber-500/10 text-amber-500'; iconName = 'zap'; title.innerText = "Today's Momentum Score"; value.innerText = (logs.length===0 && todayWaves.length===0) ? '0' : score.toString();
     desc.innerText = "Your Momentum Score blends how close you are to your daily limit, how many cravings you've resisted today, and how your current gap compares to your average — into one simple number.";
-    pBox.classList.remove('hidden'); pLabel.innerText = "Score Breakdown"; pPct.innerText = `${score}/100`; pBar.style.width = `${Math.min(100,score)}%`; pBar.style.backgroundColor = score >= 60 ? '#10B981' : score >= 40 ? '#F59E0B' : '#EF4444';
+    pBox.classList.remove('hidden'); pLabel.innerText = "Score Breakdown"; pPct.innerText = `${score}/100`; pBar.style.width = `${Math.min(100,score)}%`; pBar.style.backgroundColor = score >= 60 ? '#10B981' : score >= 40 ? '#10B981' : '#EF4444';
     extra.innerHTML = row('Limit Adherence', `${Math.round(limitComponent)}/100`) + row('Cravings Resisted Today', `${todayWaves.length} (${Math.round(waveComponent)}/100)`) + row('Pace vs Average Gap', `${Math.round(gapComponent)}/100`);
   }
   
@@ -1636,10 +1640,12 @@ function renderHistory(tId = 'fullHistoryList', homeLimit = 3) {
     }
 
     if(filteredLogs.length===0) {
-        const emptyMsg = searchVal || (document.getElementById('historyDateFrom') && document.getElementById('historyDateFrom').value) || (document.getElementById('historyDateTo') && document.getElementById('historyDateTo').value) || (document.getElementById('historyTagFilter') && document.getElementById('historyTagFilter').value !== 'all')
-            ? "<i data-lucide='filter' class='w-6 h-6 opacity-50'></i> No logs match your filters."
-            : "<i data-lucide='inbox' class='w-6 h-6 opacity-50'></i> No logs recorded yet.";
-        c.innerHTML = `<p class='text-center py-6 text-xs flex flex-col items-center gap-2' style='color: var(--text-muted);'>${emptyMsg}</p>`;
+        const isFiltered = searchVal || (document.getElementById('historyDateFrom') && document.getElementById('historyDateFrom').value) || (document.getElementById('historyDateTo') && document.getElementById('historyDateTo').value) || (document.getElementById('historyTagFilter') && document.getElementById('historyTagFilter').value !== 'all');
+        if(isFiltered) {
+          c.innerHTML = \`<div class="premium-card p-6 text-center space-y-2"><div class="w-10 h-10 rounded-2xl mx-auto flex items-center justify-center" style="background: rgba(245,158,11,0.1);"><i data-lucide="filter" class="w-5 h-5" style="color: var(--accent);"></i></div><p class="text-xs font-bold" style="color: var(--text-main);">No Matches</p><p class="text-[11px]" style="color: var(--text-muted);">No logs match your filters. Try adjusting the date range or search.</p></div>\`;
+        } else {
+          c.innerHTML = \`<div class="premium-card p-6 text-center space-y-2"><div class="w-10 h-10 rounded-2xl mx-auto flex items-center justify-center" style="background: var(--accent-glow);"><i data-lucide="inbox" class="w-5 h-5" style="color: var(--accent);"></i></div><p class="text-xs font-bold" style="color: var(--text-main);">No Logs Yet</p><p class="text-[11px]" style="color: var(--text-muted);">Your first log hasn't happened yet. Every stick counted brings clarity.</p></div>\`;
+        }
         const btnBox = document.getElementById('historyLoadMore');
         if(btnBox) btnBox.classList.add('hidden');
         if(window.lucide) window.lucide.createIcons();
@@ -1934,7 +1940,7 @@ function renderHeatmapCalendar(logsArray) {
               if(intensity === 0) intensity = 1;
           }
 
-          currentCol += `<div class="heat-cell" style="background-color: var(--heat-${intensity});" title="${count} cigarette${count !== 1 ? 's' : ''} on ${dStr}"></div>`;
+          currentCol += `<div class="heat-cell" style="background-color: var(--heat-${intensity});" title="${count} cigarette${count !== 1 ? 's' : ''} on ${dStr}">${count > 0 ? count : ''}</div>`;
           dayCount++;
 
           if (dayCount % 7 === 0) {
@@ -2090,7 +2096,7 @@ function renderAllCharts() {
     let dayMap = {}; activeLogs.forEach(l => { let d = document.getElementById('insightsDateFilter').value === '7days' ? new Date(l.timestamp).toLocaleDateString([], {weekday:'short'}) : new Date(l.timestamp).toLocaleDateString([], {month:'short', day:'numeric'}); dayMap[d] = (dayMap[d] || 0) + 1; });
     let dayLabels = Object.keys(dayMap), dayCounts = Object.values(dayMap); if(dayLabels.length === 0) { dayLabels = ['Today']; dayCounts = [0]; }
     const ctx2 = document.getElementById('chart2').getContext('2d');
-    upsertChart(2, ctx2, { type: 'bar', data: { labels: dayLabels, datasets: [{ label: 'Count', data: dayCounts, backgroundColor: (isLightTheme()) ? '#2563EB' : '#F59E0B', borderRadius: Number.MAX_VALUE, borderSkipped: false, maxBarThickness: 16 }, { label: 'Limit', data: dayLabels.map(() => settings.dailyLimit), type: 'line', borderColor: '#EF4444', borderWidth: 2, borderDash: [4,4], pointRadius: 0 }] }, options: { ...proOptions, scales: { x: { ...proOptions.scales.x, offset: true }, y: { ...proOptions.scales.y } } }, plugins: [crosshairPlugin] });
+    upsertChart(2, ctx2, { type: 'bar', data: { labels: dayLabels, datasets: [{ label: 'Count', data: dayCounts, backgroundColor: (isLightTheme()) ? '#2563EB' : '#10B981', borderRadius: Number.MAX_VALUE, borderSkipped: false, maxBarThickness: 16 }, { label: 'Limit', data: dayLabels.map(() => settings.dailyLimit), type: 'line', borderColor: '#EF4444', borderWidth: 2, borderDash: [4,4], pointRadius: 0 }] }, options: { ...proOptions, scales: { x: { ...proOptions.scales.x, offset: true }, y: { ...proOptions.scales.y } } }, plugins: [crosshairPlugin] });
   } catch(e){}
 
   try {
