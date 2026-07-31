@@ -102,13 +102,13 @@
       --heat-0: rgba(255, 255, 255, 0.03); --heat-1: #BAE6FD; --heat-2: #38BDF8; --heat-3: #0EA5E9; --heat-4: #0369A1;
     }
     
-    html, body { min-height: 100vh; background-color: var(--bg-body) !important; color: var(--text-main); font-family: 'General Sans', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; transition: background-color 0.35s ease, color 0.35s ease; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+    html, body { min-height: 100vh; min-height: 100dvh; background-color: var(--bg-body) !important; color: var(--text-main); font-family: 'General Sans', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; transition: background-color 0.35s ease, color 0.35s ease; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
     button, .nav-btn, .drag-handle, .dock-bar { user-select: none; -webkit-user-select: none; }
 
     .brand-title { font-family: 'Clash Display', sans-serif; font-weight: 700; letter-spacing: -0.04em; background: linear-gradient(135deg, var(--accent) 0%, var(--text-main) 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 2px 8px var(--accent-glow)); }
     .numeric-display { font-family: 'Space Grotesk', monospace; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
     
-    .app-container { padding-bottom: 72px; min-height: 100vh; }
+    .app-container { padding-bottom: 56px; min-height: 100vh; min-height: 100dvh; }
     
     .premium-card { background: var(--card-bg); backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px); border: 1px solid var(--card-border); box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.05); border-radius: 1.5rem; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
     .premium-card:active { transform: scale(0.98); box-shadow: 0 4px 16px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.06); }
@@ -139,7 +139,7 @@
     .badge-card:not(.grayscale) { border-color: var(--accent) !important; box-shadow: 0 0 0 1px var(--accent), 0 8px 24px var(--accent-glow); transform: translateY(-1px); }
     .badge-card .badge-lock { width: 14px; height: 14px; border-radius: 999px; display: flex; align-items: center; justify-content: center; background: rgba(128,128,128,0.18); }
 
-    .dock-bar { background: var(--card-bg); backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px); border-top: 1px solid var(--card-border); box-shadow: 0 -4px 24px rgba(0,0,0,0.08); padding-bottom: calc(0.5rem + env(safe-area-inset-bottom)); padding-top: 0.25rem; }
+    .dock-bar { background: var(--card-bg); backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px); border-top: 1px solid var(--card-border); box-shadow: 0 -4px 24px rgba(0,0,0,0.08); padding-bottom: calc(0.125rem + env(safe-area-inset-bottom)); padding-top: 0.125rem; }
     .nav-btn { color: var(--text-muted); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); transform: scale(1); }
     .nav-btn:active { transform: scale(0.92); }
     .nav-active { color: var(--accent); transform: scale(1.05); }
@@ -275,7 +275,7 @@
   <div class="app-container max-w-md mx-auto">
     <!-- COMPACT & STREAMLINED HEADER -->
     <header class="sticky top-0 z-40" style="background: linear-gradient(to bottom, var(--bg-body) 85%, transparent);">
-      <div class="px-4 py-2.5 flex justify-between items-center">
+      <div class="px-4 py-1.5 flex justify-between items-center">
         <div>
           <div class="flex items-center gap-1.5">
             <h1 class="brand-title text-xl tracking-tight logo-breathe">pause</h1>
@@ -857,10 +857,10 @@
 
   <div class="fixed bottom-0 left-0 right-0 z-40 dock-bar shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
     <nav class="flex justify-between items-center max-w-md mx-auto">
-      <button onclick="window.switchTab('tracker')" id="tab-tracker" class="nav-btn nav-active flex flex-col items-center py-1.5 px-2 w-full"><i data-lucide="clock" class="w-5 h-5 mb-0.5"></i><span class="text-[9px] font-bold uppercase tracking-wider">Track</span></button>
-      <button onclick="window.switchTab('insights')" id="tab-insights" class="nav-btn flex flex-col items-center py-1.5 px-2 w-full"><i data-lucide="bar-chart-3" class="w-5 h-5 mb-0.5"></i><span class="text-[9px] font-bold uppercase tracking-wider">Data</span></button>
-      <button onclick="window.switchTab('history')" id="tab-history" class="nav-btn flex flex-col items-center py-1.5 px-2 w-full"><i data-lucide="list" class="w-5 h-5 mb-0.5"></i><span class="text-[9px] font-bold uppercase tracking-wider">Log</span></button>
-      <button onclick="window.switchTab('settings')" id="tab-settings" class="nav-btn flex flex-col items-center py-1.5 px-2 w-full"><i data-lucide="settings" class="w-5 h-5 mb-0.5"></i><span class="text-[9px] font-bold uppercase tracking-wider">SETTINGS</span></button>
+      <button onclick="window.switchTab('tracker')" id="tab-tracker" class="nav-btn nav-active flex flex-col items-center py-1 px-2 w-full"><i data-lucide="clock" class="w-5 h-5"></i><span class="text-[8px] font-bold uppercase tracking-wider">Track</span></button>
+      <button onclick="window.switchTab('insights')" id="tab-insights" class="nav-btn flex flex-col items-center py-1 px-2 w-full"><i data-lucide="bar-chart-3" class="w-5 h-5"></i><span class="text-[8px] font-bold uppercase tracking-wider">Data</span></button>
+      <button onclick="window.switchTab('history')" id="tab-history" class="nav-btn flex flex-col items-center py-1 px-2 w-full"><i data-lucide="list" class="w-5 h-5"></i><span class="text-[8px] font-bold uppercase tracking-wider">Log</span></button>
+      <button onclick="window.switchTab('settings')" id="tab-settings" class="nav-btn flex flex-col items-center py-1 px-2 w-full"><i data-lucide="settings" class="w-5 h-5"></i><span class="text-[8px] font-bold uppercase tracking-wider">Settings</span></button>
     </nav>
   </div>
 
