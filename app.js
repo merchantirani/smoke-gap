@@ -1943,21 +1943,22 @@ function renderHeatmapCalendar(logsArray) {
       let maxVal = Math.max(...Object.values(dailyCounts), 1);
 
       let html = '';
+      let dayCount = 0;
       let currentCol = '';
+
       const allDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       const dateKeys = Object.keys(dailyCounts);
 
-      // Labels column - fixed Sun-Sat order, matches Sun-aligned calendar weeks
-      html += `<div class="heat-col" style="gap: 2px;">` + allDays.map(d => `<span class="text-[7px] font-bold text-gray-500" style="height:13px;display:flex;align-items:center">${d}</span>`).join('') + `</div>`;
-
-      // Pad the first column with blanks so the range starts on its correct weekday
+      // Dynamic labels - start from startDate's day-of-week, rotate from there
       const firstDayOfWeek = new Date(dateKeys[0]).getDay(); // 0=Sun ... 6=Sat
-      for (let i = 0; i < firstDayOfWeek; i++) {
-        currentCol += `<div class="heat-cell" style="visibility:hidden;"></div>`;
+      let labelsHtml = '';
+      for (let i = 0; i < 7; i++) {
+        labelsHtml += `<span class="text-[7px] font-bold text-gray-500" style="height:13px;display:flex;align-items:center">${allDays[(firstDayOfWeek + i) % 7]}</span>`;
       }
-      let cellsInCol = firstDayOfWeek;
+      html += `<div class="heat-col" style="gap: 2px;">${labelsHtml}</div>`;
 
-      dateKeys.forEach((dStr, idx) => {
+      // Original rolling 7-day chunks - columns are always groups of 7 from startDate
+      dateKeys.forEach((dStr) => {
           const count = dailyCounts[dStr];
           let intensity = 0;
           if (count > 0) {
@@ -1967,22 +1968,19 @@ function renderHeatmapCalendar(logsArray) {
           }
 
           currentCol += `<div class="heat-cell" style="background-color: var(--heat-${intensity});" title="${count} cigarette${count !== 1 ? 's' : ''} on ${dStr}">${count > 0 ? count : ''}</div>`;
-          cellsInCol++;
+          dayCount++;
 
-          const dayOfWeek = new Date(dStr).getDay();
-
-          // Close column at end of week (Saturday) or after the last date
-          if (dayOfWeek === 6 || idx === dateKeys.length - 1) {
-              // Pad the rest of the column so all columns have equal height
-              while (cellsInCol < 7) {
-                  currentCol += `<div class="heat-cell" style="visibility:hidden;"></div>`;
-                  cellsInCol++;
-              }
+          if (dayCount % 7 === 0) {
               html += `<div class="heat-col">${currentCol}</div>`;
               currentCol = '';
-              cellsInCol = 0;
           }
       });
+
+      // Pad last incomplete column
+      if (currentCol !== '') {
+        while (dayCount % 7 !== 0) { currentCol += `<div class="heat-cell" style="visibility:hidden;"></div>`; dayCount++; }
+        html += `<div class="heat-col">${currentCol}</div>`;
+      }
       container.innerHTML = html;
     } catch(e) {}
 }
