@@ -277,12 +277,14 @@ window.cancelHold = function(e) {
   if(iconEl) { iconEl.classList.add('text-gray-400'); iconEl.classList.remove('text-red-500'); }
 }
 
+const APP_FONT_FAMILY = '"General Sans", -apple-system, BlinkMacSystemFont, sans-serif';
+const NUMERIC_FONT_FAMILY = '"Space Grotesk", monospace';
 if (typeof Chart !== 'undefined') {
   try { Chart.defaults.color = '#64748B'; } catch(e) {}
-  try { Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif'; } catch(e) {}
+  try { Chart.defaults.font.family = APP_FONT_FAMILY; } catch(e) {}
 }
-const crosshairPlugin = { id: 'crosshair', afterDraw: chart => { if (chart.tooltip?._active?.length && (chart.config.type === 'line' || chart.config.type === 'bar')) { const activePoint = chart.tooltip._active[0]; const ctx = chart.ctx; const x = activePoint.element.x; ctx.save(); ctx.beginPath(); ctx.moveTo(x, chart.scales.y.top); ctx.lineTo(x, chart.scales.y.bottom); ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)'; ctx.setLineDash([4, 4]); ctx.stroke(); ctx.restore(); } } };
-const centerTextPlugin = { id: 'centerText', beforeDraw: chart => { if (chart.config.type === 'doughnut') { const ctx = chart.ctx; ctx.restore(); let text = ""; if (chart.canvas.id === 'chart4') { const smoked = chart.data.datasets[0].data[0] || 0; const resisted = chart.data.datasets[0].data[1] || 0; const total = smoked + resisted; text = total > 0 ? Math.round((resisted/total)*100) + "%" : "🙌"; } else { const total = chart.data.datasets[0].data.reduce((a,b)=>a+b, 0); text = total > 0 ? total + " Logs" : "Keep\ngoing"; } ctx.font = "bold " + (chart.canvas.id === 'chart4' ? '26px' : '14px') + " sans-serif"; const x = chart.chartArea.left + (chart.chartArea.right - chart.chartArea.left) / 2; const y = chart.chartArea.top + (chart.chartArea.bottom - chart.chartArea.top) / 2; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = (isLightTheme()) ? "#64748B" : "#9CA3AF"; ctx.fillText(text, x, y); ctx.save(); } } };
+const crosshairPlugin = { id: 'crosshair', afterDraw: chart => { if (chart.tooltip?._active?.length && (chart.config.type === 'line' || chart.config.type === 'bar')) { const activePoint = chart.tooltip._active[0]; const ctx = chart.ctx; const x = activePoint.element.x; ctx.save(); ctx.beginPath(); ctx.moveTo(x, chart.scales.y.top); ctx.lineTo(x, chart.scales.y.bottom); ctx.lineWidth = 1.5; ctx.strokeStyle = (isLightTheme()) ? 'rgba(15, 23, 42, 0.18)' : 'rgba(255, 255, 255, 0.2)'; ctx.setLineDash([4, 4]); ctx.stroke(); ctx.restore(); } } };
+const centerTextPlugin = { id: 'centerText', beforeDraw: chart => { if (chart.config.type === 'doughnut') { const ctx = chart.ctx; ctx.restore(); let text = ""; if (chart.canvas.id === 'chart4') { const smoked = chart.data.datasets[0].data[0] || 0; const resisted = chart.data.datasets[0].data[1] || 0; const total = smoked + resisted; text = total > 0 ? Math.round((resisted/total)*100) + "%" : "🙌"; } else { const total = chart.data.datasets[0].data.reduce((a,b)=>a+b, 0); text = total > 0 ? total + " Logs" : "Keep\ngoing"; } const isPct = chart.canvas.id === 'chart4'; ctx.font = "700 " + (isPct ? '26px' : '14px') + " " + (isPct ? NUMERIC_FONT_FAMILY : APP_FONT_FAMILY); const x = chart.chartArea.left + (chart.chartArea.right - chart.chartArea.left) / 2; const y = chart.chartArea.top + (chart.chartArea.bottom - chart.chartArea.top) / 2; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = (isLightTheme()) ? "#0F172A" : "#E5E7EB"; ctx.fillText(text, x, y); ctx.save(); } } };
 
 function formatAppTime(dateObj) { return dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: settings.timeFormat === '12h' }); }
 
@@ -340,13 +342,16 @@ function showOnboarding() {
 window.onboardingNext = function() {
   if (onboardingStep < 4) {
     document.getElementById('onboardSlide' + onboardingStep).classList.add('hidden');
-    document.getElementById('onboardDot' + onboardingStep).className = 'w-2.5 h-2.5 rounded-full transition-all';
-    document.getElementById('onboardDot' + onboardingStep).style.backgroundColor = 'rgba(156,163,175,0.3)';
+    const prevDot = document.getElementById('onboardDot' + onboardingStep);
+    prevDot.className = 'w-2.5 h-2.5 rounded-full transition-all';
+    prevDot.style.backgroundColor = 'rgba(156,163,175,0.3)';
+    prevDot.style.width = '10px';
     onboardingStep++;
     document.getElementById('onboardSlide' + onboardingStep).classList.remove('hidden');
-    document.getElementById('onboardDot' + onboardingStep).className = 'w-2.5 h-2.5 rounded-full transition-all';
-    document.getElementById('onboardDot' + onboardingStep).style.backgroundColor = 'var(--accent)';
-    document.getElementById('onboardDot' + onboardingStep).style.width = '20px';
+    const curDot = document.getElementById('onboardDot' + onboardingStep);
+    curDot.className = 'w-2.5 h-2.5 rounded-full transition-all';
+    curDot.style.backgroundColor = 'var(--accent)';
+    curDot.style.width = '20px';
 
     if (onboardingStep === 4) {
       document.getElementById('onboardNextBtn').innerText = 'Get Started';
@@ -2097,10 +2102,12 @@ function renderAllCharts() {
   const gaps = activeLogs.length > 0 ? activeLogs.map(l => l.gap) : [0];
   const chartTextColor = (isLightTheme()) ? '#64748B' : '#9CA3AF';
   const chartTooltipTheme = (isLightTheme())
-    ? { backgroundColor: 'rgba(255, 255, 255, 0.95)', titleColor: '#0F172A', bodyColor: '#10B981' }
-    : { backgroundColor: 'rgba(15, 23, 42, 0.95)', titleColor: '#FFFFFF', bodyColor: '#10B981' };
+    ? { backgroundColor: 'rgba(255, 255, 255, 0.96)', titleColor: '#0F172A', bodyColor: '#334155', titleFont: { family: APP_FONT_FAMILY, size: 11, weight: '700' }, bodyFont: { family: APP_FONT_FAMILY, size: 11, weight: '600' }, borderColor: 'rgba(203, 213, 225, 0.9)', borderWidth: 1, padding: 12, cornerRadius: 12, displayColors: false }
+    : { backgroundColor: 'rgba(15, 23, 42, 0.96)', titleColor: '#FFFFFF', bodyColor: '#CBD5E1', titleFont: { family: APP_FONT_FAMILY, size: 11, weight: '700' }, bodyFont: { family: APP_FONT_FAMILY, size: 11, weight: '600' }, borderColor: 'rgba(255, 255, 255, 0.08)', borderWidth: 1, padding: 12, cornerRadius: 12, displayColors: false };
 
-  const proOptions = { responsive: true, maintainAspectRatio: false, animation: { duration: 600, easing: 'easeOutQuart' }, interaction: { mode: 'index', intersect: false }, layout: { padding: { left: 0, right: 0, top: 10, bottom: 0 } }, plugins: { legend: { display: false }, tooltip: { ...chartTooltipTheme, padding: 12, cornerRadius: 12, displayColors: false } }, scales: { x: { grid: { display: false }, ticks: { color: chartTextColor, font: { size: 9, weight: '600' }, maxTicksLimit: 4 } }, y: { beginAtZero: true, grid: { color: 'rgba(156, 163, 175, 0.05)', drawBorder: false }, ticks: { color: chartTextColor, font: { size: 9, weight: '600' }, padding: 6 } } } };
+  const coloredTooltipLabel = { callbacks: { label: (ctx) => { let val; if (ctx.parsed && typeof ctx.parsed.y === 'number') val = ctx.parsed.y; else if (ctx.parsed && typeof ctx.parsed === 'number') val = ctx.parsed; else val = ctx.formattedValue; const color = ctx.dataset?.borderColor || ctx.dataset?.backgroundColor || '#10B981'; return { text: ` ${ctx.dataset?.label || ''}: ${val}`, fillStyle: color }; } } };
+
+  const proOptions = { responsive: true, maintainAspectRatio: false, animation: { duration: 600, easing: 'easeOutQuart' }, interaction: { mode: 'index', intersect: false }, layout: { padding: { left: 0, right: 0, top: 10, bottom: 0 } }, plugins: { legend: { display: false }, tooltip: { ...chartTooltipTheme, ...coloredTooltipLabel } }, scales: { x: { grid: { display: false }, ticks: { color: chartTextColor, font: { family: APP_FONT_FAMILY, size: 9, weight: '600' }, maxTicksLimit: 4 } }, y: { beginAtZero: true, grid: { color: 'rgba(156, 163, 175, 0.05)', drawBorder: false }, ticks: { color: chartTextColor, font: { family: APP_FONT_FAMILY, size: 9, weight: '600' }, padding: 6 } } } };
   const createGradient = (ctx, colorHex) => { let g = ctx.createLinearGradient(0, 0, 0, 180); g.addColorStop(0, colorHex); g.addColorStop(1, 'rgba(0,0,0,0)'); return g; };
   function upsertChart(key, ctx, config) { 
     try {
@@ -2119,10 +2126,11 @@ function renderAllCharts() {
   }
 
   const fullDateTimeTooltip = { callbacks: { title: (items) => { if(!items.length) return ''; const l = activeLogs[items[0].dataIndex]; if(!l) return ''; const d = new Date(l.timestamp); return `${d.toLocaleDateString([], {month:'short', day:'numeric'})} · ${formatAppTime(d)}`; } } };
+  const mergeTooltip = (base, extra) => ({ ...base, ...extra, callbacks: { ...(base.callbacks || {}), ...(extra.callbacks || {}) } });
 
   try {
     const ctx1 = document.getElementById('chart1').getContext('2d');
-    upsertChart(1, ctx1, { type: 'line', data: { labels: labels, datasets: [{ label: 'Gap (mins)', data: gaps, borderColor: '#10B981', backgroundColor: createGradient(ctx1, 'rgba(16, 185, 129, 0.25)'), borderWidth: 3, tension: 0.4, fill: true, pointRadius: 0, pointHitRadius: 15 }] }, options: { ...proOptions, plugins: { ...proOptions.plugins, tooltip: { ...proOptions.plugins.tooltip, ...fullDateTimeTooltip } }, scales: { ...proOptions.scales, x: { ...proOptions.scales.x, offset: true } } }, plugins: [crosshairPlugin] });
+    upsertChart(1, ctx1, { type: 'line', data: { labels: labels, datasets: [{ label: 'Gap (mins)', data: gaps, borderColor: '#10B981', backgroundColor: createGradient(ctx1, 'rgba(16, 185, 129, 0.25)'), borderWidth: 3, tension: 0.4, fill: true, pointRadius: 0, pointHitRadius: 15 }] }, options: { ...proOptions, plugins: { ...proOptions.plugins, tooltip: mergeTooltip(proOptions.plugins.tooltip, fullDateTimeTooltip) }, scales: { ...proOptions.scales, x: { ...proOptions.scales.x, offset: true } } }, plugins: [crosshairPlugin] });
   } catch(e){}
 
   try {
@@ -2143,14 +2151,14 @@ function renderAllCharts() {
       });
     }
     const ctx3 = document.getElementById('chart3').getContext('2d');
-    upsertChart(3, ctx3, { type: 'line', data: { labels: labels, datasets: [{ label: 'Spent', data: spendData, borderColor: '#EF4444', backgroundColor: createGradient(ctx3, 'rgba(239, 68, 68, 0.15)'), fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0, pointHitRadius: 15 }, { label: 'Saved', data: savedData, borderColor: '#10B981', backgroundColor: createGradient(ctx3, 'rgba(16, 185, 129, 0.15)'), fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0, pointHitRadius: 15 }] }, options: { ...proOptions, plugins: { ...proOptions.plugins, tooltip: { ...proOptions.plugins.tooltip, ...fullDateTimeTooltip } }, scales: { ...proOptions.scales, x: { ...proOptions.scales.x, offset: true } } }, plugins: [crosshairPlugin] });
+    upsertChart(3, ctx3, { type: 'line', data: { labels: labels, datasets: [{ label: 'Spent', data: spendData, borderColor: '#EF4444', backgroundColor: createGradient(ctx3, 'rgba(239, 68, 68, 0.15)'), fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0, pointHitRadius: 15 }, { label: 'Saved', data: savedData, borderColor: '#10B981', backgroundColor: createGradient(ctx3, 'rgba(16, 185, 129, 0.15)'), fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0, pointHitRadius: 15 }] }, options: { ...proOptions, plugins: { ...proOptions.plugins, tooltip: mergeTooltip(proOptions.plugins.tooltip, fullDateTimeTooltip) }, scales: { ...proOptions.scales, x: { ...proOptions.scales.x, offset: true } } }, plugins: [crosshairPlugin] });
     let finalSaved = savedData.length > 0 ? savedData[savedData.length - 1] : '0.0';
     setBadge('badge-chart3', activeLogs.length > 0 ? `Saved ${settings.currency} ${finalSaved}` : '', 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20');
   } catch(e){}
 
   try {
     const ctx4 = document.getElementById('chart4').getContext('2d');
-    upsertChart(4, ctx4, { type: 'doughnut', data: { labels: ['Smoked', 'Resisted'], datasets: [{ data: [activeLogs.length, activeWaves.length], backgroundColor: ['#EF4444', '#0EA5E9'], borderWidth: 0, cutout: '76%' }] }, options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12, font: { size: 10 }, color: chartTextColor } } } }, plugins: [centerTextPlugin] });
+    upsertChart(4, ctx4, { type: 'doughnut', data: { labels: ['Smoked', 'Resisted'], datasets: [{ data: [activeLogs.length, activeWaves.length], backgroundColor: ['#EF4444', '#0EA5E9'], borderWidth: 0, cutout: '76%' }] }, options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12, font: { family: APP_FONT_FAMILY, size: 10 }, color: chartTextColor } }, tooltip: { ...chartTooltipTheme } } }, plugins: [centerTextPlugin] });
   } catch(e){}
 
   try {
@@ -2164,7 +2172,7 @@ function renderAllCharts() {
     }).length);
     const topTriggerIdx = triggerCounts.length ? triggerCounts.indexOf(Math.max(...triggerCounts)) : -1;
     setBadge('badge-chart5', (topTriggerIdx >= 0 && triggerCounts[topTriggerIdx] > 0) ? `Top: ${triggers[topTriggerIdx]}` : '', 'bg-purple-500/10 text-purple-500 border-purple-500/20');
-    upsertChart(5, ctx5, { type: 'doughnut', data: { labels: triggers, datasets: [{ data: triggerCounts, backgroundColor: triggers.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]), borderWidth: 0, cutout: '76%' }] }, options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12, font: { size: 10 }, color: chartTextColor } } } }, plugins: [centerTextPlugin] });
+    upsertChart(5, ctx5, { type: 'doughnut', data: { labels: triggers, datasets: [{ data: triggerCounts, backgroundColor: triggers.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]), borderWidth: 0, cutout: '76%' }] }, options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12, font: { family: APP_FONT_FAMILY, size: 10 }, color: chartTextColor } }, tooltip: { ...chartTooltipTheme } } }, plugins: [centerTextPlugin] });
   } catch(e){}
 
   try {
@@ -2198,7 +2206,7 @@ function renderAllCharts() {
       let datasets = topTriggers.map((t, i) => ({ label: t, data: triggerByPart[t], backgroundColor: CHART_COLORS[i % CHART_COLORS.length], borderRadius: 0, maxBarThickness: 32, stack: 'triggers' }));
       if(otherByPart.some(v => v > 0)) datasets.push({ label: 'Other Triggers', data: otherByPart, backgroundColor: '#9CA3AF', borderRadius: 0, maxBarThickness: 32, stack: 'triggers' });
       datasets.push({ label: 'Resisted', data: wavesByPart, backgroundColor: '#0EA5E9', borderRadius: 0, maxBarThickness: 32, stack: 'resisted' });
-      upsertChart(6, chart6El.getContext('2d'), { type: 'bar', data: { labels: dayParts, datasets: datasets }, options: { ...proOptions, scales: { x: { ...proOptions.scales.x, stacked: true, offset: true }, y: { ...proOptions.scales.y, stacked: true, ticks: { ...proOptions.scales.y.ticks, precision: 0 } } }, plugins: { ...proOptions.plugins, legend: { display: true, position: 'bottom', labels: { boxWidth: 8, padding: 10, font: { size: 9 }, color: chartTextColor } } } } });
+      upsertChart(6, chart6El.getContext('2d'), { type: 'bar', data: { labels: dayParts, datasets: datasets }, options: { ...proOptions, scales: { x: { ...proOptions.scales.x, stacked: true, offset: true }, y: { ...proOptions.scales.y, stacked: true, ticks: { ...proOptions.scales.y.ticks, precision: 0 } } }, plugins: { ...proOptions.plugins, legend: { display: true, position: 'bottom', labels: { boxWidth: 8, padding: 10, font: { family: APP_FONT_FAMILY, size: 9 }, color: chartTextColor } } } } });
     }
   } catch(e){}
   
