@@ -95,11 +95,31 @@ const CHART_COLORS = ['#3B82F6', '#10B981', '#10B981', '#EF4444', '#8B5CF6', '#E
 
 const INTENSITY_LABELS = {1: 'Mild', 2: 'Light', 3: 'Moderate', 4: 'Severe', 5: 'Extreme'};
 const MOODS = [
-  {emoji: '😌', label: 'Calm'}, {emoji: '😊', label: 'Happy'},
-  {emoji: '😐', label: 'Neutral'}, {emoji: '😰', label: 'Anxious'},
-  {emoji: '😣', label: 'Stressed'}, {emoji: '😡', label: 'Frustrated'},
-  {emoji: '😢', label: 'Sad'}, {emoji: '🙏', label: 'Craving'}
+  {id: 'calm', icon: 'smile', label: 'Calm', color: '#10B981'},
+  {id: 'happy', icon: 'sun', label: 'Happy', color: '#F59E0B'},
+  {id: 'neutral', icon: 'meh', label: 'Neutral', color: '#6B7280'},
+  {id: 'anxious', icon: 'zap', label: 'Anxious', color: '#F97316'},
+  {id: 'stressed', icon: 'alert-triangle', label: 'Stressed', color: '#EF4444'},
+  {id: 'frustrated', icon: 'flame', label: 'Frustrated', color: '#DC2626'},
+  {id: 'sad', icon: 'cloud-rain', label: 'Sad', color: '#3B82F6'},
+  {id: 'craving', icon: 'cigarette', label: 'Craving', color: '#8B5CF6'}
 ];
+const LEGACY_MOOD_EMOJI = { '😌':'calm', '😊':'happy', '😐':'neutral', '😰':'anxious', '😣':'stressed', '😡':'frustrated', '😢':'sad', '🙏':'craving' };
+function moodDefFor(val) {
+  if (!val) return null;
+  return MOODS.find(m => m.id === val) || MOODS.find(m => LEGACY_MOOD_EMOJI[val] === m.id) || null;
+}
+function moodChipHtml(m, idx, toggleName, showLabel) {
+  const isActive = currentMood === m.id;
+  const activeStyle = isActive
+    ? `background:${m.color};border-color:${m.color};color:#fff;box-shadow:0 4px 16px ${m.color}66;`
+    : `background:var(--input-bg);border-color:var(--card-border);color:var(--text-main);`;
+  const shape = showLabel
+    ? 'inline-flex items-center gap-1.5 px-3 py-2 rounded-full border text-xs font-semibold transition-all active:scale-95'
+    : 'w-9 h-9 rounded-full inline-flex items-center justify-center border transition-all active:scale-90';
+  const iconSize = showLabel ? 'w-3.5 h-3.5' : 'w-4 h-4';
+  return `<button onclick="window.${toggleName}(${idx})" class="${shape}" style="${activeStyle}" title="${m.label}"><i data-lucide="${m.icon}" class="${iconSize}"></i>${showLabel ? `<span>${m.label}</span>` : ''}</button>`;
+}
 
 const HEALTH_MILESTONES = [
   {mins: 20, emoji: '❤️', title: 'Heart Rate Normalizes', desc: 'Blood pressure begins to drop after your last cigarette.'},
@@ -739,6 +759,7 @@ function startSmokeTakeover(logIdx, gap, waveWasActive) {
   else if (gap < 60) factText = `It's been ${gap}m since your last one.`;
   else factText = `It's been ${Math.floor(gap/60)}h ${gap%60}m since your last one.`;
   if(factEl) factEl.innerText = factText;
+  if(factEl) factEl.style.opacity = 0;
   renderTakeoverTags();
   renderTakeoverMoods();
 
@@ -771,29 +792,23 @@ function renderTakeoverTags() {
 
 function renderTakeoverMoods() {
   const grid = document.getElementById('takeoverMoodGrid'); if(!grid) return;
-  grid.innerHTML = MOODS.map((m, idx) => {
-    const isActive = currentMood === m.emoji;
-    const cls = isActive ? 'bg-amber-500/20 border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)]' : 'bg-white/5 border-white/10';
-    return `<button onclick="window.toggleTakeoverMood(${idx})" class="px-3 py-1.5 rounded-full border text-sm backdrop-blur-md transition-all active:scale-95 ${cls}" style="color: var(--text-main);" title="${m.label}">${m.emoji}</button>`;
-  }).join('');
+  grid.innerHTML = MOODS.map((m, idx) => moodChipHtml(m, idx, 'toggleTakeoverMood', false)).join('');
+  if(window.lucide) window.lucide.createIcons();
 }
 
 window.toggleTakeoverMood = function(idx) {
-  currentMood = currentMood === MOODS[idx].emoji ? null : MOODS[idx].emoji;
+  currentMood = currentMood === MOODS[idx].id ? null : MOODS[idx].id;
   renderTakeoverMoods();
 }
 
 function renderEditMood() {
   const grid = document.getElementById('editMoodGrid'); if(!grid) return;
-  grid.innerHTML = MOODS.map((m, idx) => {
-    const isActive = currentMood === m.emoji;
-    const inlineStyle = isActive ? 'background: var(--accent); border-color: var(--accent); box-shadow: 0 4px 15px var(--accent-glow);' : 'background: var(--input-bg); color: var(--text-main); border-color: var(--card-border);';
-    return `<button onclick="window.toggleEditMood(${idx})" class="px-3 py-1.5 rounded-full border text-sm font-semibold transition-all active:scale-95" style="${inlineStyle}">${m.emoji}</button>`;
-  }).join('');
+  grid.innerHTML = MOODS.map((m, idx) => moodChipHtml(m, idx, 'toggleEditMood', true)).join('');
+  if(window.lucide) window.lucide.createIcons();
 }
 
 window.toggleEditMood = function(idx) {
-  currentMood = currentMood === MOODS[idx].emoji ? null : MOODS[idx].emoji;
+  currentMood = currentMood === MOODS[idx].id ? null : MOODS[idx].id;
   renderEditMood();
 }
 
@@ -1494,7 +1509,7 @@ function openTriggerModal(logIdx = null) {
     if (Array.isArray(log.tags) && log.tags.length > 0) currentSelectedTags = [...log.tags];
     else if (log.trigger) currentSelectedTags = [log.trigger];
     else currentSelectedTags = [];
-    currentMood = log.mood || null;
+    currentMood = (moodDefFor(log.mood) || {}).id || log.mood || null;
     
     window.setEditIntensity(log.intensity || 3);
     const d = new Date(log.timestamp);
@@ -1700,7 +1715,10 @@ function renderHistoryItem(l) {
   for(let i=1; i<=5; i++) { intensityDots += `<div class="w-1.5 h-1.5 rounded-full" style="background-color: ${i <= intVal ? 'var(--accent)' : 'rgba(156,163,175,0.2)'};"></div>`; }
 
   const timeStr = l.timestamp ? formatAppTime(new Date(l.timestamp)) : '--:--';
-  const moodHtml = l.mood ? `<span class="mr-1" title="Mood: ${MOODS.find(m => m.emoji === l.mood)?.label || ''}">${l.mood}</span>` : '';
+  const moodDef = moodDefFor(l.mood);
+  const moodHtml = moodDef
+    ? `<span class="mr-1 inline-flex items-center justify-center w-4 h-4 rounded-full shrink-0" title="Mood: ${moodDef.label}" style="background:${moodDef.color};color:#fff;"><i data-lucide="${moodDef.icon}" class="w-2.5 h-2.5"></i></span>`
+    : (l.mood ? `<span class="mr-1">${l.mood}</span>` : '');
   const noteHtml = l.note ? `<div class="flex items-start gap-1 mt-1.5"><i data-lucide="edit-3" class="w-2.5 h-2.5 shrink-0 mt-0.5" style="color: var(--text-muted);"></i><span class="text-[10px] leading-relaxed italic" style="color: var(--text-muted);">${esc(l.note.substring(0, 200))}</span></div>` : '';
 
   return `
