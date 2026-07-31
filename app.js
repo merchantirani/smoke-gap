@@ -1943,13 +1943,20 @@ function renderHeatmapCalendar(logsArray) {
       let maxVal = Math.max(...Object.values(dailyCounts), 1);
 
       let html = '';
-      let dayCount = 0;
       let currentCol = '';
+      const allDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const dateKeys = Object.keys(dailyCounts);
 
-      const weekLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-      html += `<div class="heat-col" style="gap: 2px;">` + weekLabels.map(d => `<span class="text-[7px] font-bold text-gray-500" style="height:13px;display:flex;align-items:center">${d}</span>`).join('') + `</div>`;
+      // Labels column - only show labels for days that exist in the first column
+      const firstDate = new Date(dateKeys[0]);
+      const firstDayOfWeek = firstDate.getDay(); // 0=Sun, 1=Mon, etc.
+      let labelsHtml = '';
+      for (let i = firstDayOfWeek; i < 7; i++) {
+        labelsHtml += `<span class="text-[7px] font-bold text-gray-500" style="height:13px;display:flex;align-items:center">${allDays[i]}</span>`;
+      }
+      html += `<div class="heat-col" style="gap: 2px;">${labelsHtml}</div>`;
 
-      Object.keys(dailyCounts).forEach((dStr) => {
+      dateKeys.forEach((dStr, idx) => {
           const count = dailyCounts[dStr];
           let intensity = 0;
           if (count > 0) {
@@ -1959,18 +1966,24 @@ function renderHeatmapCalendar(logsArray) {
           }
 
           currentCol += `<div class="heat-cell" style="background-color: var(--heat-${intensity});" title="${count} cigarette${count !== 1 ? 's' : ''} on ${dStr}">${count > 0 ? count : ''}</div>`;
-          dayCount++;
 
-          if (dayCount % 7 === 0) {
+          const date = new Date(dStr);
+          const dayOfWeek = date.getDay();
+
+          // End of week (Saturday) or last date - close the column
+          if (dayOfWeek === 6 || idx === dateKeys.length - 1) {
+              // Pad remaining days if this is not a full week
+              let padCount = (6 - dayOfWeek) % 7 + 1;
+              if (idx === dateKeys.length - 1 && dayOfWeek !== 6) {
+                // Last column - pad to fill remaining slots for proper alignment
+                while (currentCol.split('heat-cell').length - 1 < 7) {
+                  currentCol += `<div class="heat-cell" style="visibility:hidden;"></div>`;
+                }
+              }
               html += `<div class="heat-col">${currentCol}</div>`;
               currentCol = '';
           }
       });
-
-      if (currentCol !== '') {
-        while (dayCount % 7 !== 0) { currentCol += `<div class="heat-cell" style="visibility:hidden;"></div>`; dayCount++; }
-        html += `<div class="heat-col">${currentCol}</div>`;
-      }
       container.innerHTML = html;
     } catch(e) {}
 }
