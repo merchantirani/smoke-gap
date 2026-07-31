@@ -1947,14 +1947,15 @@ function renderHeatmapCalendar(logsArray) {
       const allDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       const dateKeys = Object.keys(dailyCounts);
 
-      // Labels column - only show labels for days that exist in the first column
-      const firstDate = new Date(dateKeys[0]);
-      const firstDayOfWeek = firstDate.getDay(); // 0=Sun, 1=Mon, etc.
-      let labelsHtml = '';
-      for (let i = firstDayOfWeek; i < 7; i++) {
-        labelsHtml += `<span class="text-[7px] font-bold text-gray-500" style="height:13px;display:flex;align-items:center">${allDays[i]}</span>`;
+      // Labels column - fixed Sun-Sat order, matches Sun-aligned calendar weeks
+      html += `<div class="heat-col" style="gap: 2px;">` + allDays.map(d => `<span class="text-[7px] font-bold text-gray-500" style="height:13px;display:flex;align-items:center">${d}</span>`).join('') + `</div>`;
+
+      // Pad the first column with blanks so the range starts on its correct weekday
+      const firstDayOfWeek = new Date(dateKeys[0]).getDay(); // 0=Sun ... 6=Sat
+      for (let i = 0; i < firstDayOfWeek; i++) {
+        currentCol += `<div class="heat-cell" style="visibility:hidden;"></div>`;
       }
-      html += `<div class="heat-col" style="gap: 2px;">${labelsHtml}</div>`;
+      let cellsInCol = firstDayOfWeek;
 
       dateKeys.forEach((dStr, idx) => {
           const count = dailyCounts[dStr];
@@ -1966,22 +1967,20 @@ function renderHeatmapCalendar(logsArray) {
           }
 
           currentCol += `<div class="heat-cell" style="background-color: var(--heat-${intensity});" title="${count} cigarette${count !== 1 ? 's' : ''} on ${dStr}">${count > 0 ? count : ''}</div>`;
+          cellsInCol++;
 
-          const date = new Date(dStr);
-          const dayOfWeek = date.getDay();
+          const dayOfWeek = new Date(dStr).getDay();
 
-          // End of week (Saturday) or last date - close the column
+          // Close column at end of week (Saturday) or after the last date
           if (dayOfWeek === 6 || idx === dateKeys.length - 1) {
-              // Pad remaining days if this is not a full week
-              let padCount = (6 - dayOfWeek) % 7 + 1;
-              if (idx === dateKeys.length - 1 && dayOfWeek !== 6) {
-                // Last column - pad to fill remaining slots for proper alignment
-                while (currentCol.split('heat-cell').length - 1 < 7) {
+              // Pad the rest of the column so all columns have equal height
+              while (cellsInCol < 7) {
                   currentCol += `<div class="heat-cell" style="visibility:hidden;"></div>`;
-                }
+                  cellsInCol++;
               }
               html += `<div class="heat-col">${currentCol}</div>`;
               currentCol = '';
+              cellsInCol = 0;
           }
       });
       container.innerHTML = html;
