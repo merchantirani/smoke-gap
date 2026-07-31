@@ -1943,22 +1943,24 @@ function renderHeatmapCalendar(logsArray) {
       let maxVal = Math.max(...Object.values(dailyCounts), 1);
 
       let html = '';
-      let dayCount = 0;
-      let currentCol = '';
-
       const allDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       const dateKeys = Object.keys(dailyCounts);
 
-      // Dynamic labels - start from startDate's day-of-week, rotate from there
-      const firstDayOfWeek = new Date(dateKeys[0]).getDay(); // 0=Sun ... 6=Sat
-      let labelsHtml = '';
-      for (let i = 0; i < 7; i++) {
-        labelsHtml += `<span class="text-[7px] font-bold text-gray-500" style="height:13px;display:flex;align-items:center">${allDays[(firstDayOfWeek + i) % 7]}</span>`;
-      }
-      html += `<div class="heat-col" style="gap: 2px;">${labelsHtml}</div>`;
+      // Fixed labels Sun-Sat, height 16px matches heat-cell + same 3px gap = perfect pitch alignment
+      const labelStyle = 'height:16px;display:flex;align-items:center;line-height:16px';
+      html += `<div class="heat-col" style="gap: 3px;">` + allDays.map(d => `<span class="text-[7px] font-bold text-gray-500" style="${labelStyle}">${d}</span>`).join('') + `</div>`;
 
-      // Original rolling 7-day chunks - columns are always groups of 7 from startDate
-      dateKeys.forEach((dStr) => {
+      let currentCol = '';
+      let cellsInCol = 0;
+
+      // Pad the first column with blanks so the range starts on its correct weekday row
+      const firstDayOfWeek = new Date(dateKeys[0]).getDay(); // 0=Sun ... 6=Sat
+      for (let i = 0; i < firstDayOfWeek; i++) {
+        currentCol += `<div style="width:16px;height:16px;flex-shrink:0;"></div>`;
+        cellsInCol++;
+      }
+
+      dateKeys.forEach((dStr, idx) => {
           const count = dailyCounts[dStr];
           let intensity = 0;
           if (count > 0) {
@@ -1968,19 +1970,22 @@ function renderHeatmapCalendar(logsArray) {
           }
 
           currentCol += `<div class="heat-cell" style="background-color: var(--heat-${intensity});" title="${count} cigarette${count !== 1 ? 's' : ''} on ${dStr}">${count > 0 ? count : ''}</div>`;
-          dayCount++;
+          cellsInCol++;
 
-          if (dayCount % 7 === 0) {
+          const dayOfWeek = new Date(dStr).getDay();
+
+          // Close column on Saturday or after the last date
+          if (dayOfWeek === 6 || idx === dateKeys.length - 1) {
+              // Pad remaining slots so every column has 7 rows
+              while (cellsInCol < 7) {
+                  currentCol += `<div style="width:16px;height:16px;flex-shrink:0;"></div>`;
+                  cellsInCol++;
+              }
               html += `<div class="heat-col">${currentCol}</div>`;
               currentCol = '';
+              cellsInCol = 0;
           }
       });
-
-      // Pad last incomplete column
-      if (currentCol !== '') {
-        while (dayCount % 7 !== 0) { currentCol += `<div class="heat-cell" style="visibility:hidden;"></div>`; dayCount++; }
-        html += `<div class="heat-col">${currentCol}</div>`;
-      }
       container.innerHTML = html;
     } catch(e) {}
 }
