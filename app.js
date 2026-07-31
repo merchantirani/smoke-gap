@@ -528,8 +528,34 @@ function actuallyLogCigarette() {
   }
 }
 
+function moveNavIndicator(activeBtn) {
+  const ind = document.getElementById('navIndicator');
+  if (!ind || !activeBtn) return;
+  ind.style.width = activeBtn.offsetWidth + 'px';
+  ind.style.left = activeBtn.offsetLeft + 'px';
+  ind.style.opacity = '1';
+}
+
+function initNavIndicator() {
+  const ind = document.getElementById('navIndicator');
+  const active = document.querySelector('.nav-btn.nav-active');
+  if (!ind || !active) return;
+  ind.style.transition = 'none';
+  ind.style.width = active.offsetWidth + 'px';
+  ind.style.left = active.offsetLeft + 'px';
+  ind.style.opacity = '1';
+  void ind.offsetWidth;
+  ind.style.transition = '';
+}
+
+window.addEventListener('resize', () => {
+  const active = document.querySelector('.nav-btn.nav-active');
+  if (active) moveNavIndicator(active);
+});
+
 function bootCore() {
   window.switchWatchStyle(currentWatchStyle);
+  initNavIndicator();
 
   // Restore last active tab
   const savedTab = localStorage.getItem('smoke_active_tab');
@@ -1000,8 +1026,9 @@ function switchTab(t) {
 
     const activePage = document.getElementById(`page-${t}`);
     const activeBtn = document.getElementById(`tab-${t}`);
-    if(activePage) activePage.classList.remove('hidden'); 
+    if(activePage) activePage.classList.remove('hidden');
     if(activeBtn) activeBtn.classList.add('nav-active');
+    moveNavIndicator(activeBtn);
 
     if (window.posthog) posthog.capture('tab_switched', { tab_name: t });
     localStorage.setItem('smoke_active_tab', t);
