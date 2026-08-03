@@ -1,5 +1,5 @@
-// PAUSE SERVICE WORKER - Offline Caching v5.0 (Mobile Optimized)
-const CACHE_VERSION = 'v5';
+// PAUSE SERVICE WORKER - Offline Caching v6.0 (Mobile Optimized)
+const CACHE_VERSION = 'v6';
 const CACHE_NAME = `pause-cache-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `pause-runtime-${CACHE_VERSION}`;
 
@@ -8,6 +8,7 @@ const RUNTIME_CACHE = `pause-runtime-${CACHE_VERSION}`;
 const PRECACHE_FILES = [
   './index.html',
   './app.js',
+  './lucide.min.js',
   './manifest.json',
   './icons/favicon.ico',
   './icons/pause_favicon_16.png',
