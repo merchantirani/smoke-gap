@@ -14,9 +14,59 @@ if (!settings.packSize || settings.packSize <= 0) settings.packSize = 20;
 if (!settings.timeFormat) settings.timeFormat = '12h';
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').then(() => {
+  navigator.serviceWorker.register('sw.js').then(reg => {
     console.log("Service Worker registered.");
+
+    // Check if app is ready for offline use
+    reg.active && reg.active.postMessage({ type: 'GET_CACHE_STATUS' });
+
+    // Listen for cache status response
+    navigator.serviceWorker.addEventListener('message', (e) => {
+      if (e.data && e.data.version) {
+        console.log("Offline cache ready - Version:", e.data.version);
+        // Show offline ready indicator after 3 seconds
+        setTimeout(() => {
+          showOfflineReadyToast();
+        }, 3000);
+      }
+    });
   }).catch(err => console.log("SW failed", err));
+}
+
+function showOfflineReadyToast() {
+  // Only show if not shown before in this session
+  if (sessionStorage.getItem('offline_ready_shown')) return;
+  sessionStorage.setItem('offline_ready_shown', 'true');
+
+  const toast = document.createElement('div');
+  toast.className = 'fixed bottom-24 left-4 right-4 z-[10002] premium-card p-3 text-center text-xs font-semibold shadow-lg transition-all duration-500';
+  toast.style.background = 'var(--card-bg)';
+  toast.style.color = 'var(--text-main)';
+  toast.style.opacity = '0';
+  toast.style.transform = 'translateY(20px)';
+  toast.innerHTML = `
+    <div class="flex items-center justify-center gap-2">
+      <i data-lucide="wifi-off" class="w-4 h-4 text-emerald-500"></i>
+      <span>App ready for offline use</span>
+    </div>
+  `;
+  document.body.appendChild(toast);
+
+  // Initialize lucide icon
+  if (window.lucide) lucide.createIcons();
+
+  // Animate in
+  requestAnimationFrame(() => {
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateY(0)';
+  });
+
+  // Remove after 3 seconds
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(20px)';
+    setTimeout(() => toast.remove(), 500);
+  }, 3000);
 }
 
 // PWA Install Prompt
