@@ -1804,14 +1804,6 @@ function renderHistory(tId = 'fullHistoryList', homeLimit = 3) {
   try {
     const c = document.getElementById(tId); if(!c) return;
 
-    // Hide skeleton and show content container
-    const skeletonId = tId === 'homeRecentLogs' ? 'recentLogsSkeleton' : (tId === 'fullHistoryList' ? 'historySkeleton' : null);
-    if(skeletonId) {
-      const skeleton = document.getElementById(skeletonId);
-      if(skeleton) skeleton.classList.add('hidden');
-    }
-    c.classList.remove('hidden');
-
     if(!logs || logs.length===0) { c.innerHTML="<p class='text-center py-6 text-xs flex flex-col items-center gap-2' style='color: var(--text-muted);'><i data-lucide='inbox' class='w-6 h-6 opacity-50'></i> No logs recorded yet.</p>"; if(window.lucide) window.lucide.createIcons(); return; }
 
     let filteredLogs = logs.map((l, i) => ({ ...l, origIdx: i })).reverse();
@@ -2195,12 +2187,6 @@ function renderHeatmapCalendar(logsArray) {
 }
 
 function renderAllCharts() {
-  // Hide charts skeleton and show chart container
-  const chartsSkeleton = document.getElementById('chartsSkeleton');
-  const chartContainer = document.getElementById('chartContainer');
-  if(chartsSkeleton) chartsSkeleton.classList.add('hidden');
-  if(chartContainer) chartContainer.classList.remove('hidden');
-
   const activeLogs = getFilteredLogs();
   const filter = document.getElementById('insightsDateFilter').value;
   const filterEl = document.getElementById('selectedFilterLabel');
