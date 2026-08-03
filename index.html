@@ -197,10 +197,8 @@
 </head>
 <body>
 
-  <div id="appSkeleton" class="fixed inset-0 z-[99999] flex flex-col items-center justify-center gap-4 bg-[var(--bg-body)] transition-opacity duration-200 pointer-events-none">
-    <div class="relative">
-      <div class="w-12 h-12 border-3 border-gray-500/20 border-t-[var(--accent)] rounded-full animate-spin"></div>
-    </div>
+  <div id="appSkeleton" class="fixed inset-0 z-[99999] flex items-center justify-center bg-[var(--bg-body)] pointer-events-none" style="opacity: 0;">
+    <div class="w-8 h-8 border-2 border-gray-500/20 border-t-[var(--accent)] rounded-full animate-spin"></div>
   </div>
 
   <!-- ONBOARDING OVERLAY -->

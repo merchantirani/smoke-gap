@@ -447,14 +447,31 @@ function bootApp() {
 
   if(window.lucide) window.lucide.createIcons();
 
+  // Detect if running as PWA (standalone mode)
+  const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
+                window.navigator.standalone === true ||
+                document.referrer.includes('android-app://');
+
   // Hide skeleton immediately when app is ready (faster for Android)
   const hideSkeleton = () => {
     const skel = document.getElementById('appSkeleton');
     if(skel) {
-      skel.style.opacity = '0';
-      setTimeout(() => skel.remove(), 300);
+      // If PWA, remove instantly without animation (manifest splash handles this)
+      if(isPWA) {
+        skel.remove();
+      } else {
+        // Web browser - animate out
+        skel.style.opacity = '0';
+        setTimeout(() => skel.remove(), 300);
+      }
     }
   };
+
+  // If PWA, hide skeleton immediately
+  if(isPWA) {
+    const skel = document.getElementById('appSkeleton');
+    if(skel) skel.remove();
+  }
 
   // Check onboarding
   const onboardingDone = localStorage.getItem('smoke_onboarding_done');
