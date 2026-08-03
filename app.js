@@ -5,7 +5,7 @@ try {
   if(!Array.isArray(logs)) logs = [];
 } catch(e) { logs = []; }
 
-const DEFAULT_SETTINGS = {
+const DEFAULT_SETTINGS = { 
   theme: 'white', haptics: true, dailyLimit: 15, lockSecs: 300, packPrice: 20, packSize: 20, currency: 'AED', timeFormat: '12h', motivation: '', autoReduce: false,
   notifWaveComplete: true, notifGapWidened: true, notifInactivity: true, notifPredictive: true, notifEnableSos: false
 };
@@ -43,7 +43,8 @@ function showInstallBanner() {
   if (existing) return;
   const banner = document.createElement('div');
   banner.id = 'installBanner';
-  banner.className = 'fixed bottom-36 left-4 right-4 z-[10002] glass-banner p-4 flex items-center gap-3 mx-auto max-w-md shadow-2xl';
+  banner.className = 'fixed bottom-36 left-4 right-4 z-[10002] premium-card p-4 flex items-center gap-3 mx-auto max-w-md shadow-2xl';
+  banner.style.background = 'var(--modal-bg)';
   banner.innerHTML = `
     <div class="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0" style="background: var(--accent-glow);">
       <i data-lucide="download" class="w-5 h-5" style="color: var(--accent);"></i>
@@ -898,7 +899,7 @@ function closeSmokeTakeover() {
 function showUndoToast(logIdx) {
   const c = document.getElementById('toastContainer'); if(!c) return;
   const t = document.createElement('div');
-  t.className = 'glass-toast px-4 py-3 rounded-full text-xs font-bold shadow-lg pointer-events-auto transition-all duration-300 flex items-center gap-3';
+  t.className = 'premium-card px-4 py-3 rounded-full text-xs font-bold shadow-lg pointer-events-auto transition-all duration-300 flex items-center gap-3 border border-gray-500/20';
   t.style.background = 'var(--card-bg)';
   t.innerHTML = `<span class="flex items-center gap-1.5" style="color: var(--text-main);"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-500"></i> Logged</span><div class="w-px h-3 bg-gray-500/30"></div><button onclick="window.undoLog(${logIdx}, this.parentElement)" class="text-sky-500 active:scale-95 transition-transform uppercase tracking-wider">Undo</button>`;
   t.style.opacity = '0'; t.style.transform = 'translateY(-10px)';
@@ -1063,7 +1064,7 @@ window.refreshAppCache = function() {
 function showToast(msg) {
   const c = document.getElementById('toastContainer'); if(!c) return;
   const t = document.createElement('div');
-  t.className = 'glass-toast px-4 py-2.5 rounded-full text-xs font-bold shadow-lg pointer-events-auto transition-all duration-300';
+  t.className = 'premium-card px-4 py-2.5 rounded-full text-xs font-bold shadow-lg pointer-events-auto transition-all duration-300';
   t.style.color = 'var(--text-main)'; t.style.opacity = '0'; t.style.transform = 'translateY(-10px)'; t.innerText = msg;
   c.appendChild(t); requestAnimationFrame(() => { t.style.opacity = '1'; t.style.transform = 'translateY(0)'; });
   setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateY(-10px)'; setTimeout(() => t.remove(), 300); }, 2500);
@@ -1078,7 +1079,7 @@ function showConfirm(title, message, onConfirm) {
 function closeConfirmModal() { document.getElementById('confirmModal').classList.add('hidden'); pendingConfirmCallback = null; }
 function confirmYes() { const cb = pendingConfirmCallback; closeConfirmModal(); if(cb) cb(); }
 
-const THEME_META_COLORS = { white: '#F8FAFC', carbon: '#000000', oled: '#000000', paper: '#FAF6F0', calm: '#F5F5F0', ocean: '#0A1929', default: '#090A0F' };
+const THEME_META_COLORS = { white: '#F8FAFC', carbon: '#000000', aurora: '#0B0B14', oled: '#000000', paper: '#FAF6F0', calm: '#F5F5F0', default: '#090A0F' };
 const LIGHT_THEMES = ['white', 'paper', 'calm'];
 function isLightTheme() { return LIGHT_THEMES.includes(settings.theme) || document.documentElement.classList.contains('theme-white') || document.documentElement.classList.contains('theme-paper') || document.documentElement.classList.contains('theme-calm'); }
 
