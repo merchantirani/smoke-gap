@@ -13,6 +13,44 @@ let settings = Object.assign({}, DEFAULT_SETTINGS, JSON.parse(localStorage.getIt
 if (!settings.packSize || settings.packSize <= 0) settings.packSize = 20;
 if (!settings.timeFormat) settings.timeFormat = '12h';
 
+// Performance monitoring
+const perfMetrics = {
+  appLoadStart: Date.now(),
+  firstPaint: null,
+  interactive: null
+};
+
+// Track First Contentful Paint
+if ('PerformanceObserver' in window) {
+  try {
+    const paintObserver = new PerformanceObserver((entryList) => {
+      const entries = entryList.getEntries();
+      entries.forEach(entry => {
+        if (entry.name === 'first-contentful-paint') {
+          perfMetrics.firstPaint = entry.startTime;
+          console.log(`⚡ First Paint: ${entry.startTime.toFixed(0)}ms`);
+        }
+      });
+    });
+    paintObserver.observe({ type: 'paint', buffered: true });
+  } catch (e) {}
+}
+
+// Track Time to Interactive
+window.addEventListener('load', () => {
+  perfMetrics.interactive = Date.now() - perfMetrics.appLoadStart;
+  console.log(`⚡ Time to Interactive: ${perfMetrics.interactive}ms`);
+
+  // Report to analytics if available
+  if (window.posthog) {
+    posthog.capture('performance_metrics', {
+      first_paint_ms: perfMetrics.firstPaint,
+      time_to_interactive_ms: perfMetrics.interactive,
+      app_load_start: perfMetrics.appLoadStart
+    });
+  }
+});
+
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').then(reg => {
     console.log("Service Worker registered.");
