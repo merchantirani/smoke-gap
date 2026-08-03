@@ -52,23 +52,62 @@ window.addEventListener('load', () => {
 });
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').then(reg => {
-    console.log("Service Worker registered.");
+  // Register service worker with retry logic
+  registerServiceWorker();
+}
 
-    // Check if app is ready for offline use
-    reg.active && reg.active.postMessage({ type: 'GET_CACHE_STATUS' });
+async function registerServiceWorker(retries = 3) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const reg = await navigator.serviceWorker.register('sw.js');
+      console.log("✅ Service Worker registered successfully");
 
-    // Listen for cache status response
-    navigator.serviceWorker.addEventListener('message', (e) => {
-      if (e.data && e.data.version) {
-        console.log("Offline cache ready - Version:", e.data.version);
-        // Show offline ready indicator after 3 seconds
-        setTimeout(() => {
-          showOfflineReadyToast();
-        }, 3000);
+      // Wait for service worker to be active
+      if (reg.installing) {
+        console.log("⏳ Service Worker installing...");
+        await new Promise((resolve) => {
+          reg.installing.addEventListener('statechange', (e) => {
+            if (e.target.state === 'activated') {
+              console.log("✅ Service Worker activated");
+              resolve();
+            }
+          });
+        });
+      } else if (reg.active) {
+        console.log("✅ Service Worker already active");
       }
-    });
-  }).catch(err => console.log("SW failed", err));
+
+      // Check if app is ready for offline use
+      if (reg.active) {
+        reg.active.postMessage({ type: 'GET_CACHE_STATUS' });
+      }
+
+      // Listen for cache status response
+      navigator.serviceWorker.addEventListener('message', (e) => {
+        if (e.data && e.data.version) {
+          console.log("✅ Offline cache ready - Version:", e.data.version);
+          // Show offline ready indicator after 3 seconds
+          setTimeout(() => {
+            showOfflineReadyToast();
+          }, 3000);
+        }
+      });
+
+      // Listen for updates
+      reg.addEventListener('updatefound', () => {
+        console.log("🔄 Service Worker update found");
+      });
+
+      return; // Success, exit retry loop
+    } catch (err) {
+      console.error(`❌ Service Worker registration attempt ${i + 1} failed:`, err);
+      if (i < retries - 1) {
+        // Wait before retrying
+        await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+      }
+    }
+  }
+  console.error("❌ Service Worker registration failed after all retries");
 }
 
 function showOfflineReadyToast() {

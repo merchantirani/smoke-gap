@@ -1,14 +1,13 @@
-// PAUSE SERVICE WORKER - Offline Caching v2.0
-const CACHE_VERSION = 'v2';
+// PAUSE SERVICE WORKER - Offline Caching v3.0 (Mobile Optimized)
+const CACHE_VERSION = 'v3';
 const CACHE_NAME = `pause-cache-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `pause-runtime-${CACHE_VERSION}`;
 
 // Files to precache on install (critical app files)
+// Using absolute paths for better mobile compatibility
 const PRECACHE_FILES = [
-  './',
   './index.html',
   './app.js',
-  './privacy.html',
   './manifest.json',
   './icons/pause_icon_192.png',
   './icons/pause_icon_512.png',
@@ -28,37 +27,55 @@ const CDN_CACHE_PATTERNS = [
 
 // ==================== INSTALL ====================
 self.addEventListener('install', (e) => {
-  console.log('[SW] Installing...');
+  console.log('[SW] Installing version:', CACHE_VERSION);
+
   e.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('[SW] Precaching critical files');
-        return cache.addAll(PRECACHE_FILES);
-      })
-      .then(() => self.skipWaiting())
-      .catch(err => {
+    (async () => {
+      try {
+        const cache = await caches.open(CACHE_NAME);
+        console.log('[SW] Precaching files...');
+
+        // Cache files one by one with error handling
+        for (const file of PRECACHE_FILES) {
+          try {
+            await cache.add(file);
+            console.log('[SW] ✓ Cached:', file);
+          } catch (err) {
+            console.warn('[SW] ✗ Failed to cache:', file, err.message);
+          }
+        }
+
+        console.log('[SW] Precache complete');
+        return self.skipWaiting();
+      } catch (err) {
         console.error('[SW] Precache failed:', err);
         return self.skipWaiting();
-      })
+      }
+    })()
   );
 });
 
 // ==================== ACTIVATE ====================
 self.addEventListener('activate', (e) => {
-  console.log('[SW] Activating...');
+  console.log('[SW] Activating version:', CACHE_VERSION);
+
   e.waitUntil(
-    caches.keys()
-      .then(cacheNames => {
-        return Promise.all(
-          cacheNames
-            .filter(name => name !== CACHE_NAME && name !== RUNTIME_CACHE)
-            .map(name => {
-              console.log('[SW] Deleting old cache:', name);
-              return caches.delete(name);
-            })
-        );
-      })
-      .then(() => self.clients.claim())
+    (async () => {
+      // Delete old caches
+      const cacheNames = await caches.keys();
+      const deletePromises = cacheNames
+        .filter(name => name !== CACHE_NAME && name !== RUNTIME_CACHE)
+        .map(name => {
+          console.log('[SW] Deleting old cache:', name);
+          return caches.delete(name);
+        });
+
+      await Promise.all(deletePromises);
+
+      // Claim all clients immediately
+      await self.clients.claim();
+      console.log('[SW] Activation complete');
+    })()
   );
 });
 
@@ -71,10 +88,11 @@ function isCDNUrl(url) {
 
 // Helper: Is this a navigation request?
 function isNavigationRequest(request) {
-  return request.mode === 'navigate';
+  return request.mode === 'navigate' ||
+    (request.method === 'GET' && request.headers.get('accept')?.includes('text/html'));
 }
 
-// Strategy: Cache First (for static assets)
+// Strategy: Cache First with Network Fallback (for static assets)
 async function cacheFirst(request) {
   const cached = await caches.match(request);
   if (cached) {
@@ -85,7 +103,7 @@ async function cacheFirst(request) {
     const response = await fetch(request);
     if (response.ok) {
       const cache = await caches.open(CACHE_NAME);
-      cache.put(request, response.clone());
+      await cache.put(request, response.clone());
     }
     return response;
   } catch (err) {
@@ -94,13 +112,13 @@ async function cacheFirst(request) {
   }
 }
 
-// Strategy: Network First (for HTML pages)
+// Strategy: Network First with Cache Fallback (for HTML pages)
 async function networkFirst(request) {
   try {
     const response = await fetch(request);
     if (response.ok) {
       const cache = await caches.open(CACHE_NAME);
-      cache.put(request, response.clone());
+      await cache.put(request, response.clone());
     }
     return response;
   } catch (err) {
@@ -109,6 +127,13 @@ async function networkFirst(request) {
     if (cached) {
       return cached;
     }
+
+    // Return offline page for navigation requests
+    if (isNavigationRequest(request)) {
+      const offlinePage = await caches.match('./index.html');
+      if (offlinePage) return offlinePage;
+    }
+
     throw err;
   }
 }
@@ -119,9 +144,9 @@ async function staleWhileRevalidate(request) {
   const cached = await cache.match(request);
 
   const fetchPromise = fetch(request)
-    .then(response => {
+    .then(async response => {
       if (response.ok) {
-        cache.put(request, response.clone());
+        await cache.put(request, response.clone());
       }
       return response;
     })
@@ -135,64 +160,47 @@ async function staleWhileRevalidate(request) {
 
 // ==================== MAIN FETCH HANDLER ====================
 self.addEventListener('fetch', (e) => {
-  const url = new URL(e.request.url);
+  try {
+    const url = new URL(e.request.url);
 
-  // Skip non-GET requests
-  if (e.request.method !== 'GET') {
-    return;
-  }
+    // Skip non-GET requests
+    if (e.request.method !== 'GET') {
+      return;
+    }
 
-  // Skip chrome-extension and other non-http(s) requests
-  if (!url.protocol.startsWith('http')) {
-    return;
-  }
+    // Skip chrome-extension and other non-http(s) requests
+    if (!url.protocol.startsWith('http')) {
+      return;
+    }
 
-  // Navigation requests (HTML pages) - Network First
-  if (isNavigationRequest(e.request)) {
+    // Skip cross-origin requests that aren't CDN
+    if (url.origin !== location.origin && !isCDNUrl(url.href)) {
+      return;
+    }
+
+    // Navigation requests (HTML pages) - Network First
+    if (isNavigationRequest(e.request)) {
+      e.respondWith(networkFirst(e.request));
+      return;
+    }
+
+    // Local app files - Cache First
+    if (url.origin === location.origin) {
+      e.respondWith(cacheFirst(e.request));
+      return;
+    }
+
+    // CDN resources - Stale While Revalidate
+    if (isCDNUrl(url.href)) {
+      e.respondWith(staleWhileRevalidate(e.request));
+      return;
+    }
+
+    // External requests - Network First with cache fallback
     e.respondWith(networkFirst(e.request));
-    return;
+  } catch (err) {
+    console.error('[SW] Fetch handler error:', err);
   }
-
-  // Local app files - Cache First
-  if (url.origin === location.origin) {
-    e.respondWith(cacheFirst(e.request));
-    return;
-  }
-
-  // CDN resources - Stale While Revalidate
-  if (isCDNUrl(url.href)) {
-    e.respondWith(staleWhileRevalidate(e.request));
-    return;
-  }
-
-  // External requests - Network First with cache fallback
-  e.respondWith(networkFirst(e.request));
-});
-
-// ==================== BACKGROUND SYNC ====================
-self.addEventListener('sync', (e) => {
-  if (e.tag === 'sync-data') {
-    console.log('[SW] Background sync triggered');
-    // Future: Sync data when connection is restored
-  }
-});
-
-// ==================== NOTIFICATION CLICK ====================
-self.addEventListener('notificationclick', (e) => {
-  e.notification.close();
-  e.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true })
-      .then(clientList => {
-        for (let client of clientList) {
-          if (client.url && 'focus' in client) {
-            return client.focus();
-          }
-        }
-        if (clients.openWindow) {
-          return clients.openWindow('./');
-        }
-      })
-  );
 });
 
 // ==================== MESSAGE HANDLER ====================
@@ -203,12 +211,37 @@ self.addEventListener('message', (e) => {
 
   if (e.data && e.data.type === 'GET_CACHE_STATUS') {
     caches.keys().then(names => {
-      e.ports[0].postMessage({
-        version: CACHE_VERSION,
-        caches: names
-      });
+      // Check if our cache exists
+      const hasCache = names.includes(CACHE_NAME);
+      const hasRuntimeCache = names.includes(RUNTIME_CACHE);
+
+      if (e.ports && e.ports[0]) {
+        e.ports[0].postMessage({
+          version: CACHE_VERSION,
+          caches: names,
+          ready: hasCache && hasRuntimeCache
+        });
+      }
+    }).catch(err => {
+      console.error('[SW] Error getting cache status:', err);
+    });
+  }
+
+  if (e.data && e.data.type === 'CLEAR_CACHES') {
+    caches.keys().then(names => {
+      names.forEach(name => caches.delete(name));
+      console.log('[SW] All caches cleared');
     });
   }
 });
 
-console.log('[SW] Service Worker loaded - Cache version:', CACHE_VERSION);
+// ==================== ERROR HANDLING ====================
+self.addEventListener('error', (e) => {
+  console.error('[SW] Error:', e.error);
+});
+
+self.addEventListener('unhandledrejection', (e) => {
+  console.error('[SW] Unhandled rejection:', e.reason);
+});
+
+console.log('[SW] Service Worker v' + CACHE_VERSION + ' loaded');
