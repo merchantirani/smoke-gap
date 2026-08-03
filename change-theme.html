@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head><title>Theme Changer</title></head>
+<body>
+<h2>Theme Changed to Glass!</h2>
+<script>
+  try {
+    var settings = JSON.parse(localStorage.getItem('smoke_settings')) || {};
+    settings.theme = 'glass';
+    localStorage.setItem('smoke_settings', JSON.stringify(settings));
+    alert('Glass theme activated! Ab index.html kholo.');
+    window.location.href = 'index.html';
+  } catch(e) {
+    alert('Error: ' + e.message);
+  }
+</script>
+</body>
+</html>
