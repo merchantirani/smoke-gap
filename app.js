@@ -446,16 +446,32 @@ function bootApp() {
   }
 
   if(window.lucide) window.lucide.createIcons();
-  setTimeout(() => { const skel = document.getElementById('appSkeleton'); if(skel) { skel.style.opacity = '0'; setTimeout(()=>skel.remove(), 500); } }, 400);
+
+  // Hide skeleton immediately when app is ready (faster for Android)
+  const hideSkeleton = () => {
+    const skel = document.getElementById('appSkeleton');
+    if(skel) {
+      skel.style.opacity = '0';
+      setTimeout(() => skel.remove(), 300);
+    }
+  };
 
   // Check onboarding
   const onboardingDone = localStorage.getItem('smoke_onboarding_done');
   if (!onboardingDone && logs.length === 0) {
     showOnboarding();
+    hideSkeleton();
     return;
   }
 
-  if(hasPin) { document.getElementById('lockScreen').classList.remove('hidden'); document.getElementById('pinStatusBtn').innerText = "Remove PIN"; } else { bootCore(); }
+  if(hasPin) {
+    document.getElementById('lockScreen').classList.remove('hidden');
+    document.getElementById('pinStatusBtn').innerText = "Remove PIN";
+    hideSkeleton();
+  } else {
+    bootCore();
+    hideSkeleton();
+  }
 }
 
 // Onboarding state
@@ -500,7 +516,14 @@ window.restartOnboarding = function() {
 function finishOnboarding() {
   localStorage.setItem('smoke_onboarding_done', 'true');
   document.getElementById('onboardingOverlay').classList.add('hidden');
-  if(hasPin) { document.getElementById('lockScreen').classList.remove('hidden'); document.getElementById('pinStatusBtn').innerText = "Remove PIN"; } else { bootCore(); }
+  if(hasPin) {
+    document.getElementById('lockScreen').classList.remove('hidden');
+    document.getElementById('pinStatusBtn').innerText = "Remove PIN";
+    hideSkeleton();
+  } else {
+    bootCore();
+    hideSkeleton();
+  }
 }
 
 window.switchWatchStyle = function(styleNum) {

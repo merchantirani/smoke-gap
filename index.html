@@ -197,14 +197,9 @@
 </head>
 <body>
 
-  <div id="appSkeleton" class="fixed inset-0 z-[99999] flex flex-col items-center justify-center gap-4 bg-[var(--bg-body)] transition-opacity duration-500 pointer-events-none">
+  <div id="appSkeleton" class="fixed inset-0 z-[99999] flex flex-col items-center justify-center gap-4 bg-[var(--bg-body)] transition-opacity duration-200 pointer-events-none">
     <div class="relative">
-      <div class="w-16 h-16 border-4 border-gray-500/20 border-t-[var(--accent)] rounded-full animate-spin"></div>
-      <div class="absolute inset-0 w-16 h-16 border-4 border-transparent border-b-[var(--accent)] rounded-full animate-spin" style="animation-duration: 1.5s; animation-direction: reverse;"></div>
-    </div>
-    <div class="text-center space-y-2">
-      <h2 class="brand-title text-2xl tracking-tight">pause</h2>
-      <p class="text-[9px] font-bold uppercase tracking-[0.2em]" style="color: var(--text-muted);">Loading your data...</p>
+      <div class="w-12 h-12 border-3 border-gray-500/20 border-t-[var(--accent)] rounded-full animate-spin"></div>
     </div>
   </div>
 
