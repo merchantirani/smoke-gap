@@ -259,6 +259,7 @@ const HEALTH_MILESTONES = [
   {mins: 20160, emoji: '🏃', title: 'Circulation Boosts', desc: 'Blood circulation improves significantly.'},
   {mins: 43200, emoji: '🌟', title: 'Lung Function Grows', desc: 'Cilia regrow and lung function increases.'},
 ];
+let waves = [];
 try { waves = JSON.parse(localStorage.getItem('smoke_waves')) || []; if(!Array.isArray(waves)) waves = []; } catch(e) { waves = []; }
 
 let progressPhotos = [];
@@ -415,6 +416,25 @@ const centerTextPlugin = { id: 'centerText', beforeDraw: chart => { if (chart.co
 
 function formatAppTime(dateObj) { return dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: settings.timeFormat === '12h' }); }
 
+// Top-level function so finishOnboarding can access it
+function hideSkeleton() {
+  const skel = document.getElementById('appSkeleton');
+  if(skel) {
+    // Detect if running as PWA (standalone mode)
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
+                  window.navigator.standalone === true ||
+                  document.referrer.includes('android-app://');
+    // If PWA, remove instantly without animation (manifest splash handles this)
+    if(isPWA) {
+      skel.remove();
+    } else {
+      // Web browser - animate out
+      skel.style.opacity = '0';
+      setTimeout(() => skel.remove(), 300);
+    }
+  }
+}
+
 function bootApp() {
   applyTheme(settings.theme);
   try {
@@ -446,26 +466,6 @@ function bootApp() {
   }
 
   if(window.lucide) window.lucide.createIcons();
-
-  // Detect if running as PWA (standalone mode)
-  const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
-                window.navigator.standalone === true ||
-                document.referrer.includes('android-app://');
-
-  // Hide skeleton immediately when app is ready (faster for Android)
-  const hideSkeleton = () => {
-    const skel = document.getElementById('appSkeleton');
-    if(skel) {
-      // If PWA, remove instantly without animation (manifest splash handles this)
-      if(isPWA) {
-        skel.remove();
-      } else {
-        // Web browser - animate out
-        skel.style.opacity = '0';
-        setTimeout(() => skel.remove(), 300);
-      }
-    }
-  };
 
   // If PWA, hide skeleton immediately
   if(isPWA) {
@@ -738,6 +738,9 @@ function bootCore() {
   if(mainTimer) clearInterval(mainTimer);
   mainTimer = setInterval(() => {
     try {
+      // Skip expensive DOM updates when app is backgrounded
+      if (document.hidden) return;
+
       checkPeakNudge();
       updateLastSmokeDisplay();
 
@@ -762,8 +765,6 @@ function bootCore() {
         inactivityNotified = true;
         sendSystemNotification("🚬 Did you forget to log?", "It's been longer than your average gap. Log your stick or keep widening the gap!", 'notifInactivity');
       }
-
-      if (document.hidden) return; 
 
       updateHeroDisplay(diff, prevGapMs, avgGapMs);
 
@@ -1802,6 +1803,15 @@ window.loadMoreHistory = function() {
 function renderHistory(tId = 'fullHistoryList', homeLimit = 3) {
   try {
     const c = document.getElementById(tId); if(!c) return;
+
+    // Hide skeleton and show content container
+    const skeletonId = tId === 'homeRecentLogs' ? 'recentLogsSkeleton' : (tId === 'fullHistoryList' ? 'historySkeleton' : null);
+    if(skeletonId) {
+      const skeleton = document.getElementById(skeletonId);
+      if(skeleton) skeleton.classList.add('hidden');
+    }
+    c.classList.remove('hidden');
+
     if(!logs || logs.length===0) { c.innerHTML="<p class='text-center py-6 text-xs flex flex-col items-center gap-2' style='color: var(--text-muted);'><i data-lucide='inbox' class='w-6 h-6 opacity-50'></i> No logs recorded yet.</p>"; if(window.lucide) window.lucide.createIcons(); return; }
 
     let filteredLogs = logs.map((l, i) => ({ ...l, origIdx: i })).reverse();
@@ -2185,6 +2195,12 @@ function renderHeatmapCalendar(logsArray) {
 }
 
 function renderAllCharts() {
+  // Hide charts skeleton and show chart container
+  const chartsSkeleton = document.getElementById('chartsSkeleton');
+  const chartContainer = document.getElementById('chartContainer');
+  if(chartsSkeleton) chartsSkeleton.classList.add('hidden');
+  if(chartContainer) chartContainer.classList.remove('hidden');
+
   const activeLogs = getFilteredLogs();
   const filter = document.getElementById('insightsDateFilter').value;
   const filterEl = document.getElementById('selectedFilterLabel');
@@ -2486,4 +2502,3 @@ window.restoreDeletedLog = function(btn) {
     showToast("Log restored");
   } catch(e) { showToast("Could not restore"); }
 }
-bootApp();
