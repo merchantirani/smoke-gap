@@ -87,15 +87,31 @@
       --overlay-bg: rgba(0, 0, 0, 0.92); --modal-bg: #0A0A0A; --input-bg: rgba(255, 255, 255, 0.04);
       --heat-0: rgba(255, 255, 255, 0.03); --heat-1: #B2F5EA; --heat-2: #64FFDA; --heat-3: #1DE9B6; --heat-4: #00BFA5; --heat-text: rgba(255, 255, 255, 0.75);
     }
-    /* === GLASS THEME - Premium Light Glassmorphism (Apple iOS Style) === */
+# Read the file
+with open('index.html', 'r') as f:
+    lines = f.readlines()
+
+# Remove lines 90-293 (0-indexed: 89-292)
+new_lines = lines[:89] + lines[293:]
+
+# Write new content
+with open('index.html', 'w') as f:
+    f.writelines(new_lines)
+PYEOF
+echo "Lines 90-293 removed"    /* === GLASS THEME - Ultra Premium Glassmorphism === */
     html.theme-glass, body.theme-glass {
-      --bg-body: #F5F7FF;
-      --bg-gradient: radial-gradient(ellipse at 20% 20%, rgba(224, 195, 252, 0.3) 0%, transparent 50%), radial-gradient(ellipse at 80% 80%, rgba(142, 197, 252, 0.25) 0%, transparent 50%), radial-gradient(ellipse at 50% 100%, rgba(195, 222, 252, 0.2) 0%, transparent 50%), linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
-      --text-main: #1D1D1F; --text-muted: #5C5C6B;
-      --card-bg: rgba(255, 255, 255, 0.55); --card-border: rgba(255, 255, 255, 0.8);
-      --accent: #2563EB; --accent-glow: rgba(37, 99, 235, 0.25); --accent-text: #FFFFFF;
-      --overlay-bg: rgba(255, 255, 255, 0.7); --modal-bg: rgba(255, 255, 255, 0.85); --input-bg: rgba(255, 255, 255, 0.6);
-      --heat-0: rgba(255, 255, 255, 0.1); --heat-1: #93C5FD; --heat-2: #3B82F6; --heat-3: #1D4ED8; --heat-4: #1E3A8A; --heat-text: rgba(0, 0, 0, 0.75);
+      --bg-body: #0F0F1A;
+      --bg-gradient: radial-gradient(ellipse at 20% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 50%), radial-gradient(ellipse at 80% 80%, rgba(236, 72, 153, 0.12) 0%, transparent 50%), radial-gradient(ellipse at 50% 100%, rgba(139, 92, 246, 0.1) 0%, transparent 50%), #0F0F1A;
+      --text-main: #F8FAFC; --text-muted: #94A3B8;
+      --card-bg: rgba(255, 255, 255, 0.06); --card-border: rgba(255, 255, 255, 0.1);
+      --card-bg-strong: rgba(255, 255, 255, 0.1);
+      --accent: #A78BFA; --accent-glow: rgba(167, 139, 250, 0.4); --accent-text: #1E1B4B;
+      --accent-glow-lg: rgba(167, 139, 250, 0.5);
+      --overlay-bg: rgba(15, 15, 26, 0.8); --modal-bg: rgba(20, 20, 35, 0.85); --input-bg: rgba(255, 255, 255, 0.04);
+      --heat-0: rgba(255, 255, 255, 0.03); --heat-1: #C4B5FD; --heat-2: #A78BFA; --heat-3: #8B5CF6; --heat-4: #6D28D9; --heat-text: rgba(255, 255, 255, 0.75);
+      --glass-border: rgba(255, 255, 255, 0.12);
+      --glass-highlight: rgba(255, 255, 255, 0.08);
+      --glass-shadow: rgba(0, 0, 0, 0.3);
     }
 
     /* Glass theme - Dynamic gradient background */
