@@ -73,7 +73,7 @@
     html.theme-white, body.theme-white {
       --bg-body: #F8FAFC; --text-main: #0F172A; --text-muted: #64748B;
       --card-bg: rgba(255, 255, 255, 0.85); --card-border: rgba(203, 213, 225, 0.6);
-      --accent: #2563EB; --accent-glow: rgba(37, 99, 235, 0.15); --accent-text: #FFFFFF;
+      --accent: #1E5EFF; --accent-glow: rgba(30, 94, 255, 0.15); --accent-text: #FFFFFF;
       --overlay-bg: rgba(15, 23, 42, 0.25); --modal-bg: #FFFFFF; --input-bg: rgba(0, 0, 0, 0.03);
       --heat-0: rgba(0, 0, 0, 0.04); --heat-1: #93C5FD; --heat-2: #3B82F6; --heat-3: #1D4ED8; --heat-4: #1E3A8A; --heat-text: rgba(255, 255, 255, 0.85);
     }
@@ -193,6 +193,12 @@
     .pin-btn:hover { background: var(--input-bg); }
     .filter-select-wrapper { position: relative; display: inline-flex; align-items: center; }
     .filter-select-wrapper::after { content: ''; position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-left: 4.5px solid transparent; border-right: 4.5px solid transparent; border-top: 5px solid var(--accent); pointer-events: none; }
+    /* Premium Royal Blue remap: unify all sky/blue Tailwind utilities to the accent color */
+    .text-sky-500, .text-blue-500 { color: var(--accent) !important; }
+    .bg-sky-500\/10, .bg-blue-500\/10 { background-color: rgba(30, 94, 255, 0.1) !important; }
+    .bg-sky-500\/20, .bg-blue-500\/20 { background-color: rgba(30, 94, 255, 0.2) !important; }
+    .border-sky-500\/20, .border-blue-500\/20 { border-color: rgba(30, 94, 255, 0.2) !important; }
+    .accent-sky-500 { accent-color: var(--accent) !important; }
   </style>
 </head>
 <body>
@@ -226,10 +232,10 @@
 
         <div id="onboardSlide3" class="hidden flex flex-col items-center text-center space-y-5">
           <div class="w-20 h-20 rounded-3xl flex items-center justify-center" style="background: rgba(14,165,233,0.1);">
-            <i data-lucide="waves" class="w-10 h-10" style="color: #0EA5E9;"></i>
+            <i data-lucide="waves" class="w-10 h-10" style="color: var(--accent);"></i>
           </div>
           <h2 class="text-xl font-bold" style="color: var(--text-main);">Ride It Out</h2>
-          <p class="text-sm leading-relaxed" style="color: var(--text-muted);">When a craving hits but you want to resist, start a <strong style="color: #0EA5E9;">Ride It Out</strong> timer. Cravings peak and pass in minutes — ride the wave and earn <strong style="color: var(--accent);">Shields</strong>.</p>
+          <p class="text-sm leading-relaxed" style="color: var(--text-muted);">When a craving hits but you want to resist, start a <strong style="color: var(--accent);">Ride It Out</strong> timer. Cravings peak and pass in minutes — ride the wave and earn <strong style="color: var(--accent);">Shields</strong>.</p>
         </div>
 
         <div id="onboardSlide4" class="hidden flex flex-col items-center text-center space-y-5">
@@ -1054,7 +1060,7 @@
 
     <div class="grid grid-cols-3 gap-2.5">
       <div class="premium-card p-3 text-center">
-        <div class="w-9 h-9 rounded-xl mx-auto mb-1.5 flex items-center justify-center" style="background: rgba(56,189,248,0.12); color: #38BDF8;"><i data-lucide="swords" class="w-4 h-4"></i></div>
+        <div class="w-9 h-9 rounded-xl mx-auto mb-1.5 flex items-center justify-center" style="background: rgba(30,94,255,0.12); color: var(--accent);"><i data-lucide="swords" class="w-4 h-4"></i></div>
         <div id="modalShieldCount" class="numeric-display text-2xl font-bold text-sky-500">0</div>
         <div class="text-[9px] font-bold uppercase tracking-wider mt-1" style="color: var(--text-muted);">Total Defeats</div>
       </div>
@@ -1114,26 +1120,26 @@
 
     <div class="space-y-2">
       <div class="flex items-center gap-2 mb-2">
-        <div class="w-2 h-6 rounded-full" style="background: linear-gradient(180deg, #3B82F6, #60A5FA);"></div>
+        <div class="w-2 h-6 rounded-full" style="background: linear-gradient(180deg, #1E5EFF, #5B8BFF);"></div>
         <h4 class="text-xs font-bold uppercase tracking-widest" style="color: var(--text-muted);">Building Habit</h4>
-        <span class="text-[9px] px-2 py-0.5 rounded-full ml-auto" style="background: rgba(59,130,246,0.1); color: #3B82F6;">Consistency</span>
+        <span class="text-[9px] px-2 py-0.5 rounded-full ml-auto" style="background: rgba(30,94,255,0.1); color: var(--accent);">Consistency</span>
       </div>
       <div class="grid grid-cols-3 gap-2">
         <div id="badge10" class="badge-card relative flex flex-col items-center p-2 rounded-xl transition-all duration-500 border opacity-40 grayscale" data-shields="10" style="background: var(--input-bg); border-color: var(--card-border);">
           <div class="absolute top-1 right-1"><i data-lucide="lock" class="badge-lock w-3 h-3" style="color: var(--text-muted);"></i></div>
-          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-1" style="background: linear-gradient(135deg, #3B82F6, #60A5FA);"><i data-lucide="award" class="w-4 h-4 text-white"></i></div>
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-1" style="background: linear-gradient(135deg, #1E5EFF, #5B8BFF);"><i data-lucide="award" class="w-4 h-4 text-white"></i></div>
           <span class="text-[9px] font-bold text-center leading-tight" style="color: var(--text-main);">Iron Will</span>
           <span class="text-[8px]" style="color: var(--text-muted);">10 Shields</span>
         </div>
         <div id="badge15" class="badge-card relative flex flex-col items-center p-2 rounded-xl transition-all duration-500 border opacity-40 grayscale" data-shields="15" style="background: var(--input-bg); border-color: var(--card-border);">
           <div class="absolute top-1 right-1"><i data-lucide="lock" class="badge-lock w-3 h-3" style="color: var(--text-muted);"></i></div>
-          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-1" style="background: linear-gradient(135deg, #3B82F6, #60A5FA);"><i data-lucide="target" class="w-4 h-4 text-white"></i></div>
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-1" style="background: linear-gradient(135deg, #1E5EFF, #5B8BFF);"><i data-lucide="target" class="w-4 h-4 text-white"></i></div>
           <span class="text-[9px] font-bold text-center leading-tight" style="color: var(--text-main);">Focused</span>
           <span class="text-[8px]" style="color: var(--text-muted);">15 Shields</span>
         </div>
         <div id="badge25" class="badge-card relative flex flex-col items-center p-2 rounded-xl transition-all duration-500 border opacity-40 grayscale" data-shields="25" style="background: var(--input-bg); border-color: var(--card-border);">
           <div class="absolute top-1 right-1"><i data-lucide="lock" class="badge-lock w-3 h-3" style="color: var(--text-muted);"></i></div>
-          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-1" style="background: linear-gradient(135deg, #3B82F6, #60A5FA);"><i data-lucide="shield" class="w-4 h-4 text-white"></i></div>
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-1" style="background: linear-gradient(135deg, #1E5EFF, #5B8BFF);"><i data-lucide="shield" class="w-4 h-4 text-white"></i></div>
           <span class="text-[9px] font-bold text-center leading-tight" style="color: var(--text-main);">Guardian</span>
           <span class="text-[8px]" style="color: var(--text-muted);">25 Shields</span>
         </div>

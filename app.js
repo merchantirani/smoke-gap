@@ -218,7 +218,7 @@ if (settings.autoReduce) {
 }
 
 let triggers = JSON.parse(localStorage.getItem('smoke_triggers')) || ['🏠 Home', '💼 Work', '🚗 Car / Commute', '🎉 Outside / Social', '😰 Stress', '🍽️ After Meal', '☕ Chai / Coffee', '📱 Boredom', '👥 Peer Pressure', '🍺 Alcohol', '😡 Anger', '🌙 Habit'];
-const CHART_COLORS = ['#3B82F6', '#10B981', '#10B981', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316', '#14B8A6', '#6366F1', '#F43F5E', '#84CC16', '#0EA5E9', '#D946EF', '#EAB308', '#1D4ED8', '#047857', '#B45309', '#BE123C', '#6D28D9'];
+const CHART_COLORS = ['#1E5EFF', '#10B981', '#10B981', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316', '#14B8A6', '#6366F1', '#F43F5E', '#84CC16', '#1E5EFF', '#D946EF', '#EAB308', '#1D4ED8', '#047857', '#B45309', '#BE123C', '#6D28D9'];
 
 const INTENSITY_LABELS = {1: 'Mild', 2: 'Light', 3: 'Moderate', 4: 'Severe', 5: 'Extreme'};
 const MOODS = [
@@ -228,7 +228,7 @@ const MOODS = [
   {id: 'anxious', icon: 'zap', label: 'Anxious', color: '#F97316'},
   {id: 'stressed', icon: 'alert-triangle', label: 'Stressed', color: '#EF4444'},
   {id: 'frustrated', icon: 'flame', label: 'Frustrated', color: '#DC2626'},
-  {id: 'sad', icon: 'cloud-rain', label: 'Sad', color: '#3B82F6'},
+  {id: 'sad', icon: 'cloud-rain', label: 'Sad', color: '#1E5EFF'},
   {id: 'craving', icon: 'cigarette', label: 'Craving', color: '#8B5CF6'}
 ];
 const LEGACY_MOOD_EMOJI = { '😌':'calm', '😊':'happy', '😐':'neutral', '😰':'anxious', '😣':'stressed', '😡':'frustrated', '😢':'sad', '🙏':'craving' };
@@ -875,7 +875,7 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
   } else {
     newClass = 'mt-3 px-5 py-2 rounded-full border transition-all duration-500 bg-sky-500/10 border-sky-500/20';
     newHtml = `<i data-lucide="rocket" class="w-3.5 h-3.5 text-sky-500"></i><span class="text-sky-500">Setting your first baseline gap</span>`;
-    dotColor = '#0EA5E9';
+    dotColor = '#1E5EFF';
   }
 
   if(liveDot) { liveDot.style.backgroundColor = dotColor; liveDot.style.boxShadow = `0 0 8px ${dotColor}`; }
@@ -1395,7 +1395,7 @@ function updateDynamicTagline() {
     newColor = '#10B981';
   } else if (todayWaves.length >= 2) {
     newText = 'Stronger every wave.';
-    newColor = '#0EA5E9';
+    newColor = '#1E5EFF';
   } else {
     newText = 'Widen the gap.';
     newColor = '';
@@ -2326,7 +2326,7 @@ function renderAllCharts() {
     let dayMap = {}; activeLogs.forEach(l => { let d = document.getElementById('insightsDateFilter').value === '7days' ? new Date(l.timestamp).toLocaleDateString([], {weekday:'short'}) : new Date(l.timestamp).toLocaleDateString([], {month:'short', day:'numeric'}); dayMap[d] = (dayMap[d] || 0) + 1; });
     let dayLabels = Object.keys(dayMap), dayCounts = Object.values(dayMap); if(dayLabels.length === 0) { dayLabels = ['Today']; dayCounts = [0]; }
     const ctx2 = document.getElementById('chart2').getContext('2d');
-    upsertChart(2, ctx2, { type: 'bar', data: { labels: dayLabels, datasets: [{ label: 'Count', data: dayCounts, backgroundColor: (isLightTheme()) ? '#2563EB' : '#10B981', borderRadius: Number.MAX_VALUE, borderSkipped: false, maxBarThickness: 16 }, { label: 'Limit', data: dayLabels.map(() => settings.dailyLimit), type: 'line', borderColor: '#EF4444', borderWidth: 2, borderDash: [4,4], pointRadius: 0 }] }, options: { ...proOptions, scales: { x: { ...proOptions.scales.x, offset: true }, y: { ...proOptions.scales.y } } }, plugins: [crosshairPlugin] });
+    upsertChart(2, ctx2, { type: 'bar', data: { labels: dayLabels, datasets: [{ label: 'Count', data: dayCounts, backgroundColor: (isLightTheme()) ? '#1E5EFF' : '#10B981', borderRadius: Number.MAX_VALUE, borderSkipped: false, maxBarThickness: 16 }, { label: 'Limit', data: dayLabels.map(() => settings.dailyLimit), type: 'line', borderColor: '#EF4444', borderWidth: 2, borderDash: [4,4], pointRadius: 0 }] }, options: { ...proOptions, scales: { x: { ...proOptions.scales.x, offset: true }, y: { ...proOptions.scales.y } } }, plugins: [crosshairPlugin] });
   } catch(e){}
 
   try {
@@ -2347,7 +2347,7 @@ function renderAllCharts() {
 
   try {
     const ctx4 = document.getElementById('chart4').getContext('2d');
-    upsertChart(4, ctx4, { type: 'doughnut', data: { labels: ['Smoked', 'Resisted'], datasets: [{ data: [activeLogs.length, activeWaves.length], backgroundColor: ['#EF4444', '#0EA5E9'], borderWidth: 0, cutout: '76%' }] }, options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12, font: { family: APP_FONT_FAMILY, size: 10 }, color: chartTextColor } }, tooltip: { ...chartTooltipTheme } } }, plugins: [centerTextPlugin] });
+    upsertChart(4, ctx4, { type: 'doughnut', data: { labels: ['Smoked', 'Resisted'], datasets: [{ data: [activeLogs.length, activeWaves.length], backgroundColor: ['#EF4444', '#1E5EFF'], borderWidth: 0, cutout: '76%' }] }, options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12, font: { family: APP_FONT_FAMILY, size: 10 }, color: chartTextColor } }, tooltip: { ...chartTooltipTheme } } }, plugins: [centerTextPlugin] });
   } catch(e){}
 
   try {
@@ -2394,7 +2394,7 @@ function renderAllCharts() {
     if (chart6El) {
       let datasets = topTriggers.map((t, i) => ({ label: t, data: triggerByPart[t], backgroundColor: CHART_COLORS[i % CHART_COLORS.length], borderRadius: 0, maxBarThickness: 32, stack: 'triggers' }));
       if(otherByPart.some(v => v > 0)) datasets.push({ label: 'Other Triggers', data: otherByPart, backgroundColor: '#9CA3AF', borderRadius: 0, maxBarThickness: 32, stack: 'triggers' });
-      datasets.push({ label: 'Resisted', data: wavesByPart, backgroundColor: '#0EA5E9', borderRadius: 0, maxBarThickness: 32, stack: 'resisted' });
+      datasets.push({ label: 'Resisted', data: wavesByPart, backgroundColor: '#1E5EFF', borderRadius: 0, maxBarThickness: 32, stack: 'resisted' });
       upsertChart(6, chart6El.getContext('2d'), { type: 'bar', data: { labels: dayParts, datasets: datasets }, options: { ...proOptions, scales: { x: { ...proOptions.scales.x, stacked: true, offset: true }, y: { ...proOptions.scales.y, stacked: true, ticks: { ...proOptions.scales.y.ticks, precision: 0 } } }, plugins: { ...proOptions.plugins, legend: { display: true, position: 'bottom', labels: { boxWidth: 8, padding: 10, font: { family: APP_FONT_FAMILY, size: 9 }, color: chartTextColor } } } } });
     }
   } catch(e){}
