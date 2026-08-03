@@ -1,5 +1,5 @@
-// PAUSE SERVICE WORKER - Offline Caching v4.0 (Mobile Optimized)
-const CACHE_VERSION = 'v4';
+// PAUSE SERVICE WORKER - Offline Caching v5.0 (Mobile Optimized)
+const CACHE_VERSION = 'v5';
 const CACHE_NAME = `pause-cache-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `pause-runtime-${CACHE_VERSION}`;
 
@@ -12,8 +12,16 @@ const PRECACHE_FILES = [
   './icons/favicon.ico',
   './icons/pause_favicon_16.png',
   './icons/pause_favicon_32.png',
+  './icons/favicon_48.png',
+  './icons/pause_icon_72.png',
+  './icons/pause_icon_96.png',
+  './icons/pause_icon_128.png',
+  './icons/pause_icon_144.png',
+  './icons/pause_icon_152.png',
   './icons/pause_icon_180.png',
   './icons/pause_icon_192.png',
+  './icons/pause_icon_256.png',
+  './icons/pause_icon_384.png',
   './icons/pause_icon_512.png'
 ];
 
