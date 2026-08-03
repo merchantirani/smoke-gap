@@ -948,8 +948,6 @@ function setTakeoverIntensity(val) {
 
 function startSmokeTakeover(logIdx, gap, waveWasActive) {
   editingLogIdx = logIdx; currentSelectedTags = []; currentMood = null; setTakeoverIntensity(3); takeoverCountdown = 6;
-  const noteField = document.getElementById('takeoverNotes');
-  if (noteField) { noteField.value = ''; const c = document.getElementById('takeoverNotesCounter'); if(c) c.innerText = '0/200'; }
   const overlay = document.getElementById('smokeTakeover'); const numberEl = document.getElementById('takeoverNumber'); const ringEl = document.getElementById('takeoverRing'); const factEl = document.getElementById('takeoverFact');
   let factText = "";
   if(waveWasActive) factText = "It's okay to slip. What triggered this strong urge?";
@@ -1049,9 +1047,6 @@ function closeSmokeTakeover() {
   const overlay = document.getElementById('smokeTakeover'); overlay.classList.remove('opacity-100'); overlay.classList.add('opacity-0');
   if(editingLogIdx !== null && logs[editingLogIdx]) {
     logs[editingLogIdx].tags = [...currentSelectedTags]; logs[editingLogIdx].intensity = currentIntensity;
-    // Save journal note and mood from takeover
-    const noteEl = document.getElementById('takeoverNotes');
-    if (noteEl) logs[editingLogIdx].note = noteEl.value.trim().substring(0, 200);
     logs[editingLogIdx].mood = currentMood;
     localStorage.setItem('smoke_logs', JSON.stringify(logs));
     if (window.posthog) {
