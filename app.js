@@ -420,6 +420,13 @@ function formatAppTime(dateObj) { return dateObj.toLocaleTimeString([], { hour: 
 
 // Top-level function so finishOnboarding can access it
 function hideSkeleton() {
+  // Hide inline splash screen
+  const splashLoader = document.getElementById('splashLoader');
+  if(splashLoader) {
+    splashLoader.style.opacity = '0';
+    setTimeout(() => splashLoader.remove(), 300);
+  }
+
   const skel = document.getElementById('appSkeleton');
   if(skel) {
     // Detect if running as PWA (standalone mode)
@@ -808,7 +815,11 @@ function bootCore() {
     window.switchTab(savedTab);
   }
 
+  // Ensure initial render on boot
+  uiDirty = true;
   try { updateUI(); } catch(e) { console.error("updateUI error on boot", e); }
+  // Force render recent history on initial load
+  try { renderHistory('homeRecentLogs', 3); } catch(e) {}
   checkLock(); checkWave();
   setTimeout(() => showDailyRecap(), 1000);
   // The interval below handles ongoing updates
