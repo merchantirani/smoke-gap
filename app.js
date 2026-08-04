@@ -436,6 +436,60 @@ function hideSkeleton() {
   }
 }
 
+// Premium animated number counter (smooth transitions)
+function animateValue(el, start, end, duration, suffix) {
+  if (!el || start === end) return;
+  suffix = suffix || '';
+  const range = end - start;
+  const startTime = performance.now();
+  function update(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    // Ease out cubic for smooth deceleration
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const current = Math.round(start + range * eased);
+    el.textContent = current + suffix;
+    if (progress < 1) requestAnimationFrame(update);
+  }
+  requestAnimationFrame(update);
+}
+
+// Store previous values for animation
+const prevValues = {};
+
+function setAnimatedText(el, newText, duration) {
+  if (!el) return;
+  duration = duration || 400;
+  const oldText = el.textContent;
+  // Extract numeric value
+  const newNum = parseFloat(newText.replace(/[^0-9.-]/g, ''));
+  const oldNum = parseFloat(oldText.replace(/[^0-9.-]/g, ''));
+  if (isNaN(newNum) || isNaN(oldNum) || newNum === oldNum) {
+    el.textContent = newText;
+    return;
+  }
+  // Preserve prefix and suffix
+  const newPrefix = newText.substring(0, newText.indexOf(newNum));
+  const newSuffix = newText.substring(newText.indexOf(newNum) + String(newNum).length);
+  const range = newNum - oldNum;
+  const startTime = performance.now();
+  function update(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    let current = oldNum + range * eased;
+    // Handle decimals for currency
+    if (String(newNum).includes('.')) {
+      current = current.toFixed(1);
+    } else {
+      current = Math.round(current);
+    }
+    el.textContent = newPrefix + current + newSuffix;
+    if (progress < 1) requestAnimationFrame(update);
+  }
+  requestAnimationFrame(update);
+}
+
 function bootApp() {
   applyTheme(settings.theme);
   try {
@@ -1279,7 +1333,8 @@ function updateSettings() {
 function updateCostPerCigDisplay() { const el = document.getElementById('costPerCigDisplay'); if (el) el.innerText = `${settings.currency} ${(settings.packPrice / settings.packSize).toFixed(2)}`; }
 
 function updateUI() {
-  document.getElementById('shieldCount').innerText = waves.length;
+  const shieldEl = document.getElementById('shieldCount');
+  if(shieldEl) setAnimatedText(shieldEl, waves.length.toString(), 400);
   const emptyBanner = document.getElementById('emptyStateBanner'); if(emptyBanner) emptyBanner.classList.toggle('hidden', logs.length > 0);
   const motEl = document.getElementById('motivationTag'); const motText = document.getElementById('motivationText');
   if(motEl && motText) { if (settings.motivation && settings.motivation.trim() !== "") { motText.innerText = settings.motivation; motEl.classList.remove('hidden'); } else { motEl.classList.add('hidden'); } }
@@ -1289,10 +1344,12 @@ function updateUI() {
   let todayStr = new Date().toDateString(); if (!logsByDate[todayStr]) logsByDate[todayStr] = 0;
   let uniqueDates = Object.keys(logsByDate).sort((a,b) => new Date(b) - new Date(a));
   for (let dStr of uniqueDates) { if (logsByDate[dStr] <= settings.dailyLimit) { streak++; } else { if (slipDays < 2) { slipDays++; streak++; } else break; } }
-  document.getElementById('homeStreak').innerText = `🔥 ${streak} Day Streak`;
+  const streakSvg = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#F97316" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:2px;"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>';
+  document.getElementById('homeStreak').innerHTML = `${streakSvg} <span>${streak} Day Streak</span>`;
 
   const today = logs.filter(l => l.timestamp && new Date(l.timestamp).toDateString() === todayStr);
-  const todayCountTextEl = document.getElementById('todayCountText'); if(todayCountTextEl) todayCountTextEl.innerText = `${today.length} / ${settings.dailyLimit} Sticks`;
+  const todayCountTextEl = document.getElementById('todayCountText');
+  if(todayCountTextEl) setAnimatedText(todayCountTextEl, `${today.length} / ${settings.dailyLimit} Sticks`, 400);
   
   const fillBar = document.getElementById('batteryFillBar');
   const pctText = document.getElementById('batteryPctText');
@@ -1331,7 +1388,11 @@ function updateUI() {
   const trEl = document.getElementById('todayResisted'); if(trEl) trEl.innerText = todayWaves.length.toString();
   document.getElementById('homeTodayBeaten').innerText = `${todayWaves.length} Defeated`;
 
-  document.getElementById('todaySpend').innerText = `${settings.currency} ${(today.length * (settings.packPrice/settings.packSize)).toFixed(1)}`;
+  const spendEl = document.getElementById('todaySpend');
+  if(spendEl) {
+    const newSpend = `${settings.currency} ${(today.length * (settings.packPrice/settings.packSize)).toFixed(1)}`;
+    setAnimatedText(spendEl, newSpend, 400);
+  }
   
   const todayGaps = today.map(l => l.gap).filter(g => g !== null && g !== undefined);
   const bestGapCard = document.getElementById('bestGapCard'); if(bestGapCard) { bestGapCard.innerText = todayGaps.length > 0 ? formatGap(Math.max(...todayGaps)) : '--'; }
@@ -1372,7 +1433,7 @@ function computeMomentumScore(today, todayWaves) {
   const gapComponent = avgGapMin > 0 ? Math.min(100, (currentGapMin / avgGapMin) * 100) : 50;
 
   const score = Math.round(limitComponent*0.4 + waveComponent*0.3 + gapComponent*0.3);
-  if(momHeaderEl) momHeaderEl.innerText = score.toString();
+  if(momHeaderEl) setAnimatedText(momHeaderEl, score.toString(), 500);
 }
 
 function formatGap(m) { if (m === null || m === undefined || isNaN(m)) return '—'; if (m < 60) return `${m}m`; return `${Math.floor(m / 60)}h ${m % 60 > 0 ? (m % 60) + 'm' : ''}`.trim(); }
