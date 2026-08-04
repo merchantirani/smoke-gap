@@ -6,8 +6,9 @@ try {
   if(!Array.isArray(logs)) logs = [];
 } catch(e) { logs = []; }
 
-const DEFAULT_SETTINGS = { 
+const DEFAULT_SETTINGS = {
   theme: 'white', haptics: true, dailyLimit: 15, lockSecs: 300, packPrice: 20, packSize: 20, currency: 'AED', timeFormat: '12h', motivation: '', autoReduce: false,
+  quitDate: '', weeklyGoal: 0, monthlyGoal: 0,
   notifWaveComplete: true, notifGapWidened: true, notifInactivity: true, notifPredictive: true, notifEnableSos: false
 };
 let settings = Object.assign({}, DEFAULT_SETTINGS, JSON.parse(localStorage.getItem('smoke_settings')) || {});
@@ -496,6 +497,9 @@ function bootApp() {
     document.getElementById('dailyLimitInput').value = settings.dailyLimit;
     document.getElementById('packPriceInput').value = settings.packPrice;
     document.getElementById('packSizeInput').value = settings.packSize;
+    if(document.getElementById('quitDateInput')) document.getElementById('quitDateInput').value = settings.quitDate || '';
+    if(document.getElementById('weeklyGoalInput')) document.getElementById('weeklyGoalInput').value = settings.weeklyGoal || 0;
+    if(document.getElementById('monthlyGoalInput')) document.getElementById('monthlyGoalInput').value = settings.monthlyGoal || 0;
     document.getElementById('themeSelect').value = settings.theme;
     document.getElementById('timeFormatSelect').value = settings.timeFormat;
     document.getElementById('currencySelect').value = settings.currency || 'AED';
@@ -1316,6 +1320,9 @@ function updateSettings() {
   settings.dailyLimit = parseInt(document.getElementById('dailyLimitInput').value) || 15; settings.packPrice = parseFloat(document.getElementById('packPriceInput').value) || 20; settings.packSize = parseInt(document.getElementById('packSizeInput').value) || 20;
   settings.lockSecs = parseInt(document.getElementById('lockSecsInput').value) || 300; settings.haptics = document.getElementById('hapticsInput').checked;
   settings.motivation = document.getElementById('motivationInput').value;
+  if(document.getElementById('quitDateInput')) settings.quitDate = document.getElementById('quitDateInput').value;
+  if(document.getElementById('weeklyGoalInput')) settings.weeklyGoal = parseInt(document.getElementById('weeklyGoalInput').value) || 0;
+  if(document.getElementById('monthlyGoalInput')) settings.monthlyGoal = parseInt(document.getElementById('monthlyGoalInput').value) || 0;
   const prevAutoReduce = settings.autoReduce;
   settings.autoReduce = document.getElementById('autoReduceInput').checked;
   if (settings.autoReduce && !prevAutoReduce) {
@@ -1346,6 +1353,69 @@ function updateUI() {
   for (let dStr of uniqueDates) { if (logsByDate[dStr] <= settings.dailyLimit) { streak++; } else { if (slipDays < 2) { slipDays++; streak++; } else break; } }
   const streakSvg = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#F97316" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:2px;"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>';
   document.getElementById('homeStreak').innerHTML = `${streakSvg} <span>${streak} Day Streak</span>`;
+
+  // Quit Date Tracker - Calculate days smoke-free
+  const quitDateCard = document.getElementById('quitDateCard');
+  const daysSmokeFreeEl = document.getElementById('daysSmokeFree');
+  const quitDateDisplayEl = document.getElementById('quitDateDisplay');
+  if(settings.quitDate && quitDateCard) {
+    quitDateCard.classList.remove('hidden');
+    const quitDate = new Date(settings.quitDate + 'T00:00:00');
+    const todayDate = new Date();
+    todayDate.setHours(0,0,0,0);
+    const diffTime = todayDate - quitDate;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    if(daysSmokeFreeEl) setAnimatedText(daysSmokeFreeEl, diffDays.toString(), 600);
+    if(quitDateDisplayEl) quitDateDisplayEl.innerText = quitDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  } else if(quitDateCard) {
+    quitDateCard.classList.add('hidden');
+  }
+
+  // Weekly/Monthly Goals Progress
+  const goalsCard = document.getElementById('goalsCard');
+  const weeklyGoalSection = document.getElementById('weeklyGoalSection');
+  const monthlyGoalSection = document.getElementById('monthlyGoalSection');
+  if(settings.weeklyGoal > 0 || settings.monthlyGoal > 0) {
+    if(goalsCard) goalsCard.classList.remove('hidden');
+
+    // Weekly progress
+    if(settings.weeklyGoal > 0 && weeklyGoalSection) {
+      weeklyGoalSection.classList.remove('hidden');
+      const now = new Date();
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay());
+      startOfWeek.setHours(0,0,0,0);
+      const weekLogs = logs.filter(l => l.timestamp >= startOfWeek.getTime());
+      const weekCount = weekLogs.length;
+      const weekPct = Math.min(100, Math.round((weekCount / settings.weeklyGoal) * 100));
+      const weeklyProgressEl = document.getElementById('weeklyProgress');
+      const weeklyProgressBarEl = document.getElementById('weeklyProgressBar');
+      if(weeklyProgressEl) weeklyProgressEl.innerText = `${weekCount}/${settings.weeklyGoal}`;
+      if(weeklyProgressBarEl) {
+        weeklyProgressBarEl.style.width = `${weekPct}%`;
+        weeklyProgressBarEl.style.background = weekPct >= 100 ? '#EF4444' : 'var(--accent)';
+      }
+    }
+
+    // Monthly progress
+    if(settings.monthlyGoal > 0 && monthlyGoalSection) {
+      monthlyGoalSection.classList.remove('hidden');
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const monthLogs = logs.filter(l => l.timestamp >= startOfMonth.getTime());
+      const monthCount = monthLogs.length;
+      const monthPct = Math.min(100, Math.round((monthCount / settings.monthlyGoal) * 100));
+      const monthlyProgressEl = document.getElementById('monthlyProgress');
+      const monthlyProgressBarEl = document.getElementById('monthlyProgressBar');
+      if(monthlyProgressEl) monthlyProgressEl.innerText = `${monthCount}/${settings.monthlyGoal}`;
+      if(monthlyProgressBarEl) {
+        monthlyProgressBarEl.style.width = `${monthPct}%`;
+        monthlyProgressBarEl.style.background = monthPct >= 100 ? '#EF4444' : 'var(--accent)';
+      }
+    }
+  } else if(goalsCard) {
+    goalsCard.classList.add('hidden');
+  }
 
   const today = logs.filter(l => l.timestamp && new Date(l.timestamp).toDateString() === todayStr);
   const todayCountTextEl = document.getElementById('todayCountText');
@@ -1701,6 +1771,33 @@ function exportJSON() {
   localStorage.setItem('smoke_last_backup', new Date().getTime().toString());
   const banner = document.getElementById('backupReminderBanner'); if(banner) banner.classList.add('hidden');
   showToast("Backup downloaded ✅");
+}
+
+async function shareCloudBackup() {
+  if(!logs || logs.length === 0) { showToast("No data to backup yet."); return; }
+  const data = { logs, settings, triggers, waves, version: '1.6' };
+  const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
+  const file = new File([blob], `Pause_Backup_${new Date().toISOString().slice(0,10)}.json`, { type: "application/json" });
+
+  if(navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({
+        files: [file],
+        title: 'Pause App Backup',
+        text: `Backup of ${logs.length} cigarette logs`
+      });
+      localStorage.setItem('smoke_last_backup', new Date().getTime().toString());
+      const banner = document.getElementById('backupReminderBanner'); if(banner) banner.classList.add('hidden');
+      showToast("Shared to cloud ✅");
+    } catch(err) {
+      if(err.name !== 'AbortError') {
+        showToast("Share cancelled");
+      }
+    }
+  } else {
+    // Fallback to download if Web Share not supported
+    exportJSON();
+  }
 }
 
 function importJSON(event) {
@@ -2515,7 +2612,7 @@ window.openWaveModal = openWaveModal; window.closeWaveModal = closeWaveModal; wi
 window.renderAllCharts = renderAllCharts; window.openMapModal = openMapModal; window.closeMapModal = closeMapModal;
 window.showStatDetail = showStatDetail; window.closeStatDetail = closeStatDetail; window.showShieldDashboard = showShieldDashboard; window.closeShieldDashboard = closeShieldDashboard;
 window.exportLogsCSV = exportLogsCSV; window.addCustomTrigger = addCustomTrigger; window.removeCustomTrigger = removeCustomTrigger;
-window.closeConfirmModal = closeConfirmModal; window.confirmYes = confirmYes; window.setTakeoverIntensity = setTakeoverIntensity; window.exportJSON = exportJSON; window.importJSON = importJSON;
+window.closeConfirmModal = closeConfirmModal; window.confirmYes = confirmYes; window.setTakeoverIntensity = setTakeoverIntensity; window.exportJSON = exportJSON; window.importJSON = importJSON; window.shareCloudBackup = shareCloudBackup;
 window.closePinSetupModal = closePinSetupModal; window.savePinSetup = savePinSetup;
 window.requestNotifPermission = requestNotifPermission; window.toggleNotifSetting = toggleNotifSetting;
 window.closeSosInterrupter = closeSosInterrupter;
