@@ -799,27 +799,52 @@ window.addEventListener('resize', () => {
 });
 
 function bootCore() {
+  console.log('[BOOT] Starting bootCore, logs:', logs.length, 'waves:', waves.length);
   window.switchWatchStyle(currentWatchStyle);
   initNavIndicator();
 
-  // Restore last active tab
-  const savedTab = localStorage.getItem('smoke_active_tab');
-  if (savedTab && ['tracker','insights','history','settings'].includes(savedTab)) {
-    window.switchTab(savedTab);
-  }
+  // CRITICAL: Ensure tracker tab is visible FIRST
+  const trackerPage = document.getElementById('page-tracker');
+  if(trackerPage) trackerPage.classList.remove('hidden');
 
-  // Force render ALL tracker data on boot (bypass uiDirty flag)
+  // Render tracker data BEFORE switching tabs
   try {
+    // Shield count
     const shieldEl = document.getElementById('shieldCount');
     if(shieldEl) shieldEl.innerText = waves.length;
 
+    // Today's count
     const today = logs.filter(l => l.timestamp && new Date(l.timestamp).toDateString() === new Date().toDateString());
     const todayCountTextEl = document.getElementById('todayCountText');
     if(todayCountTextEl) todayCountTextEl.innerText = `${today.length} / ${settings.dailyLimit} Sticks`;
 
-    // Render recent activity
+    // Today's spend
+    const spendEl = document.getElementById('todaySpend');
+    if(spendEl) spendEl.innerText = `${settings.currency} ${(today.length * (settings.packPrice/settings.packSize)).toFixed(1)}`;
+
+    // Streak
+    let logsByDate = {};
+    logs.forEach(l => { if(l && l.timestamp) { let dStr = new Date(l.timestamp).toDateString(); logsByDate[dStr] = (logsByDate[dStr] || 0) + 1; }});
+    let todayStr = new Date().toDateString();
+    let streak = 0, slipDays = 0;
+    let uniqueDates = Object.keys(logsByDate).sort((a,b) => new Date(b) - new Date(a));
+    for (let dStr of uniqueDates) { if (logsByDate[dStr] <= settings.dailyLimit) { streak++; } else { if (slipDays < 2) { slipDays++; streak++; } else break; } }
+    const streakEl = document.getElementById('homeStreak');
+    if(streakEl) streakEl.innerHTML = `<span>${streak} Day Streak</span>`;
+
+    // Recent activity
     renderHistory('homeRecentLogs', 3);
+
+    // Empty state
+    const emptyBanner = document.getElementById('emptyStateBanner');
+    if(emptyBanner) emptyBanner.classList.toggle('hidden', logs.length > 0);
   } catch(e) { console.error("Boot render error:", e); }
+
+  // Now restore saved tab (if different from tracker)
+  const savedTab = localStorage.getItem('smoke_active_tab');
+  if (savedTab && savedTab !== 'tracker' && ['insights','history','settings'].includes(savedTab)) {
+    window.switchTab(savedTab);
+  }
 
   uiDirty = true;
   try { updateUI(); } catch(e) { console.error("updateUI error on boot", e); }
