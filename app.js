@@ -2187,6 +2187,10 @@ function renderHeatmapCalendar(logsArray) {
 }
 
 function renderAllCharts() {
+  // Hide charts skeleton
+  const chartsSkeleton = document.getElementById('chartsSkeleton');
+  if(chartsSkeleton) chartsSkeleton.classList.add('hidden');
+
   const activeLogs = getFilteredLogs();
   const filter = document.getElementById('insightsDateFilter').value;
   const filterEl = document.getElementById('selectedFilterLabel');
