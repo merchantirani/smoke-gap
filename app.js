@@ -8,7 +8,7 @@ try {
 
 const DEFAULT_SETTINGS = {
   theme: 'white', haptics: true, dailyLimit: 15, lockSecs: 300, packPrice: 20, packSize: 20, currency: 'AED', timeFormat: '12h', motivation: '', autoReduce: false,
-  quitDate: '', weeklyGoal: 0, monthlyGoal: 0,
+  quitDate: '', weeklyGoal: 0, monthlyGoal: 0, analyticsOptOut: false,
   notifWaveComplete: true, notifGapWidened: true, notifInactivity: true, notifPredictive: true, notifEnableSos: false
 };
 let settings = Object.assign({}, DEFAULT_SETTINGS, JSON.parse(localStorage.getItem('smoke_settings')) || {});
@@ -507,6 +507,8 @@ function bootApp() {
     document.getElementById('hapticsInput').checked = settings.haptics;
     document.getElementById('motivationInput').value = settings.motivation || '';
     document.getElementById('autoReduceInput').checked = settings.autoReduce || false;
+    const analyticsEl = document.getElementById('analyticsOptOutInput');
+    if(analyticsEl) analyticsEl.checked = !settings.analyticsOptOut; // Checkbox = opt-in, so invert
 
     const notifKeys = ['notifWaveComplete', 'notifGapWidened', 'notifInactivity', 'notifPredictive', 'notifEnableSos'];
     notifKeys.forEach(k => {
@@ -652,6 +654,22 @@ function toggleNotifSetting(key) {
   localStorage.setItem('smoke_settings', JSON.stringify(settings));
   if(el.checked && typeof Notification !== 'undefined' && Notification.permission !== 'granted') {
     requestNotifPermission();
+  }
+}
+
+function toggleAnalytics() {
+  const el = document.getElementById('analyticsOptOutInput');
+  if(!el) return;
+  settings.analyticsOptOut = !el.checked; // Invert: checkbox ON = analytics enabled
+  localStorage.setItem('smoke_settings', JSON.stringify(settings));
+  if(window.posthog) {
+    if(settings.analyticsOptOut) {
+      window.posthog.opt_out_capturing();
+      console.log('Analytics opted out');
+    } else {
+      window.posthog.opt_in_capturing();
+      console.log('Analytics opted in');
+    }
   }
 }
 
@@ -2633,16 +2651,21 @@ window.showStatDetail = showStatDetail; window.closeStatDetail = closeStatDetail
 window.exportLogsCSV = exportLogsCSV; window.addCustomTrigger = addCustomTrigger; window.removeCustomTrigger = removeCustomTrigger;
 window.closeConfirmModal = closeConfirmModal; window.confirmYes = confirmYes; window.setTakeoverIntensity = setTakeoverIntensity; window.exportJSON = exportJSON; window.importJSON = importJSON; window.shareCloudBackup = shareCloudBackup;
 window.closePinSetupModal = closePinSetupModal; window.savePinSetup = savePinSetup;
-window.requestNotifPermission = requestNotifPermission; window.toggleNotifSetting = toggleNotifSetting;
+window.requestNotifPermission = requestNotifPermission; window.toggleNotifSetting = toggleNotifSetting; window.toggleAnalytics = toggleAnalytics;
 window.closeSosInterrupter = closeSosInterrupter;
 
 
+
+// Store deleted logs for undo (safe - no HTML embedding)
+const deletedLogsQueue = [];
 
 window.deleteLogFromHistory = function(idx) {
   if (logs[idx]) {
     showConfirm("Delete this log?", "This cannot be undone.", () => {
       // Save the log data before deleting so we can restore it
       const deletedLog = logs[idx];
+      deletedLogsQueue.push(deletedLog);
+      const logQueueIdx = deletedLogsQueue.length - 1;
       window.undoLog(idx, null);
       renderHistory('fullHistoryList');
 
@@ -2651,7 +2674,7 @@ window.deleteLogFromHistory = function(idx) {
       const t = document.createElement('div');
       t.className = 'premium-card px-4 py-3 rounded-full text-xs font-bold shadow-lg pointer-events-auto transition-all duration-300 flex items-center gap-3 border border-gray-500/20';
       t.style.background = 'var(--card-bg)';
-      t.innerHTML = `<span class="flex items-center gap-1.5" style="color: var(--text-main);"><i data-lucide="trash-2" class="w-3.5 h-3.5 text-red-400"></i> Deleted</span><div class="w-px h-3 bg-gray-500/30"></div><button onclick="window.restoreDeletedLog(this)" data-log='${JSON.stringify(deletedLog).replace(/'/g, "&#39;")}' class="text-sky-500 active:scale-95 transition-transform uppercase tracking-wider">Undo</button>`;
+      t.innerHTML = `<span class="flex items-center gap-1.5" style="color: var(--text-main);"><i data-lucide="trash-2" class="w-3.5 h-3.5 text-red-400"></i> Deleted</span><div class="w-px h-3 bg-gray-500/30"></div><button onclick="window.restoreDeletedLog(${logQueueIdx})" class="text-sky-500 active:scale-95 transition-transform uppercase tracking-wider">Undo</button>`;
       t.style.opacity = '0'; t.style.transform = 'translateY(-10px)';
       c.appendChild(t); if(window.lucide) window.lucide.createIcons();
       requestAnimationFrame(() => { t.style.opacity = '1'; t.style.transform = 'translateY(0)'; });
@@ -2661,17 +2684,19 @@ window.deleteLogFromHistory = function(idx) {
   }
 }
 
-window.restoreDeletedLog = function(btn) {
-  const toast = btn.closest('.premium-card');
-  if (toast) { clearTimeout(toast.dataset.timerId); toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }
+window.restoreDeletedLog = function(logQueueIdx) {
   try {
-    const logData = JSON.parse(btn.getAttribute('data-log'));
+    const logData = deletedLogsQueue[logQueueIdx];
+    if(!logData) { showToast("Could not restore"); return; }
     logs.push(logData);
     logs.sort((a, b) => a.timestamp - b.timestamp);
     for (let i = 0; i < logs.length; i++) { logs[i].gap = i > 0 ? Math.round((logs[i].timestamp - logs[i-1].timestamp)/60000) : null; }
     localStorage.setItem('smoke_logs', JSON.stringify(logs));
+    uiDirty = true;
     try { updateUI(); } catch(err){}
     renderHistory('fullHistoryList');
     showToast("Log restored");
+    // Remove from queue
+    deletedLogsQueue.splice(logQueueIdx, 1);
   } catch(e) { showToast("Could not restore"); }
 }
