@@ -417,14 +417,15 @@ const centerTextPlugin = { id: 'centerText', beforeDraw: chart => { if (chart.co
 
 function formatAppTime(dateObj) { return dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: settings.timeFormat === '12h' }); }
 
+// Detect if running as PWA (standalone mode) - TOP LEVEL for access everywhere
+const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
+              window.navigator.standalone === true ||
+              document.referrer.includes('android-app://');
+
 // Top-level function so finishOnboarding can access it
 function hideSkeleton() {
   const skel = document.getElementById('appSkeleton');
   if(skel) {
-    // Detect if running as PWA (standalone mode)
-    const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
-                  window.navigator.standalone === true ||
-                  document.referrer.includes('android-app://');
     // If PWA, remove instantly without animation (manifest splash handles this)
     if(isPWA) {
       skel.remove();
@@ -649,7 +650,7 @@ function closeSosInterrupter(cravingPassed) {
     logWaveAttempt('won', 15000);
     showToast("🛡️ Craving Defeated! +1 Shield");
     if(window.confetti) confetti({particleCount: 80, spread: 60, origin: {y: 0.6}});
-    try { updateUI(); } catch(e){}
+    try { updateUI(); } catch(e){ console.error("updateUI error:", e); }
   } else {
     // User skipped - proceed to log cigarette
     actuallyLogCigarette();
@@ -1040,7 +1041,7 @@ function cancelSmokeTakeover(e) {
     uiDirty = true;
     lockEndTime = 0; localStorage.setItem('smoke_lock_end', lockEndTime);
     if(cooldownTimer) { clearInterval(cooldownTimer); cooldownTimer = null; }
-    try { updateUI(); } catch(err){} checkLock();
+    try { updateUI(); } catch(err){ console.error("updateUI error:", err); } checkLock();
   }
   if (window.posthog) posthog.capture('takeover_cancelled');
   setTimeout(() => { overlay.classList.add('hidden'); }, 500);
@@ -1057,7 +1058,7 @@ function closeSmokeTakeover() {
     if (window.posthog) {
       posthog.capture('takeover_saved', { tags: currentSelectedTags, intensity: currentIntensity });
     }
-    try { updateUI(); } catch(err){} 
+    try { updateUI(); } catch(err){ console.error("updateUI error:", err); } 
     if(!document.getElementById('page-insights').classList.contains('hidden')) renderAllCharts();
   }
   setTimeout(() => { overlay.classList.add('hidden'); showUndoToast(editingLogIdx); }, 500);
@@ -1084,7 +1085,7 @@ window.undoLog = function(idx, element) {
     localStorage.setItem('smoke_logs', JSON.stringify(logs)); uiDirty = true; lockEndTime = 0; localStorage.setItem('smoke_lock_end', lockEndTime);
     if(cooldownTimer) { clearInterval(cooldownTimer); cooldownTimer = null; }
     if (window.posthog) posthog.capture('log_undone');
-    try { updateUI(); } catch(err){} checkLock();
+    try { updateUI(); } catch(err){ console.error("updateUI error:", err); } checkLock();
     if(!document.getElementById('page-insights').classList.contains('hidden')) renderAllCharts();
   }
 }
@@ -1151,7 +1152,7 @@ function waveTick() {
     sendSystemNotification("🛡️ Craving Defeated!", "Awesome job! You successfully rode out the craving wave. +1 Shield unlocked.", 'notifWaveComplete');
     celebrateBadgeIfUnlocked();
     if (window.posthog) posthog.capture('ride_wave_completed', { duration_mins: waveDurationMs / 60000 });
-    try { updateUI(); } catch(e){}
+    try { updateUI(); } catch(e){ console.error("updateUI error:", e); }
   } else {
     const mm = Math.floor(rem/60).toString().padStart(2,'0'), ss = (rem%60).toString().padStart(2,'0');
     document.getElementById('waveCountdown').innerText = `${mm}:${ss}`;
@@ -1271,7 +1272,7 @@ function updateSettings() {
   localStorage.setItem('smoke_settings', JSON.stringify(settings)); 
   if (window.posthog) posthog.capture('settings_updated', { theme: settings.theme, dailyLimit: settings.dailyLimit, autoReduce: settings.autoReduce });
   applyTheme(settings.theme); updateCostPerCigDisplay(); 
-  try { updateUI(); } catch(err){}
+  try { updateUI(); } catch(err){ console.error("updateUI error:", err); }
   if(!document.getElementById('page-insights').classList.contains('hidden')) renderAllCharts();
   if(!document.getElementById('page-history').classList.contains('hidden')) renderHistory('fullHistoryList');
 }
@@ -1759,7 +1760,7 @@ function saveTags() {
     logs.sort((a,b) => a.timestamp - b.timestamp);
     for (let i = 0; i < logs.length; i++) { logs[i].gap = i > 0 ? Math.round((logs[i].timestamp - logs[i-1].timestamp)/60000) : null; }
     localStorage.setItem('smoke_logs', JSON.stringify(logs));
-    try { updateUI(); } catch(err){}
+    try { updateUI(); } catch(err){ console.error("updateUI error:", err); }
     if(!document.getElementById('page-history').classList.contains('hidden')) renderHistory('fullHistoryList'); if(!document.getElementById('page-insights').classList.contains('hidden')) requestAnimationFrame(() => renderAllCharts());
   }
   document.getElementById('triggerModal').classList.add('hidden');
@@ -2488,7 +2489,7 @@ window.restoreDeletedLog = function(btn) {
     logs.sort((a, b) => a.timestamp - b.timestamp);
     for (let i = 0; i < logs.length; i++) { logs[i].gap = i > 0 ? Math.round((logs[i].timestamp - logs[i-1].timestamp)/60000) : null; }
     localStorage.setItem('smoke_logs', JSON.stringify(logs));
-    try { updateUI(); } catch(err){}
+    try { updateUI(); } catch(err){ console.error("updateUI error:", err); }
     renderHistory('fullHistoryList');
     showToast("Log restored");
   } catch(e) { showToast("Could not restore"); }

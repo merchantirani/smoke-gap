@@ -1,5 +1,5 @@
-// PAUSE SERVICE WORKER - Offline Caching v6.0 (Mobile Optimized)
-const CACHE_VERSION = 'v6';
+// PAUSE SERVICE WORKER - Offline Caching v7.0 (Mobile Optimized)
+const CACHE_VERSION = 'v7';
 const CACHE_NAME = `pause-cache-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `pause-runtime-${CACHE_VERSION}`;
 
