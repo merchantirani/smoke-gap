@@ -808,11 +808,21 @@ function bootCore() {
     window.switchTab(savedTab);
   }
 
-  // Ensure initial render on boot
+  // Force render ALL tracker data on boot (bypass uiDirty flag)
+  try {
+    const shieldEl = document.getElementById('shieldCount');
+    if(shieldEl) shieldEl.innerText = waves.length;
+
+    const today = logs.filter(l => l.timestamp && new Date(l.timestamp).toDateString() === new Date().toDateString());
+    const todayCountTextEl = document.getElementById('todayCountText');
+    if(todayCountTextEl) todayCountTextEl.innerText = `${today.length} / ${settings.dailyLimit} Sticks`;
+
+    // Render recent activity
+    renderHistory('homeRecentLogs', 3);
+  } catch(e) { console.error("Boot render error:", e); }
+
   uiDirty = true;
   try { updateUI(); } catch(e) { console.error("updateUI error on boot", e); }
-  // Force render recent history on initial load
-  try { renderHistory('homeRecentLogs', 3); } catch(e) {}
   checkLock(); checkWave();
   setTimeout(() => showDailyRecap(), 1000);
   // The interval below handles ongoing updates
