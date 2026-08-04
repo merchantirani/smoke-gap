@@ -1779,6 +1779,7 @@ async function shareCloudBackup() {
   const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
   const file = new File([blob], `Pause_Backup_${new Date().toISOString().slice(0,10)}.json`, { type: "application/json" });
 
+  // Try Web Share API first
   if(navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
     try {
       await navigator.share({
@@ -1789,14 +1790,32 @@ async function shareCloudBackup() {
       localStorage.setItem('smoke_last_backup', new Date().getTime().toString());
       const banner = document.getElementById('backupReminderBanner'); if(banner) banner.classList.add('hidden');
       showToast("Shared to cloud ✅");
+      return;
     } catch(err) {
-      if(err.name !== 'AbortError') {
-        showToast("Share cancelled");
+      if(err.name === 'AbortError') {
+        // User cancelled - do nothing
+        return;
       }
+      console.log('Share failed:', err);
     }
-  } else {
-    // Fallback to download if Web Share not supported
-    exportJSON();
+  }
+
+  // Fallback: download the file
+  try {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `Pause_Backup_${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    localStorage.setItem('smoke_last_backup', new Date().getTime().toString());
+    const banner = document.getElementById('backupReminderBanner'); if(banner) banner.classList.add('hidden');
+    showToast("Backup downloaded ✅");
+  } catch(err) {
+    showToast("Backup failed ❌");
+    console.error('Backup error:', err);
   }
 }
 
