@@ -420,13 +420,6 @@ function formatAppTime(dateObj) { return dateObj.toLocaleTimeString([], { hour: 
 
 // Top-level function so finishOnboarding can access it
 function hideSkeleton() {
-  // Hide inline splash screen
-  const splashLoader = document.getElementById('splashLoader');
-  if(splashLoader) {
-    splashLoader.style.opacity = '0';
-    setTimeout(() => splashLoader.remove(), 300);
-  }
-
   const skel = document.getElementById('appSkeleton');
   if(skel) {
     // Detect if running as PWA (standalone mode)
