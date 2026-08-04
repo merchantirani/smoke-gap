@@ -1346,14 +1346,9 @@ function updateUI() {
   checkBackupReminder();
   updateDynamicTagline();
   updateLastSmokeDisplay();
-
-  // Only rebuild heavy DOM sections when data actually changed
-  if(uiDirty) {
-    renderHistory('homeRecentLogs', 3);
-    renderHealthTimeline();
-    renderProgressPhotos();
-    uiDirty = false;
-  }
+  renderHistory('homeRecentLogs', 3);
+  renderHealthTimeline();
+  renderProgressPhotos();
 }
 
 
