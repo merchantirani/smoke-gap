@@ -1,5 +1,6 @@
 let logs = [];
-try { 
+let uiDirty = true; // Flag: set true when logs change, false after DOM rebuild
+try {
   let raw = localStorage.getItem('smoke_logs');
   if(raw) logs = JSON.parse(raw);
   if(!Array.isArray(logs)) logs = [];
@@ -672,6 +673,7 @@ function actuallyLogCigarette() {
   logs.push({timestamp: now, gap: gap, tags: [], lat: null, lng: null, intensity: 3, note: '', mood: null});
   const newLogIdx = logs.length - 1;
   localStorage.setItem('smoke_logs', JSON.stringify(logs));
+  uiDirty = true;
   lockEndTime = now + (settings.lockSecs * 1000);
   localStorage.setItem('smoke_lock_end', lockEndTime);
 
@@ -1035,6 +1037,7 @@ function cancelSmokeTakeover(e) {
   const overlay = document.getElementById('smokeTakeover'); overlay.classList.remove('opacity-100'); overlay.classList.add('opacity-0');
   if (editingLogIdx >= 0 && editingLogIdx === logs.length - 1 && logs[editingLogIdx] && Array.isArray(logs[editingLogIdx].tags) && logs[editingLogIdx].tags.length === 0 && logs[editingLogIdx].lat === null) {
     logs.pop(); localStorage.setItem('smoke_logs', JSON.stringify(logs));
+    uiDirty = true;
     lockEndTime = 0; localStorage.setItem('smoke_lock_end', lockEndTime);
     if(cooldownTimer) { clearInterval(cooldownTimer); cooldownTimer = null; }
     try { updateUI(); } catch(err){} checkLock();
@@ -1050,6 +1053,7 @@ function closeSmokeTakeover() {
     logs[editingLogIdx].tags = [...currentSelectedTags]; logs[editingLogIdx].intensity = currentIntensity;
     logs[editingLogIdx].mood = currentMood;
     localStorage.setItem('smoke_logs', JSON.stringify(logs));
+    uiDirty = true;
     if (window.posthog) {
       posthog.capture('takeover_saved', { tags: currentSelectedTags, intensity: currentIntensity });
     }
@@ -1077,7 +1081,7 @@ window.undoLog = function(idx, element) {
     logs.splice(idx, 1);
     for (let i = 1; i < logs.length; i++) { logs[i].gap = Math.round((logs[i].timestamp - logs[i-1].timestamp)/60000); }
     if (logs.length > 0) logs[0].gap = null;
-    localStorage.setItem('smoke_logs', JSON.stringify(logs)); lockEndTime = 0; localStorage.setItem('smoke_lock_end', lockEndTime);
+    localStorage.setItem('smoke_logs', JSON.stringify(logs)); uiDirty = true; lockEndTime = 0; localStorage.setItem('smoke_lock_end', lockEndTime);
     if(cooldownTimer) { clearInterval(cooldownTimer); cooldownTimer = null; }
     if (window.posthog) posthog.capture('log_undone');
     try { updateUI(); } catch(err){} checkLock();
@@ -1340,11 +1344,16 @@ function updateUI() {
 
   computeMomentumScore(today, todayWaves);
   checkBackupReminder();
-  renderHistory('homeRecentLogs', 3);
   updateDynamicTagline();
   updateLastSmokeDisplay();
-  renderHealthTimeline();
-  renderProgressPhotos();
+
+  // Only rebuild heavy DOM sections when data actually changed
+  if(uiDirty) {
+    renderHistory('homeRecentLogs', 3);
+    renderHealthTimeline();
+    renderProgressPhotos();
+    uiDirty = false;
+  }
 }
 
 
@@ -1643,6 +1652,7 @@ function importJSON(event) {
       if(!data || !Array.isArray(data.logs)) { showToast("Invalid backup file"); return; }
       showConfirm("Restore this backup?", `This will replace your current data with ${data.logs.length} logs from the backup file. This cannot be undone.`, () => {
         localStorage.setItem('smoke_logs', JSON.stringify(data.logs));
+        uiDirty = true;
         if(Array.isArray(data.waves)) localStorage.setItem('smoke_waves', JSON.stringify(data.waves));
         if(Array.isArray(data.triggers)) localStorage.setItem('smoke_triggers', JSON.stringify(data.triggers));
         if(data.settings) localStorage.setItem('smoke_settings', JSON.stringify(Object.assign({}, DEFAULT_SETTINGS, data.settings)));
