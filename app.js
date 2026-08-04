@@ -6,9 +6,8 @@ try {
   if(!Array.isArray(logs)) logs = [];
 } catch(e) { logs = []; }
 
-const DEFAULT_SETTINGS = {
+const DEFAULT_SETTINGS = { 
   theme: 'white', haptics: true, dailyLimit: 15, lockSecs: 300, packPrice: 20, packSize: 20, currency: 'AED', timeFormat: '12h', motivation: '', autoReduce: false,
-  quitDate: '', weeklyGoal: 0, monthlyGoal: 0, analyticsOptOut: false,
   notifWaveComplete: true, notifGapWidened: true, notifInactivity: true, notifPredictive: true, notifEnableSos: false
 };
 let settings = Object.assign({}, DEFAULT_SETTINGS, JSON.parse(localStorage.getItem('smoke_settings')) || {});
@@ -437,69 +436,12 @@ function hideSkeleton() {
   }
 }
 
-// Premium animated number counter (smooth transitions)
-function animateValue(el, start, end, duration, suffix) {
-  if (!el || start === end) return;
-  suffix = suffix || '';
-  const range = end - start;
-  const startTime = performance.now();
-  function update(currentTime) {
-    const elapsed = currentTime - startTime;
-    const progress = Math.min(elapsed / duration, 1);
-    // Ease out cubic for smooth deceleration
-    const eased = 1 - Math.pow(1 - progress, 3);
-    const current = Math.round(start + range * eased);
-    el.textContent = current + suffix;
-    if (progress < 1) requestAnimationFrame(update);
-  }
-  requestAnimationFrame(update);
-}
-
-// Store previous values for animation
-const prevValues = {};
-
-function setAnimatedText(el, newText, duration) {
-  if (!el) return;
-  duration = duration || 400;
-  const oldText = el.textContent;
-  // Extract numeric value
-  const newNum = parseFloat(newText.replace(/[^0-9.-]/g, ''));
-  const oldNum = parseFloat(oldText.replace(/[^0-9.-]/g, ''));
-  if (isNaN(newNum) || isNaN(oldNum) || newNum === oldNum) {
-    el.textContent = newText;
-    return;
-  }
-  // Preserve prefix and suffix
-  const newPrefix = newText.substring(0, newText.indexOf(newNum));
-  const newSuffix = newText.substring(newText.indexOf(newNum) + String(newNum).length);
-  const range = newNum - oldNum;
-  const startTime = performance.now();
-  function update(currentTime) {
-    const elapsed = currentTime - startTime;
-    const progress = Math.min(elapsed / duration, 1);
-    const eased = 1 - Math.pow(1 - progress, 3);
-    let current = oldNum + range * eased;
-    // Handle decimals for currency
-    if (String(newNum).includes('.')) {
-      current = current.toFixed(1);
-    } else {
-      current = Math.round(current);
-    }
-    el.textContent = newPrefix + current + newSuffix;
-    if (progress < 1) requestAnimationFrame(update);
-  }
-  requestAnimationFrame(update);
-}
-
 function bootApp() {
   applyTheme(settings.theme);
   try {
     document.getElementById('dailyLimitInput').value = settings.dailyLimit;
     document.getElementById('packPriceInput').value = settings.packPrice;
     document.getElementById('packSizeInput').value = settings.packSize;
-    if(document.getElementById('quitDateInput')) document.getElementById('quitDateInput').value = settings.quitDate || '';
-    if(document.getElementById('weeklyGoalInput')) document.getElementById('weeklyGoalInput').value = settings.weeklyGoal || 0;
-    if(document.getElementById('monthlyGoalInput')) document.getElementById('monthlyGoalInput').value = settings.monthlyGoal || 0;
     document.getElementById('themeSelect').value = settings.theme;
     document.getElementById('timeFormatSelect').value = settings.timeFormat;
     document.getElementById('currencySelect').value = settings.currency || 'AED';
@@ -507,8 +449,6 @@ function bootApp() {
     document.getElementById('hapticsInput').checked = settings.haptics;
     document.getElementById('motivationInput').value = settings.motivation || '';
     document.getElementById('autoReduceInput').checked = settings.autoReduce || false;
-    const analyticsEl = document.getElementById('analyticsOptOutInput');
-    if(analyticsEl) analyticsEl.checked = !settings.analyticsOptOut; // Checkbox = opt-in, so invert
 
     const notifKeys = ['notifWaveComplete', 'notifGapWidened', 'notifInactivity', 'notifPredictive', 'notifEnableSos'];
     notifKeys.forEach(k => {
@@ -657,22 +597,6 @@ function toggleNotifSetting(key) {
   }
 }
 
-function toggleAnalytics() {
-  const el = document.getElementById('analyticsOptOutInput');
-  if(!el) return;
-  settings.analyticsOptOut = !el.checked; // Invert: checkbox ON = analytics enabled
-  localStorage.setItem('smoke_settings', JSON.stringify(settings));
-  if(window.posthog) {
-    if(settings.analyticsOptOut) {
-      window.posthog.opt_out_capturing();
-      console.log('Analytics opted out');
-    } else {
-      window.posthog.opt_in_capturing();
-      console.log('Analytics opted in');
-    }
-  }
-}
-
 function triggerSosInterrupterFirst() {
   const actions = [
     "Drink a full glass of cold water 💧",
@@ -799,54 +723,15 @@ window.addEventListener('resize', () => {
 });
 
 function bootCore() {
-  console.log('[BOOT] Starting bootCore, logs:', logs.length, 'waves:', waves.length);
   window.switchWatchStyle(currentWatchStyle);
   initNavIndicator();
 
-  // CRITICAL: Ensure tracker tab is visible FIRST
-  const trackerPage = document.getElementById('page-tracker');
-  if(trackerPage) trackerPage.classList.remove('hidden');
-
-  // Render tracker data BEFORE switching tabs
-  try {
-    // Shield count
-    const shieldEl = document.getElementById('shieldCount');
-    if(shieldEl) shieldEl.innerText = waves.length;
-
-    // Today's count
-    const today = logs.filter(l => l.timestamp && new Date(l.timestamp).toDateString() === new Date().toDateString());
-    const todayCountTextEl = document.getElementById('todayCountText');
-    if(todayCountTextEl) todayCountTextEl.innerText = `${today.length} / ${settings.dailyLimit} Sticks`;
-
-    // Today's spend
-    const spendEl = document.getElementById('todaySpend');
-    if(spendEl) spendEl.innerText = `${settings.currency} ${(today.length * (settings.packPrice/settings.packSize)).toFixed(1)}`;
-
-    // Streak
-    let logsByDate = {};
-    logs.forEach(l => { if(l && l.timestamp) { let dStr = new Date(l.timestamp).toDateString(); logsByDate[dStr] = (logsByDate[dStr] || 0) + 1; }});
-    let todayStr = new Date().toDateString();
-    let streak = 0, slipDays = 0;
-    let uniqueDates = Object.keys(logsByDate).sort((a,b) => new Date(b) - new Date(a));
-    for (let dStr of uniqueDates) { if (logsByDate[dStr] <= settings.dailyLimit) { streak++; } else { if (slipDays < 2) { slipDays++; streak++; } else break; } }
-    const streakEl = document.getElementById('homeStreak');
-    if(streakEl) streakEl.innerHTML = `<span>${streak} Day Streak</span>`;
-
-    // Recent activity
-    renderHistory('homeRecentLogs', 3);
-
-    // Empty state
-    const emptyBanner = document.getElementById('emptyStateBanner');
-    if(emptyBanner) emptyBanner.classList.toggle('hidden', logs.length > 0);
-  } catch(e) { console.error("Boot render error:", e); }
-
-  // Now restore saved tab (if different from tracker)
+  // Restore last active tab
   const savedTab = localStorage.getItem('smoke_active_tab');
-  if (savedTab && savedTab !== 'tracker' && ['insights','history','settings'].includes(savedTab)) {
+  if (savedTab && ['tracker','insights','history','settings'].includes(savedTab)) {
     window.switchTab(savedTab);
   }
 
-  uiDirty = true;
   try { updateUI(); } catch(e) { console.error("updateUI error on boot", e); }
   checkLock(); checkWave();
   setTimeout(() => showDailyRecap(), 1000);
@@ -1377,9 +1262,6 @@ function updateSettings() {
   settings.dailyLimit = parseInt(document.getElementById('dailyLimitInput').value) || 15; settings.packPrice = parseFloat(document.getElementById('packPriceInput').value) || 20; settings.packSize = parseInt(document.getElementById('packSizeInput').value) || 20;
   settings.lockSecs = parseInt(document.getElementById('lockSecsInput').value) || 300; settings.haptics = document.getElementById('hapticsInput').checked;
   settings.motivation = document.getElementById('motivationInput').value;
-  if(document.getElementById('quitDateInput')) settings.quitDate = document.getElementById('quitDateInput').value;
-  if(document.getElementById('weeklyGoalInput')) settings.weeklyGoal = parseInt(document.getElementById('weeklyGoalInput').value) || 0;
-  if(document.getElementById('monthlyGoalInput')) settings.monthlyGoal = parseInt(document.getElementById('monthlyGoalInput').value) || 0;
   const prevAutoReduce = settings.autoReduce;
   settings.autoReduce = document.getElementById('autoReduceInput').checked;
   if (settings.autoReduce && !prevAutoReduce) {
@@ -1397,8 +1279,7 @@ function updateSettings() {
 function updateCostPerCigDisplay() { const el = document.getElementById('costPerCigDisplay'); if (el) el.innerText = `${settings.currency} ${(settings.packPrice / settings.packSize).toFixed(2)}`; }
 
 function updateUI() {
-  const shieldEl = document.getElementById('shieldCount');
-  if(shieldEl) setAnimatedText(shieldEl, waves.length.toString(), 400);
+  document.getElementById('shieldCount').innerText = waves.length;
   const emptyBanner = document.getElementById('emptyStateBanner'); if(emptyBanner) emptyBanner.classList.toggle('hidden', logs.length > 0);
   const motEl = document.getElementById('motivationTag'); const motText = document.getElementById('motivationText');
   if(motEl && motText) { if (settings.motivation && settings.motivation.trim() !== "") { motText.innerText = settings.motivation; motEl.classList.remove('hidden'); } else { motEl.classList.add('hidden'); } }
@@ -1408,75 +1289,10 @@ function updateUI() {
   let todayStr = new Date().toDateString(); if (!logsByDate[todayStr]) logsByDate[todayStr] = 0;
   let uniqueDates = Object.keys(logsByDate).sort((a,b) => new Date(b) - new Date(a));
   for (let dStr of uniqueDates) { if (logsByDate[dStr] <= settings.dailyLimit) { streak++; } else { if (slipDays < 2) { slipDays++; streak++; } else break; } }
-  const streakSvg = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#F97316" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:2px;"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>';
-  document.getElementById('homeStreak').innerHTML = `${streakSvg} <span>${streak} Day Streak</span>`;
-
-  // Quit Date Tracker - Calculate days smoke-free
-  const quitDateCard = document.getElementById('quitDateCard');
-  const daysSmokeFreeEl = document.getElementById('daysSmokeFree');
-  const quitDateDisplayEl = document.getElementById('quitDateDisplay');
-  if(settings.quitDate && quitDateCard) {
-    quitDateCard.classList.remove('hidden');
-    const quitDate = new Date(settings.quitDate + 'T00:00:00');
-    const todayDate = new Date();
-    todayDate.setHours(0,0,0,0);
-    const diffTime = todayDate - quitDate;
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    if(daysSmokeFreeEl) setAnimatedText(daysSmokeFreeEl, diffDays.toString(), 600);
-    if(quitDateDisplayEl) quitDateDisplayEl.innerText = quitDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  } else if(quitDateCard) {
-    quitDateCard.classList.add('hidden');
-  }
-
-  // Weekly/Monthly Goals Progress
-  const goalsCard = document.getElementById('goalsCard');
-  const weeklyGoalSection = document.getElementById('weeklyGoalSection');
-  const monthlyGoalSection = document.getElementById('monthlyGoalSection');
-  if(settings.weeklyGoal > 0 || settings.monthlyGoal > 0) {
-    if(goalsCard) goalsCard.classList.remove('hidden');
-
-    // Weekly progress
-    if(settings.weeklyGoal > 0 && weeklyGoalSection) {
-      weeklyGoalSection.classList.remove('hidden');
-      const now = new Date();
-      const startOfWeek = new Date(now);
-      startOfWeek.setDate(now.getDate() - now.getDay());
-      startOfWeek.setHours(0,0,0,0);
-      const weekLogs = logs.filter(l => l.timestamp >= startOfWeek.getTime());
-      const weekCount = weekLogs.length;
-      const weekPct = Math.min(100, Math.round((weekCount / settings.weeklyGoal) * 100));
-      const weeklyProgressEl = document.getElementById('weeklyProgress');
-      const weeklyProgressBarEl = document.getElementById('weeklyProgressBar');
-      if(weeklyProgressEl) weeklyProgressEl.innerText = `${weekCount}/${settings.weeklyGoal}`;
-      if(weeklyProgressBarEl) {
-        weeklyProgressBarEl.style.width = `${weekPct}%`;
-        weeklyProgressBarEl.style.background = weekPct >= 100 ? '#EF4444' : 'var(--accent)';
-      }
-    }
-
-    // Monthly progress
-    if(settings.monthlyGoal > 0 && monthlyGoalSection) {
-      monthlyGoalSection.classList.remove('hidden');
-      const now = new Date();
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      const monthLogs = logs.filter(l => l.timestamp >= startOfMonth.getTime());
-      const monthCount = monthLogs.length;
-      const monthPct = Math.min(100, Math.round((monthCount / settings.monthlyGoal) * 100));
-      const monthlyProgressEl = document.getElementById('monthlyProgress');
-      const monthlyProgressBarEl = document.getElementById('monthlyProgressBar');
-      if(monthlyProgressEl) monthlyProgressEl.innerText = `${monthCount}/${settings.monthlyGoal}`;
-      if(monthlyProgressBarEl) {
-        monthlyProgressBarEl.style.width = `${monthPct}%`;
-        monthlyProgressBarEl.style.background = monthPct >= 100 ? '#EF4444' : 'var(--accent)';
-      }
-    }
-  } else if(goalsCard) {
-    goalsCard.classList.add('hidden');
-  }
+  document.getElementById('homeStreak').innerText = `🔥 ${streak} Day Streak`;
 
   const today = logs.filter(l => l.timestamp && new Date(l.timestamp).toDateString() === todayStr);
-  const todayCountTextEl = document.getElementById('todayCountText');
-  if(todayCountTextEl) setAnimatedText(todayCountTextEl, `${today.length} / ${settings.dailyLimit} Sticks`, 400);
+  const todayCountTextEl = document.getElementById('todayCountText'); if(todayCountTextEl) todayCountTextEl.innerText = `${today.length} / ${settings.dailyLimit} Sticks`;
   
   const fillBar = document.getElementById('batteryFillBar');
   const pctText = document.getElementById('batteryPctText');
@@ -1515,11 +1331,7 @@ function updateUI() {
   const trEl = document.getElementById('todayResisted'); if(trEl) trEl.innerText = todayWaves.length.toString();
   document.getElementById('homeTodayBeaten').innerText = `${todayWaves.length} Defeated`;
 
-  const spendEl = document.getElementById('todaySpend');
-  if(spendEl) {
-    const newSpend = `${settings.currency} ${(today.length * (settings.packPrice/settings.packSize)).toFixed(1)}`;
-    setAnimatedText(spendEl, newSpend, 400);
-  }
+  document.getElementById('todaySpend').innerText = `${settings.currency} ${(today.length * (settings.packPrice/settings.packSize)).toFixed(1)}`;
   
   const todayGaps = today.map(l => l.gap).filter(g => g !== null && g !== undefined);
   const bestGapCard = document.getElementById('bestGapCard'); if(bestGapCard) { bestGapCard.innerText = todayGaps.length > 0 ? formatGap(Math.max(...todayGaps)) : '--'; }
@@ -1560,7 +1372,7 @@ function computeMomentumScore(today, todayWaves) {
   const gapComponent = avgGapMin > 0 ? Math.min(100, (currentGapMin / avgGapMin) * 100) : 50;
 
   const score = Math.round(limitComponent*0.4 + waveComponent*0.3 + gapComponent*0.3);
-  if(momHeaderEl) setAnimatedText(momHeaderEl, score.toString(), 500);
+  if(momHeaderEl) momHeaderEl.innerText = score.toString();
 }
 
 function formatGap(m) { if (m === null || m === undefined || isNaN(m)) return '—'; if (m < 60) return `${m}m`; return `${Math.floor(m / 60)}h ${m % 60 > 0 ? (m % 60) + 'm' : ''}`.trim(); }
@@ -1828,52 +1640,6 @@ function exportJSON() {
   localStorage.setItem('smoke_last_backup', new Date().getTime().toString());
   const banner = document.getElementById('backupReminderBanner'); if(banner) banner.classList.add('hidden');
   showToast("Backup downloaded ✅");
-}
-
-async function shareCloudBackup() {
-  if(!logs || logs.length === 0) { showToast("No data to backup yet."); return; }
-  const data = { logs, settings, triggers, waves, version: '1.6' };
-  const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
-  const file = new File([blob], `Pause_Backup_${new Date().toISOString().slice(0,10)}.json`, { type: "application/json" });
-
-  // Try Web Share API first
-  if(navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-    try {
-      await navigator.share({
-        files: [file],
-        title: 'Pause App Backup',
-        text: `Backup of ${logs.length} cigarette logs`
-      });
-      localStorage.setItem('smoke_last_backup', new Date().getTime().toString());
-      const banner = document.getElementById('backupReminderBanner'); if(banner) banner.classList.add('hidden');
-      showToast("Shared to cloud ✅");
-      return;
-    } catch(err) {
-      if(err.name === 'AbortError') {
-        // User cancelled - do nothing
-        return;
-      }
-      console.log('Share failed:', err);
-    }
-  }
-
-  // Fallback: download the file
-  try {
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `Pause_Backup_${new Date().toISOString().slice(0,10)}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    localStorage.setItem('smoke_last_backup', new Date().getTime().toString());
-    const banner = document.getElementById('backupReminderBanner'); if(banner) banner.classList.add('hidden');
-    showToast("Backup downloaded ✅");
-  } catch(err) {
-    showToast("Backup failed ❌");
-    console.error('Backup error:', err);
-  }
 }
 
 function importJSON(event) {
@@ -2688,23 +2454,18 @@ window.openWaveModal = openWaveModal; window.closeWaveModal = closeWaveModal; wi
 window.renderAllCharts = renderAllCharts; window.openMapModal = openMapModal; window.closeMapModal = closeMapModal;
 window.showStatDetail = showStatDetail; window.closeStatDetail = closeStatDetail; window.showShieldDashboard = showShieldDashboard; window.closeShieldDashboard = closeShieldDashboard;
 window.exportLogsCSV = exportLogsCSV; window.addCustomTrigger = addCustomTrigger; window.removeCustomTrigger = removeCustomTrigger;
-window.closeConfirmModal = closeConfirmModal; window.confirmYes = confirmYes; window.setTakeoverIntensity = setTakeoverIntensity; window.exportJSON = exportJSON; window.importJSON = importJSON; window.shareCloudBackup = shareCloudBackup;
+window.closeConfirmModal = closeConfirmModal; window.confirmYes = confirmYes; window.setTakeoverIntensity = setTakeoverIntensity; window.exportJSON = exportJSON; window.importJSON = importJSON;
 window.closePinSetupModal = closePinSetupModal; window.savePinSetup = savePinSetup;
-window.requestNotifPermission = requestNotifPermission; window.toggleNotifSetting = toggleNotifSetting; window.toggleAnalytics = toggleAnalytics;
+window.requestNotifPermission = requestNotifPermission; window.toggleNotifSetting = toggleNotifSetting;
 window.closeSosInterrupter = closeSosInterrupter;
 
 
-
-// Store deleted logs for undo (safe - no HTML embedding)
-const deletedLogsQueue = [];
 
 window.deleteLogFromHistory = function(idx) {
   if (logs[idx]) {
     showConfirm("Delete this log?", "This cannot be undone.", () => {
       // Save the log data before deleting so we can restore it
       const deletedLog = logs[idx];
-      deletedLogsQueue.push(deletedLog);
-      const logQueueIdx = deletedLogsQueue.length - 1;
       window.undoLog(idx, null);
       renderHistory('fullHistoryList');
 
@@ -2713,7 +2474,7 @@ window.deleteLogFromHistory = function(idx) {
       const t = document.createElement('div');
       t.className = 'premium-card px-4 py-3 rounded-full text-xs font-bold shadow-lg pointer-events-auto transition-all duration-300 flex items-center gap-3 border border-gray-500/20';
       t.style.background = 'var(--card-bg)';
-      t.innerHTML = `<span class="flex items-center gap-1.5" style="color: var(--text-main);"><i data-lucide="trash-2" class="w-3.5 h-3.5 text-red-400"></i> Deleted</span><div class="w-px h-3 bg-gray-500/30"></div><button onclick="window.restoreDeletedLog(${logQueueIdx})" class="text-sky-500 active:scale-95 transition-transform uppercase tracking-wider">Undo</button>`;
+      t.innerHTML = `<span class="flex items-center gap-1.5" style="color: var(--text-main);"><i data-lucide="trash-2" class="w-3.5 h-3.5 text-red-400"></i> Deleted</span><div class="w-px h-3 bg-gray-500/30"></div><button onclick="window.restoreDeletedLog(this)" data-log='${JSON.stringify(deletedLog).replace(/'/g, "&#39;")}' class="text-sky-500 active:scale-95 transition-transform uppercase tracking-wider">Undo</button>`;
       t.style.opacity = '0'; t.style.transform = 'translateY(-10px)';
       c.appendChild(t); if(window.lucide) window.lucide.createIcons();
       requestAnimationFrame(() => { t.style.opacity = '1'; t.style.transform = 'translateY(0)'; });
@@ -2723,19 +2484,17 @@ window.deleteLogFromHistory = function(idx) {
   }
 }
 
-window.restoreDeletedLog = function(logQueueIdx) {
+window.restoreDeletedLog = function(btn) {
+  const toast = btn.closest('.premium-card');
+  if (toast) { clearTimeout(toast.dataset.timerId); toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }
   try {
-    const logData = deletedLogsQueue[logQueueIdx];
-    if(!logData) { showToast("Could not restore"); return; }
+    const logData = JSON.parse(btn.getAttribute('data-log'));
     logs.push(logData);
     logs.sort((a, b) => a.timestamp - b.timestamp);
     for (let i = 0; i < logs.length; i++) { logs[i].gap = i > 0 ? Math.round((logs[i].timestamp - logs[i-1].timestamp)/60000) : null; }
     localStorage.setItem('smoke_logs', JSON.stringify(logs));
-    uiDirty = true;
     try { updateUI(); } catch(err){}
     renderHistory('fullHistoryList');
     showToast("Log restored");
-    // Remove from queue
-    deletedLogsQueue.splice(logQueueIdx, 1);
   } catch(e) { showToast("Could not restore"); }
 }
