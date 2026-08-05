@@ -2,13 +2,24 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" id="theme-color-meta" content="#F8FAFC" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="description" content="Track your smoking habits, widen the gap between cigarettes, and build healthier patterns with pause." />
   <title>pause — Widen the gap.</title>
 
-  <!-- Critical theme init (inline, blocking) -->
+  <script>
+    !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}
+    (p=t.createElement("script")).type="text/javascript",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);
+    var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="capture identify alias people.set people.set_once set_config register register_once unregister opt_out_capturing has_opted_out_capturing opt_in_capturing reset isFeatureEnabled onFeatureFlags getFeatureFlag getFeatureFlagPayload reloadFeatureFlags group Identify".split(" "),n=0;n<o.length;n++)g(u,o[n]);
+    e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+
+    posthog.init('phc_zKxDjX5K3qKcANYGwRWdTVeGfVwBgFygbFuymtRCCbYM', {
+      api_host: 'https://us.i.posthog.com',
+      person_profiles: 'always',
+      session_recording: { maskAllInputs: true }
+    });
+  </script>
+
   <script>
     (function() {
       try {
@@ -21,22 +32,36 @@
       } catch(e){}
     })();
   </script>
-
+  
   <link rel="icon" type="image/x-icon" href="icons/favicon.ico">
   <link rel="icon" type="image/png" sizes="16x16" href="icons/pause_favicon_16.png">
   <link rel="icon" type="image/png" sizes="32x32" href="icons/pause_favicon_32.png">
   <link rel="apple-touch-icon" sizes="180x180" href="icons/pause_icon_180.png">
 
-  <!-- DNS prefetch for third-party resources -->
-  <link rel="dns-prefetch" href="https://api.fontshare.com">
-  <link rel="dns-prefetch" href="https://fonts.googleapis.com">
-  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+  <link rel="preconnect" href="https://cdn.tailwindcss.com">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="preconnect" href="https://unpkg.com">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="preconnect" href="https://api.fontshare.com">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-  <!-- Critical font preload (reduced: Clash Display 700 only, General Sans 400/600/700) -->
-  <link rel="preload" href="https://api.fontshare.com/v2/css?f[]=clash-display@700&f[]=general-sans@400,600,700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript><link href="https://api.fontshare.com/v2/css?f[]=clash-display@700&f[]=general-sans@400,600,700&display=swap" rel="stylesheet"></noscript>
+  <!-- Preload critical fonts -->
+  <link rel="preload" href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700&f[]=general-sans@400,500,600,700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700&f[]=general-sans@400,500,600,700&display=swap" rel="stylesheet"></noscript>
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
 
-  <!-- Critical CSS inlined (above-the-fold only) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="preload" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"></noscript>
+  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  
   <style>
     :root {
       --bg-body: #090A0F; --text-main: #F3F4F6; --text-muted: #9CA3AF;
@@ -48,7 +73,7 @@
     html.theme-white, body.theme-white {
       --bg-body: #F8FAFC; --text-main: #0F172A; --text-muted: #64748B;
       --card-bg: rgba(255, 255, 255, 0.85); --card-border: rgba(203, 213, 225, 0.6);
-      --accent: #1E5EFF; --accent-glow: rgba(30, 94, 255, 0.15); --accent-text: #FFFFFF;
+      --accent: #2563EB; --accent-glow: rgba(37, 99, 235, 0.15); --accent-text: #FFFFFF;
       --overlay-bg: rgba(15, 23, 42, 0.25); --modal-bg: #FFFFFF; --input-bg: rgba(0, 0, 0, 0.03);
       --heat-0: rgba(0, 0, 0, 0.04); --heat-1: #93C5FD; --heat-2: #3B82F6; --heat-3: #1D4ED8; --heat-4: #1E3A8A; --heat-text: rgba(255, 255, 255, 0.85);
     }
@@ -80,15 +105,44 @@
       --overlay-bg: rgba(10, 25, 41, 0.8); --modal-bg: #132F4C; --input-bg: rgba(56, 189, 248, 0.06);
       --heat-0: rgba(255, 255, 255, 0.03); --heat-1: #BAE6FD; --heat-2: #38BDF8; --heat-3: #0EA5E9; --heat-4: #0369A1; --heat-text: rgba(255, 255, 255, 0.75);
     }
-
-    /* Critical above-the-fold styles */
-    html, body { margin: 0; padding: 0; min-height: 100vh; min-height: 100dvh; background-color: var(--bg-body) !important; color: var(--text-main); font-family: 'General Sans', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; transition: background-color 0.35s ease, color 0.35s ease; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+    
+    html, body { min-height: 100vh; min-height: 100dvh; background-color: var(--bg-body) !important; color: var(--text-main); font-family: 'General Sans', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; transition: background-color 0.35s ease, color 0.35s ease; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
     button, .nav-btn, .drag-handle, .dock-bar { user-select: none; -webkit-user-select: none; }
+
     .brand-title { font-family: 'Clash Display', sans-serif; font-weight: 700; letter-spacing: -0.04em; background: linear-gradient(135deg, var(--accent) 0%, var(--text-main) 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 2px 8px var(--accent-glow)); }
     .numeric-display { font-family: 'Space Grotesk', monospace; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+    
     .app-container { padding-bottom: calc(104px + env(safe-area-inset-bottom)); min-height: 100vh; min-height: 100dvh; }
+    
     .premium-card { background: var(--card-bg); backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px); border: 1px solid var(--card-border); box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.05); border-radius: 1.5rem; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-    .premium-card:active { transform: scale(0.98); }
+    .premium-card:active { transform: scale(0.98); box-shadow: 0 4px 16px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.06); }
+
+    /* === Premium bottom-sheet system === */
+    .sheet { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; justify-content: flex-end; background: var(--overlay-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); transition: opacity 0.25s ease; }
+    .sheet-panel { width: 100%; max-width: 28rem; margin: 0 auto; display: flex; flex-direction: column; max-height: min(86vh, 640px); background: var(--modal-bg); border-top: 1px solid var(--card-border); border-radius: 28px 28px 0 0; box-shadow: 0 -18px 48px rgba(0,0,0,0.35), 0 -2px 12px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.06); padding-bottom: calc(1rem + env(safe-area-inset-bottom)); animation: sheetUp 0.32s cubic-bezier(0.16, 1, 0.3, 1); }
+    @keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .sheet-handle { width: 36px; height: 4px; border-radius: 999px; margin: 10px auto 0; background: rgba(128,128,128,0.4); flex-shrink: 0; }
+    .sheet-header { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.75rem 1.25rem 0.5rem; flex-shrink: 0; }
+    .sheet-body { flex: 1; overflow-y: auto; padding: 0.25rem 1.25rem 0.75rem; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+    .sheet-footer { display: flex; gap: 0.75rem; flex-shrink: 0; padding: 0.875rem 1.25rem 0.25rem; border-top: 1px solid var(--card-border); margin-top: 0.5rem; }
+    .sheet-btn-primary { flex: 1; padding: 0.85rem 1rem; border-radius: 0.9rem; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.03em; text-align: center; color: var(--accent-text); background: var(--accent); box-shadow: 0 8px 20px var(--accent-glow); transition: transform 0.15s ease, box-shadow 0.2s ease; }
+    .sheet-btn-primary:active { transform: scale(0.97); }
+    .sheet-btn-ghost { flex: 1; padding: 0.85rem 1rem; border-radius: 0.9rem; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.03em; text-align: center; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--card-border); transition: transform 0.15s ease; }
+    .sheet-btn-ghost:active { transform: scale(0.97); }
+    .sheet-btn-danger { flex: 1; padding: 0.85rem 1rem; border-radius: 0.9rem; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.03em; text-align: center; display: flex; align-items: center; justify-content: center; gap: 0.375rem; background: rgba(239,68,68,0.1); color: #EF4444; border: 1px solid rgba(239,68,68,0.25); transition: transform 0.15s ease; }
+    .sheet-btn-danger:active { transform: scale(0.97); }
+    .dialog-card { background: var(--modal-bg); border: 1px solid var(--card-border); border-radius: 24px; box-shadow: 0 24px 64px rgba(0,0,0,0.4), 0 4px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06); }
+    .sheet-title { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.14em; color: var(--text-muted); }
+    .sheet-label { display: block; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); margin-bottom: 0.4rem; }
+    .sheet-close { width: 30px; height: 30px; border-radius: 999px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: var(--input-bg); color: var(--text-muted); transition: transform 0.15s ease; }
+    .sheet-close:active { transform: scale(0.9); }
+    .sheet-input { position: relative; display: flex; align-items: center; width: 100%; background: var(--input-bg); border: 1px solid var(--card-border); border-radius: 0.85rem; padding: 0.8rem 0.9rem; }
+    .sheet-input input { width: 100%; background: transparent; border: none; outline: none; color: var(--text-main); font-weight: 700; font-size: 0.9rem; padding-right: 30px; appearance: none; -webkit-appearance: none; }
+    .sheet-input input::-webkit-calendar-picker-indicator { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); opacity: 0.6; cursor: pointer; }
+    .badge-card { background: var(--input-bg); border-radius: 1rem; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+    .badge-card:not(.grayscale) { border-color: var(--accent) !important; box-shadow: 0 0 0 1px var(--accent), 0 8px 24px var(--accent-glow); transform: translateY(-1px); }
+    .badge-card .badge-lock { width: 14px; height: 14px; border-radius: 999px; display: flex; align-items: center; justify-content: center; background: rgba(128,128,128,0.18); }
+
     .dock-bar { background: var(--card-bg); backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px); border: 1px solid var(--card-border); box-shadow: 0 18px 48px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.05); }
     .nav-btn { color: var(--text-muted); position: relative; transition: color 0.3s ease; }
     .nav-btn:active .tab-icon { transform: scale(0.88); }
@@ -97,36 +151,49 @@
     .nav-active { color: var(--accent); }
     .nav-active .tab-icon { stroke-width: 2.7; transform: scale(1.12); filter: drop-shadow(0 2px 10px var(--accent-glow)); }
     #navIndicator { opacity: 0; background: var(--accent-glow); box-shadow: 0 0 0 1px var(--card-border), 0 6px 20px var(--accent-glow); transition: left 0.55s cubic-bezier(0.34, 1.4, 0.64, 1), width 0.55s cubic-bezier(0.34, 1.4, 0.64, 1), opacity 0.35s ease; }
+    .drag-handle { touch-action: none; cursor: grab; padding: 8px; opacity: 0.4; }
+    .drag-handle:active { cursor: grabbing; opacity: 1; }
+    .sortable-ghost { opacity: 0.2; transform: scale(0.96); }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .chart-wrapper { position: relative; width: 100%; height: 180px; }
     .page-section { animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
     .live-dot { animation: live-pulse 2s infinite ease-in-out; box-shadow: 0 0 8px currentColor; }
     @keyframes live-pulse { 0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 8px currentColor; } 50% { opacity: 0.5; transform: scale(0.9); box-shadow: 0 0 4px currentColor; } }
-    .logo-breathe { animation: logoBreathe 3s ease-in-out infinite; }
-    @keyframes logoBreathe { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.04); opacity: 0.85; } }
+    .takeover-bg { background: radial-gradient(circle at center, var(--accent-glow) 0%, var(--bg-body) 80%); }
+    .custom-input-wrapper { position: relative; display: flex; align-items: center; width: 100%; }
+    .custom-input-wrapper input[type="date"], .custom-input-wrapper input[type="time"] { width: 100%; background: transparent; border: none; outline: none; color: var(--text-main); font-weight: 700; font-size: 0.95rem; padding-right: 32px; appearance: none; -webkit-appearance: none; }
+    .custom-input-wrapper input::-webkit-calendar-picker-indicator { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); opacity: 0.6; cursor: pointer; }
     .hold-btn { position: relative; overflow: hidden; user-select: none; -webkit-touch-callout: none; touch-action: none; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
     .hold-btn:active { transform: scale(0.96); }
     #holdProgress { position: absolute; top: 0; left: 0; height: 100%; width: 0%; background: rgba(239, 68, 68, 0.55); pointer-events: none; transition: width 0.05s linear; }
+    .hold-btn.is-holding { border-color: rgba(239, 68, 68, 0.6) !important; box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.15), 0 8px 24px rgba(239, 68, 68, 0.3); transform: scale(1.02); }
     .ride-btn { position: relative; overflow: hidden; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); background: rgba(16,185,129,0.12); border-color: rgba(16,185,129,0.25); color: #10B981; }
     .ride-btn:active { transform: scale(0.96); }
-    .hide-scrollbar::-webkit-scrollbar { display: none; }
-    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    .chart-wrapper { position: relative; width: 100%; height: 180px; }
-    .hidden { display: none !important; }
+    .ride-btn:hover { transform: scale(1.02); box-shadow: 0 12px 32px rgba(16,185,129,0.25), 0 0 0 3px rgba(16,185,129,0.1); }
+    #rideProgressFill { position: absolute; bottom: 0; left: 0; height: 100%; width: 0%; background: rgba(16,185,129,0.15); pointer-events: none; }
+
+    @keyframes radarPing { 0% { transform: scale(0.88); opacity: 0.9; } 50% { transform: scale(1.22); opacity: 0.2; } 100% { transform: scale(0.88); opacity: 0.9; } }
+    @keyframes logoBreathe { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.04); opacity: 0.85; } }
+    .logo-breathe { animation: logoBreathe 3s ease-in-out infinite; }
+    @keyframes healBreathe { 0%, 100% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(16,185,129,0.3); } 50% { transform: scale(1.06); opacity: 0.82; box-shadow: 0 0 0 10px rgba(16,185,129,0); } }
+    .wave-breathe { animation: healBreathe 4s ease-in-out infinite; }
+    @keyframes shakeAnim { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
+    .shake-anim { animation: shakeAnim 0.4s ease-in-out; }
+    .sos-pulse-ring { animation: radarPing 1s cubic-bezier(0,0,0.2,1) infinite; }
+    @keyframes waveMotion { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+    .animate-wave { animation: waveMotion 3s linear infinite; }
+
+    .heat-cell { width: 16px; height: 16px; border-radius: 3px; flex-shrink: 0; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; font-size: 7px; font-weight: 800; color: var(--heat-text); }
+    .heat-col { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; }
+    .scroll-fade-right { mask-image: linear-gradient(to right, black 85%, transparent 100%); -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%); }
+    .pin-btn { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+    .pin-btn:active { transform: scale(0.92); box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+    .pin-btn:hover { background: var(--input-bg); }
+    .filter-select-wrapper { position: relative; display: inline-flex; align-items: center; }
+    .filter-select-wrapper::after { content: ''; position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-left: 4.5px solid transparent; border-right: 4.5px solid transparent; border-top: 5px solid var(--accent); pointer-events: none; }
   </style>
-
-  <!-- Tailwind CSS CDN (generates all utility classes at runtime) -->
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Component styles (blocking - required for sheets, badges, animations) -->
-  <link rel="stylesheet" href="styles-critical.css">
-
-  <!-- Non-critical fonts (deferred, reduced weights: only 400/600/700 needed) -->
-  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet"></noscript>
-
-  <!-- Leaflet CSS (deferred, only needed for map) -->
-  <link rel="preload" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"></noscript>
 </head>
 <body>
 
@@ -159,10 +226,10 @@
 
         <div id="onboardSlide3" class="hidden flex flex-col items-center text-center space-y-5">
           <div class="w-20 h-20 rounded-3xl flex items-center justify-center" style="background: rgba(14,165,233,0.1);">
-            <i data-lucide="waves" class="w-10 h-10" style="color: var(--accent);"></i>
+            <i data-lucide="waves" class="w-10 h-10" style="color: #0EA5E9;"></i>
           </div>
           <h2 class="text-xl font-bold" style="color: var(--text-main);">Ride It Out</h2>
-          <p class="text-sm leading-relaxed" style="color: var(--text-muted);">When a craving hits but you want to resist, start a <strong style="color: var(--accent);">Ride It Out</strong> timer. Cravings peak and pass in minutes — ride the wave and earn <strong style="color: var(--accent);">Shields</strong>.</p>
+          <p class="text-sm leading-relaxed" style="color: var(--text-muted);">When a craving hits but you want to resist, start a <strong style="color: #0EA5E9;">Ride It Out</strong> timer. Cravings peak and pass in minutes — ride the wave and earn <strong style="color: var(--accent);">Shields</strong>.</p>
         </div>
 
         <div id="onboardSlide4" class="hidden flex flex-col items-center text-center space-y-5">
@@ -426,7 +493,6 @@
               <span id="homeStreak" class="numeric-display text-[8px] font-bold px-2 py-0.5 rounded bg-orange-500/10 text-orange-500 border border-orange-500/20">🔥 0 Streak</span>
             </div>
           </div>
-
           <div id="homeRecentLogs" class="space-y-2.5"></div>
         </div>
 
@@ -627,9 +693,7 @@
             <button id="historyClearFilters" onclick="window.clearHistoryFilters()" class="hidden px-2.5 py-1.5 rounded-xl border text-[11px] font-bold active:scale-95 transition-all shrink-0" style="background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.2); color: #EF4444;"><i data-lucide="x" class="w-3 h-3"></i></button>
           </div>
         </div>
-
         <div id="fullHistoryList" class="space-y-4"></div>
-
         <div id="historyLoadMore" class="text-center hidden pt-2">
             <button onclick="window.loadMoreHistory()" class="px-4 py-2 rounded-full border text-xs font-bold active:scale-95 transition-all" style="background: var(--input-bg); border-color: var(--card-border); color: var(--text-main);">Load More</button>
         </div>
@@ -806,7 +870,7 @@
     </div>
   </div>
 
-  <div class="fixed bottom-0 left-0 right-0 z-40 px-3 pointer-events-none" style="padding-bottom: env(safe-area-inset-bottom);">
+  <div class="fixed bottom-0 left-0 right-0 z-40 px-3 pb-3 pointer-events-none" style="padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));">
     <nav id="mainTabBar" class="relative max-w-md mx-auto dock-bar pointer-events-auto rounded-[28px] flex items-center justify-between px-2.5 py-2">
       <div id="navIndicator" class="absolute top-1.5 bottom-1.5 rounded-2xl"></div>
       <button onclick="window.switchTab('tracker')" id="tab-tracker" class="nav-btn nav-active flex-1 flex flex-col items-center gap-1 py-1.5 rounded-2xl"><i data-lucide="clock" class="tab-icon w-6 h-6"></i><span class="tab-label">Track</span></button>
@@ -945,6 +1009,11 @@
             <span class="sheet-label">Tap to tag <span class="normal-case tracking-normal font-semibold opacity-60">(optional)</span></span>
             <div id="takeoverTagsGrid" class="mt-2.5 flex flex-wrap gap-2"></div>
           </div>
+          <div class="mt-4">
+            <span class="sheet-label">Journal note <span class="normal-case tracking-normal font-semibold opacity-60">(optional)</span></span>
+            <textarea id="takeoverNotes" oninput="document.getElementById('takeoverNotesCounter').innerText = this.value.length + '/200'" placeholder="Add a note..." maxlength="200" class="mt-2.5 w-full p-3 rounded-2xl border text-xs font-medium outline-none resize-none h-14" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);"></textarea>
+            <div class="flex justify-end mt-1"><span id="takeoverNotesCounter" class="text-[9px] font-bold" style="color: var(--text-muted);">0/200</span></div>
+          </div>
         </div>
       </div>
     </div>
@@ -990,7 +1059,7 @@
 
     <div class="grid grid-cols-3 gap-2.5">
       <div class="premium-card p-3 text-center">
-        <div class="w-9 h-9 rounded-xl mx-auto mb-1.5 flex items-center justify-center" style="background: rgba(30,94,255,0.12); color: var(--accent);"><i data-lucide="swords" class="w-4 h-4"></i></div>
+        <div class="w-9 h-9 rounded-xl mx-auto mb-1.5 flex items-center justify-center" style="background: rgba(56,189,248,0.12); color: #38BDF8;"><i data-lucide="swords" class="w-4 h-4"></i></div>
         <div id="modalShieldCount" class="numeric-display text-2xl font-bold text-sky-500">0</div>
         <div class="text-[9px] font-bold uppercase tracking-wider mt-1" style="color: var(--text-muted);">Total Defeats</div>
       </div>
@@ -1050,26 +1119,26 @@
 
     <div class="space-y-2">
       <div class="flex items-center gap-2 mb-2">
-        <div class="w-2 h-6 rounded-full" style="background: linear-gradient(180deg, #1E5EFF, #5B8BFF);"></div>
+        <div class="w-2 h-6 rounded-full" style="background: linear-gradient(180deg, #3B82F6, #60A5FA);"></div>
         <h4 class="text-xs font-bold uppercase tracking-widest" style="color: var(--text-muted);">Building Habit</h4>
-        <span class="text-[9px] px-2 py-0.5 rounded-full ml-auto" style="background: rgba(30,94,255,0.1); color: var(--accent);">Consistency</span>
+        <span class="text-[9px] px-2 py-0.5 rounded-full ml-auto" style="background: rgba(59,130,246,0.1); color: #3B82F6;">Consistency</span>
       </div>
       <div class="grid grid-cols-3 gap-2">
         <div id="badge10" class="badge-card relative flex flex-col items-center p-2 rounded-xl transition-all duration-500 border opacity-40 grayscale" data-shields="10" style="background: var(--input-bg); border-color: var(--card-border);">
           <div class="absolute top-1 right-1"><i data-lucide="lock" class="badge-lock w-3 h-3" style="color: var(--text-muted);"></i></div>
-          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-1" style="background: linear-gradient(135deg, #1E5EFF, #5B8BFF);"><i data-lucide="award" class="w-4 h-4 text-white"></i></div>
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-1" style="background: linear-gradient(135deg, #3B82F6, #60A5FA);"><i data-lucide="award" class="w-4 h-4 text-white"></i></div>
           <span class="text-[9px] font-bold text-center leading-tight" style="color: var(--text-main);">Iron Will</span>
           <span class="text-[8px]" style="color: var(--text-muted);">10 Shields</span>
         </div>
         <div id="badge15" class="badge-card relative flex flex-col items-center p-2 rounded-xl transition-all duration-500 border opacity-40 grayscale" data-shields="15" style="background: var(--input-bg); border-color: var(--card-border);">
           <div class="absolute top-1 right-1"><i data-lucide="lock" class="badge-lock w-3 h-3" style="color: var(--text-muted);"></i></div>
-          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-1" style="background: linear-gradient(135deg, #1E5EFF, #5B8BFF);"><i data-lucide="target" class="w-4 h-4 text-white"></i></div>
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-1" style="background: linear-gradient(135deg, #3B82F6, #60A5FA);"><i data-lucide="target" class="w-4 h-4 text-white"></i></div>
           <span class="text-[9px] font-bold text-center leading-tight" style="color: var(--text-main);">Focused</span>
           <span class="text-[8px]" style="color: var(--text-muted);">15 Shields</span>
         </div>
         <div id="badge25" class="badge-card relative flex flex-col items-center p-2 rounded-xl transition-all duration-500 border opacity-40 grayscale" data-shields="25" style="background: var(--input-bg); border-color: var(--card-border);">
           <div class="absolute top-1 right-1"><i data-lucide="lock" class="badge-lock w-3 h-3" style="color: var(--text-muted);"></i></div>
-          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-1" style="background: linear-gradient(135deg, #1E5EFF, #5B8BFF);"><i data-lucide="shield" class="w-4 h-4 text-white"></i></div>
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-1" style="background: linear-gradient(135deg, #3B82F6, #60A5FA);"><i data-lucide="shield" class="w-4 h-4 text-white"></i></div>
           <span class="text-[9px] font-bold text-center leading-tight" style="color: var(--text-main);">Guardian</span>
           <span class="text-[8px]" style="color: var(--text-muted);">25 Shields</span>
         </div>
@@ -1168,29 +1237,8 @@
   <div id="confirmModal" class="hidden fixed inset-0 backdrop-blur-sm z-[10000] flex items-center justify-center p-6" style="background-color: var(--overlay-bg);" onclick="if(event.target===this) window.closeConfirmModal()"><div class="dialog-card p-6 space-y-4 max-w-xs w-full text-center" style="padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));"><i data-lucide="alert-triangle" class="w-8 h-8 mx-auto text-red-500"></i><h3 id="confirmTitle" class="text-sm font-bold" style="color: var(--text-main);">Are you sure?</h3><p id="confirmMessage" class="text-xs leading-relaxed" style="color: var(--text-muted);"></p><div class="flex gap-3 pt-1"><button onclick="window.closeConfirmModal()" class="flex-1 py-3 rounded-xl text-xs font-bold active:scale-95 transition-transform" style="background-color: var(--input-bg); color: var(--text-main);">Cancel</button><button onclick="window.confirmYes()" class="flex-1 py-3 rounded-xl text-xs font-bold text-white bg-red-500 active:scale-95 transition-transform">Confirm</button></div></div></div>
   <div id="pinSetupModal" class="hidden fixed inset-0 backdrop-blur-sm z-[10000] flex items-center justify-center p-6" style="background-color: var(--overlay-bg);" onclick="if(event.target===this) window.closePinSetupModal()"><div class="dialog-card p-6 space-y-4 max-w-xs w-full text-center" style="padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));"><i data-lucide="lock-keyhole" class="w-8 h-8 mx-auto" style="color: var(--accent);"></i><h3 class="text-sm font-bold uppercase tracking-widest" style="color: var(--text-main);">Set 4-Digit PIN</h3><input type="tel" inputmode="numeric" maxlength="4" id="pinSetupInput" placeholder="••••" data-ph-no-capture="true" class="numeric-display w-full text-center text-2xl tracking-[0.6em] p-3 rounded-xl border outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);"><p id="pinSetupError" class="text-[10px] text-red-500 hidden">Must be exactly 4 digits.</p><div class="flex gap-3 pt-1"><button onclick="window.closePinSetupModal()" class="flex-1 py-3 rounded-xl text-xs font-bold active:scale-95 transition-transform" style="background-color: var(--input-bg); color: var(--text-main);">Cancel</button><button onclick="window.savePinSetup()" class="flex-1 py-3 rounded-xl text-xs font-bold active:scale-95 transition-transform" style="background: var(--accent); color: var(--accent-text);">Save</button></div></div></div>
 
-  <!-- PostHog Analytics (deferred, non-blocking) -->
-  <script>
-    (function() {
-      var t=document.createElement('script');t.type='text/javascript';t.async=!0;t.src='https://us.i.posthog.com/assets.i.posthog.com/static/array.js';
-      var s=document.getElementsByTagName('script')[0];s.parentNode.insertBefore(t,s);
-      t.onload=function(){
-        posthog.init('phc_zKxDjX5K3qKcANYGwRWdTVeGfVwBgFygbFuymtRCCbYM',{
-          api_host:'https://us.i.posthog.com',person_profiles:'always',session_recording:{maskAllInputs:true}
-        });
-      };
-    })();
-  </script>
-
-  <!-- Third-party JS (deferred) -->
-  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-
-  <!-- Critical app scripts -->
-  <script defer src="lucide.min.js"></script>
-  <script defer src="app.js"></script>
+  <!-- SCRIPT SINK - RELIABLE BOOTSTRAP -->
+  <script src="app.js"></script>
   <script>
     window.addEventListener('DOMContentLoaded', function() {
       if (typeof window.bootApp === 'function') {
