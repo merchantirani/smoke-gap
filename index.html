@@ -114,13 +114,11 @@
     .hidden { display: none !important; }
   </style>
 
-  <!-- Non-critical CSS loaded async -->
-  <link rel="preload" href="styles-critical.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <link rel="preload" href="tailwind.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript>
-    <link rel="stylesheet" href="styles-critical.css">
-    <link rel="stylesheet" href="tailwind.min.css">
-  </noscript>
+  <!-- Tailwind CSS CDN (generates all utility classes at runtime) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Component styles (blocking - required for sheets, badges, animations) -->
+  <link rel="stylesheet" href="styles-critical.css">
 
   <!-- Non-critical fonts (deferred, reduced weights: only 400/600/700 needed) -->
   <link rel="preload" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
