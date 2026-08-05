@@ -1343,6 +1343,7 @@ function updateUI() {
   renderHealthTimeline();
   renderProgressPhotos();
   try { renderMoneyVisualizer(); } catch(e) {}
+  try { renderDailyChallenge(); } catch(e) {}
 }
 
 
@@ -2870,5 +2871,295 @@ window.stopBreathing = function() {
   if (circle) circle.className = 'breath-circle mb-4';
   if (phaseText) phaseText.style.color = '';
 };
+
+// ==================== SMART QUIT PATH (Onboarding Setup) ====================
+let onboardSticks = 10;
+let onboardGoal = 'quit';
+
+window.onboardAdjustSticks = function(delta) {
+  onboardSticks = Math.max(1, Math.min(80, onboardSticks + delta));
+  document.getElementById('onboardSticksCount').innerText = onboardSticks;
+  if (settings.haptics && navigator.vibrate) navigator.vibrate(10);
+};
+
+window.onboardSelectGoal = function(goal) {
+  onboardGoal = goal;
+  ['quit', 'reduce', 'track'].forEach(g => {
+    const el = document.getElementById('onboardGoal' + g.charAt(0).toUpperCase() + g.slice(1));
+    if (el) {
+      if (g === goal) {
+        el.style.borderColor = 'var(--accent)';
+        el.style.background = 'var(--accent-glow)';
+      } else {
+        el.style.borderColor = 'var(--card-border)';
+        el.style.background = 'var(--input-bg)';
+      }
+    }
+  });
+};
+
+function saveOnboardingSetup() {
+  const sticks = onboardSticks;
+  const packPrice = parseFloat(document.getElementById('onboardPackPrice').value) || 20;
+  const packSize = parseInt(document.getElementById('onboardPackSize').value) || 20;
+  const quitDate = document.getElementById('onboardQuitDate').value || '';
+
+  settings.dailyLimit = sticks;
+  settings.packPrice = packPrice;
+  settings.packSize = packSize;
+
+  if (onboardGoal === 'quit') {
+    settings.autoReduce = true;
+    if (quitDate) localStorage.setItem('smoke_quit_date', quitDate);
+  } else if (onboardGoal === 'reduce') {
+    settings.autoReduce = true;
+  } else {
+    settings.autoReduce = false;
+    settings.dailyLimit = sticks;
+  }
+
+  localStorage.setItem('smoke_settings', JSON.stringify(settings));
+}
+
+// Patch onboardingNext to handle 8 slides
+const _origOnboardingNext = window.onboardingNext;
+window.onboardingNext = function() {
+  if (onboardingStep < 8) {
+    document.getElementById('onboardSlide' + onboardingStep).classList.add('hidden');
+    const prevDot = document.getElementById('onboardDot' + onboardingStep);
+    if (prevDot) {
+      prevDot.className = 'w-2.5 h-2.5 rounded-full transition-all';
+      prevDot.style.backgroundColor = 'rgba(156,163,175,0.3)';
+      prevDot.style.width = '10px';
+    }
+    onboardingStep++;
+    document.getElementById('onboardSlide' + onboardingStep).classList.remove('hidden');
+    const curDot = document.getElementById('onboardDot' + onboardingStep);
+    if (curDot) {
+      curDot.className = 'w-2.5 h-2.5 rounded-full transition-all';
+      curDot.style.backgroundColor = 'var(--accent)';
+      curDot.style.width = '20px';
+    }
+
+    if (onboardingStep >= 5) {
+      document.getElementById('onboardSkipBtn').style.display = 'none';
+    }
+    if (onboardingStep === 8) {
+      document.getElementById('onboardNextBtn').innerText = 'Get Started';
+    } else {
+      document.getElementById('onboardNextBtn').innerText = 'Next';
+    }
+  } else {
+    saveOnboardingSetup();
+    finishOnboarding();
+  }
+};
+
+// Patch finishOnboarding to save setup
+const _origFinishOnboarding = finishOnboarding;
+finishOnboarding = function() {
+  if (onboardingStep >= 5) saveOnboardingSetup();
+  _origFinishOnboarding();
+};
+
+// ==================== SHARE PROGRESS CARD ====================
+window.shareProgress = function() {
+  const canvas = document.getElementById('shareCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = 1080, H = 1920;
+
+  // Detect theme
+  const isLight = isLightTheme();
+  const bg = isLight ? '#F8FAFC' : '#090A0F';
+  const cardBg = isLight ? '#FFFFFF' : '#11131A';
+  const textMain = isLight ? '#0F172A' : '#F3F4F6';
+  const textMuted = isLight ? '#64748B' : '#9CA3AF';
+  const accent = isLight ? '#2563EB' : '#F59E0B';
+
+  // Calculate stats
+  const totalDays = logs.length > 0 ? Math.round((Date.now() - logs[0].timestamp) / 86400000) : 0;
+  const allGaps = logs.map(l => l.gap).filter(g => g !== null && g !== undefined);
+  const bestGap = allGaps.length ? Math.max(...allGaps) : 0;
+  const totalSaved = computeTotalSaved();
+  const avoided = Math.max(0, Math.round((logs.length > 0 ? (Date.now() - logs[0].timestamp) / ((parseInt(localStorage.getItem('smoke_baseline_gap')) || (86400000 / settings.dailyLimit))) : 0) - logs.length));
+
+  // Streak calc
+  let streak = 0, slipDays = 0;
+  let logsByDate = {};
+  logs.forEach(l => { if (l && l.timestamp) { let d = new Date(l.timestamp).toDateString(); logsByDate[d] = (logsByDate[d] || 0) + 1; }});
+  let uniqueDates = Object.keys(logsByDate).sort((a, b) => new Date(b) - new Date(a));
+  for (let d of uniqueDates) { if (logsByDate[d] <= settings.dailyLimit) { streak++; } else { if (slipDays < 2) { slipDays++; streak++; } else break; } }
+
+  // Background
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Header card
+  ctx.fillStyle = cardBg;
+  roundRect(ctx, 60, 120, W - 120, 320, 32);
+  ctx.fill();
+
+  // Brand
+  ctx.fillStyle = accent;
+  ctx.font = 'bold 72px "Clash Display", "SF Pro Display", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('pause', W / 2, 220);
+  ctx.fillStyle = textMuted;
+  ctx.font = '500 28px "General Sans", "SF Pro Text", sans-serif';
+  ctx.fillText('Widen the gap.', W / 2, 270);
+
+  // Stats grid
+  const stats = [
+    { value: totalDays, label: 'Days Tracked', color: accent },
+    { value: avoided, label: 'Cigarettes Avoided', color: '#10B981' },
+    { value: `${settings.currency} ${Math.round(totalSaved)}`, label: 'Money Saved', color: '#F59E0B' },
+    { value: formatGap(Math.round(bestGap)), label: 'Best Gap', color: '#38BDF8' },
+    { value: streak, label: 'Day Streak', color: '#EF4444' },
+    { value: waves.length, label: 'Shields Earned', color: '#10B981' },
+  ];
+
+  const cols = 2, cellW = (W - 180) / cols, cellH = 220;
+  stats.forEach((s, i) => {
+    const col = i % cols, row = Math.floor(i / cols);
+    const x = 90 + col * cellW, y = 520 + row * (cellH + 24);
+    ctx.fillStyle = cardBg;
+    roundRect(ctx, x, y, cellW - 24, cellH, 24);
+    ctx.fill();
+    ctx.fillStyle = s.color;
+    ctx.font = `bold 56px "Space Grotesk", monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillText(String(s.value), x + (cellW - 24) / 2, y + 90);
+    ctx.fillStyle = textMuted;
+    ctx.font = '600 24px "General Sans", sans-serif';
+    ctx.fillText(s.label, x + (cellW - 24) / 2, y + 140);
+  });
+
+  // Bottom tagline
+  ctx.fillStyle = textMuted;
+  ctx.font = '500 24px "General Sans", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Tracked with pause', W / 2, H - 180);
+  ctx.fillStyle = accent;
+  ctx.font = 'bold 28px "General Sans", sans-serif';
+  ctx.fillText('pauseapp.web.app', W / 2, H - 130);
+
+  // Share
+  canvas.toBlob(function(blob) {
+    const file = new File([blob], 'pause-progress.png', { type: 'image/png' });
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      navigator.share({ files: [file], title: 'My pause Progress', text: 'Check out my smoking cessation progress!' }).catch(() => {});
+    } else {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'pause-progress.png'; a.click();
+      URL.revokeObjectURL(url);
+      showToast('Progress card saved!');
+    }
+  }, 'image/png');
+};
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function isLightTheme() {
+  const t = settings.theme || 'white';
+  return t === 'white' || t === 'paper' || t === 'calm';
+}
+
+// ==================== DAILY MICRO-CHALLENGE ====================
+const DAILY_CHALLENGES = [
+  { text: "Delay your first cigarette by 15 minutes today", icon: "⏰", type: "delay" },
+  { text: "Take 3 deep breaths before any craving", icon: "🫁", type: "breathe" },
+  { text: "Log your mood before lighting up", icon: "📝", type: "mood" },
+  { text: "Drink a glass of water when you feel the urge", icon: "💧", type: "water" },
+  { text: "Go for a 5-minute walk instead of smoking", icon: "🚶", type: "walk" },
+  { text: "Chew gum or eat a mint when cravings hit", icon: "🍬", type: "gum" },
+  { text: "Call or text someone when you want to smoke", icon: "📱", type: "social" },
+  { text: "Identify your top trigger today and write it down", icon: "🔍", type: "trigger" },
+  { text: "Hold an ice cube when the craving is strong", icon: "🧊", type: "ice" },
+  { text: "Do 10 push-ups or squats when you want to smoke", icon: "💪", type: "exercise" },
+  { text: "Listen to a favorite song instead of smoking", icon: "🎵", type: "music" },
+  { text: "Eat a healthy snack when cravings come", icon: "🍎", type: "snack" },
+  { text: "Sit quietly for 2 minutes and breathe deeply", icon: "🧘", type: "meditate" },
+  { text: "Write down 3 reasons you're quitting", icon: "✍️", type: "reasons" },
+  { text: "Reward yourself — you've earned it today", icon: "🎉", type: "reward" },
+];
+
+let todaysChallenge = null;
+let challengeCompleted = false;
+
+function getDailyChallengeSeed() {
+  const d = new Date();
+  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+}
+
+function renderDailyChallenge() {
+  const card = document.getElementById('dailyChallengeCard');
+  const textEl = document.getElementById('challengeText');
+  const completeBtn = document.getElementById('challengeCompleteBtn');
+  const completedMsg = document.getElementById('challengeCompletedMsg');
+  if (!card) return;
+
+  const todayKey = new Date().toDateString();
+  const completedChallenges = JSON.parse(localStorage.getItem('smoke_completed_challenges') || '{}');
+  challengeCompleted = completedChallenges[todayKey] === true;
+
+  if (challengeCompleted) {
+    card.classList.add('hidden');
+    return;
+  }
+
+  const seed = getDailyChallengeSeed();
+  const idx = seed % DAILY_CHALLENGES.length;
+  todaysChallenge = DAILY_CHALLENGES[idx];
+
+  card.classList.remove('hidden');
+  if (textEl) textEl.innerText = todaysChallenge.text;
+  if (completeBtn) {
+    completeBtn.classList.remove('hidden');
+    completeBtn.style.display = '';
+  }
+  if (completedMsg) completedMsg.classList.add('hidden');
+}
+
+window.completeDailyChallenge = function() {
+  if (challengeCompleted || !todaysChallenge) return;
+
+  challengeCompleted = true;
+  const todayKey = new Date().toDateString();
+  const completedChallenges = JSON.parse(localStorage.getItem('smoke_completed_challenges') || '{}');
+  completedChallenges[todayKey] = true;
+  localStorage.setItem('smoke_completed_challenges', JSON.stringify(completedChallenges));
+
+  // Award shield
+  waves.push(Date.now());
+  localStorage.setItem('smoke_waves', JSON.stringify(waves));
+
+  // UI updates
+  const completeBtn = document.getElementById('challengeCompleteBtn');
+  const completedMsg = document.getElementById('challengeCompletedMsg');
+  if (completeBtn) completeBtn.style.display = 'none';
+  if (completedMsg) completedMsg.classList.remove('hidden');
+
+  showToast('Challenge completed! +1 Shield');
+  spawnConfetti();
+  if (window.posthog) posthog.capture('daily_challenge_completed', { challenge: todaysChallenge.text });
+  try { updateUI(); } catch(e) {}
+  celebrateBadgeIfUnlocked();
+};
+
+// ==================== END TIER 1 FEATURES ====================
 
 bootApp();
