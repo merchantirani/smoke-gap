@@ -1349,6 +1349,7 @@ function updateUI() {
   updateLastSmokeDisplay();
   renderHealthTimeline();
   renderProgressPhotos();
+  try { renderMoneyVisualizer(); } catch(e) {}
 }
 
 
@@ -2491,4 +2492,383 @@ window.restoreDeletedLog = function(btn) {
     showToast("Log restored");
   } catch(e) { showToast("Could not restore"); }
 }
+// ==================== HEALTH TIMELINE (Enhanced) ====================
+function renderHealthTimeline() {
+  const card = document.getElementById('healthTimelineCard');
+  const timeline = document.getElementById('milestoneTimeline');
+  const countEl = document.getElementById('milestoneCount');
+  const bestGapEl = document.getElementById('milestoneBestGap');
+  const progressBar = document.getElementById('milestoneProgressBar');
+  if (!card || !timeline) return;
+
+  if (!logs || logs.length < 2) { card.classList.add('hidden'); return; }
+  card.classList.remove('hidden');
+
+  const allGaps = logs.map(l => l.gap).filter(g => g !== null && g !== undefined);
+  if (allGaps.length === 0) { card.classList.add('hidden'); return; }
+
+  const bestGapMins = Math.max(...allGaps);
+  if (bestGapEl) bestGapEl.innerText = formatGap(Math.round(bestGapMins));
+
+  let unlocked = 0;
+  const maxMins = HEALTH_MILESTONES[HEALTH_MILESTONES.length - 1].mins;
+  timeline.innerHTML = HEALTH_MILESTONES.map((m, idx) => {
+    const isUnlocked = bestGapMins >= m.mins;
+    if (isUnlocked) unlocked++;
+    const progress = isUnlocked ? 100 : Math.min(100, (bestGapMins / m.mins) * 100);
+    const nextGap = isUnlocked ? m.mins : m.mins;
+    const label = isUnlocked ? 'Unlocked' : `Need ${formatGap(m.mins)}`;
+    return `<div class="health-timeline-item ${isUnlocked ? 'unlocked' : ''}">
+      <div class="health-timeline-dot"></div>
+      <div class="flex items-start gap-3">
+        <span class="text-lg shrink-0 ${isUnlocked ? '' : 'opacity-30'}">${m.emoji}</span>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between gap-2">
+            <p class="text-[11px] font-bold ${isUnlocked ? '' : 'opacity-50'}" style="color: ${isUnlocked ? 'var(--text-main)' : 'var(--text-muted)'};">${m.title}</p>
+            <span class="text-[8px] font-bold px-2 py-0.5 rounded-full shrink-0 ${isUnlocked ? '' : 'opacity-40'}" style="background: ${isUnlocked ? 'var(--accent-glow)' : 'var(--input-bg)'}; color: ${isUnlocked ? 'var(--accent)' : 'var(--text-muted)'};">${label}</span>
+          </div>
+          <p class="text-[9px] leading-tight mt-0.5 ${isUnlocked ? '' : 'opacity-40'}" style="color: var(--text-muted);">${m.desc}</p>
+          ${!isUnlocked ? `<div class="health-timeline-progress mt-1.5"><div class="health-timeline-progress-fill" style="width: ${progress}%;"></div></div>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  if (countEl) countEl.innerText = `${unlocked} of ${HEALTH_MILESTONES.length} unlocked`;
+  if (progressBar) progressBar.style.width = `${(unlocked / HEALTH_MILESTONES.length) * 100}%`;
+  if (window.lucide) window.lucide.createIcons();
+}
+
+// ==================== MONEY VISUALIZER ====================
+const MONEY_EQUIVALENTS = [
+  { emoji: '☕', label: 'Coffees', price: 15 },
+  { emoji: '🍕', label: 'Pizzas', price: 45 },
+  { emoji: '🎬', label: 'Movie Tickets', price: 60 },
+  { emoji: '📚', label: 'Books', price: 40 },
+  { emoji: '💪', label: 'Gym Sessions', price: 30 },
+  { emoji: '🚗', label: 'Uber Rides', price: 25 },
+  { emoji: '📺', label: 'Netflix Months', price: 55 },
+  { emoji: '⛽', label: 'Petrol Fills', price: 100 },
+  { emoji: '🎮', label: 'PS5 Games', price: 250 },
+];
+
+function computeTotalSaved() {
+  let pricePerStick = settings.packPrice / settings.packSize;
+  let baselineGapMs = parseInt(localStorage.getItem('smoke_baseline_gap'));
+  if (!baselineGapMs && logs.length > 1) { let limit = Math.min(logs.length, 10); baselineGapMs = (logs[limit - 1].timestamp - logs[0].timestamp) / (limit - 1); }
+  if (!baselineGapMs || isNaN(baselineGapMs) || baselineGapMs <= 0) { baselineGapMs = (24 * 60 * 60 * 1000) / settings.dailyLimit; }
+  if (logs.length === 0) return 0;
+  let timeElapsed = new Date().getTime() - logs[0].timestamp;
+  let expectedCigs = 1 + (timeElapsed / baselineGapMs);
+  return Math.max(0, (expectedCigs - logs.length) * pricePerStick);
+}
+
+function renderMoneyVisualizer() {
+  const total = computeTotalSaved();
+  const totalEl = document.getElementById('moneyTotalSaved');
+  const grid = document.getElementById('moneyEquivGrid');
+  const cardTotal = document.getElementById('totalSavedCard');
+  if (totalEl) totalEl.innerText = `${settings.currency} ${Math.round(total)}`;
+  if (cardTotal) cardTotal.innerText = `${settings.currency} ${Math.round(total)}`;
+  if (!grid) return;
+  grid.innerHTML = MONEY_EQUIVALENTS.map(eq => {
+    const count = Math.floor(total / eq.price);
+    return `<div class="money-equiv-item">
+      <span class="money-equiv-icon">${eq.emoji}</span>
+      <span class="money-equiv-count">${count}</span>
+      <span class="money-equiv-label">${eq.label}</span>
+    </div>`;
+  }).join('');
+
+  // Goal
+  let goal = {};
+  try { goal = JSON.parse(localStorage.getItem('smoke_savings_goal')) || {}; } catch(e) { goal = {}; }
+  const nameEl = document.getElementById('goalItemName');
+  const targetEl = document.getElementById('goalTargetAmount');
+  const currLabel = document.getElementById('goalCurrencyLabel');
+  const ringPct = document.getElementById('goalRingPct');
+  const ringFill = document.getElementById('goalRingFill');
+  const statusText = document.getElementById('goalStatusText');
+  if (currLabel) currLabel.innerText = settings.currency;
+  if (nameEl) nameEl.value = goal.name || '';
+  if (targetEl) targetEl.value = goal.target || '';
+  if (goal.target && goal.target > 0) {
+    const pct = Math.min(100, Math.round((total / goal.target) * 100));
+    const circumference = 2 * Math.PI * 42;
+    if (ringFill) ringFill.style.strokeDashoffset = circumference - (circumference * pct / 100);
+    if (ringPct) ringPct.innerText = `${pct}%`;
+    if (statusText) {
+      if (pct >= 100) statusText.innerHTML = `<span style="color: #10B981;">Goal reached! You saved enough for ${esc(goal.name || 'your goal')}!</span>`;
+      else { const remaining = goal.target - total; statusText.innerHTML = `${esc(goal.name || 'Goal')}: ${settings.currency} ${Math.round(remaining)} to go`; }
+    }
+  } else {
+    if (ringPct) ringPct.innerText = '0%';
+    if (ringFill) ringFill.style.strokeDashoffset = 2 * Math.PI * 42;
+    if (statusText) statusText.innerText = 'Set a goal to track your savings progress';
+  }
+}
+
+window.openMoneyVisualizer = function() {
+  renderMoneyVisualizer();
+  document.getElementById('moneyVisualizerModal').classList.remove('hidden');
+  if (window.lucide) window.lucide.createIcons();
+};
+
+window.closeMoneyVisualizer = function() {
+  document.getElementById('moneyVisualizerModal').classList.add('hidden');
+};
+
+window.saveGoalSettings = function() {
+  const name = (document.getElementById('goalItemName').value || '').trim();
+  const target = parseFloat(document.getElementById('goalTargetAmount').value) || 0;
+  localStorage.setItem('smoke_savings_goal', JSON.stringify({ name, target }));
+  renderMoneyVisualizer();
+  showToast('Goal saved');
+};
+
+// ==================== RELAPSE FLOW ====================
+let relapseLogIdx = null;
+
+function showRelapseModal(logIdx, gap) {
+  relapseLogIdx = logIdx;
+  const modal = document.getElementById('relapseModal');
+  const msgEl = document.getElementById('relapseMessage');
+  const statsEl = document.getElementById('relapseStats');
+  if (!modal) return;
+
+  // Calculate stats before the slip
+  const allGaps = logs.slice(0, -1).map(l => l.gap).filter(g => g !== null && g !== undefined);
+  const avgGapMin = allGaps.length ? allGaps.reduce((a, b) => a + b, 0) / allGaps.length : 0;
+  const bestGapMin = allGaps.length ? Math.max(...allGaps) : 0;
+
+  // How many days since first log
+  const daysSinceStart = logs.length > 1 ? Math.round((logs[logs.length - 1].timestamp - logs[0].timestamp) / 86400000) : 0;
+
+  // How many cigarettes avoided in total
+  let baselineGapMs = parseInt(localStorage.getItem('smoke_baseline_gap'));
+  if (!baselineGapMs || isNaN(baselineGapMs) || baselineGapMs <= 0) baselineGapMs = (24 * 60 * 60 * 1000) / settings.dailyLimit;
+  const timeElapsed = logs[logs.length - 1].timestamp - logs[0].timestamp;
+  const expectedCigs = 1 + (timeElapsed / baselineGapMs);
+  const avoided = Math.max(0, Math.round(expectedCigs - logs.length));
+
+  if (gap && avgGapMin > 0 && gap >= avgGapMin * 1.5) {
+    msgEl.innerText = `You went ${formatGap(Math.round(gap))} between cigarettes — that's incredible progress. Every gap matters, and this slip doesn't erase what you've achieved.`;
+  } else if (bestGapMin >= 120) {
+    msgEl.innerText = `Your best gap was ${formatGap(Math.round(bestGapMin))}. That's real progress. One slip doesn't define your journey — what you do next does.`;
+  } else {
+    msgEl.innerText = `Quitting is a journey, not a straight line. Every attempt teaches you something. Ready to try again?`;
+  }
+
+  statsEl.innerHTML = `
+    <div class="grid grid-cols-3 gap-2">
+      <div class="p-2.5 rounded-xl text-center" style="background: var(--input-bg);">
+        <p class="numeric-display text-lg font-bold" style="color: var(--text-main);">${daysSinceStart}</p>
+        <p class="text-[8px] font-bold uppercase tracking-wider" style="color: var(--text-muted);">Days Tracked</p>
+      </div>
+      <div class="p-2.5 rounded-xl text-center" style="background: var(--input-bg);">
+        <p class="numeric-display text-lg font-bold" style="color: var(--accent);">${avoided}</p>
+        <p class="text-[8px] font-bold uppercase tracking-wider" style="color: var(--text-muted);">Cigarettes Avoided</p>
+      </div>
+      <div class="p-2.5 rounded-xl text-center" style="background: var(--input-bg);">
+        <p class="numeric-display text-lg font-bold" style="color: #10B981;">${formatGap(Math.round(bestGapMin))}</p>
+        <p class="text-[8px] font-bold uppercase tracking-wider" style="color: var(--text-muted);">Best Gap</p>
+      </div>
+    </div>
+  `;
+
+  modal.classList.remove('hidden');
+  if (window.lucide) window.lucide.createIcons();
+  if (window.posthog) posthog.capture('relapse_modal_shown', { gap_minutes: gap });
+}
+
+window.closeRelapseModal = function() {
+  document.getElementById('relapseModal').classList.add('hidden');
+  // Continue to normal takeover
+  if (relapseLogIdx !== null) {
+    startSmokeTakeover(relapseLogIdx, logs[relapseLogIdx]?.gap, false);
+    relapseLogIdx = null;
+  }
+};
+
+window.startRelapseRecovery = function() {
+  document.getElementById('relapseModal').classList.add('hidden');
+  relapseLogIdx = null;
+  // Start a wave immediately
+  startWave(10);
+  showToast('Recovery wave started! You got this.');
+};
+
+// Patch actuallyLogCigarette to detect relapse
+const _origActuallyLogCigarette = actuallyLogCigarette;
+actuallyLogCigarette = function() {
+  const allGaps = logs.map(l => l.gap).filter(g => g !== null && g !== undefined);
+  const avgGapMin = allGaps.length ? allGaps.reduce((a, b) => a + b, 0) / allGaps.length : 0;
+  const prevTimestamp = logs.length > 0 ? logs[logs.length - 1].timestamp : null;
+  const currentGapMin = prevTimestamp ? (new Date().getTime() - prevTimestamp) / 60000 : null;
+
+  // Detect relapse: gap was much shorter than average (>2x shorter), and user had established a decent gap
+  const isRelapse = currentGapMin !== null && avgGapMin > 60 && currentGapMin < avgGapMin * 0.5;
+
+  _origActuallyLogCigarette();
+
+  if (isRelapse && relapseLogIdx === null) {
+    // The log was just added, it's the last one
+    relapseLogIdx = logs.length - 1;
+    showRelapseModal(relapseLogIdx, currentGapMin);
+  }
+};
+
+// ==================== BREATHING EXERCISES ====================
+const BREATHING_EXERCISES = {
+  '478': { name: '4-7-8 Relaxation', inhale: 4, hold: 7, exhale: 8, cycles: 4, color: '#8B5CF6', desc: 'Calms anxiety' },
+  'box': { name: 'Box Breathing', inhale: 4, hold: 4, exhale: 4, cycles: 6, color: '#38BDF8', desc: 'Focus & relief' },
+  'quick': { name: 'Quick Craving Buster', inhale: 4, hold: 2, exhale: 6, cycles: 3, color: '#10B981', desc: 'Beat the urge' },
+};
+
+let breathActive = false;
+let breathPaused = false;
+let breathTimeout = null;
+let breathInterval = null;
+let breathCycleCount = 0;
+let breathCurrentExercise = null;
+
+function vibratePattern(pattern) {
+  if (settings.haptics && navigator.vibrate) navigator.vibrate(pattern);
+}
+
+function runBreathPhase(exercise, phase, callback) {
+  if (!breathActive || breathPaused) return;
+  const circle = document.getElementById('breathCircle');
+  const phaseText = document.getElementById('breathPhaseText');
+  const timerText = document.getElementById('breathTimerText');
+  const cycleInfo = document.getElementById('breathCycleInfo');
+
+  let duration = 0;
+  let label = '';
+  let circleClass = '';
+
+  if (phase === 'inhale') {
+    duration = exercise.inhale * 1000; label = 'Breathe In'; circleClass = 'breath-circle-inhale';
+    circle.style.setProperty('--breath-inhale', exercise.inhale + 's');
+  } else if (phase === 'hold') {
+    duration = exercise.hold * 1000; label = 'Hold'; circleClass = 'breath-circle-hold';
+    circle.style.setProperty('--breath-hold', exercise.hold + 's');
+  } else if (phase === 'exhale') {
+    duration = exercise.exhale * 1000; label = 'Breathe Out'; circleClass = 'breath-circle-exhale';
+    circle.style.setProperty('--breath-exhale', exercise.exhale + 's');
+    breathCycleCount++;
+  }
+
+  if (phaseText) phaseText.innerText = label;
+  if (cycleInfo) cycleInfo.innerText = `Cycle ${Math.min(breathCycleCount + 1, exercise.cycles)} of ${exercise.cycles}`;
+
+  // Remove old classes, add new
+  circle.className = 'breath-circle mb-4 ' + circleClass;
+  vibratePattern([50]);
+
+  let remaining = Math.ceil(duration / 1000);
+  if (timerText) timerText.innerText = remaining;
+
+  breathInterval = setInterval(() => {
+    if (breathPaused) return;
+    remaining--;
+    if (timerText) timerText.innerText = Math.max(0, remaining);
+    if (remaining <= 3 && remaining > 0) vibratePattern([30]);
+  }, 1000);
+
+  breathTimeout = setTimeout(() => {
+    clearInterval(breathInterval);
+    if (!breathActive) return;
+
+    // Determine next phase
+    let nextPhase;
+    if (phase === 'inhale') nextPhase = exercise.hold > 0 ? 'hold' : 'exhale';
+    else if (phase === 'hold') nextPhase = 'exhale';
+    else if (phase === 'exhale') {
+      if (breathCycleCount >= exercise.cycles) {
+        // Exercise complete
+        breathActive = false;
+        const circle2 = document.getElementById('breathCircle');
+        const phaseText2 = document.getElementById('breathPhaseText');
+        const timerText2 = document.getElementById('breathTimerText');
+        if (circle2) circle2.className = 'breath-circle mb-4';
+        if (phaseText2) { phaseText2.innerText = 'Complete'; phaseText2.style.color = '#10B981'; }
+        if (timerText2) timerText2.innerText = '✓';
+        vibratePattern([100, 50, 100]);
+        showToast('Well done! Breathe easy.');
+        if (window.posthog) posthog.capture('breathing_exercise_completed', { type: exercise.name });
+        return;
+      }
+      nextPhase = 'inhale';
+    }
+
+    runBreathPhase(exercise, nextPhase, callback);
+  }, duration);
+}
+
+window.openBreathingModal = function() {
+  document.getElementById('breathingModal').classList.remove('hidden');
+  document.getElementById('breathSelector').classList.remove('hidden');
+  document.getElementById('breathActive').classList.add('hidden');
+  if (window.lucide) window.lucide.createIcons();
+};
+
+window.closeBreathingModal = function() {
+  breathActive = false; breathPaused = false;
+  clearTimeout(breathTimeout); clearInterval(breathInterval);
+  document.getElementById('breathingModal').classList.add('hidden');
+};
+
+window.selectBreathing = function(type) {
+  const exercise = BREATHING_EXERCISES[type];
+  if (!exercise) return;
+
+  breathActive = true;
+  breathPaused = false;
+  breathCycleCount = 0;
+  breathCurrentExercise = exercise;
+
+  document.getElementById('breathSelector').classList.add('hidden');
+  document.getElementById('breathActive').classList.remove('hidden');
+  document.getElementById('breathExerciseName').innerText = exercise.name;
+  document.getElementById('breathExerciseName').style.color = exercise.color;
+  document.getElementById('breathCircle').style.borderColor = exercise.color;
+
+  const pauseBtn = document.getElementById('breathPauseBtn');
+  if (pauseBtn) pauseBtn.innerText = 'Pause';
+
+  if (window.posthog) posthog.capture('breathing_exercise_started', { type: exercise.name });
+
+  setTimeout(() => runBreathPhase(exercise, 'inhale'), 500);
+};
+
+window.toggleBreathPause = function() {
+  if (!breathActive) return;
+  breathPaused = !breathPaused;
+  const btn = document.getElementById('breathPauseBtn');
+  if (btn) btn.innerText = breathPaused ? 'Resume' : 'Pause';
+
+  if (breathPaused) {
+    clearTimeout(breathTimeout); clearInterval(breathInterval);
+  } else if (breathCurrentExercise) {
+    // Resume — find current phase from the circle class
+    const circle = document.getElementById('breathCircle');
+    let phase = 'inhale';
+    if (circle.classList.contains('breath-circle-hold')) phase = 'hold';
+    else if (circle.classList.contains('breath-circle-exhale')) phase = 'exhale';
+    runBreathPhase(breathCurrentExercise, phase);
+  }
+};
+
+window.stopBreathing = function() {
+  breathActive = false; breathPaused = false;
+  clearTimeout(breathTimeout); clearInterval(breathInterval);
+  document.getElementById('breathSelector').classList.remove('hidden');
+  document.getElementById('breathActive').classList.add('hidden');
+  const circle = document.getElementById('breathCircle');
+  const phaseText = document.getElementById('breathPhaseText');
+  if (circle) circle.className = 'breath-circle mb-4';
+  if (phaseText) phaseText.style.color = '';
+};
+
 bootApp();
