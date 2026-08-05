@@ -1,5 +1,5 @@
 // PAUSE SERVICE WORKER - Offline Caching v3.0 (Mobile Optimized)
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v4';
 const CACHE_NAME = `pause-cache-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `pause-runtime-${CACHE_VERSION}`;
 
@@ -11,7 +11,10 @@ const PRECACHE_FILES = [
   './manifest.json',
   './icons/pause_icon_192.png',
   './icons/pause_icon_512.png',
-  './icons/favicon.ico'
+  './icons/pause_icon_180.png',
+  './icons/favicon.ico',
+  './icons/pause_favicon_16.png',
+  './icons/pause_favicon_32.png'
 ];
 
 // CDN resources to cache at runtime
