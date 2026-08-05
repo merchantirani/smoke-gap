@@ -1134,10 +1134,7 @@ function cancelActiveWave() {
 }
 
 function resetRideButton() {
-  const fillEl = document.getElementById('rideProgressFill'), textEl = document.getElementById('rideText'), iconEl = document.getElementById('rideIcon');
-  if(fillEl) fillEl.style.width = '0%';
-  if(textEl) textEl.innerText = 'Ride It Out';
-  if(iconEl) iconEl.classList.remove('hidden');
+  // Ride It Out button removed — merged into Breathe modal. No-op kept for call-site compatibility.
 }
 
 function waveTick() {
@@ -1156,11 +1153,7 @@ function waveTick() {
     const mm = Math.floor(rem/60).toString().padStart(2,'0'), ss = (rem%60).toString().padStart(2,'0');
     document.getElementById('waveCountdown').innerText = `${mm}:${ss}`;
     const elapsedFrac = Math.min(1, Math.max(0, (totalSecs - rem) / totalSecs));
-    
-    const fillEl = document.getElementById('rideProgressFill'), textEl = document.getElementById('rideText'), iconEl = document.getElementById('rideIcon');
-    if(fillEl) fillEl.style.width = `${elapsedFrac*100}%`;
-    if(textEl) textEl.innerText = `${mm}:${ss}`;
-    if(iconEl) iconEl.classList.add('hidden');
+
     const pct = elapsedFrac; let txt = "Breathe in... Hold... Exhale...";
     if(pct < 0.2) txt = "Notice the urge without acting on it. Where do you feel it?";
     else if(pct < 0.5) txt = "Cravings are like ocean waves. They rise, peak, and crash.";
@@ -2820,6 +2813,13 @@ window.closeBreathingModal = function() {
 };
 
 window.selectBreathing = function(type) {
+  // Wave Ride — open the wave duration modal
+  if (type === 'wave') {
+    window.closeBreathingModal();
+    openWaveModal();
+    return;
+  }
+
   const exercise = BREATHING_EXERCISES[type];
   if (!exercise) return;
 
