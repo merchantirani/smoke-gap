@@ -304,15 +304,24 @@
           </div>
           <h2 class="text-xl font-bold" style="color: var(--text-main);">Pack Price</h2>
           <p class="text-sm leading-relaxed mb-2" style="color: var(--text-muted);">How much does a pack cost?</p>
-          <div class="w-full max-w-[200px] mx-auto">
-            <div class="flex items-center gap-2 p-3 rounded-2xl border" style="background: var(--input-bg); border-color: var(--card-border);">
-              <span id="onboardCurrencyLabel" class="text-sm font-bold" style="color: var(--text-muted);">AED</span>
-              <input id="onboardPackPrice" type="number" value="20" min="1" class="numeric-display flex-1 text-center text-2xl font-black bg-transparent outline-none" style="color: var(--text-main);">
+          <div class="w-full max-w-[260px] mx-auto space-y-2.5">
+            <div class="relative flex items-stretch rounded-2xl border overflow-hidden" style="background: var(--input-bg); border-color: var(--card-border);">
+              <select id="onboardCurrencySelect" onchange="window.updateOnboardCostPerCig()" class="px-3 text-xs font-bold border-r outline-none cursor-pointer" style="background: var(--input-bg); border-color: var(--card-border); color: var(--text-muted);">
+                <option value="AED">AED</option>
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="GBP">GBP</option>
+                <option value="INR">INR</option>
+              </select>
+              <input id="onboardPackPrice" type="number" value="20" min="1" oninput="window.updateOnboardCostPerCig()" class="flex-1 px-3 py-3.5 numeric-display text-xl font-black bg-transparent outline-none text-center" style="color: var(--text-main); -moz-appearance: textfield; appearance: textfield;">
+              <style>#onboardPackPrice::-webkit-inner-spin-button,#onboardPackPrice::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }</style>
             </div>
-            <div class="flex items-center gap-2 mt-2 p-3 rounded-2xl border" style="background: var(--input-bg); border-color: var(--card-border);">
-              <span class="text-xs font-bold" style="color: var(--text-muted);">Sticks/pack</span>
-              <input id="onboardPackSize" type="number" value="20" min="1" max="100" class="numeric-display flex-1 text-center text-lg font-bold bg-transparent outline-none" style="color: var(--text-main);">
+            <div class="flex items-center justify-between rounded-2xl border p-3" style="background: var(--input-bg); border-color: var(--card-border);">
+              <span class="text-[10px] font-bold uppercase tracking-wider" style="color: var(--text-muted);">Sticks per pack</span>
+              <input id="onboardPackSize" type="number" value="20" min="1" max="100" oninput="window.updateOnboardCostPerCig()" class="w-14 text-center numeric-display text-base font-bold bg-transparent outline-none" style="color: var(--text-main); -moz-appearance: textfield; appearance: textfield;">
+              <style>#onboardPackSize::-webkit-inner-spin-button,#onboardPackSize::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }</style>
             </div>
+            <p class="text-[9px] font-medium" style="color: var(--text-muted);">≈ <span id="onboardCostPerCig">AED 1.0</span> per cigarette</p>
           </div>
         </div>
 
@@ -406,6 +415,9 @@
           <button onclick="window.showShieldDashboard()" class="premium-card px-2.5 py-1 rounded-full flex items-center gap-1 active:scale-95 transition-transform cursor-pointer">
             <i data-lucide="shield" class="w-3 h-3 text-sky-500"></i>
             <span id="shieldCount" class="numeric-display text-xs font-bold text-sky-500">0</span>
+          </button>
+          <button onclick="window.shareProgress()" class="premium-card w-7 h-7 rounded-full flex items-center justify-center active:scale-90 transition-transform cursor-pointer" aria-label="Share Progress" title="Share progress">
+            <i data-lucide="share-2" class="w-3.5 h-3.5" style="color: var(--accent);"></i>
           </button>
         </div>
       </div>
@@ -597,11 +609,6 @@
             </div>
           </div>
         </div>
-
-        <button onclick="window.shareProgress()" class="w-full py-3 flex items-center justify-center gap-2 rounded-2xl active:scale-95 transition-all border" style="background: var(--input-bg); border-color: var(--card-border); color: var(--accent);">
-          <i data-lucide="share-2" class="w-4 h-4" style="color: var(--accent);"></i>
-          <span class="text-[10px] font-bold uppercase tracking-wider">Share Progress</span>
-        </button>
 
         <div id="dailyChallengeCard" class="premium-card p-3.5 hidden">
           <div class="flex items-center gap-2 mb-2">

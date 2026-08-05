@@ -496,6 +496,7 @@ let onboardingStep = 1;
 
 function showOnboarding() {
   document.getElementById('onboardingOverlay').classList.remove('hidden');
+  initOnboardingSetup();
   if(window.lucide) window.lucide.createIcons();
 }
 
@@ -2898,15 +2899,44 @@ window.onboardSelectGoal = function(goal) {
   });
 };
 
+window.updateOnboardCostPerCig = function() {
+  const price = parseFloat(document.getElementById('onboardPackPrice').value) || 20;
+  const size = parseInt(document.getElementById('onboardPackSize').value) || 20;
+  const cur = document.getElementById('onboardCurrencySelect').value || 'AED';
+  const cost = size > 0 ? (price / size).toFixed(1) : '0';
+  const label = document.getElementById('onboardCostPerCig');
+  if (label) label.innerText = `${cur} ${cost}`;
+};
+
+function initOnboardingSetup() {
+  onboardSticks = Math.max(1, Math.min(80, settings.dailyLimit || 10));
+  const sticksEl = document.getElementById('onboardSticksCount');
+  if (sticksEl) sticksEl.innerText = onboardSticks;
+  const curEl = document.getElementById('onboardCurrencySelect');
+  if (curEl) {
+    const cur = settings.currency || 'AED';
+    curEl.value = cur;
+    const label = document.getElementById('onboardCurrencyLabel');
+    if (label) label.innerText = cur;
+  }
+  const priceEl = document.getElementById('onboardPackPrice');
+  if (priceEl) priceEl.value = settings.packPrice || 20;
+  const sizeEl = document.getElementById('onboardPackSize');
+  if (sizeEl) sizeEl.value = settings.packSize || 20;
+  updateOnboardCostPerCig();
+}
+
 function saveOnboardingSetup() {
   const sticks = onboardSticks;
   const packPrice = parseFloat(document.getElementById('onboardPackPrice').value) || 20;
   const packSize = parseInt(document.getElementById('onboardPackSize').value) || 20;
+  const cur = document.getElementById('onboardCurrencySelect').value || 'AED';
   const quitDate = document.getElementById('onboardQuitDate').value || '';
 
   settings.dailyLimit = sticks;
   settings.packPrice = packPrice;
   settings.packSize = packSize;
+  settings.currency = cur;
 
   if (onboardGoal === 'quit') {
     settings.autoReduce = true;
