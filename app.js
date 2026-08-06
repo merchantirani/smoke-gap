@@ -1345,6 +1345,7 @@ function updateUI() {
   renderProgressPhotos();
   try { renderMoneyVisualizer(); } catch(e) {}
   try { renderDailyChallenge(); } catch(e) {}
+  try { renderPatternIntel(); } catch(e) {}
 }
 
 
@@ -3190,6 +3191,241 @@ window.completeDailyChallenge = function() {
   celebrateBadgeIfUnlocked();
 };
 
-// ==================== END TIER 1 FEATURES ====================
+// ==================== PATTERN INTELLIGENCE ====================
+const DAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+function periodForHour(h) {
+  if (h >= 5 && h < 12) return 'Morning';
+  if (h >= 12 && h < 17) return 'Afternoon';
+  if (h >= 17 && h < 21) return 'Evening';
+  return 'Night';
+}
+
+function getThisWeekRange() {
+  const now = new Date();
+  const day = (now.getDay() + 6) % 7; // Monday start
+  const start = new Date(now); start.setHours(0,0,0,0); start.setDate(now.getDate() - day);
+  const end = new Date(now); end.setHours(23,59,59,999);
+  return { start, end };
+}
+
+function getLastWeekRange() {
+  const now = new Date();
+  const day = (now.getDay() + 6) % 7;
+  const thisStart = new Date(now); thisStart.setHours(0,0,0,0); thisStart.setDate(now.getDate() - day);
+  const lastStart = new Date(thisStart); lastStart.setDate(thisStart.getDate() - 7);
+  const lastEnd = new Date(thisStart); lastEnd.setMilliseconds(-1);
+  return { start: lastStart, end: lastEnd };
+}
+
+function renderPatternIntel() {
+  const card = document.getElementById('patternIntelCard');
+  if (!card) return;
+
+  // Need at least a few logs for meaningful patterns
+  const recentLogs = logs.filter(l => l.timestamp);
+  if (recentLogs.length < 4) { card.classList.add('hidden'); return; }
+
+  const today = new Date();
+  const nowMs = today.getTime();
+  const thirtyDays = 30 * 86400000;
+
+  // ---------- Weekly Comparison ----------
+  const tw = getThisWeekRange(), lw = getLastWeekRange();
+  const thisWeekCount = recentLogs.filter(l => l.timestamp >= tw.start.getTime() && l.timestamp <= tw.end.getTime()).length;
+  const lastWeekCount = recentLogs.filter(l => l.timestamp >= lw.start.getTime() && l.timestamp <= lw.end.getTime()).length;
+
+  const thisEl = document.getElementById('patternThisWeek');
+  const lastEl = document.getElementById('patternLastWeek');
+  const changeEl = document.getElementById('patternWeekChange');
+  const arrowEl = document.getElementById('patternWeekArrow');
+
+  if (thisEl) thisEl.innerText = thisWeekCount;
+  if (lastEl) lastEl.innerText = lastWeekCount;
+
+  if (changeEl) {
+    if (lastWeekCount === 0 && thisWeekCount === 0) {
+      changeEl.innerText = '—'; changeEl.style.color = 'var(--text-muted)';
+    } else if (lastWeekCount === 0) {
+      changeEl.innerText = 'NEW'; changeEl.style.color = '#38BDF8';
+    } else {
+      const pct = Math.round(((thisWeekCount - lastWeekCount) / lastWeekCount) * 100);
+      const improved = pct <= 0;
+      changeEl.innerText = (pct > 0 ? '+' : '') + pct + '%';
+      changeEl.style.color = improved ? '#10B981' : '#EF4444';
+    }
+  }
+  if (arrowEl) arrowEl.innerText = thisWeekCount <= lastWeekCount ? '↓' : '↑';
+  if (arrowEl) arrowEl.style.color = thisWeekCount <= lastWeekCount ? '#10B981' : '#EF4444';
+
+  // ---------- Day-of-Week Pattern ----------
+  const dayCounts = [0,0,0,0,0,0,0];
+  recentLogs.forEach(l => { const d = new Date(l.timestamp).getDay(); if (l.timestamp >= nowMs - thirtyDays) dayCounts[d]++; });
+  const maxDay = Math.max(...dayCounts, 1);
+
+  const barsEl = document.getElementById('patternDayBars');
+  if (barsEl) {
+    barsEl.innerHTML = dayCounts.map((c, i) => {
+      const h = Math.max(6, Math.round((c / maxDay) * 44));
+      const isPeak = c === Math.max(...dayCounts) && c > 0;
+      const color = isPeak ? 'var(--accent)' : 'var(--input-bg)';
+      const border = isPeak ? '' : 'border border-gray-500/20';
+      return `<div class="flex-1 flex flex-col items-center gap-1" title="${DAY_SHORT[i]}: ${c}">
+        <div class="w-full rounded-md ${border}" style="height:${h}px; background:${color}; transition: height 0.6s cubic-bezier(0.4,0,0.2,1);"></div>
+        <span class="text-[7px] font-bold" style="color: var(--text-muted);">${DAY_SHORT[i]}</span>
+      </div>`;
+    }).join('');
+  }
+
+  const dayInsightEl = document.getElementById('patternDayInsight');
+  if (dayInsightEl) {
+    const peakIdx = dayCounts.indexOf(Math.max(...dayCounts));
+    const peakCount = dayCounts[peakIdx];
+    const avg = dayCounts.reduce((a,b) => a+b, 0) / Math.max(1, dayCounts.filter(c => c > 0).length || 7);
+    if (peakCount > 0 && peakCount > avg * 1.4) {
+      dayInsightEl.innerText = `${DAY_SHORT[peakIdx]} is your heaviest day (${peakCount} sticks) — ${Math.round(peakCount / avg)}x above average.`;
+      dayInsightEl.style.color = '#EF4444';
+    } else if (peakCount > 0) {
+      dayInsightEl.innerText = `Fairly consistent. ${DAY_SHORT[peakIdx]} leads at ${peakCount}.`;
+      dayInsightEl.style.color = 'var(--text-muted)';
+    } else {
+      dayInsightEl.innerText = 'Not enough day data yet.';
+      dayInsightEl.style.color = 'var(--text-muted)';
+    }
+  }
+
+  // ---------- Mood-Smoke Correlation ----------
+  const moodCounts = {};
+  recentLogs.forEach(l => {
+    if (l.mood) {
+      const m = moodDefFor(l.mood);
+      if (m) moodCounts[m.id] = (moodCounts[m.id] || 0) + 1;
+    }
+  });
+  const moodEntries = Object.entries(moodCounts).sort((a, b) => b[1] - a[1]);
+  const moodTotal = moodEntries.reduce((s, e) => s + e[1], 0);
+
+  const moodEl = document.getElementById('patternMoodTriggers');
+  if (moodEl) {
+    if (moodEntries.length === 0) {
+      moodEl.innerHTML = `<p class="text-[9px]" style="color: var(--text-muted);">Log your mood after smoking to reveal patterns.</p>`;
+    } else {
+      moodEl.innerHTML = moodEntries.slice(0, 4).map(([id, count]) => {
+        const def = MOODS.find(m => m.id === id);
+        const pct = Math.round((count / moodTotal) * 100);
+        return `<div class="flex items-center gap-2">
+          <i data-lucide="${def ? def.icon : 'smile'}" class="w-3 h-3 shrink-0" style="color: ${def ? def.color : '#6B7280'};"></i>
+          <div class="flex-1 h-1.5 rounded-full overflow-hidden" style="background: var(--bg-body);">
+            <div class="h-full rounded-full transition-all duration-700" style="width:${pct}%; background: ${def ? def.color : '#6B7280'};"></div>
+          </div>
+          <span class="text-[9px] font-bold shrink-0" style="color: var(--text-main);">${count} (${pct}%)</span>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // ---------- Risk Zones (mood + time combo) ----------
+  const comboCounts = {};
+  recentLogs.forEach(l => {
+    if (l.mood) {
+      const m = moodDefFor(l.mood);
+      if (m) {
+        const period = periodForHour(new Date(l.timestamp).getHours());
+        const key = `${m.label}|${period}`;
+        comboCounts[key] = (comboCounts[key] || 0) + 1;
+      }
+    }
+  });
+  const comboEntries = Object.entries(comboCounts).sort((a, b) => b[1] - a[1]).slice(0, 3);
+  const comboTotal = recentLogs.filter(l => l.mood).length;
+
+  const comboEl = document.getElementById('patternRiskCombos');
+  if (comboEl) {
+    if (comboEntries.length === 0 || comboTotal < 3) {
+      comboEl.innerHTML = `<p class="text-[9px]" style="color: var(--text-muted);">More mood data will reveal your riskiest combinations.</p>`;
+    } else {
+      comboEl.innerHTML = comboEntries.map(([key, count]) => {
+        const [mood, period] = key.split('|');
+        const def = MOODS.find(m => m.label === mood);
+        const pct = Math.round((count / comboTotal) * 100);
+        return `<div class="flex items-center gap-2">
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0" style="background: ${def ? def.color + '1a' : 'var(--accent-glow)'}; color: ${def ? def.color : 'var(--accent)'};">${mood} + ${period}</span>
+          <div class="flex-1 text-right text-[9px] font-bold" style="color: var(--text-muted);">${count}× (${pct}%)</div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // ---------- Trigger Escalation ----------
+  const lastWkStart = getLastWeekRange().start.getTime();
+  const lastWkEnd = getLastWeekRange().end.getTime();
+  const currentStart = getThisWeekRange().start.getTime();
+  const nowEnd = Date.now();
+
+  const trendW = {}, trendC = {};
+  recentLogs.forEach(l => {
+    const tags = (l.tags || []).filter(Boolean);
+    if (tags.length === 0) return;
+    if (l.timestamp >= currentStart && l.timestamp <= nowEnd) {
+      tags.forEach(t => trendC[t] = (trendC[t] || 0) + 1);
+    } else if (l.timestamp >= lastWkStart && l.timestamp <= lastWkEnd) {
+      tags.forEach(t => trendW[t] = (trendW[t] || 0) + 1);
+    }
+  });
+
+  const trendEl = document.getElementById('patternTriggerTrends');
+  if (trendEl) {
+    const rising = Object.keys(trendC).filter(t => {
+      const prev = trendW[t] || 0;
+      const cur = trendC[t];
+      return prev > 0 && cur >= prev * 2 && cur >= 2;
+    }).sort((a, b) => trendC[b] - trendC[a]).slice(0, 3);
+
+    if (rising.length > 0) {
+      trendEl.innerHTML = rising.map(t => {
+        const prev = trendW[t] || 0, cur = trendC[t];
+        return `<div class="flex items-center gap-2">
+          <span class="text-[9px] font-bold" style="color: #EF4444;">▲</span>
+          <span class="text-[9px] font-bold flex-1" style="color: var(--text-main);">${esc(t)}</span>
+          <span class="text-[9px] font-bold" style="color: var(--text-muted);">${prev} → ${cur}</span>
+        </div>`;
+      }).join('');
+    } else {
+      const improving = Object.keys(trendW).filter(t => {
+        const prev = trendW[t] || 0;
+        const cur = trendC[t] || 0;
+        return prev > 0 && cur <= prev * 0.5;
+      }).length;
+      if (improving > 0) {
+        trendEl.innerHTML = `<p class="text-[9px] font-bold" style="color: #10B981;">✓ No triggers escalating this week. Keep it up!</p>`;
+      } else {
+        trendEl.innerHTML = `<p class="text-[9px]" style="color: var(--text-muted);">No strong trigger trends yet.</p>`;
+      }
+    }
+  }
+
+  // ---------- Summary line ----------
+  const summaryEl = document.getElementById('patternSummary');
+  if (summaryEl) {
+    if (thisWeekCount === 0 && lastWeekCount === 0) {
+      summaryEl.innerText = 'Patterns will appear as you log.';
+    } else if (lastWeekCount > 0 && thisWeekCount < lastWeekCount) {
+      const pct = Math.round(((lastWeekCount - thisWeekCount) / lastWeekCount) * 100);
+      summaryEl.innerText = `${pct}% fewer sticks this week. Nice trend!`;
+    } else if (lastWeekCount > 0 && thisWeekCount > lastWeekCount) {
+      const pct = Math.round(((thisWeekCount - lastWeekCount) / lastWeekCount) * 100);
+      summaryEl.innerText = `+${pct}% this week. Check your triggers below.`;
+    } else if (thisWeekCount > 0) {
+      summaryEl.innerText = 'Building your weekly pattern...';
+    } else {
+      summaryEl.innerText = 'Patterns will appear as you log.';
+    }
+  }
+
+  card.classList.remove('hidden');
+  if (window.lucide) window.lucide.createIcons();
+}
+
+// ==================== END TIER 2 FEATURES ====================
 
 bootApp();

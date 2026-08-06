@@ -624,6 +624,58 @@
           </div>
         </div>
 
+        <div id="patternIntelCard" class="premium-card p-3.5 hidden">
+          <div class="flex items-center justify-between mb-2.5 cursor-pointer" onclick="document.getElementById('patternIntelBody').classList.toggle('hidden')">
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 rounded-lg flex items-center justify-center" style="background: linear-gradient(135deg, rgba(56,189,248,0.15), rgba(139,92,246,0.15));"><i data-lucide="brain" class="w-3.5 h-3.5" style="color: #38BDF8;"></i></div>
+              <div>
+                <p class="text-[8px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Pattern Intelligence</p>
+                <p id="patternSummary" class="text-[9px] font-bold leading-tight" style="color: var(--text-main);">Analyzing your patterns...</p>
+              </div>
+            </div>
+            <i data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform" style="color: var(--text-muted);"></i>
+          </div>
+          <div id="patternIntelBody" class="hidden space-y-3">
+            <!-- Weekly Comparison -->
+            <div id="patternWeekly" class="rounded-xl p-2.5" style="background: var(--input-bg);">
+              <p class="text-[8px] font-bold uppercase tracking-widest mb-1.5" style="color: var(--text-muted);">This Week vs Last</p>
+              <div class="flex items-center gap-2">
+                <div class="flex-1 text-center">
+                  <p id="patternThisWeek" class="numeric-display text-lg font-bold" style="color: var(--text-main);">0</p>
+                  <p class="text-[8px] font-bold" style="color: var(--text-muted);">This Week</p>
+                </div>
+                <div id="patternWeekArrow" class="text-lg font-bold">→</div>
+                <div class="flex-1 text-center">
+                  <p id="patternLastWeek" class="numeric-display text-lg font-bold" style="color: var(--text-main);">0</p>
+                  <p class="text-[8px] font-bold" style="color: var(--text-muted);">Last Week</p>
+                </div>
+                <div id="patternWeekChange" class="px-2 py-0.5 rounded-full text-[9px] font-bold" style="background: var(--input-bg);">0%</div>
+              </div>
+            </div>
+            <!-- Day Pattern -->
+            <div class="rounded-xl p-2.5" style="background: var(--input-bg);">
+              <p class="text-[8px] font-bold uppercase tracking-widest mb-1.5" style="color: var(--text-muted);">Day Pattern</p>
+              <div id="patternDayBars" class="flex items-end gap-1 h-12"></div>
+              <p id="patternDayInsight" class="text-[9px] font-bold mt-1.5" style="color: var(--text-main);"></p>
+            </div>
+            <!-- Top Mood Triggers -->
+            <div class="rounded-xl p-2.5" style="background: var(--input-bg);">
+              <p class="text-[8px] font-bold uppercase tracking-widest mb-1.5" style="color: var(--text-muted);">Mood Triggers</p>
+              <div id="patternMoodTriggers" class="space-y-1.5"></div>
+            </div>
+            <!-- Risk Combos -->
+            <div class="rounded-xl p-2.5" style="background: var(--input-bg);">
+              <p class="text-[8px] font-bold uppercase tracking-widest mb-1.5" style="color: var(--text-muted);">Risk Zones</p>
+              <div id="patternRiskCombos" class="space-y-1.5"></div>
+            </div>
+            <!-- Trigger Trends -->
+            <div class="rounded-xl p-2.5" style="background: var(--input-bg);">
+              <p class="text-[8px] font-bold uppercase tracking-widest mb-1.5" style="color: var(--text-muted);">Trigger Trends</p>
+              <div id="patternTriggerTrends" class="space-y-1.5"></div>
+            </div>
+          </div>
+        </div>
+
         <div id="healthTimelineCard" class="premium-card p-4 hidden">
           <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="document.getElementById('healthMilestonesBody').classList.toggle('hidden')">
             <div class="flex items-center gap-2">
