@@ -235,6 +235,14 @@
     @keyframes breathExhale { from { transform: scale(1.4); box-shadow: 0 0 40px 10px var(--accent-glow); } to { transform: scale(1); box-shadow: 0 0 0 0 var(--accent-glow); } }
     .breath-phase-text { transition: opacity 0.3s ease; }
     .breath-timer-text { font-family: 'Space Grotesk', monospace; }
+
+    /* Premium Toggle Switch */
+    .premium-toggle { position: relative; display: inline-flex; align-items: center; cursor: pointer; }
+    .premium-toggle .toggle-track { width: 2.5rem; height: 1.25rem; background: rgba(156, 163, 175, 0.3); border-radius: 9999px; transition: background-color 0.3s ease; position: relative; }
+    .premium-toggle input:checked + .toggle-track { background: var(--accent); }
+    .premium-toggle .toggle-thumb { width: 1rem; height: 1rem; background: #fff; border-radius: 9999px; position: absolute; top: 0.125rem; left: 0.125rem; transition: transform 0.3s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+    .premium-toggle input:checked + .toggle-track .toggle-thumb { transform: translateX(1.25rem); }
+    .premium-toggle input:focus + .toggle-track { box-shadow: 0 0 0 2px var(--accent-glow); }
   </style>
 </head>
 <body>
@@ -933,7 +941,7 @@
           <h3 class="text-[10px] font-bold uppercase tracking-widest border-b pb-2 flex items-center gap-2" style="color: var(--text-muted); border-color: var(--card-border);"><i data-lucide="palette" class="w-3 h-3"></i> Identity & Appearance</h3>
           <div class="flex flex-col">
             <label class="text-xs font-semibold mb-1" style="color: var(--text-main);">Why are you widening the gap?</label>
-            <input type="text" id="motivationInput" onchange="window.updateSettings()" placeholder="e.g., Health, Savings, Daughter" class="w-full p-2.5 rounded-xl border text-xs font-semibold outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);">
+            <input type="text" id="motivationInput" maxlength="100" onchange="window.updateSettings()" placeholder="e.g., Health, Savings, Daughter" class="w-full p-2.5 rounded-xl border text-xs font-semibold outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);">
             <p class="text-[9px] mt-1" style="color: var(--text-muted);">This reminds you during cravings.</p>
           </div>
           <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
@@ -950,7 +958,7 @@
           </div>
           <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
             <label class="text-xs font-semibold" style="color: var(--text-main);">Haptic Feedback</label>
-            <input type="checkbox" id="hapticsInput" onchange="window.updateSettings()" class="w-4 h-4 rounded border-gray-500/20 accent-sky-500">
+            <label class="premium-toggle"><input type="checkbox" id="hapticsInput" onchange="window.updateSettings()" class="sr-only"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
           </div>
         </div>
 
@@ -966,7 +974,7 @@
                 <label class="text-xs font-semibold block" style="color: var(--text-main);">⚡ SOS Interrupter Screen</label>
                 <p class="text-[9px]" style="color: var(--text-muted);">Show 15s micro-action interrupter when logging</p>
               </div>
-              <input type="checkbox" id="notifEnableSosInput" onchange="window.toggleNotifSetting('notifEnableSos')" class="w-4 h-4 rounded accent-amber-500">
+              <label class="premium-toggle"><input type="checkbox" id="notifEnableSosInput" onchange="window.toggleNotifSetting('notifEnableSos')" class="sr-only"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
             </div>
 
             <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
@@ -974,7 +982,7 @@
                 <label class="text-xs font-semibold block" style="color: var(--text-main);">🌊 Wave Complete Alerts</label>
                 <p class="text-[9px]" style="color: var(--text-muted);">Notify when Ride It Out timer finishes</p>
               </div>
-              <input type="checkbox" id="notifWaveCompleteInput" onchange="window.toggleNotifSetting('notifWaveComplete')" class="w-4 h-4 rounded accent-sky-500">
+              <label class="premium-toggle"><input type="checkbox" id="notifWaveCompleteInput" onchange="window.toggleNotifSetting('notifWaveComplete')" class="sr-only"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
             </div>
 
             <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
@@ -982,7 +990,7 @@
                 <label class="text-xs font-semibold block" style="color: var(--text-main);">🏆 Gap Widened Milestone</label>
                 <p class="text-[9px]" style="color: var(--text-muted);">Alert when current gap beats previous record</p>
               </div>
-              <input type="checkbox" id="notifGapWidenedInput" onchange="window.toggleNotifSetting('notifGapWidened')" class="w-4 h-4 rounded accent-sky-500">
+              <label class="premium-toggle"><input type="checkbox" id="notifGapWidenedInput" onchange="window.toggleNotifSetting('notifGapWidened')" class="sr-only"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
             </div>
 
             <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
@@ -990,7 +998,7 @@
                 <label class="text-xs font-semibold block" style="color: var(--text-main);">⏱️ Forgotten Log (1.5x Nudge)</label>
                 <p class="text-[9px]" style="color: var(--text-muted);">Reminder if usual gap time passes by 1.5x</p>
               </div>
-              <input type="checkbox" id="notifInactivityInput" onchange="window.toggleNotifSetting('notifInactivity')" class="w-4 h-4 rounded accent-sky-500">
+              <label class="premium-toggle"><input type="checkbox" id="notifInactivityInput" onchange="window.toggleNotifSetting('notifInactivity')" class="sr-only"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
             </div>
 
             <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
@@ -998,7 +1006,7 @@
                 <label class="text-xs font-semibold block" style="color: var(--text-main);">🧠 Predictive Craving Alerts</label>
                 <p class="text-[9px]" style="color: var(--text-muted);">Alerts 10 mins before your usual peak habit hour</p>
               </div>
-              <input type="checkbox" id="notifPredictiveInput" onchange="window.toggleNotifSetting('notifPredictive')" class="w-4 h-4 rounded accent-sky-500">
+              <label class="premium-toggle"><input type="checkbox" id="notifPredictiveInput" onchange="window.toggleNotifSetting('notifPredictive')" class="sr-only"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
             </div>
           </div>
         </div>
@@ -1014,7 +1022,7 @@
               <label class="text-xs font-semibold block" style="color: var(--text-main);">Daily Cigarette Goal</label>
               <p class="text-[9px] leading-snug mt-0.5" style="color: var(--text-muted);">How many cigarettes/day you're aiming to stay under.</p>
             </div>
-            <input type="number" id="dailyLimitInput" onchange="window.updateSettings()" class="numeric-display w-16 p-2 rounded-xl border text-center text-xs font-bold shrink-0" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);" value="15">
+            <input type="number" id="dailyLimitInput" min="1" max="100" onchange="window.updateSettings()" class="numeric-display w-16 p-2 rounded-xl border text-center text-xs font-bold shrink-0" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);" value="15">
           </div>
           
           <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
@@ -1022,7 +1030,7 @@
               <label class="text-xs font-semibold block" style="color: var(--text-main);">Auto-Reduce Limit</label>
               <p class="text-[9px] leading-snug mt-0.5" style="color: var(--text-muted);">Lower daily goal by 1 stick every week.</p>
             </div>
-            <input type="checkbox" id="autoReduceInput" onchange="window.updateSettings()" class="w-4 h-4 rounded border-gray-500/20 accent-sky-500 shrink-0">
+            <label class="premium-toggle shrink-0"><input type="checkbox" id="autoReduceInput" onchange="window.updateSettings()" class="sr-only"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
           </div>
 
           <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
@@ -1030,18 +1038,25 @@
               <label class="text-xs font-semibold block" style="color: var(--text-main);">Pack Price</label>
               <p class="text-[9px] leading-snug mt-0.5" style="color: var(--text-muted);">What one full pack costs you.</p>
             </div>
-            <input type="number" id="packPriceInput" onchange="window.updateSettings()" class="numeric-display w-20 p-2 rounded-xl border text-center text-xs font-bold shrink-0" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);" value="20">
+            <input type="number" id="packPriceInput" min="0" max="9999" onchange="window.updateSettings()" class="numeric-display w-20 p-2 rounded-xl border text-center text-xs font-bold shrink-0" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);" value="20">
           </div>
           <div class="flex justify-between items-center">
             <div class="pr-3">
               <label class="text-xs font-semibold block" style="color: var(--text-main);">Sticks Per Pack</label>
               <p class="text-[9px] leading-snug mt-0.5" style="color: var(--text-muted);">How many sticks come in one pack.</p>
             </div>
-            <input type="number" id="packSizeInput" onchange="window.updateSettings()" class="numeric-display w-16 p-2 rounded-xl border text-center text-xs font-bold shrink-0" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);" value="20">
+            <input type="number" id="packSizeInput" min="1" max="100" onchange="window.updateSettings()" class="numeric-display w-16 p-2 rounded-xl border text-center text-xs font-bold shrink-0" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);" value="20">
           </div>
           <div class="flex justify-between items-center pt-3 border-t" style="border-color: var(--card-border);">
             <label class="text-xs font-bold" style="color: var(--text-main);">Cost Per Cigarette</label>
             <span id="costPerCigDisplay" class="numeric-display text-xs font-bold px-3 py-1.5 rounded-lg" style="background-color: var(--input-bg); color: var(--accent);">--</span>
+          </div>
+          <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
+            <div class="pr-3">
+              <label class="text-xs font-semibold block" style="color: var(--text-main);">Quit Date</label>
+              <p class="text-[9px] leading-snug mt-0.5" style="color: var(--text-muted);">Your target date to quit completely.</p>
+            </div>
+            <input type="date" id="quitDateInput" onchange="window.updateQuitDate()" class="numeric-display text-[11px] font-semibold p-2 rounded-xl border outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);">
           </div>
         </div>
 
@@ -1071,7 +1086,10 @@
           <button onclick="window.exportLogsCSV()" class="w-full py-3 bg-sky-500/10 text-sky-500 font-bold text-xs rounded-xl text-center active:scale-95 transition-transform border border-sky-500/20 flex items-center justify-center gap-2"><i data-lucide="file-text" class="w-4 h-4"></i> Export CSV (Spreadsheet)</button>
           <button onclick="window.setupPin()" id="pinStatusBtn" class="w-full py-3 bg-indigo-500/10 text-indigo-500 font-bold text-xs rounded-xl text-center active:scale-95 transition-transform">Set App PIN</button>
           <button onclick="window.restartOnboarding()" class="w-full py-3 bg-purple-500/10 text-purple-500 font-bold text-xs rounded-xl text-center active:scale-95 transition-transform flex items-center justify-center gap-2"><i data-lucide="sparkles" class="w-4 h-4"></i> Show Tour Again</button>
+          <button onclick="window.resetSettings()" class="w-full py-3 bg-slate-500/10 text-slate-500 font-bold text-xs rounded-xl text-center active:scale-95 transition-transform flex items-center justify-center gap-2"><i data-lucide="settings" class="w-4 h-4"></i> Reset Settings to Defaults</button>
           <button onclick="window.refreshAppCache()" class="w-full py-3 bg-cyan-500/10 text-cyan-500 font-bold text-xs rounded-xl text-center active:scale-95 transition-transform flex items-center justify-center gap-2"><i data-lucide="refresh-cw" class="w-4 h-4"></i> Refresh App (Clear Cache)</button>
+          <div class="pt-2 border-t" style="border-color: var(--card-border);"></div>
+          <p class="text-[8px] font-bold uppercase tracking-widest text-center" style="color: var(--text-muted);">Danger Zone</p>
           <div class="pt-2 grid grid-cols-2 gap-2">
             <button onclick="window.resetData('24h')" class="py-3 bg-orange-500/10 text-orange-500 font-bold text-[11px] rounded-xl text-center active:scale-95 transition-transform border border-orange-500/20">Wipe 24h Logs</button>
             <button onclick="window.resetData('all')" class="py-3 bg-red-500/10 text-red-500 font-bold text-[11px] rounded-xl text-center active:scale-95 transition-transform border border-red-500/20">Wipe All Data</button>

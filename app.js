@@ -5,8 +5,8 @@ try {
   if(!Array.isArray(logs)) logs = [];
 } catch(e) { logs = []; }
 
-const DEFAULT_SETTINGS = { 
-  theme: 'white', haptics: true, dailyLimit: 15, lockSecs: 300, packPrice: 20, packSize: 20, currency: 'AED', timeFormat: '12h', motivation: '', autoReduce: false,
+const DEFAULT_SETTINGS = {
+  theme: 'white', haptics: true, dailyLimit: 15, lockSecs: 300, packPrice: 20, packSize: 20, currency: 'AED', timeFormat: '12h', motivation: '', autoReduce: false, quitDate: '',
   notifWaveComplete: true, notifGapWidened: true, notifInactivity: true, notifPredictive: true, notifEnableSos: false
 };
 let settings = Object.assign({}, DEFAULT_SETTINGS, JSON.parse(localStorage.getItem('smoke_settings')) || {});
@@ -455,6 +455,12 @@ function bootApp() {
     });
   } catch(e) {}
   updateCostPerCigDisplay();
+
+  const qdInput = document.getElementById('quitDateInput');
+  if(qdInput) {
+    qdInput.value = settings.quitDate || '';
+    qdInput.max = new Date().toISOString().split('T')[0];
+  }
 
   try { loadChartOrder(); } catch(e) { console.warn("Chart order load failed", e); }
   try { initDragAndDrop(); } catch(e) { console.warn("Drag-and-drop init failed", e); } renderTriggerSettingsList();
@@ -1272,24 +1278,44 @@ function applyTheme(t) {
 
 function updateSettings() {
   settings.theme = document.getElementById('themeSelect').value; settings.timeFormat = document.getElementById('timeFormatSelect').value; settings.currency = document.getElementById('currencySelect').value;
-  settings.dailyLimit = parseInt(document.getElementById('dailyLimitInput').value) || 15; settings.packPrice = parseFloat(document.getElementById('packPriceInput').value) || 20; settings.packSize = parseInt(document.getElementById('packSizeInput').value) || 20;
+  settings.dailyLimit = Math.max(1, Math.min(100, parseInt(document.getElementById('dailyLimitInput').value) || 15));
+  settings.packPrice = Math.max(0, Math.min(9999, parseFloat(document.getElementById('packPriceInput').value) || 0));
+  settings.packSize = Math.max(1, Math.min(100, parseInt(document.getElementById('packSizeInput').value) || 20));
   settings.lockSecs = parseInt(document.getElementById('lockSecsInput').value) || 300; settings.haptics = document.getElementById('hapticsInput').checked;
-  settings.motivation = document.getElementById('motivationInput').value;
+  settings.motivation = document.getElementById('motivationInput').value.substring(0, 100);
   const prevAutoReduce = settings.autoReduce;
   settings.autoReduce = document.getElementById('autoReduceInput').checked;
   if (settings.autoReduce && !prevAutoReduce) {
     localStorage.setItem('smoke_last_reduce_date', new Date().toDateString());
   }
-  if (settings.packSize <= 0) settings.packSize = 20;
-  localStorage.setItem('smoke_settings', JSON.stringify(settings)); 
+  localStorage.setItem('smoke_settings', JSON.stringify(settings));
   if (window.posthog) posthog.capture('settings_updated', { theme: settings.theme, dailyLimit: settings.dailyLimit, autoReduce: settings.autoReduce });
-  applyTheme(settings.theme); updateCostPerCigDisplay(); 
+  applyTheme(settings.theme); updateCostPerCigDisplay();
   try { updateUI(); } catch(err){}
   if(!document.getElementById('page-insights').classList.contains('hidden')) renderAllCharts();
   if(!document.getElementById('page-history').classList.contains('hidden')) renderHistory('fullHistoryList');
 }
 
 function updateCostPerCigDisplay() { const el = document.getElementById('costPerCigDisplay'); if (el) el.innerText = `${settings.currency} ${(settings.packPrice / settings.packSize).toFixed(2)}`; }
+
+window.updateQuitDate = function() {
+  const el = document.getElementById('quitDateInput');
+  if(!el) return;
+  const today = new Date().toISOString().split('T')[0];
+  el.max = today;
+  if (el.value && el.value > today) el.value = today;
+  settings.quitDate = el.value || '';
+  localStorage.setItem('smoke_settings', JSON.stringify(settings));
+  showToast(settings.quitDate ? `Quit date set for ${settings.quitDate}` : 'Quit date cleared');
+}
+
+window.resetSettings = function() {
+  if (!confirm('Reset all settings to defaults? Your logs and progress will be kept.')) return;
+  const keepLogs = { quitDate: settings.quitDate };
+  settings = Object.assign({}, DEFAULT_SETTINGS, keepLogs);
+  localStorage.setItem('smoke_settings', JSON.stringify(settings));
+  location.reload();
+}
 
 function updateUI() {
   document.getElementById('shieldCount').innerText = waves.length;
