@@ -9,7 +9,8 @@ const DEFAULT_SETTINGS = {
   theme: 'white', haptics: true, dailyLimit: 15, lockSecs: 300, packPrice: 20, packSize: 20, currency: 'AED', timeFormat: '12h', motivation: '', autoReduce: false, quitDate: '',
   notifWaveComplete: true, notifGapWidened: true, notifInactivity: true, notifPredictive: true, notifEnableSos: false
 };
-let settings = Object.assign({}, DEFAULT_SETTINGS, JSON.parse(localStorage.getItem('smoke_settings')) || {});
+let settings;
+try { settings = Object.assign({}, DEFAULT_SETTINGS, JSON.parse(localStorage.getItem('smoke_settings')) || {}); } catch(e) { settings = Object.assign({}, DEFAULT_SETTINGS); }
 if (!settings.packSize || settings.packSize <= 0) settings.packSize = 20;
 if (!settings.timeFormat) settings.timeFormat = '12h';
 
@@ -79,19 +80,15 @@ async function registerServiceWorker(retries = 3) {
 
       // Check if app is ready for offline use
       if (reg.active) {
-        reg.active.postMessage({ type: 'GET_CACHE_STATUS' });
+        const mc = new MessageChannel();
+        mc.port1.onmessage = (e) => {
+          if (e.data && e.data.version) {
+            console.log("✅ Offline cache ready - Version:", e.data.version);
+            setTimeout(() => { showOfflineReadyToast(); }, 3000);
+          }
+        };
+        reg.active.postMessage({ type: 'GET_CACHE_STATUS' }, [mc.port2]);
       }
-
-      // Listen for cache status response
-      navigator.serviceWorker.addEventListener('message', (e) => {
-        if (e.data && e.data.version) {
-          console.log("✅ Offline cache ready - Version:", e.data.version);
-          // Show offline ready indicator after 3 seconds
-          setTimeout(() => {
-            showOfflineReadyToast();
-          }, 3000);
-        }
-      });
 
       // Listen for updates
       reg.addEventListener('updatefound', () => {
@@ -208,8 +205,8 @@ if (settings.autoReduce) {
     } else {
         let diffDays = Math.floor((new Date() - new Date(lastReduceDate)) / (1000 * 60 * 60 * 24));
         let weeksMissed = Math.floor(diffDays / 7);
-        if (weeksMissed > 0 && settings.dailyLimit > 1) {
-            let decrement = Math.min(weeksMissed, settings.dailyLimit - 1);
+        if (weeksMissed > 0 && settings.dailyLimit > 2) {
+            let decrement = Math.min(weeksMissed, settings.dailyLimit - 2);
             settings.dailyLimit -= decrement;
             localStorage.setItem('smoke_settings', JSON.stringify(settings));
             localStorage.setItem('smoke_last_reduce_date', nowStr);
@@ -217,7 +214,9 @@ if (settings.autoReduce) {
     }
 }
 
-let triggers = JSON.parse(localStorage.getItem('smoke_triggers')) || ['🏠 Home', '💼 Work', '🚗 Car / Commute', '🎉 Outside / Social', '😰 Stress', '🍽️ After Meal', '☕ Chai / Coffee', '📱 Boredom', '👥 Peer Pressure', '🍺 Alcohol', '😡 Anger', '🌙 Habit'];
+const DEFAULT_TRIGGERS = ['🏠 Home', '💼 Work', '🚗 Car / Commute', '🎉 Outside / Social', '😰 Stress', '🍽️ After Meal', '☕ Chai / Coffee', '📱 Boredom', '👥 Peer Pressure', '🍺 Alcohol', '😡 Anger', '🌙 Habit'];
+let triggers;
+try { triggers = JSON.parse(localStorage.getItem('smoke_triggers')) || DEFAULT_TRIGGERS; } catch(e) { triggers = DEFAULT_TRIGGERS; }
 const CHART_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316', '#14B8A6', '#6366F1', '#F43F5E', '#84CC16', '#0EA5E9', '#D946EF', '#EAB308', '#1D4ED8', '#047857', '#B45309', '#BE123C', '#6D28D9'];
 
 const INTENSITY_LABELS = {1: 'Mild', 2: 'Light', 3: 'Moderate', 4: 'Severe', 5: 'Extreme'};
@@ -604,11 +603,11 @@ function sendSystemNotification(title, body, key) {
   }
 }
 
-function requestNotifPermission() {
+function requestNotifPermission(onGranted, onDenied) {
   if (typeof Notification === 'undefined') { showToast("Notifications not supported in browser"); return; }
   Notification.requestPermission().then(perm => {
-    if(perm === 'granted') { showToast("Smart Reminders Enabled! 🔔"); }
-    else { showToast("Notification Permission Denied"); }
+    if(perm === 'granted') { showToast("Smart Reminders Enabled! 🔔"); if(onGranted) onGranted(); }
+    else { showToast("Notification Permission Denied"); if(onDenied) onDenied(); }
   });
 }
 
@@ -618,7 +617,11 @@ function toggleNotifSetting(key) {
   settings[key] = el.checked;
   localStorage.setItem('smoke_settings', JSON.stringify(settings));
   if(el.checked && typeof Notification !== 'undefined' && Notification.permission !== 'granted') {
-    requestNotifPermission();
+    requestNotifPermission(null, () => {
+      el.checked = false;
+      settings[key] = false;
+      localStorage.setItem('smoke_settings', JSON.stringify(settings));
+    });
   }
 }
 
@@ -1268,9 +1271,9 @@ function showConfirm(title, message, onConfirm, type) {
 function closeConfirmModal() { document.getElementById('confirmModal').classList.add('hidden'); pendingConfirmCallback = null; }
 function confirmYes() { const cb = pendingConfirmCallback; closeConfirmModal(); if(cb) cb(); }
 
-const THEME_META_COLORS = { white: '#F8FAFC', carbon: '#000000', aurora: '#0B0B14', oled: '#000000', paper: '#FAF6F0', calm: '#F5F5F0', default: '#090A0F' };
-const LIGHT_THEMES = ['white', 'paper', 'calm'];
-function isLightTheme() { return LIGHT_THEMES.includes(settings.theme) || document.documentElement.classList.contains('theme-white') || document.documentElement.classList.contains('theme-paper') || document.documentElement.classList.contains('theme-calm'); }
+const THEME_META_COLORS = { white: '#F8FAFC', default: '#090A0F', paper: '#FAF6F0', oled: '#000000', aurora: '#0B0B14', ocean: '#132F4C' };
+const LIGHT_THEMES = ['white', 'paper'];
+function isLightTheme() { return LIGHT_THEMES.includes(settings.theme) || document.documentElement.classList.contains('theme-white') || document.documentElement.classList.contains('theme-paper'); }
 
 function applyTheme(t) { 
   document.body.className = document.body.className.replace(/theme-\w+/g, '').trim(); document.documentElement.className = document.documentElement.className.replace(/theme-\w+/g, '').trim(); 
@@ -1317,6 +1320,7 @@ window.resetSettings = function() {
   const keepLogs = { quitDate: settings.quitDate };
   settings = Object.assign({}, DEFAULT_SETTINGS, keepLogs);
   localStorage.setItem('smoke_settings', JSON.stringify(settings));
+  localStorage.removeItem('smoke_last_reduce_date');
   location.reload();
 }
 
@@ -1329,6 +1333,17 @@ function updateUI() {
   let streak = 0; let slipDays = 0; let logsByDate = {};
   logs.forEach(l => { if(l && l.timestamp) { let dStr = new Date(l.timestamp).toDateString(); logsByDate[dStr] = (logsByDate[dStr] || 0) + 1; } });
   let todayStr = new Date().toDateString(); if (!logsByDate[todayStr]) logsByDate[todayStr] = 0;
+  // Fill zero-log days between earliest log and today so clean days count in streak
+  const dateKeys = Object.keys(logsByDate);
+  if (dateKeys.length > 1) {
+    const sorted = dateKeys.map(d => new Date(d)).sort((a, b) => a - b);
+    const earliest = sorted[0];
+    const todayDate = new Date();
+    for (let d = new Date(earliest); d <= todayDate; d = new Date(d.getTime() + 86400000)) {
+      const ds = d.toDateString();
+      if (!logsByDate[ds]) logsByDate[ds] = 0;
+    }
+  }
   let uniqueDates = Object.keys(logsByDate).sort((a,b) => new Date(b) - new Date(a));
   for (let dStr of uniqueDates) { if (logsByDate[dStr] <= settings.dailyLimit) { streak++; } else { if (slipDays < 2) { slipDays++; streak++; } else break; } }
   document.getElementById('homeStreak').innerText = `🔥 ${streak} Day Streak`;
@@ -1703,7 +1718,13 @@ function closeShieldDashboard() { document.getElementById('shieldDashboardModal'
 
 function exportJSON() {
   if(!logs || logs.length === 0) { showToast("No data to backup yet."); return; }
-  const data = { logs, settings, triggers, waves, version: '1.6' };
+  const data = { logs, settings, triggers, waves, version: '1.7' };
+  // Include all additional data
+  try { data.waveAttempts = JSON.parse(localStorage.getItem('smoke_wave_attempts')) || []; } catch(e) {}
+  try { data.progressPhotos = JSON.parse(localStorage.getItem('smoke_progress_photos')) || []; } catch(e) {}
+  try { data.savingsGoal = JSON.parse(localStorage.getItem('smoke_savings_goal')) || {}; } catch(e) {}
+  try { data.completedChallenges = JSON.parse(localStorage.getItem('smoke_completed_challenges')) || {}; } catch(e) {}
+  const pinHash = localStorage.getItem('smoke_pin_hash'); if (pinHash) data.pinHash = pinHash;
   const blob = new Blob([JSON.stringify(data)], { type: "application/json" }); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.setAttribute("href", url); link.setAttribute("download", `SmokeGap_Backup_${new Date().toISOString().slice(0,10)}.json`); document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url);
   localStorage.setItem('smoke_last_backup', new Date().getTime().toString());
   const banner = document.getElementById('backupReminderBanner'); if(banner) banner.classList.add('hidden');
@@ -1723,6 +1744,11 @@ function importJSON(event) {
         if(Array.isArray(data.waves)) localStorage.setItem('smoke_waves', JSON.stringify(data.waves));
         if(Array.isArray(data.triggers)) localStorage.setItem('smoke_triggers', JSON.stringify(data.triggers));
         if(data.settings) localStorage.setItem('smoke_settings', JSON.stringify(Object.assign({}, DEFAULT_SETTINGS, data.settings)));
+        if(Array.isArray(data.waveAttempts)) localStorage.setItem('smoke_wave_attempts', JSON.stringify(data.waveAttempts));
+        if(Array.isArray(data.progressPhotos)) localStorage.setItem('smoke_progress_photos', JSON.stringify(data.progressPhotos));
+        if(data.savingsGoal && typeof data.savingsGoal === 'object') localStorage.setItem('smoke_savings_goal', JSON.stringify(data.savingsGoal));
+        if(data.completedChallenges && typeof data.completedChallenges === 'object') localStorage.setItem('smoke_completed_challenges', JSON.stringify(data.completedChallenges));
+        if(data.pinHash) localStorage.setItem('smoke_pin_hash', data.pinHash);
         localStorage.setItem('smoke_last_backup', new Date().getTime().toString());
         location.reload();
       });
@@ -1743,8 +1769,8 @@ function checkBackupReminder() {
   } else banner.classList.add('hidden');
 }
 
-function resetData(type) { 
-  if(type === '24h') { showConfirm("Delete last 24h logs?", "This will permanently remove cigarette logs from the last 24 hours. Your Shield achievements are never affected.", () => { const now = new Date().getTime(); logs = logs.filter(l => (now - l.timestamp) > 86400000); localStorage.setItem('smoke_logs', JSON.stringify(logs)); location.reload(); }); } 
+function resetData(type) {
+  if(type === '24h') { showConfirm("Delete last 24h logs?", "This will permanently remove cigarette logs from the last 24 hours. Your Shield achievements are never affected.", () => { const now = new Date().getTime(); logs = logs.filter(l => (now - l.timestamp) > 86400000); logs.sort((a, b) => a.timestamp - b.timestamp); for (let i = 0; i < logs.length; i++) { logs[i].gap = i > 0 ? Math.round((logs[i].timestamp - logs[i-1].timestamp) / 60000) : null; } localStorage.setItem('smoke_logs', JSON.stringify(logs)); location.reload(); }); }
   else { showConfirm("Wipe ALL data?", "This cannot be undone. All logs, settings, and tags will be erased.", () => { localStorage.clear(); location.reload(); }); }
 }
 
@@ -1754,7 +1780,7 @@ function exportLogsCSV() {
   logs.forEach(l => {
     let d = new Date(l.timestamp); let tagsArr = [];
     if (Array.isArray(l.tags) && l.tags.length > 0) tagsArr = l.tags; else if (l.trigger) tagsArr = [l.trigger]; else tagsArr = ['Uncategorized'];
-    let tagsStr = tagsArr.join(' | ');
+    let tagsStr = tagsArr.join(' | ').replace(/"/g, '""');
     csvContent += `${l.timestamp},"${d.toLocaleDateString()}","${formatAppTime(d)}",${l.gap ?? ''},"${tagsStr}",${l.intensity||3},${l.lat||''},${l.lng||''}\n`;
   });
   let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); let url = URL.createObjectURL(blob); let link = document.createElement("a"); link.setAttribute("href", url); link.setAttribute("download", `SmokeGap_Logs_${new Date().toISOString().slice(0,10)}.csv`); document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url);
@@ -1853,9 +1879,10 @@ window.toggleHistoryClearBtn = function() {
     const searchVal = document.getElementById('historySearch')?.value.trim() || '';
     const fromVal = document.getElementById('historyDateFrom')?.value || '';
     const toVal = document.getElementById('historyDateTo')?.value || '';
+    const tagVal = document.getElementById('historyTagFilter')?.value || 'all';
     const btn = document.getElementById('historyClearFilters');
     if (btn) {
-        btn.classList.toggle('hidden', !(searchVal || fromVal || toVal));
+        btn.classList.toggle('hidden', !(searchVal || fromVal || toVal || tagVal !== 'all'));
     }
     renderHistory('fullHistoryList');
 }
@@ -1864,17 +1891,21 @@ window.clearHistoryFilters = function() {
     const search = document.getElementById('historySearch');
     const from = document.getElementById('historyDateFrom');
     const to = document.getElementById('historyDateTo');
+    const tag = document.getElementById('historyTagFilter');
     const btn = document.getElementById('historyClearFilters');
     if (search) search.value = '';
     if (from) from.value = '';
     if (to) to.value = '';
+    if (tag) tag.value = 'all';
     if (btn) btn.classList.add('hidden');
     renderHistory('fullHistoryList');
 }
 
 window.loadMoreHistory = function() {
+    const scrollY = window.scrollY;
     historyRenderLimit += 30;
     renderHistory('fullHistoryList');
+    requestAnimationFrame(() => window.scrollTo(0, scrollY));
 }
 
 function renderHistory(tId = 'fullHistoryList', homeLimit = 3) {
@@ -1897,7 +1928,8 @@ function renderHistory(tId = 'fullHistoryList', homeLimit = 3) {
                 const tagsText = tagsArr.join(' ').toLowerCase();
                 const dateText = l.timestamp ? new Date(l.timestamp).toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric', year:'numeric' }).toLowerCase() : '';
                 const timeText = l.timestamp ? formatAppTime(new Date(l.timestamp)).toLowerCase() : '';
-                return tagsText.includes(searchVal) || dateText.includes(searchVal) || timeText.includes(searchVal);
+                const noteText = (l.note || '').toLowerCase();
+                return tagsText.includes(searchVal) || dateText.includes(searchVal) || timeText.includes(searchVal) || noteText.includes(searchVal);
             });
         }
 
@@ -1947,18 +1979,22 @@ function renderHistory(tId = 'fullHistoryList', homeLimit = 3) {
         else btnBox.classList.add('hidden');
     }
 
-    if (tId === 'homeRecentLogs') { c.innerHTML = mappedLogs.map(l => renderHistoryItem(l)).join(''); } 
+    if (tId === 'homeRecentLogs') {
+      let prevGap = null;
+      c.innerHTML = mappedLogs.map(l => { const item = renderHistoryItem(l, prevGap); prevGap = l.gap; return item; }).join('');
+    }
     else {
       let groups = {};
       mappedLogs.forEach(l => { const k = new Date(l.timestamp).toDateString(); if(!groups[k]) groups[k] = []; groups[k].push(l); });
       const todayStr = new Date().toDateString(); let yest = new Date(); yest.setDate(yest.getDate() - 1); const yestStr = yest.toDateString();
       let html = '';
+      let prevGap = null;
       for (let k in groups) {
         let headerLabel = k;
         if (k === todayStr) headerLabel = 'TODAY'; else if (k === yestStr) headerLabel = 'YESTERDAY';
         else { const d = new Date(k); headerLabel = `${d.toLocaleDateString('en-US', {weekday:'short'}).toUpperCase()}, ${d.toLocaleDateString('en-US', {month:'short', day:'numeric'}).toUpperCase()}`; }
         html += `<div class="pt-4 pb-1 flex items-center justify-between"><h4 class="text-[10px] font-bold uppercase tracking-widest text-gray-500">${headerLabel}</h4><span class="text-xs font-black px-2.5 py-1 rounded-full" style="background: var(--input-bg); color: var(--accent);">${groups[k].length} ${groups[k].length === 1 ? 'cig' : 'cigs'}</span></div>`;
-        html += `<div class="space-y-3">` + groups[k].map(l => renderHistoryItem(l)).join('') + `</div>`;
+        html += `<div class="space-y-3">` + groups[k].map(l => { const item = renderHistoryItem(l, prevGap); prevGap = l.gap; return item; }).join('') + `</div>`;
       }
       c.innerHTML = html;
     }
@@ -1966,12 +2002,11 @@ function renderHistory(tId = 'fullHistoryList', homeLimit = 3) {
   } catch (err) { console.error("renderHistory Error", err); }
 }
 
-function renderHistoryItem(l) {
-  const prev = l.origIdx > 0 ? logs[l.origIdx - 1] : null;
+function renderHistoryItem(l, prevGap) {
   let trendClass = 'bg-gray-500/10 text-gray-400', trendIcon = 'minus', valueColor = 'var(--accent)';
-  if (l.gap !== null && l.gap !== undefined && prev && prev.gap !== null && prev.gap !== undefined) {
-    if (l.gap > prev.gap) { trendClass = 'bg-emerald-500/10 text-emerald-500'; trendIcon = 'trending-up'; valueColor = '#10B981'; }
-    else if (l.gap < prev.gap) { trendClass = 'bg-red-500/10 text-red-500'; trendIcon = 'trending-down'; valueColor = '#EF4444'; }
+  if (l.gap !== null && l.gap !== undefined && prevGap !== null && prevGap !== undefined) {
+    if (l.gap > prevGap) { trendClass = 'bg-emerald-500/10 text-emerald-500'; trendIcon = 'trending-up'; valueColor = '#10B981'; }
+    else if (l.gap < prevGap) { trendClass = 'bg-red-500/10 text-red-500'; trendIcon = 'trending-down'; valueColor = '#EF4444'; }
   }
   
   let tagsArr = [];
@@ -2604,8 +2639,40 @@ window.closePinSetupModal = closePinSetupModal; window.savePinSetup = savePinSet
 window.requestNotifPermission = requestNotifPermission; window.toggleNotifSetting = toggleNotifSetting;
 window.closeSosInterrupter = closeSosInterrupter;
 
-
-
+// Handle wave completion while app was backgrounded
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    // Check if wave should have completed while app was hidden
+    if (waveEndTime > 0 && Date.now() >= waveEndTime) {
+      if (waveTimer) clearInterval(waveTimer);
+      waveEndTime = 0; localStorage.removeItem('smoke_wave_end');
+      const overlay = document.getElementById('waveOverlay');
+      if (overlay) overlay.classList.add('hidden');
+      waves.push(Date.now()); localStorage.setItem('smoke_waves', JSON.stringify(waves));
+      logWaveAttempt('won');
+      resetRideButton();
+      showToast("🛡️ Craving Defeated! +1 Shield");
+      sendSystemNotification("🛡️ Craving Defeated!", "Awesome job! You successfully rode out the craving wave. +1 Shield unlocked.", 'notifWaveComplete');
+      celebrateBadgeIfUnlocked();
+      try { updateUI(); } catch(e) {}
+    }
+    // Resume breathing exercise if it was active
+    if (breathActive && breathPaused) {
+      breathPaused = false;
+      const btn = document.getElementById('breathPauseBtn');
+      if (btn) btn.innerText = 'Pause';
+      runBreathPhase(breathCurrentExercise, breathCurrentPhase);
+    }
+  } else {
+    // App went to background — pause breathing exercise
+    if (breathActive && !breathPaused) {
+      breathPaused = true;
+      clearTimeout(breathTimeout); clearInterval(breathInterval);
+      const btn = document.getElementById('breathPauseBtn');
+      if (btn) btn.innerText = 'Resume';
+    }
+  }
+});
 window.deleteLogFromHistory = function(idx) {
   if (logs[idx]) {
     showConfirm("Delete this log?", "This cannot be undone.", () => {
@@ -2701,16 +2768,17 @@ function renderHealthTimeline() {
 
 // ==================== MONEY VISUALIZER ====================
 const MONEY_EQUIVALENTS = [
-  { emoji: '☕', label: 'Coffees', price: 15 },
-  { emoji: '🍕', label: 'Pizzas', price: 45 },
-  { emoji: '🎬', label: 'Movie Tickets', price: 60 },
-  { emoji: '📚', label: 'Books', price: 40 },
-  { emoji: '💪', label: 'Gym Sessions', price: 30 },
-  { emoji: '🚗', label: 'Uber Rides', price: 25 },
-  { emoji: '📺', label: 'Netflix Months', price: 55 },
-  { emoji: '⛽', label: 'Petrol Fills', price: 100 },
-  { emoji: '🎮', label: 'PS5 Games', price: 250 },
+  { emoji: '☕', label: 'Coffees', usd: 4 },
+  { emoji: '🍕', label: 'Pizzas', usd: 12 },
+  { emoji: '🎬', label: 'Movie Tickets', usd: 16 },
+  { emoji: '📚', label: 'Books', usd: 11 },
+  { emoji: '💪', label: 'Gym Sessions', usd: 8 },
+  { emoji: '🚗', label: 'Uber Rides', usd: 7 },
+  { emoji: '📺', label: 'Netflix Months', usd: 15 },
+  { emoji: '⛽', label: 'Petrol Fills', usd: 27 },
+  { emoji: '🎮', label: 'PS5 Games', usd: 68 },
 ];
+const CURRENCY_RATES_FROM_USD = { AED: 3.67, USD: 1, EUR: 0.92, GBP: 0.79, INR: 85.5 };
 
 function computeTotalSaved() {
   let pricePerStick = settings.packPrice / settings.packSize;
@@ -2731,8 +2799,10 @@ function renderMoneyVisualizer() {
   if (totalEl) totalEl.innerText = `${settings.currency} ${Math.round(total)}`;
   if (cardTotal) cardTotal.innerText = `${settings.currency} ${Math.round(total)}`;
   if (!grid) return;
+  const rate = CURRENCY_RATES_FROM_USD[settings.currency] || CURRENCY_RATES_FROM_USD.AED;
   grid.innerHTML = MONEY_EQUIVALENTS.map(eq => {
-    const count = Math.floor(total / eq.price);
+    const localPrice = eq.usd * rate;
+    const count = Math.floor(total / localPrice);
     return `<div class="money-equiv-item">
       <span class="money-equiv-icon">${eq.emoji}</span>
       <span class="money-equiv-count">${count}</span>
@@ -2861,6 +2931,7 @@ window.startRelapseRecovery = function() {
 // Patch actuallyLogCigarette to detect relapse
 const _origActuallyLogCigarette = actuallyLogCigarette;
 actuallyLogCigarette = function() {
+  const wasLocked = new Date().getTime() < lockEndTime;
   const allGaps = logs.map(l => l.gap).filter(g => g !== null && g !== undefined);
   const avgGapMin = allGaps.length ? allGaps.reduce((a, b) => a + b, 0) / allGaps.length : 0;
   const prevTimestamp = logs.length > 0 ? logs[logs.length - 1].timestamp : null;
@@ -2871,8 +2942,7 @@ actuallyLogCigarette = function() {
 
   _origActuallyLogCigarette();
 
-  if (isRelapse && relapseLogIdx === null) {
-    // The log was just added, it's the last one
+  if (isRelapse && relapseLogIdx === null && !wasLocked) {
     relapseLogIdx = logs.length - 1;
     showRelapseModal(relapseLogIdx, currentGapMin);
   }
@@ -2891,6 +2961,7 @@ let breathTimeout = null;
 let breathInterval = null;
 let breathCycleCount = 0;
 let breathCurrentExercise = null;
+let breathCurrentPhase = 'inhale';
 
 function vibratePattern(pattern) {
   if (settings.haptics && navigator.vibrate) navigator.vibrate(pattern);
@@ -2898,6 +2969,7 @@ function vibratePattern(pattern) {
 
 function runBreathPhase(exercise, phase, callback) {
   if (!breathActive || breathPaused) return;
+  breathCurrentPhase = phase;
   const circle = document.getElementById('breathCircle');
   const phaseText = document.getElementById('breathPhaseText');
   const timerText = document.getElementById('breathTimerText');
@@ -2993,6 +3065,7 @@ window.selectBreathing = function(type) {
   breathActive = true;
   breathPaused = false;
   breathCycleCount = 0;
+  breathCurrentPhase = 'inhale';
   breathCurrentExercise = exercise;
 
   document.getElementById('breathSelector').classList.add('hidden');
@@ -3105,7 +3178,10 @@ function saveOnboardingSetup() {
 
   if (onboardGoal === 'quit') {
     settings.autoReduce = true;
-    if (quitDate) localStorage.setItem('smoke_quit_date', quitDate);
+    if (quitDate) {
+      settings.quitDate = quitDate;
+      localStorage.setItem('smoke_quit_date', quitDate);
+    }
   } else if (onboardGoal === 'reduce') {
     settings.autoReduce = true;
   } else {

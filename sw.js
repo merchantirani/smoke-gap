@@ -1,5 +1,5 @@
 // PAUSE SERVICE WORKER - Offline Caching v3.0 (Mobile Optimized)
-const CACHE_VERSION = 'v7';
+const CACHE_VERSION = 'v9';
 const CACHE_NAME = `pause-cache-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `pause-runtime-${CACHE_VERSION}`;
 
@@ -155,7 +155,8 @@ async function staleWhileRevalidate(request) {
     })
     .catch(err => {
       console.log('[SW] CDN fetch failed:', request.url);
-      return cached;
+      if (cached) return cached;
+      return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
     });
 
   return cached || fetchPromise;
