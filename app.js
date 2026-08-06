@@ -2334,7 +2334,7 @@ function renderAllCharts() {
     ? { backgroundColor: 'rgba(255, 255, 255, 0.96)', titleColor: '#0F172A', bodyColor: '#334155', titleFont: { family: APP_FONT_FAMILY, size: 11, weight: '700' }, bodyFont: { family: APP_FONT_FAMILY, size: 11, weight: '600' }, borderColor: 'rgba(203, 213, 225, 0.9)', borderWidth: 1, padding: 12, cornerRadius: 12, displayColors: false }
     : { backgroundColor: 'rgba(15, 23, 42, 0.96)', titleColor: '#FFFFFF', bodyColor: '#CBD5E1', titleFont: { family: APP_FONT_FAMILY, size: 11, weight: '700' }, bodyFont: { family: APP_FONT_FAMILY, size: 11, weight: '600' }, borderColor: 'rgba(255, 255, 255, 0.08)', borderWidth: 1, padding: 12, cornerRadius: 12, displayColors: false };
 
-  const coloredTooltipLabel = { callbacks: { label: (ctx) => { let val; if (ctx.parsed && typeof ctx.parsed.y === 'number') val = ctx.parsed.y; else if (ctx.parsed && typeof ctx.parsed === 'number') val = ctx.parsed; else val = ctx.formattedValue; const color = ctx.dataset?.borderColor || ctx.dataset?.backgroundColor || '#10B981'; return { text: ` ${ctx.dataset?.label || ''}: ${val}`, fillStyle: color }; } } };
+  const coloredTooltipLabel = { callbacks: { label: (ctx) => { let val; if (ctx.parsed && typeof ctx.parsed.y === 'number') val = ctx.parsed.y; else if (ctx.parsed && typeof ctx.parsed === 'number') val = ctx.parsed; else val = ctx.formattedValue; return ` ${ctx.dataset?.label || ''}: ${val}`; } } };
 
   const proOptions = { responsive: true, maintainAspectRatio: false, animation: { duration: 600, easing: 'easeOutQuart' }, interaction: { mode: 'index', intersect: false }, layout: { padding: { left: 0, right: 0, top: 10, bottom: 0 } }, plugins: { legend: { display: false }, tooltip: { ...chartTooltipTheme, ...coloredTooltipLabel } }, scales: { x: { grid: { display: false }, ticks: { color: chartTextColor, font: { family: APP_FONT_FAMILY, size: 9, weight: '600' }, maxTicksLimit: 4 } }, y: { beginAtZero: true, grid: { color: 'rgba(156, 163, 175, 0.05)', drawBorder: false }, ticks: { color: chartTextColor, font: { family: APP_FONT_FAMILY, size: 9, weight: '600' }, padding: 6 } } } };
   const createGradient = (ctx, colorHex) => { let g = ctx.createLinearGradient(0, 0, 0, 180); g.addColorStop(0, colorHex); g.addColorStop(1, 'rgba(0,0,0,0)'); return g; };
@@ -2357,9 +2357,25 @@ function renderAllCharts() {
   const fullDateTimeTooltip = { callbacks: { title: (items) => { if(!items.length) return ''; const l = activeLogs[items[0].dataIndex]; if(!l) return ''; const d = new Date(l.timestamp); return `${d.toLocaleDateString([], {month:'short', day:'numeric'})} · ${formatAppTime(d)}`; } } };
   const mergeTooltip = (base, extra) => ({ ...base, ...extra, callbacks: { ...(base.callbacks || {}), ...(extra.callbacks || {}) } });
 
+  // Downsample large datasets for readability
+  function downsample(lbls, vals, maxPoints) {
+    if (lbls.length <= maxPoints) return { labels: lbls, data: vals };
+    const bucketSize = Math.ceil(lbls.length / maxPoints);
+    const newLabels = [], newData = [];
+    for (let i = 0; i < lbls.length; i += bucketSize) {
+      const chunk = vals.slice(i, i + bucketSize).filter(v => v !== null && v !== undefined);
+      newLabels.push(lbls[i]);
+      newData.push(chunk.length > 0 ? Math.round(chunk.reduce((a,b) => a+b, 0) / chunk.length) : 0);
+    }
+    return { labels: newLabels, data: newData };
+  }
+
+  const MAX_CHART_POINTS = 30;
+  const ds1 = downsample(labels, gaps, MAX_CHART_POINTS);
+
   try {
     const ctx1 = document.getElementById('chart1').getContext('2d');
-    upsertChart(1, ctx1, { type: 'line', data: { labels: labels, datasets: [{ label: 'Gap (mins)', data: gaps, borderColor: '#10B981', backgroundColor: createGradient(ctx1, 'rgba(16, 185, 129, 0.25)'), borderWidth: 3, tension: 0.4, fill: true, pointRadius: 0, pointHitRadius: 15 }] }, options: { ...proOptions, plugins: { ...proOptions.plugins, tooltip: mergeTooltip(proOptions.plugins.tooltip, fullDateTimeTooltip) }, scales: { ...proOptions.scales, x: { ...proOptions.scales.x, offset: true } } }, plugins: [crosshairPlugin] });
+    upsertChart(1, ctx1, { type: 'line', data: { labels: ds1.labels, datasets: [{ label: 'Gap (mins)', data: ds1.data, borderColor: '#10B981', backgroundColor: createGradient(ctx1, 'rgba(16, 185, 129, 0.25)'), borderWidth: 3, tension: 0.4, fill: true, pointRadius: ds1.data.length <= 15 ? 3 : 0, pointHitRadius: 15 }] }, options: { ...proOptions, plugins: { ...proOptions.plugins, tooltip: mergeTooltip(proOptions.plugins.tooltip, fullDateTimeTooltip) }, scales: { ...proOptions.scales, x: { ...proOptions.scales.x, offset: true } } }, plugins: [crosshairPlugin] });
   } catch(e){}
 
   try {
@@ -2380,7 +2396,9 @@ function renderAllCharts() {
       });
     }
     const ctx3 = document.getElementById('chart3').getContext('2d');
-    upsertChart(3, ctx3, { type: 'line', data: { labels: labels, datasets: [{ label: 'Spent', data: spendData, borderColor: '#EF4444', backgroundColor: createGradient(ctx3, 'rgba(239, 68, 68, 0.15)'), fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0, pointHitRadius: 15 }, { label: 'Saved', data: savedData, borderColor: '#10B981', backgroundColor: createGradient(ctx3, 'rgba(16, 185, 129, 0.15)'), fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0, pointHitRadius: 15 }] }, options: { ...proOptions, plugins: { ...proOptions.plugins, tooltip: mergeTooltip(proOptions.plugins.tooltip, fullDateTimeTooltip) }, scales: { ...proOptions.scales, x: { ...proOptions.scales.x, offset: true } } }, plugins: [crosshairPlugin] });
+    const ds3s = downsample(labels, spendData, MAX_CHART_POINTS);
+    const ds3v = downsample(labels, savedData, MAX_CHART_POINTS);
+    upsertChart(3, ctx3, { type: 'line', data: { labels: ds3s.labels, datasets: [{ label: 'Spent', data: ds3s.data, borderColor: '#EF4444', backgroundColor: createGradient(ctx3, 'rgba(239, 68, 68, 0.15)'), fill: true, tension: 0.4, borderWidth: 3, pointRadius: ds3s.data.length <= 15 ? 3 : 0, pointHitRadius: 15 }, { label: 'Saved', data: ds3v.data, borderColor: '#10B981', backgroundColor: createGradient(ctx3, 'rgba(16, 185, 129, 0.15)'), fill: true, tension: 0.4, borderWidth: 3, pointRadius: ds3v.data.length <= 15 ? 3 : 0, pointHitRadius: 15 }] }, options: { ...proOptions, plugins: { ...proOptions.plugins, tooltip: mergeTooltip(proOptions.plugins.tooltip, fullDateTimeTooltip) }, scales: { ...proOptions.scales, x: { ...proOptions.scales.x, offset: true } } }, plugins: [crosshairPlugin] });
     let finalSaved = savedData.length > 0 ? savedData[savedData.length - 1] : '0.0';
     setBadge('badge-chart3', activeLogs.length > 0 ? `Saved ${settings.currency} ${finalSaved}` : '', 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20');
   } catch(e){}
