@@ -134,8 +134,8 @@
     .sheet-btn-danger { flex: 1; padding: 0.85rem 1rem; border-radius: 0.9rem; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.03em; text-align: center; display: flex; align-items: center; justify-content: center; gap: 0.375rem; background: rgba(239,68,68,0.1); color: #EF4444; border: 1px solid rgba(239,68,68,0.25); transition: transform 0.15s ease; }
     .sheet-btn-danger:active { transform: scale(0.97); }
     .dialog-card { background: var(--modal-bg); border: 1px solid var(--card-border); border-radius: 24px; box-shadow: 0 24px 64px rgba(0,0,0,0.4), 0 4px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06); }
-    .sheet-title { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.14em; color: var(--text-muted); }
-    .sheet-label { display: block; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); margin-bottom: 0.4rem; }
+    .sheet-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; color: var(--text-main); }
+    .sheet-label { display: block; font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); margin-bottom: 0.4rem; }
     .sheet-close { width: 30px; height: 30px; border-radius: 999px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: var(--input-bg); color: var(--text-muted); transition: transform 0.15s ease; }
     .sheet-close:active { transform: scale(0.9); }
     .sheet-input { position: relative; display: flex; align-items: center; width: 100%; background: var(--input-bg); border: 1px solid var(--card-border); border-radius: 0.85rem; padding: 0.8rem 0.9rem; }
@@ -244,6 +244,31 @@
     .premium-toggle .toggle-thumb { width: 1rem; height: 1rem; background: #fff; border-radius: 9999px; position: absolute; top: 0.125rem; left: 0.125rem; transition: transform 0.3s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
     .premium-toggle input:checked + .toggle-track .toggle-thumb { transform: translateX(1.25rem); }
     .premium-toggle input:focus + .toggle-track { box-shadow: 0 0 0 2px var(--accent-glow); }
+
+    /* ============ PREMIUM TYPOGRAPHY SYSTEM ============
+       Unify weight/size across the app. Premium apps keep
+       micro-labels light (semibold), never full bold. */
+    b, strong { font-weight: 600; }
+
+    /* Micro-labels: soften heavy bold → semibold, unify tracking */
+    .text-\[8px\].font-bold.uppercase,
+    .text-\[9px\].font-bold.uppercase,
+    .text-\[10px\].font-bold.uppercase,
+    .text-\[11px\].font-bold.uppercase,
+    .text-\[8px\].font-extrabold.uppercase,
+    .text-\[9px\].font-extrabold.uppercase,
+    .text-\[10px\].font-extrabold.uppercase {
+      font-weight: 600;
+      letter-spacing: 0.14em;
+    }
+    /* 8px is below the readable floor — bump to 9px */
+    .text-\[8px\].font-bold.uppercase { font-size: 9px; }
+
+    /* Stat values & key numbers: always Space Grotesk, crisp */
+    .numeric-display { font-family: 'Space Grotesk', monospace; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; -webkit-font-smoothing: antialiased; }
+
+    /* Header pills: consistent compact type */
+    .premium-card .text-\[8px\], .premium-card .text-\[9px\] { line-height: 1.4; }
   </style>
 </head>
 <body>
@@ -518,7 +543,7 @@
                    <div id="heroHorizonMarker" class="absolute top-0 bottom-0 w-0.5 bg-white shadow-[0_0_6px_#fff] z-10 hidden" style="left: 70%;"></div>
                  </div>
                  <div class="flex justify-between items-center px-1">
-                   <p class="text-[8px] text-gray-500 font-bold uppercase">Progress</p>
+                   <p class="text-[8px] font-bold uppercase" style="color: var(--text-muted);">Progress</p>
                    <p id="heroHorizonSub" class="text-[10px] font-bold text-amber-500 leading-tight">Target Avg: --</p>
                  </div>
                </div>
@@ -533,7 +558,7 @@
             <button id="watchDot3" onclick="window.switchWatchStyle(3)" class="w-2 h-2 rounded-full transition-all duration-300"></button>
           </div>
 
-          <div id="smartStatusWrapper" class="mt-2 px-4 py-1.5 rounded-full border transition-all duration-500 bg-gray-500/10 border-gray-500/20 text-gray-400">
+          <div id="smartStatusWrapper" class="mt-2 px-4 py-1.5 rounded-full border transition-all duration-500" style="background: var(--input-bg); border-color: var(--card-border); color: var(--text-muted);">
             <span id="smartStatusText" class="text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5">
               <i data-lucide="info" class="w-3 h-3"></i> Waiting for first log
             </span>
@@ -1043,7 +1068,7 @@
           <button onclick="window.exportLogsCSV()" class="w-full py-3 bg-sky-500/10 text-sky-500 font-bold text-xs rounded-xl text-center active:scale-95 transition-transform border border-sky-500/20 flex items-center justify-center gap-2"><i data-lucide="file-text" class="w-4 h-4"></i> Export CSV (Spreadsheet)</button>
           <button onclick="window.setupPin()" id="pinStatusBtn" class="w-full py-3 bg-indigo-500/10 text-indigo-500 font-bold text-xs rounded-xl text-center active:scale-95 transition-transform">Set App PIN</button>
           <button onclick="window.restartOnboarding()" class="w-full py-3 bg-purple-500/10 text-purple-500 font-bold text-xs rounded-xl text-center active:scale-95 transition-transform flex items-center justify-center gap-2"><i data-lucide="sparkles" class="w-4 h-4"></i> Show Tour Again</button>
-          <button onclick="window.resetSettings()" class="w-full py-3 bg-slate-500/10 text-slate-500 font-bold text-xs rounded-xl text-center active:scale-95 transition-transform flex items-center justify-center gap-2"><i data-lucide="settings" class="w-4 h-4"></i> Reset Settings to Defaults</button>
+          <button onclick="window.resetSettings()" class="w-full py-3 font-bold text-xs rounded-xl text-center active:scale-95 transition-transform flex items-center justify-center gap-2" style="background: var(--input-bg); color: var(--text-muted);"><i data-lucide="settings" class="w-4 h-4"></i> Reset Settings to Defaults</button>
           <button onclick="window.refreshAppCache()" class="w-full py-3 bg-cyan-500/10 text-cyan-500 font-bold text-xs rounded-xl text-center active:scale-95 transition-transform flex items-center justify-center gap-2"><i data-lucide="refresh-cw" class="w-4 h-4"></i> Refresh App (Clear Cache)</button>
           <div class="pt-2 border-t" style="border-color: var(--card-border);"></div>
           <p class="text-[8px] font-bold uppercase tracking-widest text-center" style="color: var(--text-muted);">Danger Zone</p>
@@ -1061,7 +1086,7 @@
             </div>
           </div>
           <div class="mt-3 space-y-2">
-            <a href="privacy.html" target="_blank" rel="noopener noreferrer" class="block w-full py-3 px-4 bg-slate-500/10 text-slate-500 font-bold text-xs rounded-xl text-center active:scale-95 transition-transform border border-slate-500/20 flex items-center justify-center gap-2">
+            <a href="privacy.html" target="_blank" rel="noopener noreferrer" class="block w-full py-3 px-4 font-bold text-xs rounded-xl text-center active:scale-95 transition-transform border flex items-center justify-center gap-2" style="background: var(--input-bg); color: var(--text-muted); border-color: var(--card-border);">
               <i data-lucide="file-text" class="w-4 h-4"></i> Privacy Policy
             </a>
             <p class="text-[9px] text-center" style="color: var(--text-muted);">Last updated: August 3, 2026</p>
