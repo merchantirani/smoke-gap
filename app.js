@@ -2243,7 +2243,8 @@ function renderAllCharts() {
   const totalEvents = activeLogs.length + activeWaves.length;
   const winRate = totalEvents > 0 ? Math.round((activeWaves.length / totalEvents) * 100) : 0;
   
-  document.getElementById('insightWinRate').innerText = `${winRate}%`;
+  const winRateEl = document.getElementById('insightWinRate');
+  if (winRateEl) animateCounter(winRateEl, winRate, 600, '', '%');
 
   let totalSpend = (activeLogs.length * (settings.packPrice/settings.packSize)).toFixed(1);
   document.getElementById('insightPeriodSpend').innerText = `${settings.currency} ${totalSpend}`;
@@ -2315,7 +2316,8 @@ function renderAllCharts() {
       let actualCigs = logs.length;
       totalSavedLifetime = Math.max(0, expectedCigs - actualCigs) * pricePerStick;
   }
-  document.getElementById('insightTotalSaved').innerText = `${settings.currency} ${Math.round(totalSavedLifetime)}`;
+  const savedEl = document.getElementById('insightTotalSaved');
+  if (savedEl) animateCounter(savedEl, Math.round(totalSavedLifetime), 800, settings.currency + ' ');
   
   const allGaps = activeLogs.map(l => l.gap).filter(g => g !== null && g !== undefined);
   document.getElementById('insightLongestGap').innerText = allGaps.length > 0 ? formatGap(Math.max(...allGaps)) : '--';
@@ -2338,7 +2340,7 @@ function renderAllCharts() {
 
   const coloredTooltipLabel = { callbacks: { label: (ctx) => { let val; if (ctx.parsed && typeof ctx.parsed.y === 'number') val = ctx.parsed.y; else if (ctx.parsed && typeof ctx.parsed === 'number') val = ctx.parsed; else val = ctx.formattedValue; return ` ${ctx.dataset?.label || ''}: ${val}`; } } };
 
-  const proOptions = { responsive: true, maintainAspectRatio: false, animation: { duration: 600, easing: 'easeOutQuart' }, interaction: { mode: 'index', intersect: false }, layout: { padding: { left: 0, right: 0, top: 10, bottom: 0 } }, plugins: { legend: { display: false }, tooltip: { ...chartTooltipTheme, ...coloredTooltipLabel } }, scales: { x: { grid: { display: false }, ticks: { color: chartTextColor, font: { family: APP_FONT_FAMILY, size: 9, weight: '600' }, maxTicksLimit: 4 } }, y: { beginAtZero: true, grid: { color: 'rgba(156, 163, 175, 0.05)', drawBorder: false }, ticks: { color: chartTextColor, font: { family: APP_FONT_FAMILY, size: 9, weight: '600' }, padding: 6 } } } };
+  const proOptions = getPremiumChartOptions(chartTextColor, chartTooltipTheme);
   const createGradient = (ctx, colorHex) => { let g = ctx.createLinearGradient(0, 0, 0, 180); g.addColorStop(0, colorHex); g.addColorStop(1, 'rgba(0,0,0,0)'); return g; };
   function upsertChart(key, ctx, config) { 
     try {
@@ -2377,14 +2379,17 @@ function renderAllCharts() {
 
   try {
     const ctx1 = document.getElementById('chart1').getContext('2d');
-    upsertChart(1, ctx1, { type: 'line', data: { labels: ds1.labels, datasets: [{ label: 'Gap (mins)', data: ds1.data, borderColor: '#10B981', backgroundColor: createGradient(ctx1, 'rgba(16, 185, 129, 0.25)'), borderWidth: 3, tension: 0.4, fill: true, pointRadius: ds1.data.length <= 15 ? 3 : 0, pointHitRadius: 15 }] }, options: { ...proOptions, plugins: { ...proOptions.plugins, tooltip: mergeTooltip(proOptions.plugins.tooltip, fullDateTimeTooltip) }, scales: { ...proOptions.scales, x: { ...proOptions.scales.x, offset: true } } }, plugins: [crosshairPlugin] });
+    upsertChart(1, ctx1, { type: 'line', data: { labels: ds1.labels, datasets: [{ label: 'Gap (mins)', data: ds1.data, borderColor: '#10B981', backgroundColor: createPremiumGradient(ctx1, '#10B981'), borderWidth: 2.5, tension: 0.4, fill: true, pointRadius: ds1.data.length <= 15 ? 3 : 0, pointHitRadius: 15, pointBackgroundColor: '#10B981', pointBorderColor: '#fff', pointBorderWidth: 1.5 }] }, options: { ...proOptions, plugins: { ...proOptions.plugins, tooltip: mergeTooltip(proOptions.plugins.tooltip, fullDateTimeTooltip) }, scales: { ...proOptions.scales, x: { ...proOptions.scales.x, offset: true } } }, plugins: [crosshairPlugin] });
   } catch(e){}
 
   try {
     let dayMap = {}; activeLogs.forEach(l => { let d = document.getElementById('insightsDateFilter').value === '7days' ? new Date(l.timestamp).toLocaleDateString([], {weekday:'short'}) : new Date(l.timestamp).toLocaleDateString([], {month:'short', day:'numeric'}); dayMap[d] = (dayMap[d] || 0) + 1; });
     let dayLabels = Object.keys(dayMap), dayCounts = Object.values(dayMap); if(dayLabels.length === 0) { dayLabels = ['Today']; dayCounts = [0]; }
     const ctx2 = document.getElementById('chart2').getContext('2d');
-    upsertChart(2, ctx2, { type: 'bar', data: { labels: dayLabels, datasets: [{ label: 'Count', data: dayCounts, backgroundColor: '#10B981', borderRadius: Number.MAX_VALUE, borderSkipped: false, maxBarThickness: 16 }, { label: 'Limit', data: dayLabels.map(() => settings.dailyLimit), type: 'line', borderColor: '#EF4444', borderWidth: 2, borderDash: [4,4], pointRadius: 0 }] }, options: { ...proOptions, scales: { x: { ...proOptions.scales.x, offset: true }, y: { ...proOptions.scales.y } } }, plugins: [crosshairPlugin] });
+    const barGradient = ctx2.createLinearGradient(0, 0, 0, 180);
+    barGradient.addColorStop(0, '#10B981');
+    barGradient.addColorStop(1, '#10B98180');
+    upsertChart(2, ctx2, { type: 'bar', data: { labels: dayLabels, datasets: [{ label: 'Count', data: dayCounts, backgroundColor: barGradient, borderRadius: { topLeft: 6, topRight: 6, bottomLeft: 2, bottomRight: 2 }, borderSkipped: false, maxBarThickness: 20, barPercentage: 0.6 }, { label: 'Limit', data: dayLabels.map(() => settings.dailyLimit), type: 'line', borderColor: '#EF4444', borderWidth: 1.5, borderDash: [5,5], pointRadius: 0, borderCapStyle: 'round' }] }, options: { ...proOptions, scales: { x: { ...proOptions.scales.x, offset: true }, y: { ...proOptions.scales.y } } }, plugins: [crosshairPlugin] });
   } catch(e){}
 
   try {
@@ -2407,7 +2412,7 @@ function renderAllCharts() {
 
   try {
     const ctx4 = document.getElementById('chart4').getContext('2d');
-    upsertChart(4, ctx4, { type: 'doughnut', data: { labels: ['Smoked', 'Resisted'], datasets: [{ data: [activeLogs.length, activeWaves.length], backgroundColor: ['#EF4444', '#0EA5E9'], borderWidth: 0, cutout: '76%' }] }, options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12, font: { family: APP_FONT_FAMILY, size: 10 }, color: chartTextColor } }, tooltip: { ...chartTooltipTheme } } }, plugins: [centerTextPlugin] });
+    upsertChart(4, ctx4, { type: 'doughnut', data: { labels: ['Smoked', 'Resisted'], datasets: [{ data: [activeLogs.length, activeWaves.length], backgroundColor: ['#EF4444', '#0EA5E9'], borderWidth: 3, borderColor: (isLightTheme()) ? '#FFFFFF' : '#11131A', borderRadius: 6, cutout: '72%', spacing: 3 }] }, options: { responsive: true, maintainAspectRatio: false, animation: { animateRotate: true, duration: 800 }, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 14, font: { family: "'General Sans', sans-serif", size: 10, weight: '600' }, color: chartTextColor, usePointStyle: true, pointStyle: 'circle' } }, tooltip: { ...chartTooltipTheme, backgroundColor: (isLightTheme()) ? 'rgba(255,255,255,0.98)' : 'rgba(15,23,42,0.98)', borderColor: (isLightTheme()) ? 'rgba(203,213,225,0.5)' : 'rgba(255,255,255,0.06)', borderWidth: 1, cornerRadius: 14, padding: 12 } } }, plugins: [centerTextPlugin] });
   } catch(e){}
 
   try {
@@ -2424,7 +2429,7 @@ function renderAllCharts() {
     const triggerCounts = triggers.map(t => triggerCountMap[t] || 0);
     const topTriggerIdx = triggerCounts.length ? triggerCounts.indexOf(Math.max(...triggerCounts)) : -1;
     setBadge('badge-chart5', (topTriggerIdx >= 0 && triggerCounts[topTriggerIdx] > 0) ? `Top: ${triggers[topTriggerIdx]}` : '', 'bg-purple-500/10 text-purple-500 border-purple-500/20');
-    upsertChart(5, ctx5, { type: 'doughnut', data: { labels: triggers, datasets: [{ data: triggerCounts, backgroundColor: triggers.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]), borderWidth: 0, cutout: '76%' }] }, options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12, font: { family: APP_FONT_FAMILY, size: 10 }, color: chartTextColor } }, tooltip: { ...chartTooltipTheme } } }, plugins: [centerTextPlugin] });
+    upsertChart(5, ctx5, { type: 'doughnut', data: { labels: triggers, datasets: [{ data: triggerCounts, backgroundColor: triggers.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]), borderWidth: 3, borderColor: (isLightTheme()) ? '#FFFFFF' : '#11131A', borderRadius: 4, cutout: '72%', spacing: 2 }] }, options: { responsive: true, maintainAspectRatio: false, animation: { animateRotate: true, duration: 800 }, plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, padding: 10, font: { family: "'General Sans', sans-serif", size: 9, weight: '600' }, color: chartTextColor, usePointStyle: true, pointStyle: 'circle' } }, tooltip: { ...chartTooltipTheme, backgroundColor: (isLightTheme()) ? 'rgba(255,255,255,0.98)' : 'rgba(15,23,42,0.98)', borderColor: (isLightTheme()) ? 'rgba(203,213,225,0.5)' : 'rgba(255,255,255,0.06)', borderWidth: 1, cornerRadius: 14, padding: 12 } } }, plugins: [centerTextPlugin] });
   } catch(e){}
 
   try {
@@ -2464,6 +2469,9 @@ function renderAllCharts() {
   
   renderHeatmapCalendar(activeLogs);
   renderHeatMap('mapContainer', activeLogs);
+
+  // Premium: render sparklines in stat cards
+  try { renderInsightSparklines(activeLogs); } catch(e) {}
 }
 
 function renderHeatMap(containerId, activeLogs) {
@@ -3508,6 +3516,201 @@ function renderPatternIntel() {
   refreshIcons();
 }
 
-// ==================== END TIER 2 FEATURES ====================
+// ==================== PREMIUM CHART UPGRADES ====================
+
+// Animated counter — smoothly counts from current value to target
+function animateCounter(el, target, duration, prefix, suffix) {
+  if (!el || target === null || target === undefined) return;
+  const start = parseInt(el.textContent.replace(/[^0-9.-]/g, '')) || 0;
+  const diff = target - start;
+  if (diff === 0) return;
+  const startTime = performance.now();
+  prefix = prefix || '';
+  suffix = suffix || '';
+  function tick(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+    const current = Math.round(start + diff * eased);
+    el.textContent = prefix + current.toLocaleString() + suffix;
+    if (progress < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+// Premium sparkline renderer
+function renderSparkline(canvasId, data, color) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas || !data || data.length < 2) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const max = Math.max(...data, 1);
+  const min = Math.min(...data, 0);
+  const range = max - min || 1;
+  const padding = 2;
+
+  // Draw filled area
+  ctx.beginPath();
+  ctx.moveTo(padding, H - padding);
+  data.forEach((v, i) => {
+    const x = padding + (i / (data.length - 1)) * (W - padding * 2);
+    const y = H - padding - ((v - min) / range) * (H - padding * 2);
+    if (i === 0) ctx.lineTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.lineTo(W - padding, H - padding);
+  ctx.closePath();
+
+  const gradient = ctx.createLinearGradient(0, 0, 0, H);
+  gradient.addColorStop(0, color + '40');
+  gradient.addColorStop(1, color + '05');
+  ctx.fillStyle = gradient;
+  ctx.fill();
+
+  // Draw line
+  ctx.beginPath();
+  data.forEach((v, i) => {
+    const x = padding + (i / (data.length - 1)) * (W - padding * 2);
+    const y = H - padding - ((v - min) / range) * (H - padding * 2);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+
+  // Draw end dot
+  const lastX = W - padding;
+  const lastY = H - padding - ((data[data.length - 1] - min) / range) * (H - padding * 2);
+  ctx.beginPath();
+  ctx.arc(lastX, lastY, 2.5, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
+}
+
+// Render all sparklines from filtered data
+function renderInsightSparklines(activeLogs) {
+  if (!activeLogs || activeLogs.length < 2) return;
+
+  // Total Saved sparkline — cumulative saved over time
+  const savedData = [];
+  let cumSaved = 0;
+  const baselineMs = parseInt(localStorage.getItem('smoke_baseline_gap')) || 86400000 / (settings.dailyLimit || 15);
+  const startTime = activeLogs[0].timestamp;
+  activeLogs.forEach((l, i) => {
+    const elapsed = l.timestamp - startTime;
+    const expected = 1 + elapsed / baselineMs;
+    const actual = i + 1;
+    cumSaved = Math.max(0, (expected - actual) * (settings.packPrice / settings.packSize));
+    savedData.push(cumSaved);
+  });
+  renderSparkline('sparkTotalSaved', savedData, '#10B981');
+
+  // Longest Gap sparkline — gap values over time
+  const gapData = activeLogs.filter(l => l.gap !== null && l.gap !== undefined).map(l => l.gap);
+  renderSparkline('sparkLongestGap', gapData, '#F59E0B');
+
+  // Win Rate sparkline — rolling win rate
+  const waveTimes = waves.filter(w => w >= activeLogs[0]?.timestamp);
+  const winData = [];
+  let cumLogs = 0, cumWaves = 0;
+  activeLogs.forEach((l, i) => {
+    cumLogs++;
+    const newWaves = waveTimes.filter(w => w <= l.timestamp).length;
+    cumWaves = newWaves;
+    const rate = (cumLogs + cumWaves) > 0 ? (cumWaves / (cumLogs + cumWaves)) * 100 : 0;
+    winData.push(Math.round(rate));
+  });
+  renderSparkline('sparkWinRate', winData, '#38BDF8');
+
+  // Avg Gap sparkline — running average gap
+  const avgData = [];
+  let sumGaps = 0, gapCount = 0;
+  activeLogs.forEach(l => {
+    if (l.gap !== null && l.gap !== undefined) {
+      sumGaps += l.gap;
+      gapCount++;
+    }
+    avgData.push(gapCount > 0 ? sumGaps / gapCount : 0);
+  });
+  renderSparkline('sparkAvgGap', avgData, '#38BDF8');
+}
+
+// Premium chart options — no grid, clean look
+function getPremiumChartOptions(chartTextColor, chartTooltipTheme, extraOptions) {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 800, easing: 'easeOutQuart' },
+    interaction: { mode: 'index', intersect: false },
+    layout: { padding: { left: 0, right: 0, top: 10, bottom: 0 } },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        ...chartTooltipTheme,
+        backgroundColor: (isLightTheme()) ? 'rgba(255,255,255,0.98)' : 'rgba(15,23,42,0.98)',
+        titleColor: (isLightTheme()) ? '#0F172A' : '#FFFFFF',
+        bodyColor: (isLightTheme()) ? '#334155' : '#CBD5E1',
+        titleFont: { family: "'Space Grotesk', monospace", size: 11, weight: '700' },
+        bodyFont: { family: "'General Sans', sans-serif", size: 11, weight: '600' },
+        borderColor: (isLightTheme()) ? 'rgba(203,213,225,0.5)' : 'rgba(255,255,255,0.06)',
+        borderWidth: 1,
+        padding: { top: 10, bottom: 10, left: 14, right: 14 },
+        cornerRadius: 14,
+        boxPadding: 6,
+        usePointStyle: true,
+        callbacks: {
+          label: (ctx) => {
+            let val;
+            if (ctx.parsed && typeof ctx.parsed.y === 'number') val = ctx.parsed.y;
+            else if (ctx.parsed && typeof ctx.parsed === 'number') val = ctx.parsed;
+            else val = ctx.formattedValue;
+            return ` ${ctx.dataset?.label || ''}: ${val}`;
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        display: true,
+        grid: { display: false },
+        border: { display: false },
+        ticks: {
+          color: chartTextColor,
+          font: { family: "'General Sans', sans-serif", size: 9, weight: '600' },
+          maxTicksLimit: 5,
+          padding: 8
+        }
+      },
+      y: {
+        display: true,
+        beginAtZero: true,
+        grid: { color: 'rgba(156,163,175,0.04)', drawBorder: false },
+        border: { display: false },
+        ticks: {
+          color: chartTextColor,
+          font: { family: "'Space Grotesk', monospace", size: 9, weight: '600' },
+          padding: 8,
+          maxTicksLimit: 5
+        }
+      },
+      ...extraOptions
+    }
+  };
+}
+
+// Premium gradient fill for line charts
+function createPremiumGradient(ctx, color, opacity1, opacity2) {
+  const g = ctx.createLinearGradient(0, 0, 0, 180);
+  g.addColorStop(0, color + (opacity1 || '30'));
+  g.addColorStop(0.5, color + (opacity2 || '10'));
+  g.addColorStop(1, color + '00');
+  return g;
+}
+
+// ==================== END PREMIUM CHART UPGRADES ====================
 
 bootApp();
