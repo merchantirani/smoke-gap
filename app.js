@@ -364,12 +364,20 @@ window.startHold = function(e) {
   if(textEl) textEl.innerText = "Hold...";
   if(iconEl) { iconEl.classList.add('text-red-500'); iconEl.classList.remove('text-gray-400'); }
   
+  let lastTick = 0;
   function update() {
     if (!isHolding) return;
     const elapsed = Date.now() - holdStartTime;
     const pct = Math.min((elapsed / 800) * 100, 100);
     if(progressEl) progressEl.style.width = pct + '%';
-    
+
+    // tick haptics at 25%, 50%, 75%
+    const tickPct = Math.floor(pct / 25) * 25;
+    if (tickPct > lastTick && tickPct > 0 && tickPct < 100) {
+      lastTick = tickPct;
+      if (settings.haptics && navigator.vibrate) navigator.vibrate(10);
+    }
+
     if (elapsed >= 800) {
       isHolding = false;
       if(btnEl) btnEl.classList.remove('is-holding');
@@ -1295,9 +1303,10 @@ function updateUI() {
   let uniqueDates = Object.keys(logsByDate).sort((a,b) => new Date(b) - new Date(a));
   for (let dStr of uniqueDates) { if (logsByDate[dStr] <= settings.dailyLimit) { streak++; } else { if (slipDays < 2) { slipDays++; streak++; } else break; } }
   document.getElementById('homeStreak').innerText = `🔥 ${streak} Day Streak`;
+  const hdStreak = document.getElementById('headerStreak'); if(hdStreak) hdStreak.innerText = `${streak}d`;
 
   const today = logs.filter(l => l.timestamp && new Date(l.timestamp).toDateString() === todayStr);
-  const todayCountTextEl = document.getElementById('todayCountText'); if(todayCountTextEl) todayCountTextEl.innerText = `${today.length} / ${settings.dailyLimit} Sticks`;
+  const todayCountTextEl = document.getElementById('todayCountText'); if(todayCountTextEl) animateCounter(todayCountTextEl, today.length, 600, '', ` / ${settings.dailyLimit} Sticks`);
   
   const fillBar = document.getElementById('batteryFillBar');
   const pctText = document.getElementById('batteryPctText');
@@ -1336,8 +1345,25 @@ function updateUI() {
   const trEl = document.getElementById('todayResisted'); if(trEl) trEl.innerText = todayWaves.length.toString();
   document.getElementById('homeTodayBeaten').innerText = `${todayWaves.length} Defeated`;
 
-  document.getElementById('todaySpend').innerText = `${settings.currency} ${(today.length * (settings.packPrice/settings.packSize)).toFixed(1)}`;
-  
+  const todaySpendVal = today.length * (settings.packPrice/settings.packSize);
+  const spendEl = document.getElementById('todaySpend');
+  if(spendEl) animateValue(spendEl, todaySpendVal, 600, settings.currency + ' ', '', 1);
+
+  // vs yesterday comparison
+  const yesterdayStr = new Date(Date.now() - 86400000).toDateString();
+  const yCount = logs.filter(l => l.timestamp && new Date(l.timestamp).toDateString() === yesterdayStr).length;
+  const vsEl = document.getElementById('vsYesterdaySpend');
+  if(vsEl) {
+    if(yCount === 0 && logs.length === 0) { vsEl.classList.add('hidden'); }
+    else if(yCount > 0) {
+      const diff = today.length - yCount;
+      vsEl.classList.remove('hidden');
+      if(diff > 0) { vsEl.innerText = `↑ ${diff} more than yesterday`; vsEl.style.color = '#EF4444'; }
+      else if(diff < 0) { vsEl.innerText = `↓ ${Math.abs(diff)} fewer than yesterday`; vsEl.style.color = '#10B981'; }
+      else { vsEl.innerText = `Same as yesterday`; vsEl.style.color = 'var(--text-muted)'; }
+    } else { vsEl.classList.remove('hidden'); vsEl.innerText = `First day tracked 🎉`; vsEl.style.color = '#10B981'; }
+  }
+
   const todayGaps = today.map(l => l.gap).filter(g => g !== null && g !== undefined);
   const bestGapCard = document.getElementById('bestGapCard'); if(bestGapCard) { bestGapCard.innerText = todayGaps.length > 0 ? formatGap(Math.max(...todayGaps)) : '--'; }
   
@@ -1541,6 +1567,16 @@ function showStatDetail(type) {
     desc.innerText = "Your Momentum Score blends how close you are to your daily limit, how many cravings you've resisted today, and how your current gap compares to your average — into one simple number.";
     pBox.classList.remove('hidden'); pLabel.innerText = "Score Breakdown"; pPct.innerText = `${score}/100`; pBar.style.width = `${Math.min(100,score)}%`; pBar.style.backgroundColor = score >= 60 ? '#10B981' : score >= 40 ? '#10B981' : '#EF4444';
     extra.innerHTML = row('Limit Adherence', `${Math.round(limitComponent)}/100`) + row('Cravings Resisted Today', `${todayWaves.length} (${Math.round(waveComponent)}/100)`) + row('Pace vs Average Gap', `${Math.round(gapComponent)}/100`);
+  } else if (type === 'streak') {
+    let sStreak = 0; let sSlip = 0; let sByDate = {};
+    logs.forEach(l => { if(l && l.timestamp) { let d = new Date(l.timestamp).toDateString(); sByDate[d] = (sByDate[d] || 0) + 1; } });
+    const sToday = new Date().toDateString(); if (!sByDate[sToday]) sByDate[sToday] = 0;
+    const sDates = Object.keys(sByDate).sort((a,b) => new Date(b) - new Date(a));
+    for (let d of sDates) { if (sByDate[d] <= settings.dailyLimit) { sStreak++; } else { if (sSlip < 2) { sSlip++; sStreak++; } else break; } }
+    iconClass = 'bg-orange-500/10 text-orange-500'; iconName = 'flame'; title.innerText = "Current Streak"; value.innerText = `${sStreak} Day${sStreak===1?'':'s'}`;
+    desc.innerText = sStreak > 0 ? `You've stayed within your ${settings.dailyLimit}-stick daily limit for ${sStreak} consecutive day${sStreak===1?'':'s'} (2 slip days tolerated). Don't break the chain!` : `Log a cigarette and stay within your daily limit to start your streak. Every day counts!`;
+    const onTarget = sDates.filter(d => sByDate[d] <= settings.dailyLimit && d !== sToday).length;
+    extra.innerHTML = row('Days On Target', `${onTarget}`) + row('Streak Tolerances', '2 slip days allowed') + row('Daily Limit', `${settings.dailyLimit} sticks`);
   }
   
   icon.className = `w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${iconClass}`; icon.innerHTML = `<i data-lucide="${iconName}" class="w-5 h-5"></i>`;
@@ -3533,6 +3569,27 @@ function animateCounter(el, target, duration, prefix, suffix) {
     const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
     const current = Math.round(start + diff * eased);
     el.textContent = prefix + current.toLocaleString() + suffix;
+    if (progress < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+// Decimal-aware animated value (e.g. money amounts)
+function animateValue(el, target, duration, prefix, suffix, decimals) {
+  if (!el || target === null || target === undefined) return;
+  const d = (decimals !== undefined) ? decimals : 0;
+  const start = parseFloat(el.textContent.replace(/[^0-9.-]/g, '')) || 0;
+  const diff = target - start;
+  if (diff === 0) return;
+  const startTime = performance.now();
+  prefix = prefix || '';
+  suffix = suffix || '';
+  function tick(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+    const current = start + diff * eased;
+    el.textContent = prefix + current.toFixed(d) + suffix;
     if (progress < 1) requestAnimationFrame(tick);
   }
   requestAnimationFrame(tick);
