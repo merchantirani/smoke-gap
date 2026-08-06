@@ -1,13 +1,13 @@
 // PAUSE SERVICE WORKER - Offline Caching v3.0 (Mobile Optimized)
-const CACHE_VERSION = 'v4';
+const CACHE_VERSION = 'v5';
 const CACHE_NAME = `pause-cache-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `pause-runtime-${CACHE_VERSION}`;
 
 // Files to precache on install (critical app files)
-// Using absolute paths for better mobile compatibility
 const PRECACHE_FILES = [
   './index.html',
   './app.js',
+  './lucide.min.js',
   './manifest.json',
   './icons/pause_icon_192.png',
   './icons/pause_icon_512.png',

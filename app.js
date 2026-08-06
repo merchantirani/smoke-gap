@@ -308,7 +308,9 @@ let _lucideTimer = null;
 function refreshIcons() {
   if (_lucideTimer) clearTimeout(_lucideTimer);
   _lucideTimer = setTimeout(() => {
-    refreshIcons();
+    if (window.lucide) {
+      window.lucide.createIcons();
+    }
   }, 30);
 }
 
