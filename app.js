@@ -2250,7 +2250,7 @@ function renderAllCharts() {
     let topT = Object.keys(trigs).length > 0 ? Object.keys(trigs).reduce((a,b) => trigs[a] > trigs[b] ? a : b) : '--';
     document.getElementById('insightTopTrigger').innerText = topT.length > 15 ? topT.substring(0,12)+'..' : topT;
     
-    let perDay = {}; activeLogs.forEach(l => { const k = new Date(l.timestamp).toLocaleDateString([], {month:'short', day:'numeric'}); perDay[k] = (perDay[k]||0)+1; });
+    let perDay = {}; activeLogs.forEach(l => { const k = new Date(l.timestamp).toLocaleDateString('en-US', {month:'short', day:'numeric'}); perDay[k] = (perDay[k]||0)+1; });
     let topDay = Object.keys(perDay).reduce((a,b) => perDay[a] > perDay[b] ? a : b);
     document.getElementById('insightHeaviestDay').innerText = `${topDay} (${perDay[topDay]})`;
     
@@ -2342,7 +2342,7 @@ function renderAllCharts() {
     let dayMap = {}; activeLogs.forEach(l => { let d = document.getElementById('insightsDateFilter').value === '7days' ? new Date(l.timestamp).toLocaleDateString([], {weekday:'short'}) : new Date(l.timestamp).toLocaleDateString([], {month:'short', day:'numeric'}); dayMap[d] = (dayMap[d] || 0) + 1; });
     let dayLabels = Object.keys(dayMap), dayCounts = Object.values(dayMap); if(dayLabels.length === 0) { dayLabels = ['Today']; dayCounts = [0]; }
     const ctx2 = document.getElementById('chart2').getContext('2d');
-    upsertChart(2, ctx2, { type: 'bar', data: { labels: dayLabels, datasets: [{ label: 'Count', data: dayCounts, backgroundColor: (isLightTheme()) ? '#2563EB' : '#10B981', borderRadius: Number.MAX_VALUE, borderSkipped: false, maxBarThickness: 16 }, { label: 'Limit', data: dayLabels.map(() => settings.dailyLimit), type: 'line', borderColor: '#EF4444', borderWidth: 2, borderDash: [4,4], pointRadius: 0 }] }, options: { ...proOptions, scales: { x: { ...proOptions.scales.x, offset: true }, y: { ...proOptions.scales.y } } }, plugins: [crosshairPlugin] });
+    upsertChart(2, ctx2, { type: 'bar', data: { labels: dayLabels, datasets: [{ label: 'Count', data: dayCounts, backgroundColor: '#10B981', borderRadius: Number.MAX_VALUE, borderSkipped: false, maxBarThickness: 16 }, { label: 'Limit', data: dayLabels.map(() => settings.dailyLimit), type: 'line', borderColor: '#EF4444', borderWidth: 2, borderDash: [4,4], pointRadius: 0 }] }, options: { ...proOptions, scales: { x: { ...proOptions.scales.x, offset: true }, y: { ...proOptions.scales.y } } }, plugins: [crosshairPlugin] });
   } catch(e){}
 
   try {
@@ -2423,7 +2423,16 @@ function renderHeatMap(containerId, activeLogs) {
   try {
     const mapEl = document.getElementById(containerId); if(!mapEl) return;
     let lastWithLoc = activeLogs.slice().reverse().find(l => l.lat && l.lng), lat = lastWithLoc ? lastWithLoc.lat : 25.2048, lng = lastWithLoc ? lastWithLoc.lng : 55.2708;
-    let heatPoints = activeLogs.filter(l => l.lat && l.lng).map(l => [l.lat, l.lng, 1.0]);
+    let locCounts = {};
+    activeLogs.filter(l => l.lat && l.lng).forEach(l => {
+      const key = `${l.lat.toFixed(3)},${l.lng.toFixed(3)}`;
+      locCounts[key] = (locCounts[key] || 0) + 1;
+    });
+    let maxLocCount = Math.max(...Object.values(locCounts), 1);
+    let heatPoints = activeLogs.filter(l => l.lat && l.lng).map(l => {
+      const key = `${l.lat.toFixed(3)},${l.lng.toFixed(3)}`;
+      return [l.lat, l.lng, (locCounts[key] || 1) / maxLocCount];
+    });
     const isModal = containerId === 'mapModalContainer'; 
     let m = isModal ? modalMapInstance : mapInstance;
 
