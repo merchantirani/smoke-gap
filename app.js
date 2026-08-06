@@ -974,8 +974,6 @@ function setTakeoverIntensity(val) {
 
 function startSmokeTakeover(logIdx, gap, waveWasActive) {
   editingLogIdx = logIdx; currentSelectedTags = []; currentMood = null; setTakeoverIntensity(3); takeoverCountdown = 6;
-  const noteField = document.getElementById('takeoverNotes');
-  if (noteField) { noteField.value = ''; const c = document.getElementById('takeoverNotesCounter'); if(c) c.innerText = '0/200'; }
   const overlay = document.getElementById('smokeTakeover'); const numberEl = document.getElementById('takeoverNumber'); const ringEl = document.getElementById('takeoverRing'); const factEl = document.getElementById('takeoverFact');
   let factText = "";
   if(waveWasActive) factText = "It's okay to slip. What triggered this strong urge?";
@@ -1075,9 +1073,6 @@ function closeSmokeTakeover() {
   const overlay = document.getElementById('smokeTakeover'); overlay.classList.remove('opacity-100'); overlay.classList.add('opacity-0');
   if(editingLogIdx !== null && logs[editingLogIdx]) {
     logs[editingLogIdx].tags = [...currentSelectedTags]; logs[editingLogIdx].intensity = currentIntensity;
-    // Save journal note and mood from takeover
-    const noteEl = document.getElementById('takeoverNotes');
-    if (noteEl) logs[editingLogIdx].note = noteEl.value.trim().substring(0, 200);
     logs[editingLogIdx].mood = currentMood;
     localStorage.setItem('smoke_logs', JSON.stringify(logs));
     if (window.posthog) {
@@ -1244,7 +1239,7 @@ window.refreshAppCache = function() {
       // Fallback: just reload
       window.location.reload();
     }
-  });
+  }, 'info');
 }
 
 function showToast(msg) {
@@ -1257,9 +1252,17 @@ function showToast(msg) {
 }
 
 let pendingConfirmCallback = null;
-function showConfirm(title, message, onConfirm) {
+function showConfirm(title, message, onConfirm, type) {
   document.getElementById('confirmTitle').innerText = title; document.getElementById('confirmMessage').innerText = message;
-  pendingConfirmCallback = onConfirm; document.getElementById('confirmModal').classList.remove('hidden');
+  pendingConfirmCallback = onConfirm;
+  const isDanger = type !== 'info';
+  const btn = document.getElementById('confirmYesBtn');
+  const iconWrap = document.getElementById('confirmIconWrap');
+  const icon = document.getElementById('confirmIcon');
+  if (btn) btn.style.backgroundColor = isDanger ? '#EF4444' : 'var(--accent)';
+  if (iconWrap) iconWrap.style.backgroundColor = isDanger ? 'rgba(239,68,68,0.1)' : 'var(--accent-glow)';
+  if (icon) { icon.className = 'w-7 h-7 ' + (isDanger ? 'text-red-500' : ''); icon.style.color = isDanger ? '' : 'var(--accent)'; icon.setAttribute('data-lucide', isDanger ? 'alert-triangle' : 'sparkles'); }
+  document.getElementById('confirmModal').classList.remove('hidden');
   refreshIcons();
 }
 function closeConfirmModal() { document.getElementById('confirmModal').classList.add('hidden'); pendingConfirmCallback = null; }
@@ -1565,7 +1568,7 @@ function showStatDetail(type) {
     title.innerText = "Nicotine Willpower Battery"; value.innerText = `${battPct}% Remaining`; 
     desc.innerText = `Your daily limit is ${settings.dailyLimit} sticks. You have smoked ${today.length} stick(s) today. You have ${remCap} stick(s) left before depleting your willpower battery.`; 
     pBox.classList.remove('hidden'); pLabel.innerText = "Battery Capacity Remaining"; 
-    pPct.innerText = `${battPct}%`; pBar.style.width = `${battPct}%`; pBar.style.backgroundColor = battPct <= 20 ? '#EF4444' : battPct <= 50 ? '#10B981' : '#10B981';
+    pPct.innerText = `${battPct}%`; pBar.style.width = `${battPct}%`; pBar.style.background = battPct <= 20 ? 'linear-gradient(90deg, #EF4444, #F87171)' : 'linear-gradient(90deg, #10B981, #34D399)';
     extra.innerHTML = row('Daily Goal Cap', `${settings.dailyLimit} sticks`) + row('Sticks Smoked Today', `${today.length} sticks`) + row('Auto-Reduce Active', settings.autoReduce ? 'Yes (-1 stick/week)' : 'Disabled');
   } else if (type === 'bestGap') {
     iconClass = 'bg-emerald-500/10 text-emerald-500'; iconName = 'trophy'; title.innerText = "Today's Best Gap"; const todayGaps = today.map(l => l.gap).filter(g => g !== null && g !== undefined); const best = todayGaps.length ? Math.max(...todayGaps) : null; value.innerText = formatGap(best); 
@@ -1591,7 +1594,7 @@ function showStatDetail(type) {
     const score = Math.round(limitComponent*0.4 + waveComponent*0.3 + gapComponent*0.3);
     iconClass = 'bg-amber-500/10 text-amber-500'; iconName = 'zap'; title.innerText = "Today's Momentum Score"; value.innerText = (logs.length===0 && todayWaves.length===0) ? '0' : score.toString();
     desc.innerText = "Your Momentum Score blends how close you are to your daily limit, how many cravings you've resisted today, and how your current gap compares to your average — into one simple number.";
-    pBox.classList.remove('hidden'); pLabel.innerText = "Score Breakdown"; pPct.innerText = `${score}/100`; pBar.style.width = `${Math.min(100,score)}%`; pBar.style.backgroundColor = score >= 60 ? '#10B981' : score >= 40 ? '#10B981' : '#EF4444';
+    pBox.classList.remove('hidden'); pLabel.innerText = "Score Breakdown"; pPct.innerText = `${score}/100`; pBar.style.width = `${Math.min(100,score)}%`; pBar.style.background = score >= 40 ? 'linear-gradient(90deg, #10B981, #34D399)' : 'linear-gradient(90deg, #EF4444, #F87171)';
     extra.innerHTML = row('Limit Adherence', `${Math.round(limitComponent)}/100`) + row('Cravings Resisted Today', `${todayWaves.length} (${Math.round(waveComponent)}/100)`) + row('Pace vs Average Gap', `${Math.round(gapComponent)}/100`);
   } else if (type === 'streak') {
     let sStreak = 0; let sSlip = 0; let sByDate = {};

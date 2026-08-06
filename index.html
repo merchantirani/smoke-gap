@@ -1146,7 +1146,7 @@
         </div>
       </div>
       <div class="sheet-footer flex-col">
-        <button onclick="window.closeSosInterrupter(true)" class="sheet-btn-primary" style="background-color: #059669; box-shadow: 0 8px 20px rgba(16,185,129,0.35); display:flex; align-items:center; justify-content:center; gap:0.375rem;">
+        <button onclick="window.closeSosInterrupter(true)" class="sheet-btn-primary" style="background: var(--accent); box-shadow: 0 8px 20px var(--accent-glow); display:flex; align-items:center; justify-content:center; gap:0.375rem;">
           <i data-lucide="shield-check" class="w-4 h-4"></i> Craving Passed! (+1 Shield)
         </button>
         <button id="sosProceedBtn" onclick="window.closeSosInterrupter(false)" class="sheet-btn-ghost">Skip & Proceed to Log</button>
@@ -1253,41 +1253,40 @@
             <span class="sheet-label">Tap to tag <span class="normal-case tracking-normal font-semibold opacity-60">(optional)</span></span>
             <div id="takeoverTagsGrid" class="mt-2.5 flex flex-wrap gap-2"></div>
           </div>
-          <div class="mt-4">
-            <span class="sheet-label">Journal note <span class="normal-case tracking-normal font-semibold opacity-60">(optional)</span></span>
-            <textarea id="takeoverNotes" oninput="document.getElementById('takeoverNotesCounter').innerText = this.value.length + '/200'" placeholder="Add a note..." maxlength="200" class="mt-2.5 w-full p-3 rounded-2xl border text-xs font-medium outline-none resize-none h-14" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);"></textarea>
-            <div class="flex justify-end mt-1"><span id="takeoverNotesCounter" class="text-[9px] font-bold" style="color: var(--text-muted);">0/200</span></div>
-          </div>
         </div>
       </div>
     </div>
   </div>
 
   <div id="statDetailModal" class="hidden sheet" onclick="if(event.target===this) window.closeStatDetail()">
-    <div class="sheet-panel">
+    <div class="sheet-panel relative overflow-hidden">
+      <div class="absolute top-0 inset-x-0 h-[3px]" style="background: linear-gradient(90deg, var(--accent), transparent 80%);"></div>
       <div class="sheet-handle"></div>
       <div class="sheet-header">
         <div class="flex items-center gap-3">
-          <div id="statDetailIcon" class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"><i data-lucide="info" class="w-5 h-5"></i></div>
-          <div>
+          <div id="statDetailIcon" class="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-lg"><i data-lucide="info" class="w-6 h-6"></i></div>
+          <div class="flex-1 min-w-0">
             <h3 id="statDetailTitle" class="sheet-title">Metric Insights</h3>
-            <p id="statDetailValue" class="numeric-display text-2xl font-bold mt-0.5" style="color: var(--text-main);">--</p>
+            <p id="statDetailValue" class="numeric-display text-3xl font-bold mt-1 tracking-tight" style="color: var(--text-main);">--</p>
           </div>
         </div>
         <button onclick="window.closeStatDetail()" class="sheet-close"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
       <div class="sheet-body space-y-4">
-        <p id="statDetailDesc" class="text-xs font-medium leading-relaxed p-3.5 rounded-2xl border" style="background-color: var(--input-bg); border-color: var(--card-border); color: var(--text-main);"></p>
+        <div class="rounded-2xl border-l-4 p-3.5" style="background-color: var(--input-bg); border-color: var(--accent);">
+          <p class="text-[8px] font-bold uppercase tracking-widest mb-1" style="color: var(--accent);">Why it matters</p>
+          <p id="statDetailDesc" class="text-xs font-medium leading-relaxed" style="color: var(--text-main);"></p>
+        </div>
         <div id="statDetailProgressBox" class="space-y-1.5 hidden">
           <div class="flex justify-between text-[10px] font-bold uppercase tracking-wider" style="color: var(--text-muted);">
             <span id="statProgressLabel">Goal Progress</span>
             <span id="statProgressPct">0%</span>
           </div>
-          <div class="w-full h-2 rounded-full overflow-hidden" style="background-color: var(--input-bg);">
-            <div id="statProgressBar" class="h-full rounded-full transition-all duration-500" style="width: 0%; background-color: var(--accent);"></div>
+          <div class="w-full h-2.5 rounded-full overflow-hidden" style="background-color: var(--input-bg);">
+            <div id="statProgressBar" class="h-full rounded-full transition-all duration-500" style="width: 0%; background: linear-gradient(90deg, #10B981, #34D399);"></div>
           </div>
         </div>
-        <div id="statDetailExtra" class="space-y-2 text-xs pt-2"></div>
+        <div id="statDetailExtra" class="space-y-2.5 text-xs pt-1"></div>
       </div>
     </div>
   </div>
@@ -1593,7 +1592,19 @@
     </div>
   </div>
 
-  <div id="confirmModal" class="hidden fixed inset-0 backdrop-blur-sm z-[10000] flex items-center justify-center p-6" style="background-color: var(--overlay-bg);" onclick="if(event.target===this) window.closeConfirmModal()"><div class="dialog-card p-6 space-y-4 max-w-xs w-full text-center" style="padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));"><i data-lucide="alert-triangle" class="w-8 h-8 mx-auto text-red-500"></i><h3 id="confirmTitle" class="text-sm font-bold" style="color: var(--text-main);">Are you sure?</h3><p id="confirmMessage" class="text-xs leading-relaxed" style="color: var(--text-muted);"></p><div class="flex gap-3 pt-1"><button onclick="window.closeConfirmModal()" class="flex-1 py-3 rounded-xl text-xs font-bold active:scale-95 transition-transform" style="background-color: var(--input-bg); color: var(--text-main);">Cancel</button><button onclick="window.confirmYes()" class="flex-1 py-3 rounded-xl text-xs font-bold text-white bg-red-500 active:scale-95 transition-transform">Confirm</button></div></div></div>
+  <div id="confirmModal" class="hidden fixed inset-0 backdrop-blur-sm z-[10000] flex items-center justify-center p-6" style="background-color: var(--overlay-bg);" onclick="if(event.target===this) window.closeConfirmModal()">
+    <div class="dialog-card p-6 space-y-4 max-w-xs w-full text-center" style="padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));">
+      <div id="confirmIconWrap" class="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center" style="background-color: rgba(239,68,68,0.1);">
+        <i data-lucide="alert-triangle" id="confirmIcon" class="w-7 h-7 text-red-500"></i>
+      </div>
+      <h3 id="confirmTitle" class="text-sm font-bold" style="color: var(--text-main);">Are you sure?</h3>
+      <p id="confirmMessage" class="text-xs leading-relaxed" style="color: var(--text-muted);"></p>
+      <div class="flex gap-3 pt-1">
+        <button onclick="window.closeConfirmModal()" class="flex-1 py-3 rounded-xl text-xs font-bold active:scale-95 transition-transform" style="background-color: var(--input-bg); color: var(--text-main);">Cancel</button>
+        <button onclick="window.confirmYes()" id="confirmYesBtn" class="flex-1 py-3 rounded-xl text-xs font-bold active:scale-95 transition-transform" style="background-color: #EF4444; color: #fff;">Confirm</button>
+      </div>
+    </div>
+  </div>
   <div id="pinSetupModal" class="hidden fixed inset-0 backdrop-blur-sm z-[10000] flex items-center justify-center p-6" style="background-color: var(--overlay-bg);" onclick="if(event.target===this) window.closePinSetupModal()"><div class="dialog-card p-6 space-y-4 max-w-xs w-full text-center" style="padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));"><i data-lucide="lock-keyhole" class="w-8 h-8 mx-auto" style="color: var(--accent);"></i><h3 class="text-sm font-bold uppercase tracking-widest" style="color: var(--text-main);">Set 4-Digit PIN</h3><input type="tel" inputmode="numeric" maxlength="4" id="pinSetupInput" placeholder="••••" data-ph-no-capture="true" class="numeric-display w-full text-center text-2xl tracking-[0.6em] p-3 rounded-xl border outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);"><p id="pinSetupError" class="text-[10px] text-red-500 hidden">Must be exactly 4 digits.</p><div class="flex gap-3 pt-1"><button onclick="window.closePinSetupModal()" class="flex-1 py-3 rounded-xl text-xs font-bold active:scale-95 transition-transform" style="background-color: var(--input-bg); color: var(--text-main);">Cancel</button><button onclick="window.savePinSetup()" class="flex-1 py-3 rounded-xl text-xs font-bold active:scale-95 transition-transform" style="background: var(--accent); color: var(--accent-text);">Save</button></div></div></div>
 
   <!-- SCRIPT SINK - RELIABLE BOOTSTRAP -->
