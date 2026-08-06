@@ -2687,8 +2687,13 @@ function renderHealthTimeline() {
 
   if (countEl) countEl.innerText = `${unlocked} of ${HEALTH_MILESTONES.length} unlocked`;
   if (progressBar) progressBar.style.width = `${(unlocked / HEALTH_MILESTONES.length) * 100}%`;
+  const recPct = Math.round((unlocked / HEALTH_MILESTONES.length) * 100);
   const recEl = document.getElementById('milestoneRecoveryPct');
-  if (recEl) recEl.innerText = `${Math.round((unlocked / HEALTH_MILESTONES.length) * 100)}%`;
+  if (recEl) recEl.innerText = recPct;
+  const ringEl = document.getElementById('milestoneRing');
+  if (ringEl) ringEl.style.strokeDashoffset = (326.73 * (1 - recPct / 100)).toFixed(1);
+  const countModalEl = document.getElementById('milestoneCountModal');
+  if (countModalEl) countModalEl.innerText = `${unlocked}/${HEALTH_MILESTONES.length}`;
   refreshIcons();
 }
 
@@ -3576,6 +3581,36 @@ function renderPatternIntel() {
       summaryEl.innerText = 'Building your weekly pattern...';
     } else {
       summaryEl.innerText = 'Patterns will appear as you log.';
+    }
+  }
+
+  // ---------- Hero Insight (score + key finding) ----------
+  const tagCounts = {};
+  recentLogs.forEach(l => {
+    const tags = (l.tags && l.tags.length ? l.tags : (l.trigger ? [l.trigger] : [])).filter(Boolean);
+    tags.forEach(t => tagCounts[t] = (tagCounts[t] || 0) + 1);
+  });
+  const tagEntries = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]);
+  const taggedCount = tagEntries.reduce((s, e) => s + e[1], 0);
+  const depthScore = Math.min(100, Math.round(15 + recentLogs.length * 2 + Object.keys(moodCounts).length * 4 + Object.keys(tagCounts).length * 3));
+  const scoreEl = document.getElementById('intelScore');
+  const ringEl = document.getElementById('intelScoreRing');
+  if (scoreEl) scoreEl.innerText = depthScore;
+  if (ringEl) ringEl.style.strokeDashoffset = (175.93 * (1 - depthScore / 100)).toFixed(1);
+
+  const heroEl = document.getElementById('intelHeroText');
+  if (heroEl) {
+    if (recentLogs.length < 4) {
+      heroEl.innerText = 'Log a few more cigarettes and your personal patterns will reveal themselves here.';
+    } else if (tagEntries.length > 0) {
+      const top = tagEntries[0];
+      const topPct = Math.round((top[1] / Math.max(1, taggedCount)) * 100);
+      heroEl.innerText = `Your top trigger is ${esc(top[0])} — it drives ${topPct}% of your smoking.`;
+    } else if (dayCounts.some(c => c > 0)) {
+      const peakIdx = dayCounts.indexOf(Math.max(...dayCounts));
+      heroEl.innerText = `${DAY_SHORT[peakIdx]} is your heaviest smoking day (${dayCounts[peakIdx]} sticks).`;
+    } else {
+      heroEl.innerText = 'Patterns will appear as you log.';
     }
   }
 
