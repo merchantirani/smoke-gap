@@ -2687,6 +2687,8 @@ function renderHealthTimeline() {
 
   if (countEl) countEl.innerText = `${unlocked} of ${HEALTH_MILESTONES.length} unlocked`;
   if (progressBar) progressBar.style.width = `${(unlocked / HEALTH_MILESTONES.length) * 100}%`;
+  const recEl = document.getElementById('milestoneRecoveryPct');
+  if (recEl) recEl.innerText = `${Math.round((unlocked / HEALTH_MILESTONES.length) * 100)}%`;
   refreshIcons();
 }
 
@@ -3579,6 +3581,24 @@ function renderPatternIntel() {
 
   card.classList.remove('hidden');
   refreshIcons();
+}
+
+window.openPatternIntel = function() {
+  try { renderPatternIntel(); } catch(e) {}
+  document.getElementById('patternIntelModal').classList.remove('hidden');
+  refreshIcons();
+}
+window.closePatternIntel = function() {
+  document.getElementById('patternIntelModal').classList.add('hidden');
+}
+
+window.openHealthTimeline = function() {
+  try { renderHealthTimeline(); } catch(e) {}
+  document.getElementById('healthTimelineModal').classList.remove('hidden');
+  refreshIcons();
+}
+window.closeHealthTimeline = function() {
+  document.getElementById('healthTimelineModal').classList.add('hidden');
 }
 
 // ==================== PREMIUM CHART UPGRADES ====================
