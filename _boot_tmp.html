@@ -1,0 +1,16 @@
+<script>
+localStorage.setItem('smoke_active_tab', 'insights');
+if(!localStorage.getItem('smoke_logs')) {
+  const now = Date.now();
+  const logs = [];
+  const tags = ['Stress','Boredom','Social','☕ Chai','Work'];
+  for(let i=0;i<50;i++){
+    const ts = now - i*3600000;
+    logs.push({timestamp: ts, gap: 25+(i%6)*18, tags:[tags[i%5]], intensity:(i%5)+1, mood:'anxious', note:'', lat:25.2+((i%10)*0.01), lng:55.2+((i%10)*0.01)});
+  }
+  localStorage.setItem('smoke_logs', JSON.stringify(logs));
+  localStorage.setItem('smoke_onboarding_done','true');
+  localStorage.setItem('smoke_waves', JSON.stringify([now-86400000, now-172800000, now-345600000]));
+}
+location.href='http://localhost:8901/index.html';
+</script>

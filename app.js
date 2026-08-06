@@ -434,6 +434,21 @@ const centerTextPlugin = { id: 'centerText', beforeDraw: chart => { if (chart.co
 
 function formatAppTime(dateObj) { return dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: settings.timeFormat === '12h' }); }
 
+const hideSkeleton = () => {
+  const skel = document.getElementById('appSkeleton');
+  if(skel) {
+    const pwa = window.matchMedia('(display-mode: standalone)').matches ||
+                window.navigator.standalone === true ||
+                document.referrer.includes('android-app://');
+    if(pwa) {
+      skel.remove();
+    } else {
+      skel.style.opacity = '0';
+      setTimeout(() => skel.remove(), 300);
+    }
+  }
+};
+
 function bootApp() {
   applyTheme(settings.theme);
   try {
@@ -476,21 +491,6 @@ function bootApp() {
   const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
                 window.navigator.standalone === true ||
                 document.referrer.includes('android-app://');
-
-  // Hide skeleton immediately when app is ready (faster for Android)
-  const hideSkeleton = () => {
-    const skel = document.getElementById('appSkeleton');
-    if(skel) {
-      // If PWA, remove instantly without animation (manifest splash handles this)
-      if(isPWA) {
-        skel.remove();
-      } else {
-        // Web browser - animate out
-        skel.style.opacity = '0';
-        setTimeout(() => skel.remove(), 300);
-      }
-    }
-  };
 
   // If PWA, hide skeleton immediately
   if(isPWA) {
