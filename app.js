@@ -218,7 +218,7 @@ if (settings.autoReduce) {
 }
 
 let triggers = JSON.parse(localStorage.getItem('smoke_triggers')) || ['🏠 Home', '💼 Work', '🚗 Car / Commute', '🎉 Outside / Social', '😰 Stress', '🍽️ After Meal', '☕ Chai / Coffee', '📱 Boredom', '👥 Peer Pressure', '🍺 Alcohol', '😡 Anger', '🌙 Habit'];
-const CHART_COLORS = ['#3B82F6', '#10B981', '#10B981', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316', '#14B8A6', '#6366F1', '#F43F5E', '#84CC16', '#0EA5E9', '#D946EF', '#EAB308', '#1D4ED8', '#047857', '#B45309', '#BE123C', '#6D28D9'];
+const CHART_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316', '#14B8A6', '#6366F1', '#F43F5E', '#84CC16', '#0EA5E9', '#D946EF', '#EAB308', '#1D4ED8', '#047857', '#B45309', '#BE123C', '#6D28D9'];
 
 const INTENSITY_LABELS = {1: 'Mild', 2: 'Light', 3: 'Moderate', 4: 'Severe', 5: 'Extreme'};
 const MOODS = [
@@ -2200,9 +2200,19 @@ function renderAllCharts() {
 
   let activeWaves = waves;
   const now = new Date();
-  if(filter === 'today') activeWaves = waves.filter(w => w >= new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime());
-  else if(filter === '7days') activeWaves = waves.filter(w => w >= new Date(now.getTime() - (7 * 86400000)).getTime());
-  else if(filter === '1month') activeWaves = waves.filter(w => w >= new Date(now.getTime() - (30 * 86400000)).getTime());
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  if(filter === 'today') activeWaves = waves.filter(w => w >= todayStart);
+  else if(filter === '7days') activeWaves = waves.filter(w => w >= todayStart - (6 * 86400000));
+  else if(filter === '1month') activeWaves = waves.filter(w => w >= todayStart - (29 * 86400000));
+  else if(filter === 'custom') {
+    const fromEl = document.getElementById('insightsDateFrom');
+    const toEl = document.getElementById('insightsDateTo');
+    if(fromEl && toEl && fromEl.value && toEl.value) {
+      const fromMs = new Date(fromEl.value + 'T00:00:00').getTime();
+      const toMs = new Date(toEl.value + 'T23:59:59').getTime();
+      activeWaves = waves.filter(w => w >= fromMs && w <= toMs);
+    }
+  }
 
   const totalEvents = activeLogs.length + activeWaves.length;
   const winRate = totalEvents > 0 ? Math.round((activeWaves.length / totalEvents) * 100) : 0;
@@ -2244,14 +2254,18 @@ function renderAllCharts() {
     let topDay = Object.keys(perDay).reduce((a,b) => perDay[a] > perDay[b] ? a : b);
     document.getElementById('insightHeaviestDay').innerText = `${topDay} (${perDay[topDay]})`;
     
-    smartText = `You mostly struggle around <strong>${formatAppTime(peakDate)}</strong>, heavily triggered by <strong>${topT}</strong>.`;
+    if(activeLogs.length === 1) {
+      smartText = `Your first log: <strong>${formatAppTime(peakDate)}</strong>, triggered by <strong>${esc(topT)}</strong>. Keep logging to see patterns emerge.`;
+    } else {
+      smartText = `You mostly struggle around <strong>${formatAppTime(peakDate)}</strong>, heavily triggered by <strong>${esc(topT)}</strong>.`;
+    }
 
     const intensityCandidates = Object.keys(trigIntensityCount).filter(t => trigIntensityCount[t] >= 2);
     if(intensityCandidates.length > 0) {
       const avgIntensityByTrigger = {}; intensityCandidates.forEach(t => avgIntensityByTrigger[t] = trigIntensitySum[t] / trigIntensityCount[t]);
       const hardestTrigger = intensityCandidates.reduce((a,b) => avgIntensityByTrigger[a] > avgIntensityByTrigger[b] ? a : b);
       if(avgIntensityByTrigger[hardestTrigger] >= 3.3 && hardestTrigger !== topT) {
-        smartText += ` Note: <strong>${hardestTrigger}</strong> brings your most intense cravings.`;
+        smartText += ` Note: <strong>${esc(hardestTrigger)}</strong> brings your most intense cravings.`;
       }
     }
 
@@ -2277,7 +2291,7 @@ function renderAllCharts() {
   }
   document.getElementById('insightTotalSaved').innerText = `${settings.currency} ${Math.round(totalSavedLifetime)}`;
   
-  const allGaps = logs.map(l => l.gap).filter(g => g !== null && g !== undefined);
+  const allGaps = activeLogs.map(l => l.gap).filter(g => g !== null && g !== undefined);
   document.getElementById('insightLongestGap').innerText = allGaps.length > 0 ? formatGap(Math.max(...allGaps)) : '--';
 
   setBadge('badge-chart1', gappedLogs.length > 0 ? `Avg ${formatGap(Math.round(gappedLogs.reduce((a, b) => a + b.gap, 0) / gappedLogs.length))}` : '', 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20');
@@ -2336,9 +2350,9 @@ function renderAllCharts() {
     if (activeLogs.length > 0) {
       let periodStartTime = activeLogs[0].timestamp;
       activeLogs.forEach((l, i) => {
-        cumulativeSpend += pricePerStick; spendData.push(cumulativeSpend.toFixed(1));
+        cumulativeSpend += pricePerStick; spendData.push(parseFloat(cumulativeSpend.toFixed(1)));
         let timeElapsed = l.timestamp - periodStartTime; let expectedCigs = 1 + (timeElapsed / baselineGapMs); let actualCigs = i + 1;
-        let savedAmount = Math.max(0, expectedCigs - actualCigs) * pricePerStick; savedData.push(savedAmount.toFixed(1));
+        let savedAmount = Math.max(0, expectedCigs - actualCigs) * pricePerStick; savedData.push(parseFloat(savedAmount.toFixed(1)));
       });
     }
     const ctx3 = document.getElementById('chart3').getContext('2d');
