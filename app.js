@@ -130,7 +130,7 @@ function showOfflineReadyToast() {
   document.body.appendChild(toast);
 
   // Initialize lucide icon
-  if (window.lucide) lucide.createIcons();
+  refreshIcons();
 
   // Animate in
   requestAnimationFrame(() => {
@@ -184,7 +184,7 @@ function showInstallBanner() {
     <button onclick="this.closest('#installBanner').remove()" class="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style="color: var(--text-muted);"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
   `;
   document.body.appendChild(banner);
-  if (window.lucide) window.lucide.createIcons();
+  refreshIcons();
 }
 
 window.installApp = function() {
@@ -302,6 +302,15 @@ let currentMood = null;
 let takeoverTimer = null;
 let takeoverCountdown = 6;
 let historyRenderLimit = 30;
+
+// Debounced lucide icon initialization — batches rapid calls into one
+let _lucideTimer = null;
+function refreshIcons() {
+  if (_lucideTimer) clearTimeout(_lucideTimer);
+  _lucideTimer = setTimeout(() => {
+    refreshIcons();
+  }, 30);
+}
 
 let currentWatchStyle = parseInt(localStorage.getItem('smoke_watch_style')) || 1;
 if (currentWatchStyle < 1 || currentWatchStyle > 3) currentWatchStyle = 1;
@@ -445,7 +454,7 @@ function bootApp() {
       filterSelect.innerHTML = `<option value="all">All Tags</option>` + triggers.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
   }
 
-  if(window.lucide) window.lucide.createIcons();
+  refreshIcons();
 
   // Detect if running as PWA (standalone mode)
   const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
@@ -497,7 +506,7 @@ let onboardingStep = 1;
 function showOnboarding() {
   document.getElementById('onboardingOverlay').classList.remove('hidden');
   initOnboardingSetup();
-  if(window.lucide) window.lucide.createIcons();
+  refreshIcons();
 }
 
 window.onboardingNext = function() {
@@ -616,7 +625,7 @@ function triggerSosInterrupterFirst() {
   }
 
   document.getElementById('sosInterrupterModal').classList.remove('hidden');
-  if(window.lucide) window.lucide.createIcons();
+  refreshIcons();
 
   if(sosTimer) clearInterval(sosTimer);
   sosTimer = setInterval(() => {
@@ -882,7 +891,7 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
   if(liveDot) { liveDot.style.backgroundColor = dotColor; liveDot.style.boxShadow = `0 0 8px ${dotColor}`; }
   const statusWrapper = document.getElementById('smartStatusWrapper');
   const statusText = document.getElementById('smartStatusText');
-  if (statusText && statusText.dataset.rawHtml !== newHtml) { statusWrapper.className = newClass; statusText.innerHTML = newHtml; statusText.dataset.rawHtml = newHtml; if(window.lucide) window.lucide.createIcons(); }
+  if (statusText && statusText.dataset.rawHtml !== newHtml) { statusWrapper.className = newClass; statusText.innerHTML = newHtml; statusText.dataset.rawHtml = newHtml; refreshIcons(); }
 }
 
 function checkPeakNudge() {
@@ -992,7 +1001,7 @@ function renderTakeoverTags() {
 function renderTakeoverMoods() {
   const grid = document.getElementById('takeoverMoodGrid'); if(!grid) return;
   grid.innerHTML = MOODS.map((m, idx) => moodChipHtml(m, idx, 'toggleTakeoverMood', false)).join('');
-  if(window.lucide) window.lucide.createIcons();
+  refreshIcons();
 }
 
 window.toggleTakeoverMood = function(idx) {
@@ -1003,7 +1012,7 @@ window.toggleTakeoverMood = function(idx) {
 function renderEditMood() {
   const grid = document.getElementById('editMoodGrid'); if(!grid) return;
   grid.innerHTML = MOODS.map((m, idx) => moodChipHtml(m, idx, 'toggleEditMood', true)).join('');
-  if(window.lucide) window.lucide.createIcons();
+  refreshIcons();
 }
 
 window.toggleEditMood = function(idx) {
@@ -1071,7 +1080,7 @@ function showUndoToast(logIdx) {
   t.style.background = 'var(--card-bg)';
   t.innerHTML = `<span class="flex items-center gap-1.5" style="color: var(--text-main);"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-500"></i> Logged</span><div class="w-px h-3 bg-gray-500/30"></div><button onclick="window.undoLog(${logIdx}, this.parentElement)" class="text-sky-500 active:scale-95 transition-transform uppercase tracking-wider">Undo</button>`;
   t.style.opacity = '0'; t.style.transform = 'translateY(-10px)';
-  c.appendChild(t); if(window.lucide) window.lucide.createIcons();
+  c.appendChild(t); refreshIcons();
   requestAnimationFrame(() => { t.style.opacity = '1'; t.style.transform = 'translateY(0)'; });
   const autoHide = setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateY(-10px)'; setTimeout(() => t.remove(), 300); }, 5000); t.dataset.timerId = autoHide;
 }
@@ -1195,7 +1204,7 @@ function switchTab(t) {
     localStorage.setItem('smoke_active_tab', t);
     if(t === 'history') renderHistory('fullHistoryList'); 
     if(t === 'insights') requestAnimationFrame(() => renderAllCharts());
-    if(window.lucide) window.lucide.createIcons();
+    refreshIcons();
   } catch(err) { console.error("switchTab Error:", err); }
 }
 
@@ -1235,7 +1244,7 @@ let pendingConfirmCallback = null;
 function showConfirm(title, message, onConfirm) {
   document.getElementById('confirmTitle').innerText = title; document.getElementById('confirmMessage').innerText = message;
   pendingConfirmCallback = onConfirm; document.getElementById('confirmModal').classList.remove('hidden');
-  if(window.lucide) window.lucide.createIcons();
+  refreshIcons();
 }
 function closeConfirmModal() { document.getElementById('confirmModal').classList.add('hidden'); pendingConfirmCallback = null; }
 function confirmYes() { const cb = pendingConfirmCallback; closeConfirmModal(); if(cb) cb(); }
@@ -1533,7 +1542,7 @@ function showStatDetail(type) {
   }
   
   icon.className = `w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${iconClass}`; icon.innerHTML = `<i data-lucide="${iconName}" class="w-5 h-5"></i>`;
-  document.getElementById('statDetailModal').classList.remove('hidden'); if(window.lucide) window.lucide.createIcons();
+  document.getElementById('statDetailModal').classList.remove('hidden'); refreshIcons();
 }
 function closeStatDetail() { document.getElementById('statDetailModal').classList.add('hidden'); }
 
@@ -1621,7 +1630,7 @@ function showShieldDashboard() {
   }
 
   document.getElementById('shieldDashboardModal').classList.remove('hidden');
-  if(window.lucide) window.lucide.createIcons();
+  refreshIcons();
 }
 function closeShieldDashboard() { document.getElementById('shieldDashboardModal').classList.add('hidden'); }
 
@@ -1729,7 +1738,7 @@ function openTriggerModal(logIdx = null) {
     renderEditMood();
     const modal = document.getElementById('triggerModal');
     if(modal) modal.classList.remove('hidden');
-    if(window.lucide) window.lucide.createIcons();
+    refreshIcons();
   } catch(e) { console.error("openTriggerModal Error:", e); }
 }
 
@@ -1804,7 +1813,7 @@ window.loadMoreHistory = function() {
 function renderHistory(tId = 'fullHistoryList', homeLimit = 3) {
   try {
     const c = document.getElementById(tId); if(!c) return;
-    if(!logs || logs.length===0) { c.innerHTML="<p class='text-center py-6 text-xs flex flex-col items-center gap-2' style='color: var(--text-muted);'><i data-lucide='inbox' class='w-6 h-6 opacity-50'></i> No logs recorded yet.</p>"; if(window.lucide) window.lucide.createIcons(); return; }
+    if(!logs || logs.length===0) { c.innerHTML="<p class='text-center py-6 text-xs flex flex-col items-center gap-2' style='color: var(--text-muted);'><i data-lucide='inbox' class='w-6 h-6 opacity-50'></i> No logs recorded yet.</p>"; refreshIcons(); return; }
 
     let filteredLogs = logs.map((l, i) => ({ ...l, origIdx: i })).reverse();
 
@@ -1859,7 +1868,7 @@ function renderHistory(tId = 'fullHistoryList', homeLimit = 3) {
         }
         const btnBox = document.getElementById('historyLoadMore');
         if(btnBox) btnBox.classList.add('hidden');
-        if(window.lucide) window.lucide.createIcons();
+        refreshIcons();
         return;
     }
 
@@ -1886,7 +1895,7 @@ function renderHistory(tId = 'fullHistoryList', homeLimit = 3) {
       }
       c.innerHTML = html;
     }
-    if(window.lucide) window.lucide.createIcons();
+    refreshIcons();
   } catch (err) { console.error("renderHistory Error", err); }
 }
 
@@ -1974,7 +1983,7 @@ function renderHealthTimeline() {
   }).join('');
 
   if (countEl) countEl.innerText = `${unlocked}/${HEALTH_MILESTONES.length}`;
-  if(window.lucide) window.lucide.createIcons();
+  refreshIcons();
 }
 
 function compressImage(file, maxW, maxH, quality, cb) {
@@ -2031,7 +2040,7 @@ function renderProgressPhotos() {
       <div class="absolute bottom-0 left-0 right-0 text-[8px] font-bold text-center py-1" style="background: rgba(0,0,0,0.5); color: #fff;">${dateStr}</div>
     </div>`;
   }).join('');
-  if(window.lucide) window.lucide.createIcons();
+  refreshIcons();
 }
 
 window.openPhotoViewer = function(id) {
@@ -2045,7 +2054,7 @@ window.openPhotoViewer = function(id) {
   if (delBtn) delBtn.dataset.photoid = id;
   const modal = document.getElementById('photoViewerModal');
   if (modal) modal.classList.remove('hidden');
-  if(window.lucide) window.lucide.createIcons();
+  refreshIcons();
 }
 
 window.closePhotoViewer = function() {
@@ -2103,6 +2112,21 @@ window.clearInsightsCustomRange = function() {
     if (sel) sel.value = 'all';
     const range = document.getElementById('insightsCustomRange');
     if (range) range.classList.add('hidden');
+    renderAllCharts();
+}
+
+window.validateInsightsDates = function() {
+    const from = document.getElementById('insightsDateFrom');
+    const to = document.getElementById('insightsDateTo');
+    if (!from || !to) return;
+    const today = new Date().toISOString().split('T')[0];
+    from.max = today;
+    to.max = today;
+    if (from.value && from.value > today) from.value = today;
+    if (to.value && to.value > today) to.value = today;
+    if (from.value && to.value && from.value > to.value) {
+      from.value = to.value;
+    }
     renderAllCharts();
 }
 function setBadge(id, text, colorClass) { const b = document.getElementById(id); if(b) { if(text) { b.innerText = text; b.className = `text-[9px] font-bold px-2 py-0.5 rounded border ${colorClass}`; b.classList.remove('hidden'); } else b.classList.add('hidden'); } }
@@ -2368,13 +2392,16 @@ function renderAllCharts() {
 
   try {
     const ctx5 = document.getElementById('chart5').getContext('2d');
-    const triggerCounts = triggers.map(t => activeLogs.filter(l => {
+    const triggerCountMap = {};
+    triggers.forEach(t => triggerCountMap[t] = 0);
+    activeLogs.forEach(l => {
         let tagsArr = [];
         if (Array.isArray(l.tags) && l.tags.length > 0) tagsArr = l.tags;
         else if (l.trigger) tagsArr = [l.trigger];
         else tagsArr = ['Uncategorized'];
-        return tagsArr.includes(t);
-    }).length);
+        tagsArr.forEach(t => { if (triggerCountMap[t] !== undefined) triggerCountMap[t]++; });
+    });
+    const triggerCounts = triggers.map(t => triggerCountMap[t] || 0);
     const topTriggerIdx = triggerCounts.length ? triggerCounts.indexOf(Math.max(...triggerCounts)) : -1;
     setBadge('badge-chart5', (topTriggerIdx >= 0 && triggerCounts[topTriggerIdx] > 0) ? `Top: ${triggers[topTriggerIdx]}` : '', 'bg-purple-500/10 text-purple-500 border-purple-500/20');
     upsertChart(5, ctx5, { type: 'doughnut', data: { labels: triggers, datasets: [{ data: triggerCounts, backgroundColor: triggers.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]), borderWidth: 0, cutout: '76%' }] }, options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12, font: { family: APP_FONT_FAMILY, size: 10 }, color: chartTextColor } }, tooltip: { ...chartTooltipTheme } } }, plugins: [centerTextPlugin] });
@@ -2433,20 +2460,32 @@ function renderHeatMap(containerId, activeLogs) {
       const key = `${l.lat.toFixed(3)},${l.lng.toFixed(3)}`;
       return [l.lat, l.lng, (locCounts[key] || 1) / maxLocCount];
     });
-    const isModal = containerId === 'mapModalContainer'; 
+    const isModal = containerId === 'mapModalContainer';
     let m = isModal ? modalMapInstance : mapInstance;
 
-    if (m) { 
-      try { m.remove(); } catch(e) {} 
-      if (isModal) modalMapInstance = null; else mapInstance = null; 
+    // If map already exists, just update heat layer data
+    if (m && m._leaflet_id) {
+      if (m._smokegapHeat) { m.removeLayer(m._smokegapHeat); m._smokegapHeat = null; }
+      if (m._smokegapMarker) { m.removeLayer(m._smokegapMarker); m._smokegapMarker = null; }
+      if (heatPoints.length > 0 && window.L.heatLayer) {
+        m._smokegapHeat = L.heatLayer(heatPoints, {radius: 28, blur: 18, maxZoom: 17, minOpacity: 0.4}).addTo(m);
+      } else {
+        m._smokegapMarker = L.marker([lat, lng]).addTo(m);
+      }
+      m.setView([lat, lng], Math.min(m.getZoom(), 13));
+      setTimeout(() => { try { m.invalidateSize(); } catch(e){} }, 100);
+      return;
     }
+
+    // Create new map only if none exists
+    if (m) { try { m.remove(); } catch(e) {} }
     if (mapEl._leaflet_id) { mapEl._leaflet_id = null; mapEl.innerHTML = ""; }
 
     m = L.map(containerId, {zoomControl: false, attributionControl: false}).setView([lat, lng], 13);
     L.tileLayer((isLightTheme()) ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png' : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {maxZoom: 19}).addTo(m);
-    
+
     if (isModal) modalMapInstance = m; else mapInstance = m;
-    
+
     if(heatPoints.length > 0 && window.L.heatLayer) m._smokegapHeat = L.heatLayer(heatPoints, {radius: 28, blur: 18, maxZoom: 17, minOpacity: 0.4}).addTo(m);
     else m._smokegapMarker = L.marker([lat, lng]).addTo(m);
 
@@ -2489,7 +2528,7 @@ window.deleteLogFromHistory = function(idx) {
       t.style.background = 'var(--card-bg)';
       t.innerHTML = `<span class="flex items-center gap-1.5" style="color: var(--text-main);"><i data-lucide="trash-2" class="w-3.5 h-3.5 text-red-400"></i> Deleted</span><div class="w-px h-3 bg-gray-500/30"></div><button onclick="window.restoreDeletedLog(this)" data-log='${JSON.stringify(deletedLog).replace(/'/g, "&#39;")}' class="text-sky-500 active:scale-95 transition-transform uppercase tracking-wider">Undo</button>`;
       t.style.opacity = '0'; t.style.transform = 'translateY(-10px)';
-      c.appendChild(t); if(window.lucide) window.lucide.createIcons();
+      c.appendChild(t); refreshIcons();
       requestAnimationFrame(() => { t.style.opacity = '1'; t.style.transform = 'translateY(0)'; });
       const autoHide = setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateY(-10px)'; setTimeout(() => t.remove(), 300); }, 5000);
       t.dataset.timerId = autoHide;
@@ -2555,7 +2594,7 @@ function renderHealthTimeline() {
 
   if (countEl) countEl.innerText = `${unlocked} of ${HEALTH_MILESTONES.length} unlocked`;
   if (progressBar) progressBar.style.width = `${(unlocked / HEALTH_MILESTONES.length) * 100}%`;
-  if (window.lucide) window.lucide.createIcons();
+  refreshIcons();
 }
 
 // ==================== MONEY VISUALIZER ====================
@@ -2630,7 +2669,7 @@ function renderMoneyVisualizer() {
 window.openMoneyVisualizer = function() {
   renderMoneyVisualizer();
   document.getElementById('moneyVisualizerModal').classList.remove('hidden');
-  if (window.lucide) window.lucide.createIcons();
+  refreshIcons();
 };
 
 window.closeMoneyVisualizer = function() {
@@ -2696,7 +2735,7 @@ function showRelapseModal(logIdx, gap) {
   `;
 
   modal.classList.remove('hidden');
-  if (window.lucide) window.lucide.createIcons();
+  refreshIcons();
   if (window.posthog) posthog.capture('relapse_modal_shown', { gap_minutes: gap });
 }
 
@@ -2829,7 +2868,7 @@ window.openBreathingModal = function() {
   document.getElementById('breathingModal').classList.remove('hidden');
   document.getElementById('breathSelector').classList.remove('hidden');
   document.getElementById('breathActive').classList.add('hidden');
-  if (window.lucide) window.lucide.createIcons();
+  refreshIcons();
 };
 
 window.closeBreathingModal = function() {
@@ -3446,7 +3485,7 @@ function renderPatternIntel() {
   }
 
   card.classList.remove('hidden');
-  if (window.lucide) window.lucide.createIcons();
+  refreshIcons();
 }
 
 // ==================== END TIER 2 FEATURES ====================
