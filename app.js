@@ -2694,6 +2694,8 @@ function renderHealthTimeline() {
   if (ringEl) ringEl.style.strokeDashoffset = (326.73 * (1 - recPct / 100)).toFixed(1);
   const countModalEl = document.getElementById('milestoneCountModal');
   if (countModalEl) countModalEl.innerText = `${unlocked}/${HEALTH_MILESTONES.length}`;
+  const teaserLine = document.getElementById('milestoneTeaserLine');
+  if (teaserLine) teaserLine.style.width = `${recPct}%`;
   refreshIcons();
 }
 
@@ -3597,6 +3599,8 @@ function renderPatternIntel() {
   const ringEl = document.getElementById('intelScoreRing');
   if (scoreEl) scoreEl.innerText = depthScore;
   if (ringEl) ringEl.style.strokeDashoffset = (175.93 * (1 - depthScore / 100)).toFixed(1);
+  const teaserLine = document.getElementById('patternTeaserLine');
+  if (teaserLine) teaserLine.style.width = `${depthScore}%`;
 
   const heroEl = document.getElementById('intelHeroText');
   if (heroEl) {
