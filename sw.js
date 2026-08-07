@@ -1,5 +1,5 @@
 // PAUSE SERVICE WORKER - Offline Caching v3.0 (Mobile Optimized)
-const CACHE_VERSION = 'v12';
+const CACHE_VERSION = 'v13';
 const CACHE_NAME = `pause-cache-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `pause-runtime-${CACHE_VERSION}`;
 
@@ -8,6 +8,7 @@ const PRECACHE_FILES = [
   './index.html',
   './app.js',
   './lucide.min.js',
+  './tailwind-compiled.css',
   './manifest.json',
   './icons/pause_icon_192.png',
   './icons/pause_icon_512.png',

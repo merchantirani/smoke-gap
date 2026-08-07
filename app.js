@@ -1473,6 +1473,55 @@ function computeMomentumScore(today, todayWaves) {
 
 function formatGap(m) { if (m === null || m === undefined || isNaN(m)) return '—'; if (m < 60) return `${m}m`; return `${Math.floor(m / 60)}h ${m % 60 > 0 ? (m % 60) + 'm' : ''}`.trim(); }
 
+// Smart time formatting for the Widen The Gap chart — minutes → hours → days
+function formatGapSmart(min) {
+  if (min === null || min === undefined || isNaN(min) || min < 0) return '—';
+  if (min < 60) return `${Math.round(min)}m`;
+  if (min < 1440) { const h = Math.floor(min / 60), m = Math.round(min % 60); return m ? `${h}h ${m}m` : `${h}h`; }
+  const d = min / 1440;
+  return `${d >= 10 ? Math.round(d) : d.toFixed(1)}d`;
+}
+
+function formatChartTime(min) {
+  if (min === null || min === undefined || isNaN(min) || min < 0) return '';
+  if (min < 60) return `${Math.round(min)}m`;
+  if (min < 1440) { const h = min / 60; return `${h >= 10 ? Math.round(h) : (Number.isInteger(h) ? h : h.toFixed(1))}h`; }
+  const d = min / 1440;
+  return `${d >= 10 ? Math.round(d) : (Number.isInteger(d) ? d : d.toFixed(1))}d`;
+}
+
+// Daily average gap: groups cigarette gaps by day, excludes sleep/quit outliers (> maxCapMin)
+function computeDailyGaps(logsArr, maxCapMin) {
+  const dayMap = new Map();
+  for (let i = 0; i < logsArr.length; i++) {
+    const l = logsArr[i];
+    const g = l.gap;
+    if (g === null || g === undefined || g > maxCapMin) continue;
+    const d = new Date(l.timestamp);
+    const key = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    if (!dayMap.has(key)) dayMap.set(key, { gaps: [] });
+    dayMap.get(key).gaps.push(g);
+  }
+  const sorted = Array.from(dayMap.entries()).sort((a, b) => a[0] - b[0]);
+  return sorted.map(([key, { gaps }]) => ({ key, avg: gaps.length ? Math.round(gaps.reduce((a, b) => a + b, 0) / gaps.length) : null }));
+}
+
+// Trailing rolling average (past-only) for a smooth premium trend line
+function smoothDaily(arr, window) {
+  const out = arr.slice();
+  if (window <= 1) return out;
+  for (let i = 0; i < arr.length; i++) {
+    if (arr[i] === null || arr[i] === undefined) continue;
+    const start = Math.max(0, i - window + 1);
+    let sum = 0, n = 0;
+    for (let j = start; j <= i; j++) {
+      if (arr[j] !== null && arr[j] !== undefined) { sum += arr[j]; n++; }
+    }
+    if (n) out[i] = Math.round(sum / n);
+  }
+  return out;
+}
+
 function updateDynamicTagline() {
   const tagline = document.getElementById('headerTagline');
   if (!tagline) return;
@@ -2400,7 +2449,18 @@ function renderAllCharts() {
   const allGaps = activeLogs.map(l => l.gap).filter(g => g !== null && g !== undefined);
   document.getElementById('insightLongestGap').innerText = allGaps.length > 0 ? formatGap(Math.max(...allGaps)) : '--';
 
-  setBadge('badge-chart1', gappedLogs.length > 0 ? `Avg ${formatGap(Math.round(gappedLogs.reduce((a, b) => a + b.gap, 0) / gappedLogs.length))}` : '', 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20');
+  const dailyGaps = computeDailyGaps(activeLogs, 720).map(d => d.avg).filter(v => v !== null && v !== undefined);
+  let badge1Txt = '', badge1Cls = 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
+  if (dailyGaps.length >= 2) {
+    const last = dailyGaps[dailyGaps.length - 1], prev = dailyGaps[dailyGaps.length - 2];
+    const delta = last - prev;
+    if (delta > 0) badge1Txt = `↑ ${formatGapSmart(delta)}`;
+    else if (delta < 0) { badge1Txt = `↓ ${formatGapSmart(Math.abs(delta))}`; badge1Cls = 'bg-amber-500/10 text-amber-500 border-amber-500/20'; }
+    else badge1Txt = `= ${formatGapSmart(last)}`;
+  } else if (dailyGaps.length === 1) {
+    badge1Txt = formatGapSmart(dailyGaps[0]);
+  }
+  setBadge('badge-chart1', badge1Txt, badge1Cls);
   setBadge('badge-chart2', activeLogs.length > 0 ? `${activeLogs.length} Total` : '', 'bg-amber-500/10 text-amber-500 border-amber-500/20');
 
   const labels = activeLogs.length > 0 ? activeLogs.map(l => {
@@ -2410,7 +2470,15 @@ function renderAllCharts() {
     return d.toLocaleDateString([], {month:'short', day:'numeric'});
   }) : ['Start logging to see your trend'];
 
-  const gaps = activeLogs.length > 0 ? activeLogs.map(l => l.gap) : [0];
+  // Chart1 data: daily average gaps for multi-day, per-cigarette for today
+  const isMultiDay = filter !== 'today';
+  const dailySeries = isMultiDay ? computeDailyGaps(activeLogs, 720) : [];
+  const chart1Labels = isMultiDay
+    ? (dailySeries.length > 0 ? dailySeries.map(d => { const dt = new Date(d.key); return (filter === '7days') ? dt.toLocaleDateString([], {weekday:'short'}) : dt.toLocaleDateString([], {month:'short', day:'numeric'}); }) : ['Start logging'])
+    : (activeLogs.length > 0 ? activeLogs.map(l => formatAppTime(new Date(l.timestamp))) : ['Start logging']);
+  const chart1Data = isMultiDay
+    ? (dailySeries.length > 0 ? smoothDaily(dailySeries.map(d => d.avg), 3) : [null])
+    : (activeLogs.length > 0 ? activeLogs.map(l => (l.gap !== null && l.gap !== undefined) ? l.gap : null) : [null]);
   const chartTextColor = (isLightTheme()) ? '#64748B' : '#9CA3AF';
   const chartTooltipTheme = (isLightTheme())
     ? { backgroundColor: 'rgba(255, 255, 255, 0.96)', titleColor: '#0F172A', bodyColor: '#334155', titleFont: { family: APP_FONT_FAMILY, size: 11, weight: '700' }, bodyFont: { family: APP_FONT_FAMILY, size: 11, weight: '600' }, borderColor: 'rgba(203, 213, 225, 0.9)', borderWidth: 1, padding: 12, cornerRadius: 12, displayColors: false }
@@ -2453,11 +2521,44 @@ function renderAllCharts() {
   }
 
   const MAX_CHART_POINTS = 30;
-  const ds1 = downsample(labels, gaps, MAX_CHART_POINTS);
+  const ds1 = downsample(chart1Labels, chart1Data, MAX_CHART_POINTS);
 
   try {
     const ctx1 = document.getElementById('chart1').getContext('2d');
-    upsertChart(1, ctx1, { type: 'line', data: { labels: ds1.labels, datasets: [{ label: 'Gap (mins)', data: ds1.data, borderColor: '#10B981', backgroundColor: createPremiumGradient(ctx1, '#10B981'), borderWidth: 2.5, tension: 0.4, fill: true, pointRadius: ds1.data.length <= 15 ? 3 : 0, pointHitRadius: 15, pointBackgroundColor: '#10B981', pointBorderColor: '#fff', pointBorderWidth: 1.5 }] }, options: { ...proOptions, plugins: { ...proOptions.plugins, tooltip: mergeTooltip(proOptions.plugins.tooltip, fullDateTimeTooltip) }, scales: { ...proOptions.scales, x: { ...proOptions.scales.x, offset: true } } }, plugins: [crosshairPlugin] });
+    const chart1Tooltip = {
+      callbacks: {
+        title: (items) => items.length ? (ds1.labels[items[0].dataIndex] || '') : '',
+        label: (ctx) => { const v = ctx.parsed.y; return ` ${ctx.dataset.label}: ${formatGapSmart(v)}`; }
+      }
+    };
+    upsertChart(1, ctx1, {
+      type: 'line',
+      data: { labels: ds1.labels, datasets: [{
+        label: isMultiDay ? 'Daily Avg Gap' : 'Gap',
+        data: ds1.data,
+        borderColor: '#10B981',
+        backgroundColor: createPremiumGradient(ctx1, '#10B981'),
+        borderWidth: 2.5,
+        tension: 0.45,
+        fill: true,
+        pointRadius: ds1.data.length <= 15 ? 3 : 0,
+        pointHitRadius: 15,
+        pointBackgroundColor: '#10B981',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 1.5,
+        spanGaps: true
+      }] },
+      options: {
+        ...proOptions,
+        plugins: { ...proOptions.plugins, tooltip: mergeTooltip(proOptions.plugins.tooltip, chart1Tooltip) },
+        scales: {
+          ...proOptions.scales,
+          x: { ...proOptions.scales.x, offset: true },
+          y: { ...proOptions.scales.y, ticks: { ...proOptions.scales.y.ticks, callback: (v) => formatChartTime(v), precision: 0 } }
+        }
+      },
+      plugins: [crosshairPlugin]
+    });
   } catch(e){}
 
   try {
