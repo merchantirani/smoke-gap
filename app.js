@@ -2722,8 +2722,7 @@ function renderLifeRegainedCounter() {
     if (logs.length < 2) {
       // Show empty state for new users
       textEl.textContent = '—';
-      textEl.style.fontSize = '1.5rem';
-      if (subEl) subEl.textContent = 'Log more cigarettes to see life reclaimed';
+      if (subEl) subEl.textContent = 'Log more to unlock';
       card.classList.remove('hidden');
       return;
     }
@@ -2745,14 +2744,13 @@ function renderLifeRegainedCounter() {
     if (hours > 0) display += `${hours}h `;
     display += `${mins}m`;
     textEl.textContent = display.trim();
-    textEl.style.fontSize = '';
 
     if (subEl) {
       if (reclaimedCigs > 0) {
-        subEl.textContent = `From ${reclaimedCigs.toLocaleString()} cigarettes not smoked`;
+        subEl.textContent = `${reclaimedCigs.toLocaleString()} cigs avoided`;
         textEl.style.color = '';
       } else {
-        subEl.textContent = `You've smoked ${actualCigs} so far — keep going, every gap counts`;
+        subEl.textContent = `${actualCigs} smoked — keep going`;
         textEl.style.color = 'var(--accent)';
       }
     }
