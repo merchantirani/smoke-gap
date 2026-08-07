@@ -458,7 +458,7 @@ if (typeof Chart !== 'undefined') {
   try { Chart.defaults.font.family = APP_FONT_FAMILY; } catch(e) {}
 }
 const crosshairPlugin = { id: 'crosshair', afterDraw: chart => { if (chart.tooltip?._active?.length && (chart.config.type === 'line' || chart.config.type === 'bar')) { const activePoint = chart.tooltip._active[0]; const ctx = chart.ctx; const x = activePoint.element.x; ctx.save(); ctx.beginPath(); ctx.moveTo(x, chart.scales.y.top); ctx.lineTo(x, chart.scales.y.bottom); ctx.lineWidth = 1.5; ctx.strokeStyle = (isLightTheme()) ? 'rgba(15, 23, 42, 0.18)' : 'rgba(255, 255, 255, 0.2)'; ctx.setLineDash([4, 4]); ctx.stroke(); ctx.restore(); } } };
-const centerTextPlugin = { id: 'centerText', beforeDraw: chart => { if (chart.config.type === 'doughnut') { const ctx = chart.ctx; ctx.save(); let text = ""; if (chart.canvas.id === 'chart4') { const smoked = chart.data.datasets[0].data[0] || 0; const resisted = chart.data.datasets[0].data[1] || 0; const total = smoked + resisted; text = total > 0 ? Math.round((resisted/total)*100) + "%" : "🙌"; } else { const total = chart.data.datasets[0].data.reduce((a,b)=>a+b, 0); text = total > 0 ? total + " Logs" : "Keep\ngoing"; } const isPct = chart.canvas.id === 'chart4'; ctx.font = "700 " + (isPct ? '26px' : '14px') + " " + (isPct ? NUMERIC_FONT_FAMILY : APP_FONT_FAMILY); const x = chart.chartArea.left + (chart.chartArea.right - chart.chartArea.left) / 2; const y = chart.chartArea.top + (chart.chartArea.bottom - chart.chartArea.top) / 2; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = (isLightTheme()) ? "#0F172A" : "#E5E7EB"; ctx.fillText(text, x, y); ctx.restore(); } } };
+const centerTextPlugin = { id: 'centerText', beforeDraw: chart => { if (chart.config.type !== 'doughnut') return; const ctx = chart.ctx; ctx.save(); let text = ""; if (chart.canvas.id === 'chart4') { const smoked = chart.data.datasets[0].data[0] || 0; const resisted = chart.data.datasets[0].data[1] || 0; const total = smoked + resisted; text = total > 0 ? Math.round((resisted/total)*100) + "%" : "Log first urge"; } else { const total = chart.data.datasets[0].data.reduce((a,b)=>a+b, 0); text = total > 0 ? total + " Logs" : "Keep\ngoing"; } const isPct = chart.canvas.id === 'chart4'; ctx.font = "700 " + (isPct ? '26px' : '14px') + " " + (isPct ? NUMERIC_FONT_FAMILY : APP_FONT_FAMILY); const x = chart.chartArea.left + (chart.chartArea.right - chart.chartArea.left) / 2; const y = chart.chartArea.top + (chart.chartArea.bottom - chart.chartArea.top) / 2; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = (isLightTheme()) ? "#0F172A" : "#E5E7EB"; ctx.fillText(text, x, y); ctx.restore(); } };
 
 function formatAppTime(dateObj) { return dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: settings.timeFormat === '12h' }); }
 
@@ -2565,10 +2565,9 @@ function renderAllCharts() {
     let dayMap = {}; activeLogs.forEach(l => { let d = document.getElementById('insightsDateFilter').value === '7days' ? new Date(l.timestamp).toLocaleDateString([], {weekday:'short'}) : new Date(l.timestamp).toLocaleDateString([], {month:'short', day:'numeric'}); dayMap[d] = (dayMap[d] || 0) + 1; });
     let dayLabels = Object.keys(dayMap), dayCounts = Object.values(dayMap); if(dayLabels.length === 0) { dayLabels = ['Today']; dayCounts = [0]; }
     const ctx2 = document.getElementById('chart2').getContext('2d');
-    const barGradient = ctx2.createLinearGradient(0, 0, 0, 180);
-    barGradient.addColorStop(0, '#10B981');
-    barGradient.addColorStop(1, '#10B98180');
-    upsertChart(2, ctx2, { type: 'bar', data: { labels: dayLabels, datasets: [{ label: 'Count', data: dayCounts, backgroundColor: barGradient, borderRadius: { topLeft: 6, topRight: 6, bottomLeft: 2, bottomRight: 2 }, borderSkipped: false, maxBarThickness: 20, barPercentage: 0.6 }, { label: 'Limit', data: dayLabels.map(() => settings.dailyLimit), type: 'line', borderColor: '#EF4444', borderWidth: 1.5, borderDash: [5,5], pointRadius: 0, borderCapStyle: 'round' }] }, options: { ...proOptions, scales: { x: { ...proOptions.scales.x, offset: true }, y: { ...proOptions.scales.y } } }, plugins: [crosshairPlugin] });
+    const barColors = dayCounts.map(c => c > settings.dailyLimit ? '#EF4444' : '#10B981');
+    const barBgColors = dayCounts.map(c => c > settings.dailyLimit ? 'rgba(239,68,68,0.25)' : 'rgba(16,185,129,0.25)');
+    upsertChart(2, ctx2, { type: 'bar', data: { labels: dayLabels, datasets: [{ label: 'Count', data: dayCounts, backgroundColor: barBgColors, borderColor: barColors, borderWidth: 1.5, borderRadius: { topLeft: 6, topRight: 6, bottomLeft: 2, bottomRight: 2 }, borderSkipped: false, maxBarThickness: 20, barPercentage: 0.6 }, { label: 'Limit', data: dayLabels.map(() => settings.dailyLimit), type: 'line', borderColor: '#EF4444', borderWidth: 1.5, borderDash: [5,5], pointRadius: 0, borderCapStyle: 'round' }] }, options: { ...proOptions, scales: { x: { ...proOptions.scales.x, offset: true }, y: { ...proOptions.scales.y } }, plugins: { ...proOptions.plugins, tooltip: { ...proOptions.plugins.tooltip, callbacks: { label: (ctx) => { if (ctx.datasetIndex === 0) return ` ${ctx.parsed.y} sticks`; return ` Limit: ${ctx.parsed.y}`; } } } } }, plugins: [crosshairPlugin] });
   } catch(e){}
 
   try {
@@ -2584,9 +2583,10 @@ function renderAllCharts() {
     const ctx3 = document.getElementById('chart3').getContext('2d');
     const ds3s = downsample(labels, spendData, MAX_CHART_POINTS);
     const ds3v = downsample(labels, savedData, MAX_CHART_POINTS);
-    upsertChart(3, ctx3, { type: 'line', data: { labels: ds3s.labels, datasets: [{ label: 'Spent', data: ds3s.data, borderColor: '#EF4444', backgroundColor: createGradient(ctx3, 'rgba(239, 68, 68, 0.15)'), fill: true, tension: 0.4, borderWidth: 3, pointRadius: ds3s.data.length <= 15 ? 3 : 0, pointHitRadius: 15 }, { label: 'Saved', data: ds3v.data, borderColor: '#10B981', backgroundColor: createGradient(ctx3, 'rgba(16, 185, 129, 0.15)'), fill: true, tension: 0.4, borderWidth: 3, pointRadius: ds3v.data.length <= 15 ? 3 : 0, pointHitRadius: 15 }] }, options: { ...proOptions, plugins: { ...proOptions.plugins, tooltip: mergeTooltip(proOptions.plugins.tooltip, fullDateTimeTooltip) }, scales: { ...proOptions.scales, x: { ...proOptions.scales.x, offset: true } } }, plugins: [crosshairPlugin] });
+    upsertChart(3, ctx3, { type: 'line', data: { labels: ds3s.labels, datasets: [{ label: 'Spent', data: ds3s.data, borderColor: '#EF4444', backgroundColor: createGradient(ctx3, 'rgba(239, 68, 68, 0.15)'), fill: true, tension: 0.4, borderWidth: 3, pointRadius: ds3s.data.length <= 15 ? 3 : 0, pointHitRadius: 15 }, { label: 'Saved', data: ds3v.data, borderColor: '#10B981', backgroundColor: createGradient(ctx3, 'rgba(16, 185, 129, 0.15)'), fill: true, tension: 0.4, borderWidth: 3, pointRadius: ds3v.data.length <= 15 ? 3 : 0, pointHitRadius: 15 }] }, options: { ...proOptions, plugins: { ...proOptions.plugins, tooltip: mergeTooltip(proOptions.plugins.tooltip, fullDateTimeTooltip) }, scales: { ...proOptions.scales, x: { ...proOptions.scales.x, offset: true }, y: { ...proOptions.scales.y, ticks: { ...proOptions.scales.y.ticks, callback: (v) => `${settings.currency} ${v}` } } } }, plugins: [crosshairPlugin] });
     let finalSaved = savedData.length > 0 ? savedData[savedData.length - 1] : '0.0';
-    setBadge('badge-chart3', activeLogs.length > 0 ? `Saved ${settings.currency} ${finalSaved}` : '', 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20');
+    const baselinePerDay = baselineGapMs > 0 ? Math.round((24 * 60 * 60 * 1000) / baselineGapMs) : settings.dailyLimit;
+    setBadge('badge-chart3', activeLogs.length > 0 ? `Saved ${settings.currency}${finalSaved} | @${baselinePerDay}/day` : '', 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20');
   } catch(e){}
 
   try {
@@ -2605,10 +2605,36 @@ function renderAllCharts() {
         else tagsArr = ['Uncategorized'];
         tagsArr.forEach(t => { if (triggerCountMap[t] !== undefined) triggerCountMap[t]++; });
     });
-    const triggerCounts = triggers.map(t => triggerCountMap[t] || 0);
-    const topTriggerIdx = triggerCounts.length ? triggerCounts.indexOf(Math.max(...triggerCounts)) : -1;
-    setBadge('badge-chart5', (topTriggerIdx >= 0 && triggerCounts[topTriggerIdx] > 0) ? `Top: ${triggers[topTriggerIdx]}` : '', 'bg-purple-500/10 text-purple-500 border-purple-500/20');
-    upsertChart(5, ctx5, { type: 'doughnut', data: { labels: triggers, datasets: [{ data: triggerCounts, backgroundColor: triggers.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]), borderWidth: 3, borderColor: (isLightTheme()) ? '#FFFFFF' : '#11131A', borderRadius: 4, cutout: '72%', spacing: 2 }] }, options: { responsive: true, maintainAspectRatio: false, animation: { animateRotate: true, duration: 800 }, plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, padding: 10, font: { family: "'General Sans', sans-serif", size: 9, weight: '600' }, color: chartTextColor, usePointStyle: true, pointStyle: 'circle' } }, tooltip: { ...chartTooltipTheme, backgroundColor: (isLightTheme()) ? 'rgba(255,255,255,0.98)' : 'rgba(15,23,42,0.98)', borderColor: (isLightTheme()) ? 'rgba(203,213,225,0.5)' : 'rgba(255,255,255,0.06)', borderWidth: 1, cornerRadius: 14, padding: 12 } } }, plugins: [centerTextPlugin] });
+    // Sort by count, only show triggers with count > 0
+    const sortedTriggers = triggers
+      .map((t, i) => ({ name: t, count: triggerCountMap[t] || 0, color: CHART_COLORS[i % CHART_COLORS.length] }))
+      .filter(t => t.count > 0)
+      .sort((a, b) => b.count - a.count);
+    const topTriggerIdx = sortedTriggers.length ? 0 : -1;
+    setBadge('badge-chart5', (topTriggerIdx >= 0 && sortedTriggers[0].count > 0) ? `Top: ${sortedTriggers[0].name}` : '', 'bg-purple-500/10 text-purple-500 border-purple-500/20');
+    if (sortedTriggers.length > 0) {
+      upsertChart(5, ctx5, {
+        type: 'bar',
+        data: {
+          labels: sortedTriggers.map(t => t.name),
+          datasets: [{ label: 'Cigarettes', data: sortedTriggers.map(t => t.count), backgroundColor: sortedTriggers.map(t => t.color + '30'), borderColor: sortedTriggers.map(t => t.color), borderWidth: 1.5, borderRadius: { topLeft: 4, bottomLeft: 4, topRight: 4, bottomRight: 4 }, maxBarThickness: 18, barPercentage: 0.7 }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 800, easing: 'easeOutQuart' },
+          plugins: {
+            legend: { display: false },
+            tooltip: { ...chartTooltipTheme, backgroundColor: (isLightTheme()) ? 'rgba(255,255,255,0.98)' : 'rgba(15,23,42,0.98)', borderColor: (isLightTheme()) ? 'rgba(203,213,225,0.5)' : 'rgba(255,255,255,0.06)', borderWidth: 1, cornerRadius: 14, padding: 12, callbacks: { label: (ctx) => ` ${ctx.parsed.x} cigarettes` } }
+          },
+          scales: {
+            x: { display: true, grid: { color: 'rgba(156,163,175,0.04)', drawBorder: false }, border: { display: false }, ticks: { color: chartTextColor, font: { family: "'Space Grotesk', monospace", size: 9, weight: '600' }, precision: 0, padding: 8 } },
+            y: { display: true, grid: { display: false }, border: { display: false }, ticks: { color: chartTextColor, font: { family: "'General Sans', sans-serif", size: 10, weight: '600' }, padding: 8, mirror: false } }
+          }
+        }
+      });
+    }
   } catch(e){}
 
   try {
@@ -2639,10 +2665,10 @@ function renderAllCharts() {
     
     const chart6El = document.getElementById('chart6');
     if (chart6El) {
-      let datasets = topTriggers.map((t, i) => ({ label: t, data: triggerByPart[t], backgroundColor: CHART_COLORS[i % CHART_COLORS.length], borderRadius: 0, maxBarThickness: 32, stack: 'triggers' }));
-      if(otherByPart.some(v => v > 0)) datasets.push({ label: 'Other Triggers', data: otherByPart, backgroundColor: '#9CA3AF', borderRadius: 0, maxBarThickness: 32, stack: 'triggers' });
-      datasets.push({ label: 'Resisted', data: wavesByPart, backgroundColor: '#0EA5E9', borderRadius: 0, maxBarThickness: 32, stack: 'resisted' });
-      upsertChart(6, chart6El.getContext('2d'), { type: 'bar', data: { labels: dayParts, datasets: datasets }, options: { ...proOptions, scales: { x: { ...proOptions.scales.x, stacked: true, offset: true }, y: { ...proOptions.scales.y, stacked: true, ticks: { ...proOptions.scales.y.ticks, precision: 0 } } }, plugins: { ...proOptions.plugins, legend: { display: true, position: 'bottom', labels: { boxWidth: 8, padding: 10, font: { family: APP_FONT_FAMILY, size: 9 }, color: chartTextColor } } } } });
+      let datasets = topTriggers.map((t, i) => ({ label: t, data: triggerByPart[t], backgroundColor: CHART_COLORS[i % CHART_COLORS.length], borderRadius: { topLeft: 4, topRight: 4 }, maxBarThickness: 22 }));
+      if(otherByPart.some(v => v > 0)) datasets.push({ label: 'Other Triggers', data: otherByPart, backgroundColor: '#9CA3AF', borderRadius: { topLeft: 4, topRight: 4 }, maxBarThickness: 22 });
+      datasets.push({ label: 'Resisted', data: wavesByPart, backgroundColor: '#0EA5E9', borderRadius: { topLeft: 4, topRight: 4 }, maxBarThickness: 22 });
+      upsertChart(6, chart6El.getContext('2d'), { type: 'bar', data: { labels: dayParts, datasets: datasets }, options: { ...proOptions, scales: { x: { ...proOptions.scales.x, offset: true }, y: { ...proOptions.scales.y, ticks: { ...proOptions.scales.y.ticks, precision: 0 } } }, plugins: { ...proOptions.plugins, legend: { display: true, position: 'bottom', labels: { boxWidth: 8, padding: 10, font: { family: APP_FONT_FAMILY, size: 9 }, color: chartTextColor } } } } });
     }
   } catch(e){}
   
