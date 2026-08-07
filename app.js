@@ -258,6 +258,7 @@ const HEALTH_MILESTONES = [
   {mins: 20160, emoji: '🏃', title: 'Circulation Boosts', desc: 'Blood circulation improves significantly.'},
   {mins: 43200, emoji: '🌟', title: 'Lung Function Grows', desc: 'Cilia regrow and lung function increases.'},
 ];
+let waves = [];
 try { waves = JSON.parse(localStorage.getItem('smoke_waves')) || []; if(!Array.isArray(waves)) waves = []; } catch(e) { waves = []; }
 
 let progressPhotos = [];
@@ -429,7 +430,7 @@ if (typeof Chart !== 'undefined') {
   try { Chart.defaults.font.family = APP_FONT_FAMILY; } catch(e) {}
 }
 const crosshairPlugin = { id: 'crosshair', afterDraw: chart => { if (chart.tooltip?._active?.length && (chart.config.type === 'line' || chart.config.type === 'bar')) { const activePoint = chart.tooltip._active[0]; const ctx = chart.ctx; const x = activePoint.element.x; ctx.save(); ctx.beginPath(); ctx.moveTo(x, chart.scales.y.top); ctx.lineTo(x, chart.scales.y.bottom); ctx.lineWidth = 1.5; ctx.strokeStyle = (isLightTheme()) ? 'rgba(15, 23, 42, 0.18)' : 'rgba(255, 255, 255, 0.2)'; ctx.setLineDash([4, 4]); ctx.stroke(); ctx.restore(); } } };
-const centerTextPlugin = { id: 'centerText', beforeDraw: chart => { if (chart.config.type === 'doughnut') { const ctx = chart.ctx; ctx.restore(); let text = ""; if (chart.canvas.id === 'chart4') { const smoked = chart.data.datasets[0].data[0] || 0; const resisted = chart.data.datasets[0].data[1] || 0; const total = smoked + resisted; text = total > 0 ? Math.round((resisted/total)*100) + "%" : "🙌"; } else { const total = chart.data.datasets[0].data.reduce((a,b)=>a+b, 0); text = total > 0 ? total + " Logs" : "Keep\ngoing"; } const isPct = chart.canvas.id === 'chart4'; ctx.font = "700 " + (isPct ? '26px' : '14px') + " " + (isPct ? NUMERIC_FONT_FAMILY : APP_FONT_FAMILY); const x = chart.chartArea.left + (chart.chartArea.right - chart.chartArea.left) / 2; const y = chart.chartArea.top + (chart.chartArea.bottom - chart.chartArea.top) / 2; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = (isLightTheme()) ? "#0F172A" : "#E5E7EB"; ctx.fillText(text, x, y); ctx.save(); } } };
+const centerTextPlugin = { id: 'centerText', beforeDraw: chart => { if (chart.config.type === 'doughnut') { const ctx = chart.ctx; ctx.save(); let text = ""; if (chart.canvas.id === 'chart4') { const smoked = chart.data.datasets[0].data[0] || 0; const resisted = chart.data.datasets[0].data[1] || 0; const total = smoked + resisted; text = total > 0 ? Math.round((resisted/total)*100) + "%" : "🙌"; } else { const total = chart.data.datasets[0].data.reduce((a,b)=>a+b, 0); text = total > 0 ? total + " Logs" : "Keep\ngoing"; } const isPct = chart.canvas.id === 'chart4'; ctx.font = "700 " + (isPct ? '26px' : '14px') + " " + (isPct ? NUMERIC_FONT_FAMILY : APP_FONT_FAMILY); const x = chart.chartArea.left + (chart.chartArea.right - chart.chartArea.left) / 2; const y = chart.chartArea.top + (chart.chartArea.bottom - chart.chartArea.top) / 2; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = (isLightTheme()) ? "#0F172A" : "#E5E7EB"; ctx.fillText(text, x, y); ctx.restore(); } } };
 
 function formatAppTime(dateObj) { return dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: settings.timeFormat === '12h' }); }
 
@@ -944,16 +945,6 @@ function setupPin() { if(hasPin) { showConfirm("Remove PIN?", "You won't need a 
 function closePinSetupModal() { document.getElementById('pinSetupModal').classList.add('hidden'); }
 function savePinSetup() { const p = document.getElementById('pinSetupInput').value; if(/^\d{4}$/.test(p)) { localStorage.setItem('smoke_pin_hash', hashPin(p)); hasPin = true; storedPinHash = hashPin(p); closePinSetupModal(); document.getElementById('pinStatusBtn').innerText = "Remove PIN"; showToast("PIN saved"); } else { document.getElementById('pinSetupError').classList.remove('hidden'); } }
 
-function handleLogClick() {
-  // If SOS is enabled, show it first before logging
-  if(settings.notifEnableSos) {
-    triggerSosInterrupterFirst();
-  } else {
-    // If SOS is disabled, log directly
-    actuallyLogCigarette();
-  }
-}
-
 function applyIntensityStyling(val, prefix, sizeClass) {
   for(let i=1; i<=5; i++) {
     const b = document.getElementById(prefix+i); if(!b) continue;
@@ -1123,6 +1114,10 @@ function checkLock() {
       if(rem<=0) { clearInterval(cooldownTimer); btn.disabled=false; btn.style.opacity = '1'; if(textEl) textEl.innerText='Hold to Smoke'; if(settings.haptics && navigator.vibrate) navigator.vibrate([30, 50, 30]); showToast("Ready to log 🔓"); }
       else if(textEl) textEl.innerText=`COOLDOWN (${Math.floor(rem/60)}:${(rem%60).toString().padStart(2,'0')})`;
     }, 1000);
+  } else {
+    if(cooldownTimer) clearInterval(cooldownTimer); cooldownTimer = null;
+    btn.disabled = false; btn.style.opacity = '1';
+    const textEl = document.getElementById('holdText'); if(textEl) textEl.innerText = 'Hold to Smoke';
   }
 }
 
@@ -2043,51 +2038,6 @@ function renderHistoryItem(l, prevGap) {
   </div>`;
 }
 
-function renderHealthTimeline() {
-  const card = document.getElementById('healthTimelineCard');
-  const list = document.getElementById('milestoneList');
-  const countEl = document.getElementById('milestoneCount');
-  const bestGapEl = document.getElementById('milestoneBestGap');
-  if (!card || !list) return;
-
-  if (!logs || logs.length < 2) {
-    card.classList.add('hidden');
-    return;
-  }
-  card.classList.remove('hidden');
-
-  const allGaps = logs.map(l => l.gap).filter(g => g !== null && g !== undefined);
-  if (allGaps.length === 0) { card.classList.add('hidden'); return; }
-
-  const bestGapMins = Math.max(...allGaps);
-  if (bestGapEl) bestGapEl.innerText = formatGap(Math.round(bestGapMins));
-
-  let unlocked = 0;
-  list.innerHTML = HEALTH_MILESTONES.map(m => {
-    const isUnlocked = bestGapMins >= m.mins;
-    if (isUnlocked) unlocked++;
-    const label = isUnlocked ? 'Unlocked' : `${formatGap(m.mins)}`;
-    const labelColor = isUnlocked ? 'color: var(--accent);' : 'color: rgba(156,163,175,0.4);';
-    const emojiOpacity = isUnlocked ? '' : 'opacity-30';
-    const borderCls = isUnlocked ? 'border-amber-500/20' : 'border-transparent';
-    const bgCls = isUnlocked ? 'bg-amber-500/5' : '';
-    const titleColor = isUnlocked ? 'color: var(--text-main);' : 'color: var(--text-muted);';
-    const descColor = isUnlocked ? 'color: var(--text-muted);' : 'color: rgba(156,163,175,0.35);';
-    const gapColor = isUnlocked ? 'color: var(--accent);' : 'color: rgba(156,163,175,0.35);';
-    return `<div class="flex items-start gap-2.5 px-2 py-1.5 rounded-xl ${bgCls} ${borderCls} transition-all" style="border: 1px solid;">
-      <span class="text-base shrink-0 mt-0.5 ${emojiOpacity}">${m.emoji}</span>
-      <div class="flex-1 min-w-0">
-        <div class="text-[10px] font-bold" style="${titleColor}">${m.title}</div>
-        <div class="text-[9px] leading-tight" style="${descColor}">${m.desc}</div>
-      </div>
-      <span class="text-[9px] font-bold shrink-0 whitespace-nowrap" style="${labelColor}">${label}</span>
-    </div>`;
-  }).join('');
-
-  if (countEl) countEl.innerText = `${unlocked}/${HEALTH_MILESTONES.length}`;
-  refreshIcons();
-}
-
 function compressImage(file, maxW, maxH, quality, cb) {
   const reader = new FileReader();
   reader.onload = function(e) {
@@ -2627,7 +2577,7 @@ function initDragAndDrop() { const container = document.getElementById('chartCon
 function loadChartOrder() { const savedOrder = JSON.parse(localStorage.getItem('smoke_chart_order')); if(!savedOrder) return; const container = document.getElementById('chartContainer'); savedOrder.forEach(id => { const card = document.getElementById(id); if(card) container.appendChild(card); }); }
 
 window.enterPin = enterPin; window.clearPin = clearPin; window.setupPin = setupPin; window.renderHistory = renderHistory;
-window.handleLogClick = handleLogClick; window.switchTab = switchTab; window.updateSettings = updateSettings; window.resetData = resetData; 
+window.switchTab = switchTab; window.updateSettings = updateSettings; window.resetData = resetData;
 window.startSmokeTakeover = startSmokeTakeover; window.closeSmokeTakeover = closeSmokeTakeover; window.toggleTakeoverTag = toggleTakeoverTag; window.cancelSmokeTakeover = cancelSmokeTakeover;
 window.openTriggerModal = openTriggerModal; window.closeTriggerModal = closeTriggerModal; window.toggleTag = toggleTag; window.saveTags = saveTags;
 window.openWaveModal = openWaveModal; window.closeWaveModal = closeWaveModal; window.startWave = startWave; window.cancelActiveWave = cancelActiveWave;
@@ -2944,6 +2894,12 @@ actuallyLogCigarette = function() {
 
   if (isRelapse && relapseLogIdx === null && !wasLocked) {
     relapseLogIdx = logs.length - 1;
+    // Hide smokeTakeover so relapseModal isn't buried behind z-index:20000
+    const takeover = document.getElementById('smokeTakeover');
+    if (takeover && !takeover.classList.contains('hidden')) {
+      takeover.classList.remove('opacity-100'); takeover.classList.add('opacity-0');
+      setTimeout(() => { takeover.classList.add('hidden'); }, 50);
+    }
     showRelapseModal(relapseLogIdx, currentGapMin);
   }
 };
@@ -3342,11 +3298,6 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.lineTo(x, y + r);
   ctx.quadraticCurveTo(x, y, x + r, y);
   ctx.closePath();
-}
-
-function isLightTheme() {
-  const t = settings.theme || 'white';
-  return t === 'white' || t === 'paper' || t === 'calm';
 }
 
 // ==================== DAILY MICRO-CHALLENGE ====================
@@ -3933,5 +3884,3 @@ function createPremiumGradient(ctx, color, opacity1, opacity2) {
 }
 
 // ==================== END PREMIUM CHART UPGRADES ====================
-
-bootApp();
