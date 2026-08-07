@@ -2739,7 +2739,7 @@ function renderLifeRegainedCounter() {
     const card = document.getElementById('lifeRegainedCard');
     const textEl = document.getElementById('lifeRegainedText');
     const subEl = document.getElementById('lifeRegainedSub');
-    if (!card || !textEl) return;
+    if (!card || !textEl) { return; }
 
     const settings = JSON.parse(localStorage.getItem('smoke_settings') || '{}');
     const baselineGapMs = parseInt(localStorage.getItem('smoke_baseline_gap'));
@@ -2747,7 +2747,14 @@ function renderLifeRegainedCounter() {
     const effectiveBaseline = (!baselineGapMs || isNaN(baselineGapMs) || baselineGapMs <= 0)
       ? (24 * 60 * 60 * 1000) / dailyLimit : baselineGapMs;
 
-    if (logs.length < 2) { card.classList.add('hidden'); return; }
+    if (logs.length < 2) {
+      // Show empty state for new users
+      textEl.textContent = '—';
+      textEl.style.fontSize = '1.5rem';
+      if (subEl) subEl.textContent = 'Log more cigarettes to see life reclaimed';
+      card.classList.remove('hidden');
+      return;
+    }
 
     const firstLog = logs[0].timestamp;
     const now = Date.now();
@@ -2755,8 +2762,6 @@ function renderLifeRegainedCounter() {
     const expectedCigs = Math.floor(elapsedMs / effectiveBaseline);
     const actualCigs = logs.length;
     const reclaimedCigs = Math.max(0, expectedCigs - actualCigs);
-
-    if (reclaimedCigs <= 0) { card.classList.add('hidden'); return; }
 
     const reclaimedMin = reclaimedCigs * 11;
     const days = Math.floor(reclaimedMin / 1440);
@@ -2768,9 +2773,16 @@ function renderLifeRegainedCounter() {
     if (hours > 0) display += `${hours}h `;
     display += `${mins}m`;
     textEl.textContent = display.trim();
+    textEl.style.fontSize = '';
 
     if (subEl) {
-      subEl.textContent = `From ${reclaimedCigs.toLocaleString()} cigarettes not smoked`;
+      if (reclaimedCigs > 0) {
+        subEl.textContent = `From ${reclaimedCigs.toLocaleString()} cigarettes not smoked`;
+        textEl.style.color = '';
+      } else {
+        subEl.textContent = `You've smoked ${actualCigs} so far — keep going, every gap counts`;
+        textEl.style.color = 'var(--accent)';
+      }
     }
     card.classList.remove('hidden');
   } catch(e) { console.warn('Life Regained render error:', e); }
@@ -2786,14 +2798,31 @@ function renderRecoveryTimeline() {
 
     const settings = JSON.parse(localStorage.getItem('smoke_settings') || '{}');
     const quitDateStr = settings.quitDate;
-    if (!quitDateStr) { card.classList.add('hidden'); return; }
+
+    // Empty state — show CTA when quit date not set
+    if (!quitDateStr || isNaN(new Date(quitDateStr + 'T00:00:00').getTime())) {
+      if (subtitle) subtitle.textContent = 'Set your quit date to track recovery milestones';
+      list.innerHTML = `<div class="flex flex-col items-center py-6 text-center">
+        <div class="w-12 h-12 rounded-full flex items-center justify-center mb-3" style="background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(34,197,94,0.12));">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgb(16,185,129)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
+        </div>
+        <p class="text-[11px] font-semibold mb-1" style="color: var(--text-main);">Track Your Body Recovery</p>
+        <p class="text-[10px] font-medium mb-3" style="color: var(--text-muted);">See how your body heals after quitting — 9 milestones from 20 min to 15 months</p>
+        <button onclick="switchTab('settings')" class="text-[10px] font-bold px-4 py-2 rounded-xl text-white transition-all" style="background: linear-gradient(135deg, #10b981, #059669);">Set Quit Date</button>
+      </div>`;
+      card.classList.remove('hidden');
+      return;
+    }
 
     const quitDate = new Date(quitDateStr + 'T00:00:00');
-    if (isNaN(quitDate.getTime())) { card.classList.add('hidden'); return; }
-
     const now = Date.now();
     const elapsedMs = now - quitDate.getTime();
-    if (elapsedMs < 0) { card.classList.add('hidden'); return; }
+    if (elapsedMs < 0) {
+      if (subtitle) subtitle.textContent = 'Quit date is in the future';
+      list.innerHTML = '';
+      card.classList.remove('hidden');
+      return;
+    }
     const elapsedMin = elapsedMs / 60000;
 
     if (subtitle) {
