@@ -1,9 +1,37 @@
 let logs = [];
-try { 
+try {
   let raw = localStorage.getItem('smoke_logs');
   if(raw) logs = JSON.parse(raw);
   if(!Array.isArray(logs)) logs = [];
 } catch(e) { logs = []; }
+
+// ==================== LOGS DERIVED CACHE ====================
+// Single-pass cache for values used every 1s tick — avoids O(n) scans per tick
+const logsCache = { todayStr: '', todayCount: 0, avgGapMs: 3600000 };
+function recomputeLogsCache() {
+  const nowStr = new Date().toDateString();
+  let todayCount = 0, gapSum = 0, gapN = 0;
+  for (let i = 0; i < logs.length; i++) {
+    const l = logs[i];
+    if (l.timestamp && new Date(l.timestamp).toDateString() === nowStr) todayCount++;
+    if (l.gap !== null && l.gap !== undefined) { gapSum += l.gap; gapN++; }
+  }
+  logsCache.todayStr = nowStr;
+  logsCache.todayCount = todayCount;
+  logsCache.avgGapMs = gapN ? (gapSum / gapN) * 60000 : 3600000;
+}
+function ensureLogsCacheFresh() {
+  const nowStr = new Date().toDateString();
+  if (logsCache.todayStr !== nowStr) {
+    // Day rolled over — recount today's count only
+    let todayCount = 0;
+    for (let i = 0; i < logs.length; i++) {
+      if (logs[i].timestamp && new Date(logs[i].timestamp).toDateString() === nowStr) todayCount++;
+    }
+    logsCache.todayStr = nowStr;
+    logsCache.todayCount = todayCount;
+  }
+}
 
 const DEFAULT_SETTINGS = {
   theme: 'white', haptics: true, dailyLimit: 15, lockSecs: 300, packPrice: 20, packSize: 20, currency: 'AED', timeFormat: '12h', motivation: '', autoReduce: false, quitDate: '',
@@ -768,6 +796,8 @@ function bootCore() {
   if(mainTimer) clearInterval(mainTimer);
   mainTimer = setInterval(() => {
     try {
+      if (document.hidden) return;
+      ensureLogsCacheFresh(); // day rollover check — cheap string compare
       checkPeakNudge();
       updateLastSmokeDisplay();
 
@@ -776,8 +806,7 @@ function bootCore() {
 
       const prevLog = logs[logs.length-1];
       const prevGapMs = prevLog.gap ? prevLog.gap * 60000 : 0;
-      const allGaps = logs.map(l => l.gap).filter(g => g !== null && g !== undefined);
-      const avgGapMs = allGaps.length ? (allGaps.reduce((a,b)=>a+b, 0) / allGaps.length) * 60000 : 3600000;
+      const avgGapMs = logsCache.avgGapMs;
 
       if (prevGapMs > 0 && diff >= prevGapMs && !gapWidenedNotified) {
         gapWidenedNotified = true;
@@ -792,8 +821,6 @@ function bootCore() {
         inactivityNotified = true;
         sendSystemNotification("🚬 Did you forget to log?", "It's been longer than your average gap. Log your stick or keep widening the gap!", 'notifInactivity');
       }
-
-      if (document.hidden) return; 
 
       updateHeroDisplay(diff, prevGapMs, avgGapMs);
 
@@ -1320,6 +1347,7 @@ window.resetSettings = function() {
 }
 
 function updateUI() {
+  recomputeLogsCache(); // recompute once per mutation, not every tick
   document.getElementById('shieldCount').innerText = waves.length;
   const emptyBanner = document.getElementById('emptyStateBanner'); if(emptyBanner) emptyBanner.classList.toggle('hidden', logs.length > 0);
   const motEl = document.getElementById('motivationTag'); const motText = document.getElementById('motivationText');
@@ -1518,7 +1546,7 @@ function updateLastSmokeDisplay() {
   text.style.color = mins <= 30 ? '#EF4444' : mins <= 120 ? '#10B981' : '#10B981';
   text.style.textShadow = mins <= 30 ? '0 0 8px rgba(239,68,68,0.3)' : 'none';
 
-  const todayCount = logs.filter(l => new Date(l.timestamp).toDateString() === new Date().toDateString()).length;
+  const todayCount = logsCache.todayCount;
   count.innerText = `Today: ${todayCount}`;
 
   // Auto-log nudge: if gap > 1.5x average, add reminder indicator

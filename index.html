@@ -39,7 +39,6 @@
   <link rel="apple-touch-icon" sizes="180x180" href="icons/pause_icon_180.png">
   <link rel="manifest" href="manifest.json">
 
-  <link rel="preconnect" href="https://cdn.tailwindcss.com">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <link rel="preconnect" href="https://unpkg.com">
   <link rel="preconnect" href="https://cdnjs.cloudflare.com">
@@ -53,14 +52,14 @@
   <link rel="preload" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
 
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="tailwind-compiled.css">
   <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <link rel="preload" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"></noscript>
   <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-  <script src="lucide.min.js"></script>
+  <script defer src="lucide.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   
   <style>
@@ -115,7 +114,7 @@
     
     .app-container { padding-bottom: calc(104px + env(safe-area-inset-bottom)); min-height: 100vh; min-height: 100dvh; }
     
-    .premium-card { background: var(--card-bg); backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px); border: 1px solid var(--card-border); box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.05); border-radius: 1.5rem; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .premium-card { background: var(--card-bg); border: 1px solid var(--card-border); box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.05); border-radius: 1.5rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
     .premium-card:active { transform: scale(0.98); box-shadow: 0 4px 16px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.06); }
 
     /* === Premium bottom-sheet system === */
@@ -145,7 +144,7 @@
     .badge-card:not(.grayscale) { border-color: var(--accent) !important; box-shadow: 0 0 0 1px var(--accent), 0 8px 24px var(--accent-glow); transform: translateY(-1px); }
     .badge-card .badge-lock { width: 14px; height: 14px; border-radius: 999px; display: flex; align-items: center; justify-content: center; background: rgba(128,128,128,0.18); }
 
-    .dock-bar { background: var(--card-bg); backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px); border: 1px solid var(--card-border); box-shadow: 0 18px 48px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.05); }
+    .dock-bar { background: var(--card-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--card-border); box-shadow: 0 18px 48px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.05); }
     .nav-btn { color: var(--text-muted); position: relative; transition: color 0.3s ease; }
     .nav-btn:active .tab-icon { transform: scale(0.88); }
     .nav-btn .tab-icon { stroke-width: 2.2; transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), stroke-width 0.3s ease, filter 0.3s ease; }
