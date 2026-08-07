@@ -2674,6 +2674,8 @@ function renderAllCharts() {
   
   renderHeatmapCalendar(activeLogs);
   renderHeatMap('mapContainer', activeLogs);
+  renderLifeRegainedCounter();
+  renderRecoveryTimeline();
 
   // Premium: render sparklines in stat cards
   try { renderInsightSparklines(activeLogs); } catch(e) {}
@@ -2731,6 +2733,124 @@ function closeMapModal() { document.getElementById('mapModal').classList.add('hi
 function initDragAndDrop() { const container = document.getElementById('chartContainer'); if(!container || !window.Sortable) return; new Sortable(container, { handle: '.drag-handle', animation: 200, ghostClass: 'sortable-ghost', onEnd: function () { localStorage.setItem('smoke_chart_order', JSON.stringify([...container.children].map(c => c.id))); } }); }
 function loadChartOrder() { const savedOrder = JSON.parse(localStorage.getItem('smoke_chart_order')); if(!savedOrder) return; const container = document.getElementById('chartContainer'); savedOrder.forEach(id => { const card = document.getElementById(id); if(card) container.appendChild(card); }); }
 
+// ==================== LIFE REGAINED COUNTER ====================
+function renderLifeRegainedCounter() {
+  try {
+    const card = document.getElementById('lifeRegainedCard');
+    const textEl = document.getElementById('lifeRegainedText');
+    const subEl = document.getElementById('lifeRegainedSub');
+    if (!card || !textEl) return;
+
+    const settings = JSON.parse(localStorage.getItem('smoke_settings') || '{}');
+    const baselineGapMs = parseInt(localStorage.getItem('smoke_baseline_gap'));
+    const dailyLimit = settings.dailyLimit || 15;
+    const effectiveBaseline = (!baselineGapMs || isNaN(baselineGapMs) || baselineGapMs <= 0)
+      ? (24 * 60 * 60 * 1000) / dailyLimit : baselineGapMs;
+
+    if (logs.length < 2) { card.classList.add('hidden'); return; }
+
+    const firstLog = logs[0].timestamp;
+    const now = Date.now();
+    const elapsedMs = now - firstLog;
+    const expectedCigs = Math.floor(elapsedMs / effectiveBaseline);
+    const actualCigs = logs.length;
+    const reclaimedCigs = Math.max(0, expectedCigs - actualCigs);
+
+    if (reclaimedCigs <= 0) { card.classList.add('hidden'); return; }
+
+    const reclaimedMin = reclaimedCigs * 11;
+    const days = Math.floor(reclaimedMin / 1440);
+    const hours = Math.floor((reclaimedMin % 1440) / 60);
+    const mins = Math.round(reclaimedMin % 60);
+
+    let display = '';
+    if (days > 0) display += `${days}d `;
+    if (hours > 0) display += `${hours}h `;
+    display += `${mins}m`;
+    textEl.textContent = display.trim();
+
+    if (subEl) {
+      subEl.textContent = `From ${reclaimedCigs.toLocaleString()} cigarettes not smoked`;
+    }
+    card.classList.remove('hidden');
+  } catch(e) { console.warn('Life Regained render error:', e); }
+}
+
+// ==================== BODY RECOVERY TIMELINE ====================
+function renderRecoveryTimeline() {
+  try {
+    const card = document.getElementById('recoveryTimelineCard');
+    const subtitle = document.getElementById('recoverySubtitle');
+    const list = document.getElementById('recoveryTimelineList');
+    if (!card || !list) return;
+
+    const settings = JSON.parse(localStorage.getItem('smoke_settings') || '{}');
+    const quitDateStr = settings.quitDate;
+    if (!quitDateStr) { card.classList.add('hidden'); return; }
+
+    const quitDate = new Date(quitDateStr + 'T00:00:00');
+    if (isNaN(quitDate.getTime())) { card.classList.add('hidden'); return; }
+
+    const now = Date.now();
+    const elapsedMs = now - quitDate.getTime();
+    if (elapsedMs < 0) { card.classList.add('hidden'); return; }
+    const elapsedMin = elapsedMs / 60000;
+
+    if (subtitle) {
+      const days = Math.floor(elapsedMin / 1440);
+      const hours = Math.floor((elapsedMin % 1440) / 60);
+      let timeStr = '';
+      if (days > 0) timeStr += `${days} day${days !== 1 ? 's' : ''}`;
+      if (hours > 0 && days < 30) timeStr += `${timeStr ? ' ' : ''}${hours}h`;
+      if (!timeStr) timeStr = `${Math.round(elapsedMin)} min`;
+      subtitle.textContent = `Smoke-free for ${timeStr}`;
+    }
+
+    const milestones = [
+      { min: 20, title: 'Pulse Normalizes', desc: 'Heart rate drops to normal levels', icon: 'heart-pulse' },
+      { min: 480, title: 'CO Levels Halved', desc: 'Carbon monoxide in blood drops by 50%', icon: 'wind' },
+      { min: 2880, title: 'Taste & Smell Return', desc: 'Nerve endings begin to regenerate', icon: 'nose' },
+      { min: 20160, title: 'Circulation Improves', desc: 'Blood flow becomes noticeably better', icon: 'activity' },
+      { min: 43200, title: 'Lung Function +10%', desc: 'Breathing becomes easier and deeper', icon: 'lungs' },
+      { min: 87600, title: 'Heart Attack Risk Halved', desc: 'Your heart is significantly safer', icon: 'shield-check' },
+      { min: 262800, title: 'Stroke Risk = Non-Smoker', desc: 'Your stroke risk matches a non-smoker', icon: 'brain' },
+      { min: 525600, title: 'Lung Cancer Risk Halved', desc: 'Your lungs are healing deeply', icon: 'ribbon' },
+      { min: 788400, title: 'Heart Disease = Non-Smoker', desc: 'Full cardiovascular recovery', icon: 'heart' }
+    ];
+
+    list.innerHTML = milestones.map((m, i) => {
+      const unlocked = elapsedMin >= m.min;
+      const nextMilestone = milestones.find(x => elapsedMin < x.min);
+      const progress = unlocked ? 100 : (nextMilestone && milestones.indexOf(nextMilestone) === i ? Math.min(100, (elapsedMin / m.min) * 100) : 0);
+
+      return `<div class="flex items-start gap-3 ${i < milestones.length - 1 ? 'pb-4' : ''}" style="position:relative;">
+        <div class="flex flex-col items-center shrink-0" style="z-index:1;">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-700 ${
+            unlocked
+              ? 'bg-gradient-to-br from-emerald-500 to-green-400 shadow-lg shadow-emerald-500/25'
+              : 'border-2 border-gray-300 dark:border-gray-600'
+          }" style="${unlocked ? '' : 'background: var(--card-bg);'}">
+            ${unlocked
+              ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>'
+              : `<span class="text-[10px] font-bold" style="color: var(--text-muted);">${i + 1}</span>`}
+          </div>
+          ${i < milestones.length - 1 ? `<div class="w-0.5 flex-1 mt-1 rounded-full ${unlocked ? 'bg-emerald-500/40' : 'bg-gray-200 dark:bg-gray-700'}" style="min-height:16px;"></div>` : ''}
+        </div>
+        <div class="flex-1 ${unlocked ? '' : 'opacity-40'} pt-1">
+          <div class="flex items-center gap-2">
+            <span class="text-[11px] font-bold ${unlocked ? 'text-emerald-500' : ''}" style="${unlocked ? '' : 'color: var(--text-main);'}">${m.title}</span>
+            ${unlocked ? '<span class="text-[8px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500 uppercase">Unlocked</span>' : ''}
+          </div>
+          <p class="text-[10px] font-medium mt-0.5" style="color: var(--text-muted);">${m.desc}</p>
+          ${!unlocked && progress > 0 ? `<div class="mt-1.5 h-1 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden"><div class="h-full rounded-full bg-emerald-500/50 transition-all duration-1000" style="width:${progress}%"></div></div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+
+    card.classList.remove('hidden');
+  } catch(e) { console.warn('Recovery Timeline render error:', e); }
+}
+
 window.enterPin = enterPin; window.clearPin = clearPin; window.setupPin = setupPin; window.renderHistory = renderHistory;
 window.switchTab = switchTab; window.updateSettings = updateSettings; window.resetData = resetData;
 window.startSmokeTakeover = startSmokeTakeover; window.closeSmokeTakeover = closeSmokeTakeover; window.toggleTakeoverTag = toggleTakeoverTag; window.cancelSmokeTakeover = cancelSmokeTakeover;
@@ -2739,6 +2859,7 @@ window.openWaveModal = openWaveModal; window.closeWaveModal = closeWaveModal; wi
 window.renderAllCharts = renderAllCharts; window.openMapModal = openMapModal; window.closeMapModal = closeMapModal;
 window.showStatDetail = showStatDetail; window.closeStatDetail = closeStatDetail; window.showShieldDashboard = showShieldDashboard; window.closeShieldDashboard = closeShieldDashboard;
 window.exportLogsCSV = exportLogsCSV; window.addCustomTrigger = addCustomTrigger; window.removeCustomTrigger = removeCustomTrigger;
+window.renderLifeRegainedCounter = renderLifeRegainedCounter; window.renderRecoveryTimeline = renderRecoveryTimeline;
 window.closeConfirmModal = closeConfirmModal; window.confirmYes = confirmYes; window.setTakeoverIntensity = setTakeoverIntensity; window.exportJSON = exportJSON; window.importJSON = importJSON;
 window.closePinSetupModal = closePinSetupModal; window.savePinSetup = savePinSetup;
 window.requestNotifPermission = requestNotifPermission; window.toggleNotifSetting = toggleNotifSetting;
