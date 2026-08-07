@@ -458,7 +458,7 @@ if (typeof Chart !== 'undefined') {
   try { Chart.defaults.font.family = APP_FONT_FAMILY; } catch(e) {}
 }
 const crosshairPlugin = { id: 'crosshair', afterDraw: chart => { if (chart.tooltip?._active?.length && (chart.config.type === 'line' || chart.config.type === 'bar')) { const activePoint = chart.tooltip._active[0]; const ctx = chart.ctx; const x = activePoint.element.x; ctx.save(); ctx.beginPath(); ctx.moveTo(x, chart.scales.y.top); ctx.lineTo(x, chart.scales.y.bottom); ctx.lineWidth = 1.5; ctx.strokeStyle = (isLightTheme()) ? 'rgba(15, 23, 42, 0.18)' : 'rgba(255, 255, 255, 0.2)'; ctx.setLineDash([4, 4]); ctx.stroke(); ctx.restore(); } } };
-const centerTextPlugin = { id: 'centerText', beforeDraw: chart => { if (chart.config.type !== 'doughnut') return; const ctx = chart.ctx; ctx.save(); let text = ""; if (chart.canvas.id === 'chart4') { const smoked = chart.data.datasets[0].data[0] || 0; const resisted = chart.data.datasets[0].data[1] || 0; const total = smoked + resisted; text = total > 0 ? Math.round((resisted/total)*100) + "%" : "Log first urge"; } else { const total = chart.data.datasets[0].data.reduce((a,b)=>a+b, 0); text = total > 0 ? total + " Logs" : "Keep\ngoing"; } const isPct = chart.canvas.id === 'chart4'; ctx.font = "700 " + (isPct ? '26px' : '14px') + " " + (isPct ? NUMERIC_FONT_FAMILY : APP_FONT_FAMILY); const x = chart.chartArea.left + (chart.chartArea.right - chart.chartArea.left) / 2; const y = chart.chartArea.top + (chart.chartArea.bottom - chart.chartArea.top) / 2; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = (isLightTheme()) ? "#0F172A" : "#E5E7EB"; ctx.fillText(text, x, y); ctx.restore(); } };
+const centerTextPlugin = { id: 'centerText', beforeDraw: chart => { if (chart.config.type !== 'doughnut') return; const ctx = chart.ctx; ctx.save(); const total = chart.data.datasets[0].data.reduce((a,b)=>a+b, 0); const text = total > 0 ? total + " Logs" : "Log first urge"; ctx.font = "700 14px " + APP_FONT_FAMILY; const x = chart.chartArea.left + (chart.chartArea.right - chart.chartArea.left) / 2; const y = chart.chartArea.top + (chart.chartArea.bottom - chart.chartArea.top) / 2; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = (isLightTheme()) ? "#0F172A" : "#E5E7EB"; ctx.fillText(text, x, y); ctx.restore(); } };
 
 function formatAppTime(dateObj) { return dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: settings.timeFormat === '12h' }); }
 
@@ -2375,7 +2375,7 @@ function renderAllCharts() {
 
   let totalSpend = (activeLogs.length * (settings.packPrice/settings.packSize)).toFixed(1);
   document.getElementById('insightPeriodSpend').innerText = `${settings.currency} ${totalSpend}`;
-  document.getElementById('insightPeriodCount').innerText = `${activeLogs.length} Sticks`;
+  document.getElementById('insightPeriodCount').innerText = `${activeLogs.length} cigarette${activeLogs.length !== 1 ? 's' : ''} smoked`;
 
   const gappedLogs = activeLogs.filter(l => l.gap !== null && l.gap !== undefined);
   document.getElementById('insightAvgGap').innerText = gappedLogs.length > 0 ? formatGap(Math.round(gappedLogs.reduce((a, b) => a + b.gap, 0) / gappedLogs.length)) : '--';
@@ -2383,50 +2383,37 @@ function renderAllCharts() {
   let smartText = activeLogs.length > 0 ? "Analyzing your patterns..." : "Log your first cigarette to unlock personalized insights about your habits.";
   
   if(activeLogs.length > 0) {
-    let hours = {}; activeLogs.forEach(l => { let h = new Date(l.timestamp).getHours(); hours[h] = (hours[h]||0)+1; });
-    let peakHrInt = parseInt(Object.keys(hours).reduce((a,b) => hours[a] > hours[b] ? a : b));
-    let peakDate = new Date(); peakDate.setHours(peakHrInt, 0, 0, 0);
-    document.getElementById('insightPeakHour').innerText = formatAppTime(peakDate);
-    
-    let trigs = {}; let trigIntensitySum = {}; let trigIntensityCount = {};
-    activeLogs.forEach(l => { 
+    let trigIntensitySum = {}; let trigIntensityCount = {};
+    activeLogs.forEach(l => {
       let tagsArr = [];
       if (Array.isArray(l.tags) && l.tags.length > 0) tagsArr = l.tags;
       else if (l.trigger) tagsArr = [l.trigger];
       else tagsArr = ['Uncategorized'];
-      tagsArr.forEach(t => { 
-        trigs[t] = (trigs[t]||0)+1; 
+      tagsArr.forEach(t => {
         const inten = l.intensity || 3;
         trigIntensitySum[t] = (trigIntensitySum[t]||0) + inten;
         trigIntensityCount[t] = (trigIntensityCount[t]||0) + 1;
       });
     });
-    let topT = Object.keys(trigs).length > 0 ? Object.keys(trigs).reduce((a,b) => trigs[a] > trigs[b] ? a : b) : '--';
-    document.getElementById('insightTopTrigger').innerText = topT.length > 15 ? topT.substring(0,12)+'..' : topT;
-    
-    let perDay = {}; activeLogs.forEach(l => { const k = new Date(l.timestamp).toLocaleDateString('en-US', {month:'short', day:'numeric'}); perDay[k] = (perDay[k]||0)+1; });
-    let topDay = Object.keys(perDay).reduce((a,b) => perDay[a] > perDay[b] ? a : b);
-    document.getElementById('insightHeaviestDay').innerText = `${topDay} (${perDay[topDay]})`;
-    
+
     if(activeLogs.length === 1) {
-      smartText = `Your first log: <strong>${formatAppTime(peakDate)}</strong>, triggered by <strong>${esc(topT)}</strong>. Keep logging to see patterns emerge.`;
+      smartText = `Your first log is recorded. Keep logging to see personalized insights.`;
     } else {
-      smartText = `You mostly struggle around <strong>${formatAppTime(peakDate)}</strong>, heavily triggered by <strong>${esc(topT)}</strong>.`;
+      smartText = '';
     }
 
     const intensityCandidates = Object.keys(trigIntensityCount).filter(t => trigIntensityCount[t] >= 2);
     if(intensityCandidates.length > 0) {
       const avgIntensityByTrigger = {}; intensityCandidates.forEach(t => avgIntensityByTrigger[t] = trigIntensitySum[t] / trigIntensityCount[t]);
       const hardestTrigger = intensityCandidates.reduce((a,b) => avgIntensityByTrigger[a] > avgIntensityByTrigger[b] ? a : b);
-      if(avgIntensityByTrigger[hardestTrigger] >= 3.3 && hardestTrigger !== topT) {
-        smartText += ` Note: <strong>${esc(hardestTrigger)}</strong> brings your most intense cravings.`;
+      if(avgIntensityByTrigger[hardestTrigger] >= 3.3) {
+        smartText += `<strong>${esc(hardestTrigger)}</strong> brings your most intense cravings.`;
       }
     }
 
+    if (!smartText) smartText = 'Keep logging to unlock deeper pattern insights.';
   } else {
-    document.getElementById('insightPeakHour').innerText = '--';
-    document.getElementById('insightTopTrigger').innerText = '--';
-    document.getElementById('insightHeaviestDay').innerText = '--';
+    smartText = 'Log your first cigarette to unlock personalized insights about your habits.';
   }
   
   document.getElementById('smartTextInsight').innerHTML = smartText;
@@ -2461,7 +2448,7 @@ function renderAllCharts() {
     badge1Txt = formatGapSmart(dailyGaps[0]);
   }
   setBadge('badge-chart1', badge1Txt, badge1Cls);
-  setBadge('badge-chart2', activeLogs.length > 0 ? `${activeLogs.length} Total` : '', 'bg-amber-500/10 text-amber-500 border-amber-500/20');
+  // badge-chart2 removed (redundant with insightPeriodCount)
 
   const labels = activeLogs.length > 0 ? activeLogs.map(l => {
     let d = new Date(l.timestamp);
@@ -2562,15 +2549,6 @@ function renderAllCharts() {
   } catch(e){}
 
   try {
-    let dayMap = {}; activeLogs.forEach(l => { let d = document.getElementById('insightsDateFilter').value === '7days' ? new Date(l.timestamp).toLocaleDateString([], {weekday:'short'}) : new Date(l.timestamp).toLocaleDateString([], {month:'short', day:'numeric'}); dayMap[d] = (dayMap[d] || 0) + 1; });
-    let dayLabels = Object.keys(dayMap), dayCounts = Object.values(dayMap); if(dayLabels.length === 0) { dayLabels = ['Today']; dayCounts = [0]; }
-    const ctx2 = document.getElementById('chart2').getContext('2d');
-    const barColors = dayCounts.map(c => c > settings.dailyLimit ? '#EF4444' : '#10B981');
-    const barBgColors = dayCounts.map(c => c > settings.dailyLimit ? 'rgba(239,68,68,0.25)' : 'rgba(16,185,129,0.25)');
-    upsertChart(2, ctx2, { type: 'bar', data: { labels: dayLabels, datasets: [{ label: 'Count', data: dayCounts, backgroundColor: barBgColors, borderColor: barColors, borderWidth: 1.5, borderRadius: { topLeft: 6, topRight: 6, bottomLeft: 2, bottomRight: 2 }, borderSkipped: false, maxBarThickness: 20, barPercentage: 0.6 }, { label: 'Limit', data: dayLabels.map(() => settings.dailyLimit), type: 'line', borderColor: '#EF4444', borderWidth: 1.5, borderDash: [5,5], pointRadius: 0, borderCapStyle: 'round' }] }, options: { ...proOptions, scales: { x: { ...proOptions.scales.x, offset: true }, y: { ...proOptions.scales.y } }, plugins: { ...proOptions.plugins, tooltip: { ...proOptions.plugins.tooltip, callbacks: { label: (ctx) => { if (ctx.datasetIndex === 0) return ` ${ctx.parsed.y} sticks`; return ` Limit: ${ctx.parsed.y}`; } } } } }, plugins: [crosshairPlugin] });
-  } catch(e){}
-
-  try {
     let cumulativeSpend = 0; let spendData = []; let savedData = [];
     if (activeLogs.length > 0) {
       let periodStartTime = activeLogs[0].timestamp;
@@ -2590,11 +2568,6 @@ function renderAllCharts() {
   } catch(e){}
 
   try {
-    const ctx4 = document.getElementById('chart4').getContext('2d');
-    upsertChart(4, ctx4, { type: 'doughnut', data: { labels: ['Smoked', 'Resisted'], datasets: [{ data: [activeLogs.length, activeWaves.length], backgroundColor: ['#EF4444', '#0EA5E9'], borderWidth: 3, borderColor: (isLightTheme()) ? '#FFFFFF' : '#11131A', borderRadius: 6, cutout: '72%', spacing: 3 }] }, options: { responsive: true, maintainAspectRatio: false, animation: { animateRotate: true, duration: 800 }, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 14, font: { family: "'General Sans', sans-serif", size: 10, weight: '600' }, color: chartTextColor, usePointStyle: true, pointStyle: 'circle' } }, tooltip: { ...chartTooltipTheme, backgroundColor: (isLightTheme()) ? 'rgba(255,255,255,0.98)' : 'rgba(15,23,42,0.98)', borderColor: (isLightTheme()) ? 'rgba(203,213,225,0.5)' : 'rgba(255,255,255,0.06)', borderWidth: 1, cornerRadius: 14, padding: 12 } } }, plugins: [centerTextPlugin] });
-  } catch(e){}
-
-  try {
     const ctx5 = document.getElementById('chart5').getContext('2d');
     const triggerCountMap = {};
     triggers.forEach(t => triggerCountMap[t] = 0);
@@ -2611,7 +2584,7 @@ function renderAllCharts() {
       .filter(t => t.count > 0)
       .sort((a, b) => b.count - a.count);
     const topTriggerIdx = sortedTriggers.length ? 0 : -1;
-    setBadge('badge-chart5', (topTriggerIdx >= 0 && sortedTriggers[0].count > 0) ? `Top: ${sortedTriggers[0].name}` : '', 'bg-purple-500/10 text-purple-500 border-purple-500/20');
+    // badge-chart5 removed (redundant with chart5 visual)
     if (sortedTriggers.length > 0) {
       upsertChart(5, ctx5, {
         type: 'bar',
@@ -2677,8 +2650,7 @@ function renderAllCharts() {
   renderLifeRegainedCounter();
   renderRecoveryTimeline();
 
-  // Premium: render sparklines in stat cards
-  try { renderInsightSparklines(activeLogs); } catch(e) {}
+  // Premium: render sparklines in stat cards — REMOVED (redundant with full charts)
 }
 
 function renderHeatMap(containerId, activeLogs) {
@@ -4016,106 +3988,6 @@ function animateValue(el, target, duration, prefix, suffix, decimals) {
 }
 
 // Premium sparkline renderer
-function renderSparkline(canvasId, data, color) {
-  const canvas = document.getElementById(canvasId);
-  if (!canvas || !data || data.length < 2) return;
-  const ctx = canvas.getContext('2d');
-  const W = canvas.width, H = canvas.height;
-  ctx.clearRect(0, 0, W, H);
-
-  const max = Math.max(...data, 1);
-  const min = Math.min(...data, 0);
-  const range = max - min || 1;
-  const padding = 2;
-
-  // Draw filled area
-  ctx.beginPath();
-  ctx.moveTo(padding, H - padding);
-  data.forEach((v, i) => {
-    const x = padding + (i / (data.length - 1)) * (W - padding * 2);
-    const y = H - padding - ((v - min) / range) * (H - padding * 2);
-    if (i === 0) ctx.lineTo(x, y);
-    else ctx.lineTo(x, y);
-  });
-  ctx.lineTo(W - padding, H - padding);
-  ctx.closePath();
-
-  const gradient = ctx.createLinearGradient(0, 0, 0, H);
-  gradient.addColorStop(0, color + '40');
-  gradient.addColorStop(1, color + '05');
-  ctx.fillStyle = gradient;
-  ctx.fill();
-
-  // Draw line
-  ctx.beginPath();
-  data.forEach((v, i) => {
-    const x = padding + (i / (data.length - 1)) * (W - padding * 2);
-    const y = H - padding - ((v - min) / range) * (H - padding * 2);
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 1.5;
-  ctx.lineJoin = 'round';
-  ctx.stroke();
-
-  // Draw end dot
-  const lastX = W - padding;
-  const lastY = H - padding - ((data[data.length - 1] - min) / range) * (H - padding * 2);
-  ctx.beginPath();
-  ctx.arc(lastX, lastY, 2.5, 0, Math.PI * 2);
-  ctx.fillStyle = color;
-  ctx.fill();
-}
-
-// Render all sparklines from filtered data
-function renderInsightSparklines(activeLogs) {
-  if (!activeLogs || activeLogs.length < 2) return;
-
-  // Total Saved sparkline — cumulative saved over time
-  const savedData = [];
-  let cumSaved = 0;
-  const baselineMs = parseInt(localStorage.getItem('smoke_baseline_gap')) || 86400000 / (settings.dailyLimit || 15);
-  const startTime = activeLogs[0].timestamp;
-  activeLogs.forEach((l, i) => {
-    const elapsed = l.timestamp - startTime;
-    const expected = 1 + elapsed / baselineMs;
-    const actual = i + 1;
-    cumSaved = Math.max(0, (expected - actual) * (settings.packPrice / settings.packSize));
-    savedData.push(cumSaved);
-  });
-  renderSparkline('sparkTotalSaved', savedData, '#10B981');
-
-  // Longest Gap sparkline — gap values over time
-  const gapData = activeLogs.filter(l => l.gap !== null && l.gap !== undefined).map(l => l.gap);
-  renderSparkline('sparkLongestGap', gapData, '#F59E0B');
-
-  // Win Rate sparkline — rolling win rate
-  const waveTimes = waves.filter(w => w >= activeLogs[0]?.timestamp);
-  const winData = [];
-  let cumLogs = 0, cumWaves = 0;
-  activeLogs.forEach((l, i) => {
-    cumLogs++;
-    const newWaves = waveTimes.filter(w => w <= l.timestamp).length;
-    cumWaves = newWaves;
-    const rate = (cumLogs + cumWaves) > 0 ? (cumWaves / (cumLogs + cumWaves)) * 100 : 0;
-    winData.push(Math.round(rate));
-  });
-  renderSparkline('sparkWinRate', winData, '#38BDF8');
-
-  // Avg Gap sparkline — running average gap
-  const avgData = [];
-  let sumGaps = 0, gapCount = 0;
-  activeLogs.forEach(l => {
-    if (l.gap !== null && l.gap !== undefined) {
-      sumGaps += l.gap;
-      gapCount++;
-    }
-    avgData.push(gapCount > 0 ? sumGaps / gapCount : 0);
-  });
-  renderSparkline('sparkAvgGap', avgData, '#38BDF8');
-}
-
 // Premium chart options — no grid, clean look
 function getPremiumChartOptions(chartTextColor, chartTooltipTheme, extraOptions) {
   return {
