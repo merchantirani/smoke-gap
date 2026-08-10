@@ -548,8 +548,9 @@
         <svg width="0" height="0" class="absolute" aria-hidden="true" focusable="false">
           <defs>
             <linearGradient id="grad-orbit" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stop-color="#38BDF8" />
-              <stop offset="50%" stop-color="var(--accent)" />
+              <stop offset="0%" stop-color="#F59E0B" />
+              <stop offset="45%" stop-color="#F97316" />
+              <stop offset="75%" stop-color="#EF4444" />
               <stop offset="100%" stop-color="#10B981" />
             </linearGradient>
             <linearGradient id="grad-orbit-victory" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -557,10 +558,6 @@
               <stop offset="50%" stop-color="#34D399" />
               <stop offset="100%" stop-color="#10B981" />
             </linearGradient>
-            <filter id="glow-orbit" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="4" result="blur" />
-              <feComposite in="SourceGraphic" in2="blur" operator="over" />
-            </filter>
           </defs>
         </svg>
         <!-- ==================== END SHARED SVG DEFS ==================== -->
@@ -604,23 +601,21 @@
                <div class="relative flex justify-center items-center w-[168px] h-[168px] shrink-0">
                  <svg class="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 176 176">
                    <circle cx="88" cy="88" r="70" fill="transparent" stroke="var(--input-bg)" stroke-width="10"></circle>
-                   <circle id="heroRingFill" cx="88" cy="88" r="70" fill="transparent" stroke="url(#grad-orbit)" stroke-width="10" stroke-linecap="round" stroke-dasharray="439.82" stroke-dashoffset="439.82" filter="url(#glow-orbit)" style="transition: stroke-dashoffset 1s ease-out, stroke 0.6s ease;"></circle>
+                   <circle id="heroRingFill" cx="88" cy="88" r="70" fill="transparent" stroke="url(#grad-orbit)" stroke-width="10" stroke-linecap="round" stroke-dasharray="439.82" stroke-dashoffset="439.82" style="transition: stroke-dashoffset 1s ease-out, stroke 0.6s ease;"></circle>
                  </svg>
                  <div class="absolute inset-0 flex flex-col items-center justify-center">
                    <span id="heroRingStatus" class="text-[9px] font-extrabold uppercase tracking-widest text-amber-500 mb-0.5 transition-colors duration-500">Pacing</span>
-                   <div id="stopwatch2" role="timer" aria-label="Time since last cigarette" class="numeric-display text-[26px] font-black tracking-tighter leading-none" style="color: var(--text-main);">00:00:00</div>
+                   <div id="stopwatch2" role="timer" aria-label="Time since last cigarette" class="numeric-display text-3xl font-black tracking-tighter leading-none" style="color: var(--text-main);">00:00:00</div>
                    <div id="heroRecordBadge2" class="hidden mt-1 text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.2)]">🏆 RECORD</div>
-                   <div id="heroOrbitMilestone" class="mt-1 flex items-center gap-1 text-[8px] font-bold text-amber-500/80 leading-none transition-colors duration-500">
-                     <span id="heroOrbitMilestoneText">Next: --</span>
+                   <div id="heroOrbitMilestone" class="mt-1 text-[9px] font-bold text-amber-500/80 leading-none transition-colors duration-500 truncate max-w-[130px]">
+                     <span id="heroOrbitMilestoneText">--</span>
                    </div>
                  </div>
                </div>
-               <div class="flex items-center justify-center gap-1.5 w-full px-3 leading-none">
-                 <span id="heroOrbitMoney" class="numeric-display text-[9px] font-bold text-emerald-500 transition-colors duration-500">--</span>
-                 <span class="text-[8px] font-bold" style="color: var(--text-muted);">saved</span>
-                 <span class="w-px h-3 shrink-0" style="background: var(--card-border);"></span>
+               <div class="flex items-center justify-center gap-2 w-full px-3 mt-1 leading-none">
+                 <span id="heroOrbitMoney" class="numeric-display text-[10px] font-bold text-emerald-500 transition-colors duration-500">--</span>
                  <i data-lucide="aperture" class="w-3 h-3 shrink-0" style="color: var(--accent);"></i>
-                 <p id="heroRingSub" class="text-[9px] font-bold text-amber-500 leading-none truncate">Target: --</p>
+                 <p id="heroRingSub" class="text-[10px] font-bold text-amber-500 leading-none truncate">Target: --</p>
                </div>
             </div>
 
