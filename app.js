@@ -363,8 +363,7 @@ function displayTick() {
     const timeStr = `${Math.floor(diff/3600000).toString().padStart(2,'0')}:${Math.floor((diff%3600000)/60000).toString().padStart(2,'0')}:${Math.floor((diff%60000)/1000).toString().padStart(2,'0')}`;
     if (timeStr !== lastHeroTime) {
       lastHeroTime = timeStr;
-      const prevLog = logs[logs.length-1];
-      updateHeroDisplay(diff, prevLog.gap ? prevLog.gap * 60000 : 0, logsCache.avgGapMs);
+      updateHeroDisplay(diff, lastLog.gap ? lastLog.gap * 60000 : 0, logsCache.avgGapMs);
     }
   } catch(err) { console.error('Display tick error:', err); }
   displayRaf = requestAnimationFrame(displayTick);
@@ -907,6 +906,7 @@ function bootCore() {
   displayRaf = requestAnimationFrame(displayTick);
 
   initWatchLongPress();
+  initOrbitWatch();
 }
 
 function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
@@ -978,30 +978,71 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
   const badge2 = document.getElementById('heroRecordBadge2');
   const status2 = document.getElementById('heroRingStatus');
   const sub2 = document.getElementById('heroRingSub');
-  
-  if(ringFill && avgGapMs > 0) {
-      let ringPct = isVictory ? Math.min(100, 70 + bonusPct) : pct;
-      const offset = 314.16 - (314.16 * (ringPct / 100));
-      ringFill.style.strokeDashoffset = offset;
+  const milestoneChip = document.getElementById('heroOrbitMilestoneText');
+  const moneyEl = document.getElementById('heroOrbitMoney');
 
-      if(isVictory) {
-          ringFill.style.stroke = '#10B981'; ringFill.style.filter = "drop-shadow(0 0 8px rgba(16, 185, 129, 0.5))";
-          if(badge2) badge2.classList.remove('hidden');
-          if(status2) { status2.innerText = "Victory Zone"; status2.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"; }
-          if(sub2) sub2.innerText = `Target Beaten: +${formatGap(extraMins)}`;
-      } else {
-          ringFill.style.stroke = 'var(--accent)'; ringFill.style.filter = "drop-shadow(0 0 8px var(--accent-glow))";
-          if(badge2) badge2.classList.add('hidden');
-          if(status2) { status2.innerText = "Pacing"; status2.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20"; }
-          if(sub2) sub2.innerText = `Target: ${formatGap(Math.round(avgGapMs/60000))} (${remMins}m left)`;
+  const ORBIT_CIRCUM = 439.82;
+
+  if (ringFill && avgGapMs > 0) {
+    let ringPct = isVictory ? Math.min(100, 70 + bonusPct) : pct;
+    const offset = ORBIT_CIRCUM - (ORBIT_CIRCUM * (ringPct / 100));
+    ringFill.style.strokeDashoffset = offset;
+
+    if (isVictory) {
+      ringFill.setAttribute('stroke', 'url(#grad-orbit-victory)');
+      ringFill.style.filter = "url(#glow-orbit) drop-shadow(0 0 10px rgba(16, 185, 129, 0.6))";
+      if (badge2) badge2.classList.remove('hidden');
+      if (status2) {
+        status2.innerText = 'Victory Zone';
+        status2.style.color = '#10B981';
       }
+      if (sub2) sub2.innerText = `Target Beaten: +${formatGap(extraMins)}`;
+      if (sub2) sub2.style.color = '#10B981';
+      const wrap2 = document.getElementById('watchStyle2');
+      if (wrap2) wrap2.classList.add('victory-state');
+    } else {
+      ringFill.setAttribute('stroke', 'url(#grad-orbit)');
+      ringFill.style.filter = "url(#glow-orbit) drop-shadow(0 0 6px var(--accent-glow))";
+      if (badge2) badge2.classList.add('hidden');
+      if (status2) {
+        status2.innerText = 'Pacing';
+        status2.style.color = '';
+      }
+      if (sub2) sub2.innerText = `Target: ${formatGap(Math.round(avgGapMs / 60000))} (${remMins}m left)`;
+      if (sub2) sub2.style.color = '';
+      const wrap2 = document.getElementById('watchStyle2');
+      if (wrap2) wrap2.classList.remove('victory-state');
+    }
+
+    const ms = findNextMilestone(diff);
+    if (milestoneChip) {
+      milestoneChip.textContent = ms.timeStr
+        ? `Next: ${ms.emoji} ${ms.title} in ${ms.timeStr}`
+        : `${ms.emoji} ${ms.title}`;
+    }
+
+    if (moneyEl) {
+      const saved = computeOrbitMoneySaved();
+      moneyEl.textContent = `${settings.currency} ${saved.toFixed(2)}`;
+    }
+
   } else if (ringFill) {
-    ringFill.style.strokeDashoffset = '314.16';
-    ringFill.style.stroke = 'var(--accent)';
-    ringFill.style.filter = 'drop-shadow(0 0 8px var(--accent-glow))';
-    if(badge2) badge2.classList.add('hidden');
-    if(status2) { status2.innerText = 'Pacing'; status2.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20"; }
-    if(sub2) sub2.innerText = 'Target: --';
+    ringFill.style.strokeDashoffset = '439.82';
+    ringFill.setAttribute('stroke', 'url(#grad-orbit)');
+    ringFill.style.filter = 'url(#glow-orbit) drop-shadow(0 0 6px var(--accent-glow))';
+    if (badge2) badge2.classList.add('hidden');
+    if (status2) {
+      status2.innerText = 'Pacing';
+      status2.style.color = '';
+    }
+    if (sub2) {
+      sub2.innerText = 'Target: --';
+      sub2.style.color = '';
+    }
+    if (milestoneChip) milestoneChip.textContent = '--';
+    if (moneyEl) moneyEl.textContent = '';
+    const wrap2 = document.getElementById('watchStyle2');
+    if (wrap2) wrap2.classList.remove('victory-state');
   }
 
   const fill3 = document.getElementById('heroClimbFill');
@@ -1568,6 +1609,7 @@ function updateUI() {
   try { renderMoneyVisualizer(); } catch(e) {}
   try { renderDailyChallenge(); } catch(e) {}
   try { renderPatternIntel(); } catch(e) {}
+  try { initOrbitWatch(); } catch(e) {}
 }
 
 
@@ -1590,6 +1632,64 @@ function computeMomentumScore(today, todayWaves) {
 }
 
 function formatGap(m) { if (m === null || m === undefined || isNaN(m)) return '—'; if (m < 60) return `${m}m`; return `${Math.floor(m / 60)}h ${m % 60 > 0 ? (m % 60) + 'm' : ''}`.trim(); }
+
+// ---- Orbit premium: baseline gap computation ----
+function computeBaselineGapMs() {
+  const stored = parseInt(localStorage.getItem('smoke_baseline_gap'));
+  if (stored && stored > 0) return stored;
+  if (logs.length > 1) {
+    const limit = Math.min(logs.length, 10);
+    const bg = (logs[limit - 1].timestamp - logs[0].timestamp) / (limit - 1);
+    if (logs.length >= 10) localStorage.setItem('smoke_baseline_gap', String(bg));
+    return bg;
+  }
+  return (24 * 60 * 60 * 1000) / Math.max(1, settings.dailyLimit || 15);
+}
+
+// ---- Orbit premium: total money saved (expectedCigs - actualCigs) ----
+function computeOrbitMoneySaved() {
+  if (logs.length === 0) return 0;
+  const elapsedMs = Date.now() - logs[0].timestamp;
+  const baselineMs = computeBaselineGapMs();
+  const expectedCigs = 1 + (elapsedMs / baselineMs);
+  const actualCigs = logs.length;
+  const pricePerStick = (settings.packPrice || 0) / Math.max(1, settings.packSize || 20);
+  return Math.max(0, (expectedCigs - actualCigs) * pricePerStick);
+}
+
+// ---- Orbit premium: next health milestone ----
+function findNextMilestone(diffMs) {
+  const diffMins = diffMs / 60000;
+  for (const m of HEALTH_MILESTONES) {
+    if (diffMins < m.mins) {
+      const remMins = Math.ceil(m.mins - diffMins);
+      const timeStr = remMins < 60 ? `${remMins}m` : `${Math.floor(remMins / 60)}h${remMins % 60 > 0 ? ` ${remMins % 60}m` : ''}`;
+      return { emoji: m.emoji, title: m.title, timeStr };
+    }
+  }
+  const last = HEALTH_MILESTONES[HEALTH_MILESTONES.length - 1];
+  return { emoji: last.emoji, title: 'All goals reached', timeStr: '' };
+}
+
+// ---- Orbit premium: immediate milestone + money population on boot / data change ----
+function initOrbitWatch() {
+  const milestoneChip = document.getElementById('heroOrbitMilestoneText');
+  const moneyEl = document.getElementById('heroOrbitMoney');
+  if (!milestoneChip && !moneyEl) return;
+  if (logs.length === 0) {
+    if (milestoneChip) milestoneChip.textContent = '--';
+    if (moneyEl) moneyEl.textContent = '';
+    return;
+  }
+  const diff = Date.now() - logs[logs.length - 1].timestamp;
+  const ms = findNextMilestone(diff);
+  if (milestoneChip) {
+    milestoneChip.textContent = ms.timeStr
+      ? `Next: ${ms.emoji} ${ms.title} in ${ms.timeStr}`
+      : `${ms.emoji} ${ms.title}`;
+  }
+  if (moneyEl) moneyEl.textContent = `${settings.currency} ${computeOrbitMoneySaved().toFixed(2)}`;
+}
 
 // Smart time formatting for the Widen The Gap chart — minutes → hours → days
 function formatGapSmart(min) {
