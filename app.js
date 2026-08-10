@@ -323,6 +323,80 @@ let enteredPin = "";
 let myChartInstances = {};
 let mapInstance = null, modalMapInstance = null;
 let mainTimer = null, waveTimer = null, cooldownTimer = null;
+let displayRaf = null, lastHeroTime = '', prevHeroVictory = false;
+const HOUR_MILESTONES = [1, 6, 12, 24, 72, 168, 336, 720];
+
+function prefersReducedMotion() {
+  return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+function handleMilestones(diffMs) {
+  try {
+    if (prefersReducedMotion() || !logs || logs.length === 0) return;
+    const lastLog = logs[logs.length-1];
+    const key = 'smoke_milestone_' + lastLog.timestamp;
+    const done = parseInt(localStorage.getItem(key) || '0', 10);
+    const hours = diffMs / 3600000;
+    let crossed = 0;
+    for (let i=0; i<HOUR_MILESTONES.length; i++) {
+      if (hours >= HOUR_MILESTONES[i]) crossed = HOUR_MILESTONES[i];
+    }
+    if (crossed > done) {
+      localStorage.setItem(key, String(crossed));
+      if (settings.haptics && navigator.vibrate) navigator.vibrate([50, 30, 80]);
+      const wrap = document.getElementById('watchStyle' + currentWatchStyle);
+      if (wrap) {
+        wrap.classList.remove('hero-milestone-glow');
+        void wrap.offsetWidth;
+        wrap.classList.add('hero-milestone-glow');
+      }
+    }
+  } catch(e) { console.error('Milestone check error:', e); }
+}
+
+function displayTick() {
+  try {
+    if (!logs || logs.length === 0) { displayRaf = null; return; }
+    const lastLog = logs[logs.length-1];
+    if (!lastLog || typeof lastLog.timestamp !== 'number') { displayRaf = null; return; }
+    const diff = Date.now() - lastLog.timestamp;
+    const timeStr = `${Math.floor(diff/3600000).toString().padStart(2,'0')}:${Math.floor((diff%3600000)/60000).toString().padStart(2,'0')}:${Math.floor((diff%60000)/1000).toString().padStart(2,'0')}`;
+    if (timeStr !== lastHeroTime) {
+      lastHeroTime = timeStr;
+      const prevLog = logs[logs.length-1];
+      updateHeroDisplay(diff, prevLog.gap ? prevLog.gap * 60000 : 0, logsCache.avgGapMs);
+    }
+  } catch(err) { console.error('Display tick error:', err); }
+  displayRaf = requestAnimationFrame(displayTick);
+}
+
+function initWatchLongPress() {
+  if (window._watchLongPressInit) return;
+  window._watchLongPressInit = true;
+  const LONG_PRESS_MS = 500;
+  for (let i=1; i<=3; i++) {
+    const el = document.getElementById('watchStyle' + i);
+    if (!el) continue;
+    let timer = null, startX = 0, startY = 0;
+    el.addEventListener('pointerdown', (e) => {
+      startX = e.clientX; startY = e.clientY;
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        window.showStatDetail('currentGap');
+        window._longPressHandled = true; // swallow the click that follows pointerup, so the sheet doesn't reopen
+        if (settings.haptics && navigator.vibrate && !prefersReducedMotion()) navigator.vibrate([20, 30, 20]);
+        setTimeout(() => { window._longPressHandled = false; }, 350);
+      }, LONG_PRESS_MS);
+    });
+    const cancel = () => clearTimeout(timer);
+    el.addEventListener('pointermove', (e) => {
+      if (Math.abs(e.clientX - startX) > 10 || Math.abs(e.clientY - startY) > 10) clearTimeout(timer);
+    });
+    el.addEventListener('pointerup', cancel);
+    el.addEventListener('pointercancel', cancel);
+    el.addEventListener('pointerleave', cancel);
+  }
+}
 let editingLogIdx = null;
 let currentSelectedTags = [];
 let currentIntensity = 3;
@@ -822,16 +896,25 @@ function bootCore() {
         sendSystemNotification("🚬 Did you forget to log?", "It's been longer than your average gap. Log your stick or keep widening the gap!", 'notifInactivity');
       }
 
-      updateHeroDisplay(diff, prevGapMs, avgGapMs);
+      handleMilestones(diff);
+      if (!displayRaf) displayRaf = requestAnimationFrame(displayTick);
 
     } catch(err) { console.error('Main timer error:', err); }
   }, 1000);
+
+  // Smooth rAF-driven display loop — no setInterval drift, precise wall-clock count
+  if (displayRaf) cancelAnimationFrame(displayRaf);
+  displayRaf = requestAnimationFrame(displayTick);
+
+  initWatchLongPress();
 }
 
 function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
   const timeStr = `${Math.floor(diff/3600000).toString().padStart(2,'0')}:${Math.floor((diff%3600000)/60000).toString().padStart(2,'0')}:${Math.floor((diff%60000)/1000).toString().padStart(2,'0')}`;
-  
+
   for(let i=1; i<=3; i++) {
+    const wrap = document.getElementById('watchStyle'+i);
+    if (wrap && wrap.classList.contains('hidden')) continue;
     const sw = document.getElementById('stopwatch'+i);
     if(sw) sw.innerText = timeStr;
   }
@@ -846,6 +929,21 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
     } else {
       pct = Math.min(70, Math.round((diff / avgGapMs) * 70));
       remMins = Math.ceil((avgGapMs - diff) / 60000);
+    }
+  }
+
+  if (isVictory !== prevHeroVictory) {
+    prevHeroVictory = isVictory;
+    const live = document.getElementById('heroStatusLive');
+    if (live) live.textContent = isVictory ? 'Victory zone reached. New record.' : 'Back to pacing.';
+    if (isVictory) {
+      const wrap = document.getElementById('watchStyle'+currentWatchStyle);
+      if (wrap) {
+        wrap.classList.remove('hero-victory-pop');
+        void wrap.offsetWidth;
+        wrap.classList.add('hero-victory-pop');
+      }
+      if (settings.haptics && navigator.vibrate && !prefersReducedMotion()) navigator.vibrate([40,60,40]);
     }
   }
 
@@ -868,6 +966,12 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
       if(status1) { status1.innerText = "Pacing"; status1.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20"; }
       if(sub1) sub1.innerText = `Target Avg: ${formatGap(Math.round(avgGapMs/60000))} (${remMins}m left)`;
     }
+  } else if (fill1) {
+    fill1.style.width = '0%'; fill1.style.boxShadow = 'none';
+    if(marker1) marker1.classList.add('hidden');
+    if(badge1) badge1.classList.add('hidden');
+    if(status1) { status1.innerText = 'Pacing'; status1.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20"; }
+    if(sub1) sub1.innerText = 'Target Avg: --';
   }
 
   const ringFill = document.getElementById('heroRingFill');
@@ -891,6 +995,13 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
           if(status2) { status2.innerText = "Pacing"; status2.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20"; }
           if(sub2) sub2.innerText = `Target: ${formatGap(Math.round(avgGapMs/60000))} (${remMins}m left)`;
       }
+  } else if (ringFill) {
+    ringFill.style.strokeDashoffset = '314.16';
+    ringFill.style.stroke = 'var(--accent)';
+    ringFill.style.filter = 'drop-shadow(0 0 8px var(--accent-glow))';
+    if(badge2) badge2.classList.add('hidden');
+    if(status2) { status2.innerText = 'Pacing'; status2.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20"; }
+    if(sub2) sub2.innerText = 'Target: --';
   }
 
   const fill3 = document.getElementById('heroClimbFill');
@@ -906,11 +1017,18 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
           if(status3) { status3.innerText = "Victory Zone"; status3.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 w-max"; }
           if(sub3) sub3.innerText = `Record Extended: +${formatGap(extraMins)}`;
       } else {
-          fill3.style.background = 'linear-gradient(180deg, #FBBF24, #10B981)'; fill3.style.boxShadow = "0 0 12px rgba(245,158,11,0.4) inset";
+          fill3.style.background = 'linear-gradient(180deg, #FBBF24, #F59E0B)'; fill3.style.boxShadow = "0 0 12px rgba(245,158,11,0.4) inset";
           if(badge3) badge3.classList.add('hidden');
           if(status3) { status3.innerText = "Pacing"; status3.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 w-max"; }
           if(sub3) sub3.innerText = `Target: ${formatGap(Math.round(avgGapMs/60000))} (${remMins}m left)`;
       }
+  } else if (fill3) {
+    fill3.style.height = '0%';
+    fill3.style.background = 'linear-gradient(180deg, #FBBF24, #F59E0B)';
+    fill3.style.boxShadow = '0 0 12px rgba(245,158,11,0.4) inset';
+    if(badge3) badge3.classList.add('hidden');
+    if(status3) { status3.innerText = 'Pacing'; status3.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 w-max"; }
+    if(sub3) sub3.innerText = 'Target: --';
   }
 
   let dotColor = '#9CA3AF', newClass = '', newHtml = '';
@@ -1634,6 +1752,8 @@ function showDailyRecap() {
 }
 
 function showStatDetail(type) {
+  if (window._longPressHandled) { window._longPressHandled = false; return; }
+  if (settings.haptics && navigator.vibrate && !prefersReducedMotion()) navigator.vibrate(8);
   const today = logs.filter(l => new Date(l.timestamp).toDateString() === new Date().toDateString());
   const pricePerStick = settings.packPrice / settings.packSize;
   const icon = document.getElementById('statDetailIcon'), title = document.getElementById('statDetailTitle'), value = document.getElementById('statDetailValue'), desc = document.getElementById('statDetailDesc'), extra = document.getElementById('statDetailExtra');

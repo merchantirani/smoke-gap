@@ -105,11 +105,37 @@
       --heat-0: rgba(255, 255, 255, 0.03); --heat-1: #BAE6FD; --heat-2: #38BDF8; --heat-3: #0EA5E9; --heat-4: #0369A1; --heat-text: rgba(255, 255, 255, 0.75);
     }
     
-    html, body { min-height: 100vh; min-height: 100dvh; background-color: var(--bg-body) !important; color: var(--text-main); font-family: 'General Sans', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; transition: background-color 0.35s ease, color 0.35s ease; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+    html, body { min-height: 100vh; min-height: 100dvh; background-color: var(--bg-body) !important; color: var(--text-main); font-family: 'General Sans', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; transition: background-color 0.35s ease, color 0.35s ease; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; touch-action: manipulation; }
     button, .nav-btn, .drag-handle, .dock-bar { user-select: none; -webkit-user-select: none; }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, ::before, ::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
 
     .brand-title { font-family: 'Clash Display', sans-serif; font-weight: 700; letter-spacing: -0.04em; background: linear-gradient(135deg, var(--accent) 0%, var(--text-main) 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 2px 8px var(--accent-glow)); }
     .numeric-display { font-family: 'Space Grotesk', monospace; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+
+    .hero-victory-pop { animation: victoryPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    @keyframes victoryPop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.04); }
+      100% { transform: scale(1); }
+    }
+
+    .hero-milestone-glow { animation: milestoneGlow 2.5s ease-out; }
+    @keyframes milestoneGlow {
+      0% { box-shadow: 0 0 0px var(--accent-glow); }
+      20% { box-shadow: 0 0 30px var(--accent-glow); }
+      100% { box-shadow: 0 0 0px var(--accent-glow); }
+    }
+
+    .watch-press-visual { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+    .watch-press-visual:active { transform: scale(0.97) !important; box-shadow: 0 0 25px var(--accent-glow); }
     
     .app-container { padding-bottom: calc(104px + env(safe-area-inset-bottom)); min-height: 100vh; min-height: 100dvh; }
     
@@ -527,10 +553,10 @@
         <!-- BALANCED FULL-SPACE UNIFIED WATCH CAROUSEL (SWIPE / TAP) -->
         <div id="heroCarousel" class="relative flex flex-col items-center justify-center pt-1 pb-1">
           
-          <div id="watchContainer" class="w-full relative min-h-[168px] flex items-center justify-center touch-pan-x" ontouchstart="window.touchStartX(event)" ontouchend="window.touchEndX(event)">
-            
+          <div id="watchContainer" class="w-full relative h-[180px] flex items-center justify-center touch-pan-x" ontouchstart="window.touchStartX(event)" ontouchend="window.touchEndX(event)">
+
             <!-- WATCH 1: THE CLIMB -->
-            <div id="watchStyle1" onclick="window.showStatDetail('currentGap')" class="w-full max-w-[320px] mx-auto active:scale-[0.98] transition-all relative flex items-center justify-center gap-5 px-2">
+            <div id="watchStyle1" onclick="window.showStatDetail('currentGap')" class="watch-press-visual w-full h-full max-w-[320px] mx-auto active:scale-[0.98] transition-all relative flex items-center justify-center gap-5 px-2">
                <div class="relative shrink-0 w-8 h-40 rounded-full overflow-hidden border-2 flex flex-col justify-end shadow-inner" style="background-color: var(--input-bg); border-color: var(--card-border);">
                  <div id="heroClimbFill" class="w-full transition-all duration-1000 ease-out rounded-full" style="height: 0%; background: linear-gradient(180deg, #FBBF24, #F59E0B); box-shadow: 0 0 12px rgba(245,158,11,0.4) inset;"></div>
                </div>
@@ -540,14 +566,14 @@
                    <span class="text-[10px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">The Climb</span>
                  </div>
                  <span id="heroClimbStatus" class="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 w-max">Pacing</span>
-                 <div id="stopwatch1" class="numeric-display text-4xl font-black tracking-tighter" style="color: var(--text-main);">00:00:00</div>
+                 <div id="stopwatch1" role="timer" aria-label="Time since last cigarette" class="numeric-display text-4xl font-black tracking-tighter" style="color: var(--text-main);">00:00:00</div>
                  <div id="heroRecordBadge1" class="hidden text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.2)] w-max">🏆 RECORD</div>
                  <p id="heroClimbSub" class="text-[10px] font-bold text-amber-500 leading-tight">Target: --</p>
                </div>
             </div>
 
             <!-- WATCH 2: THE ORBIT -->
-            <div id="watchStyle2" onclick="window.showStatDetail('currentGap')" class="hidden w-full max-w-[320px] mx-auto active:scale-[0.98] transition-all flex flex-col items-center justify-center relative">
+            <div id="watchStyle2" onclick="window.showStatDetail('currentGap')" class="watch-press-visual hidden w-full h-full max-w-[320px] mx-auto active:scale-[0.98] transition-all flex flex-col items-center justify-center relative">
                <div class="relative flex justify-center items-center w-40 h-40 mb-0.5">
                  <svg class="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 120 120">
                    <circle cx="60" cy="60" r="50" fill="transparent" stroke="var(--input-bg)" stroke-width="6"></circle>
@@ -555,7 +581,7 @@
                  </svg>
                  <div class="absolute inset-0 flex flex-col items-center justify-center pt-1">
                    <span id="heroRingStatus" class="text-[9px] font-extrabold uppercase tracking-widest text-amber-500 mb-0.5">Pacing</span>
-                   <div id="stopwatch2" class="numeric-display text-3xl font-black tracking-tighter" style="color: var(--text-main);">00:00:00</div>
+                   <div id="stopwatch2" role="timer" aria-label="Time since last cigarette" class="numeric-display text-3xl font-black tracking-tighter" style="color: var(--text-main);">00:00:00</div>
                    <div id="heroRecordBadge2" class="hidden mt-1 text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.2)]">🏆 RECORD</div>
                  </div>
                </div>
@@ -566,13 +592,13 @@
             </div>
 
             <!-- WATCH 3: THE HORIZON -->
-            <div id="watchStyle3" onclick="window.showStatDetail('currentGap')" class="hidden w-full max-w-[320px] mx-auto active:scale-[0.98] transition-all flex flex-col items-center text-center">
+            <div id="watchStyle3" onclick="window.showStatDetail('currentGap')" class="watch-press-visual hidden w-full h-full max-w-[320px] mx-auto active:scale-[0.98] transition-all flex flex-col items-center justify-center text-center">
                <div class="w-full space-y-1.5 px-2">
                  <div class="flex justify-between items-center px-1">
                    <span class="text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5" style="color: var(--text-muted);"><i data-lucide="sunrise" class="w-3.5 h-3.5 text-amber-500"></i> The Horizon</span>
                    <span id="heroHorizonStatus" class="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">Pacing</span>
                  </div>
-                 <div id="stopwatch3" class="numeric-display text-4xl font-black tracking-tighter" style="color: var(--text-main);">00:00:00</div>
+                 <div id="stopwatch3" role="timer" aria-label="Time since last cigarette" class="numeric-display text-4xl font-black tracking-tighter" style="color: var(--text-main);">00:00:00</div>
                  <div id="heroRecordBadge3" class="hidden mx-auto text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.2)] w-max">🏆 NEW RECORD ZONE</div>
                  <div class="relative w-full h-2.5 rounded-full overflow-hidden border mt-1.5" style="background-color: var(--input-bg); border-color: var(--card-border);">
                    <div id="heroHorizonFill" class="h-full transition-all duration-1000 ease-out" style="width: 0%; background-color: var(--accent);"></div>
@@ -593,6 +619,8 @@
             <button id="watchDot2" onclick="window.switchWatchStyle(2)" class="w-2 h-2 rounded-full transition-all duration-300"></button>
             <button id="watchDot3" onclick="window.switchWatchStyle(3)" class="w-2 h-2 rounded-full transition-all duration-300"></button>
           </div>
+
+          <div id="heroStatusLive" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
           <div id="smartStatusWrapper" class="mt-2 px-4 py-1.5 rounded-full border transition-all duration-500" style="background: var(--input-bg); border-color: var(--card-border); color: var(--text-muted);">
             <span id="smartStatusText" class="text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5">
