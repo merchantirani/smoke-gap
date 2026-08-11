@@ -990,7 +990,7 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
 
     if (isVictory) {
       ringFill.setAttribute('stroke', 'url(#grad-orbit-victory)');
-      ringFill.style.filter = "drop-shadow(0 0 10px rgba(16, 185, 129, 0.6))";
+      ringFill.style.filter = "url(#glow-orbit) drop-shadow(0 0 10px rgba(16, 185, 129, 0.6))";
       if (badge2) badge2.classList.remove('hidden');
       if (status2) {
         status2.innerText = 'Victory Zone';
@@ -1002,7 +1002,7 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
       if (wrap2) wrap2.classList.add('victory-state');
     } else {
       ringFill.setAttribute('stroke', 'url(#grad-orbit)');
-      ringFill.style.filter = "drop-shadow(0 0 6px var(--accent-glow))";
+      ringFill.style.filter = "url(#glow-orbit) drop-shadow(0 0 6px var(--accent-glow))";
       if (badge2) badge2.classList.add('hidden');
       if (status2) {
         status2.innerText = 'Pacing';
@@ -1017,19 +1017,19 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
     const ms = findNextMilestone(diff);
     if (milestoneChip) {
       milestoneChip.textContent = ms.timeStr
-        ? `Next: ${ms.emoji} in ${ms.timeStr}`
-        : `${ms.emoji} All goals reached`;
+        ? `Next: ${ms.emoji} ${ms.title} in ${ms.timeStr}`
+        : `${ms.emoji} ${ms.title}`;
     }
 
     if (moneyEl) {
       const saved = computeOrbitMoneySaved();
-      moneyEl.textContent = saved > 0 ? `${settings.currency} ${saved.toFixed(2)} saved` : '';
+      moneyEl.textContent = `${settings.currency} ${saved.toFixed(2)}`;
     }
 
   } else if (ringFill) {
     ringFill.style.strokeDashoffset = '439.82';
     ringFill.setAttribute('stroke', 'url(#grad-orbit)');
-    ringFill.style.filter = 'drop-shadow(0 0 6px var(--accent-glow))';
+    ringFill.style.filter = 'url(#glow-orbit) drop-shadow(0 0 6px var(--accent-glow))';
     if (badge2) badge2.classList.add('hidden');
     if (status2) {
       status2.innerText = 'Pacing';
@@ -1685,13 +1685,10 @@ function initOrbitWatch() {
   const ms = findNextMilestone(diff);
   if (milestoneChip) {
     milestoneChip.textContent = ms.timeStr
-      ? `Next: ${ms.emoji} in ${ms.timeStr}`
-      : `${ms.emoji} All goals reached`;
+      ? `Next: ${ms.emoji} ${ms.title} in ${ms.timeStr}`
+      : `${ms.emoji} ${ms.title}`;
   }
-  if (moneyEl) {
-    const saved = computeOrbitMoneySaved();
-    moneyEl.textContent = saved > 0 ? `${settings.currency} ${saved.toFixed(2)} saved` : '';
-  }
+  if (moneyEl) moneyEl.textContent = `${settings.currency} ${computeOrbitMoneySaved().toFixed(2)}`;
 }
 
 // Smart time formatting for the Widen The Gap chart — minutes → hours → days
