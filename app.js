@@ -981,15 +981,33 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
   const milestoneChip = document.getElementById('heroOrbitMilestoneText');
   const moneyEl = document.getElementById('heroOrbitMoney');
 
-  const ORBIT_CIRCUM = 439.82;
+  const ORBIT_CIRCUM = 628.32;
+
+  function setOrbitGradient(victory) {
+    const grad = document.getElementById('grad-orbit');
+    if (!grad) return;
+    const stops = grad.querySelectorAll('stop');
+    if (victory) {
+      // Victory: green (mirrors The Climb's green bar)
+      stops[0].setAttribute('stop-color', '#34D399');
+      stops[1].setAttribute('stop-color', '#10B981');
+      stops[2].setAttribute('stop-color', '#34D399');
+    } else {
+      // Pacing: amber (mirrors The Climb's amber bar)
+      stops[0].setAttribute('stop-color', '#FBBF24');
+      stops[1].setAttribute('stop-color', '#F59E0B');
+      stops[2].setAttribute('stop-color', '#FBBF24');
+    }
+  }
 
   if (ringFill && avgGapMs > 0) {
     let ringPct = isVictory ? Math.min(100, 70 + bonusPct) : pct;
     const offset = ORBIT_CIRCUM - (ORBIT_CIRCUM * (ringPct / 100));
     ringFill.style.strokeDashoffset = offset;
 
+    setOrbitGradient(isVictory);
+
     if (isVictory) {
-      ringFill.setAttribute('stroke', 'url(#grad-orbit-victory)');
       ringFill.style.filter = "url(#glow-orbit) drop-shadow(0 0 10px rgba(16, 185, 129, 0.6))";
       if (badge2) badge2.classList.remove('hidden');
       if (status2) {
@@ -1001,7 +1019,6 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
       const wrap2 = document.getElementById('watchStyle2');
       if (wrap2) wrap2.classList.add('victory-state');
     } else {
-      ringFill.setAttribute('stroke', 'url(#grad-orbit)');
       ringFill.style.filter = "url(#glow-orbit) drop-shadow(0 0 6px var(--accent-glow))";
       if (badge2) badge2.classList.add('hidden');
       if (status2) {
@@ -1027,8 +1044,8 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
     }
 
   } else if (ringFill) {
-    ringFill.style.strokeDashoffset = '439.82';
-    ringFill.setAttribute('stroke', 'url(#grad-orbit)');
+    ringFill.style.strokeDashoffset = '628.32';
+    setOrbitGradient(false);
     ringFill.style.filter = 'url(#glow-orbit) drop-shadow(0 0 6px var(--accent-glow))';
     if (badge2) badge2.classList.add('hidden');
     if (status2) {
