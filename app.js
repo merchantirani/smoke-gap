@@ -416,7 +416,7 @@ function refreshIcons() {
 }
 
 let currentWatchStyle = parseInt(localStorage.getItem('smoke_watch_style')) || 1;
-if (currentWatchStyle < 1 || currentWatchStyle > 3) currentWatchStyle = 1;
+if (currentWatchStyle < 1 || currentWatchStyle > 3 || currentWatchStyle === 2) currentWatchStyle = 1;
 let touchStartXCoord = 0;
 
 function touchStartX(e) {
@@ -440,7 +440,7 @@ function touchEndX(e) {
 }
 
 window.cycleNextWatch = function() {
-  currentWatchStyle = currentWatchStyle >= 3 ? 1 : currentWatchStyle + 1;
+  currentWatchStyle = currentWatchStyle === 1 ? 3 : 1;
   window.switchWatchStyle(currentWatchStyle);
 }
 
@@ -676,6 +676,7 @@ window.switchWatchStyle = function(styleNum) {
     localStorage.setItem('smoke_watch_style', styleNum);
     
     for(let i=1; i<=3; i++) {
+        if(i === 2) continue; // Watch2 (The Orbit) removed
         const el = document.getElementById('watchStyle'+i);
         const dot = document.getElementById('watchDot'+i);
         if(el) el.classList.toggle('hidden', i !== styleNum);
@@ -906,7 +907,6 @@ function bootCore() {
   displayRaf = requestAnimationFrame(displayTick);
 
   initWatchLongPress();
-  initOrbitWatch();
 }
 
 function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
@@ -972,94 +972,6 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
     if(badge1) badge1.classList.add('hidden');
     if(status1) { status1.innerText = 'Pacing'; status1.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20"; }
     if(sub1) sub1.innerText = 'Target Avg: --';
-  }
-
-  const ringFill = document.getElementById('heroRingFill');
-  const badge2 = document.getElementById('heroRecordBadge2');
-  const status2 = document.getElementById('heroRingStatus');
-  const sub2 = document.getElementById('heroRingSub');
-  const milestoneChip = document.getElementById('heroOrbitMilestoneText');
-  const moneyEl = document.getElementById('heroOrbitMoney');
-
-  const ORBIT_CIRCUM = 628.32;
-
-  function setOrbitGradient(victory) {
-    const grad = document.getElementById('grad-orbit');
-    if (!grad) return;
-    const stops = grad.querySelectorAll('stop');
-    if (victory) {
-      // Victory: green (mirrors The Climb's green bar)
-      stops[0].setAttribute('stop-color', '#34D399');
-      stops[1].setAttribute('stop-color', '#10B981');
-      stops[2].setAttribute('stop-color', '#34D399');
-    } else {
-      // Pacing: amber (mirrors The Climb's amber bar)
-      stops[0].setAttribute('stop-color', '#FBBF24');
-      stops[1].setAttribute('stop-color', '#F59E0B');
-      stops[2].setAttribute('stop-color', '#FBBF24');
-    }
-  }
-
-  if (ringFill && avgGapMs > 0) {
-    let ringPct = isVictory ? Math.min(100, 70 + bonusPct) : pct;
-    const offset = ORBIT_CIRCUM - (ORBIT_CIRCUM * (ringPct / 100));
-    ringFill.style.strokeDashoffset = offset;
-
-    setOrbitGradient(isVictory);
-
-    if (isVictory) {
-      ringFill.style.filter = "url(#glow-orbit) drop-shadow(0 0 10px rgba(16, 185, 129, 0.6))";
-      if (badge2) badge2.classList.remove('hidden');
-      if (status2) {
-        status2.innerText = 'Victory Zone';
-        status2.style.color = '#10B981';
-      }
-      if (sub2) sub2.innerText = `Target Beaten: +${formatGap(extraMins)}`;
-      if (sub2) sub2.style.color = '#10B981';
-      const wrap2 = document.getElementById('watchStyle2');
-      if (wrap2) wrap2.classList.add('victory-state');
-    } else {
-      ringFill.style.filter = "url(#glow-orbit) drop-shadow(0 0 6px var(--accent-glow))";
-      if (badge2) badge2.classList.add('hidden');
-      if (status2) {
-        status2.innerText = 'Pacing';
-        status2.style.color = '';
-      }
-      if (sub2) sub2.innerText = `Target: ${formatGap(Math.round(avgGapMs / 60000))} (${remMins}m left)`;
-      if (sub2) sub2.style.color = '';
-      const wrap2 = document.getElementById('watchStyle2');
-      if (wrap2) wrap2.classList.remove('victory-state');
-    }
-
-    const ms = findNextMilestone(diff);
-    if (milestoneChip) {
-      milestoneChip.textContent = ms.timeStr
-        ? `Next: ${ms.emoji} ${ms.title} in ${ms.timeStr}`
-        : `${ms.emoji} ${ms.title}`;
-    }
-
-    if (moneyEl) {
-      const saved = computeOrbitMoneySaved();
-      moneyEl.textContent = `${settings.currency} ${saved.toFixed(2)}`;
-    }
-
-  } else if (ringFill) {
-    ringFill.style.strokeDashoffset = '628.32';
-    setOrbitGradient(false);
-    ringFill.style.filter = 'url(#glow-orbit) drop-shadow(0 0 6px var(--accent-glow))';
-    if (badge2) badge2.classList.add('hidden');
-    if (status2) {
-      status2.innerText = 'Pacing';
-      status2.style.color = '';
-    }
-    if (sub2) {
-      sub2.innerText = 'Target: --';
-      sub2.style.color = '';
-    }
-    if (milestoneChip) milestoneChip.textContent = '--';
-    if (moneyEl) moneyEl.textContent = '';
-    const wrap2 = document.getElementById('watchStyle2');
-    if (wrap2) wrap2.classList.remove('victory-state');
   }
 
   const fill3 = document.getElementById('heroClimbFill');
@@ -1626,7 +1538,6 @@ function updateUI() {
   try { renderMoneyVisualizer(); } catch(e) {}
   try { renderDailyChallenge(); } catch(e) {}
   try { renderPatternIntel(); } catch(e) {}
-  try { initOrbitWatch(); } catch(e) {}
 }
 
 
@@ -1661,51 +1572,6 @@ function computeBaselineGapMs() {
     return bg;
   }
   return (24 * 60 * 60 * 1000) / Math.max(1, settings.dailyLimit || 15);
-}
-
-// ---- Orbit premium: total money saved (expectedCigs - actualCigs) ----
-function computeOrbitMoneySaved() {
-  if (logs.length === 0) return 0;
-  const elapsedMs = Date.now() - logs[0].timestamp;
-  const baselineMs = computeBaselineGapMs();
-  const expectedCigs = 1 + (elapsedMs / baselineMs);
-  const actualCigs = logs.length;
-  const pricePerStick = (settings.packPrice || 0) / Math.max(1, settings.packSize || 20);
-  return Math.max(0, (expectedCigs - actualCigs) * pricePerStick);
-}
-
-// ---- Orbit premium: next health milestone ----
-function findNextMilestone(diffMs) {
-  const diffMins = diffMs / 60000;
-  for (const m of HEALTH_MILESTONES) {
-    if (diffMins < m.mins) {
-      const remMins = Math.ceil(m.mins - diffMins);
-      const timeStr = remMins < 60 ? `${remMins}m` : `${Math.floor(remMins / 60)}h${remMins % 60 > 0 ? ` ${remMins % 60}m` : ''}`;
-      return { emoji: m.emoji, title: m.title, timeStr };
-    }
-  }
-  const last = HEALTH_MILESTONES[HEALTH_MILESTONES.length - 1];
-  return { emoji: last.emoji, title: 'All goals reached', timeStr: '' };
-}
-
-// ---- Orbit premium: immediate milestone + money population on boot / data change ----
-function initOrbitWatch() {
-  const milestoneChip = document.getElementById('heroOrbitMilestoneText');
-  const moneyEl = document.getElementById('heroOrbitMoney');
-  if (!milestoneChip && !moneyEl) return;
-  if (logs.length === 0) {
-    if (milestoneChip) milestoneChip.textContent = '--';
-    if (moneyEl) moneyEl.textContent = '';
-    return;
-  }
-  const diff = Date.now() - logs[logs.length - 1].timestamp;
-  const ms = findNextMilestone(diff);
-  if (milestoneChip) {
-    milestoneChip.textContent = ms.timeStr
-      ? `Next: ${ms.emoji} ${ms.title} in ${ms.timeStr}`
-      : `${ms.emoji} ${ms.title}`;
-  }
-  if (moneyEl) moneyEl.textContent = `${settings.currency} ${computeOrbitMoneySaved().toFixed(2)}`;
 }
 
 // Smart time formatting for the Widen The Gap chart — minutes → hours → days

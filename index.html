@@ -137,12 +137,6 @@
     .watch-press-visual { transition: transform 0.15s ease, box-shadow 0.15s ease; }
     .watch-press-visual:active { transform: scale(0.97) !important; box-shadow: 0 0 25px var(--accent-glow); }
 
-    /* ============ ORBIT WATCH 2 — Premium Ring ============ */
-    #heroOrbitMilestone { animation: orbitFadeSlide 0.5s ease-out; }
-    @keyframes orbitFadeSlide { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: translateY(0); } }
-    #watchStyle2.victory-state #heroOrbitMilestone { color: #10B981 !important; }
-    #watchStyle2.victory-state #heroOrbitMoney { text-shadow: 0 0 8px rgba(16, 185, 129, 0.4); }
-
     .app-container { padding-bottom: calc(104px + env(safe-area-inset-bottom)); min-height: 100vh; min-height: 100dvh; }
     
     .premium-card { background: var(--card-bg); border: 1px solid var(--card-border); box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.05); border-radius: 1.5rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -544,23 +538,9 @@
       
       <section id="page-tracker" class="page-section space-y-4">
 
-        <!-- ==================== SHARED SVG DEFS (Orbit gradients & filters) ==================== -->
+        <!-- ==================== SHARED SVG DEFS ==================== -->
         <svg width="0" height="0" class="absolute" aria-hidden="true" focusable="false">
           <defs>
-            <linearGradient id="grad-orbit" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stop-color="#38BDF8" />
-              <stop offset="50%" stop-color="var(--accent)" />
-              <stop offset="100%" stop-color="#10B981" />
-            </linearGradient>
-            <linearGradient id="grad-orbit-victory" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stop-color="#10B981" />
-              <stop offset="50%" stop-color="#34D399" />
-              <stop offset="100%" stop-color="#10B981" />
-            </linearGradient>
-            <filter id="glow-orbit" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="4" result="blur" />
-              <feComposite in="SourceGraphic" in2="blur" operator="over" />
-            </filter>
           </defs>
         </svg>
         <!-- ==================== END SHARED SVG DEFS ==================== -->
@@ -599,31 +579,6 @@
                </div>
             </div>
 
-            <!-- WATCH 2: THE ORBIT (Premium Redesign) -->
-            <div id="watchStyle2" onclick="window.showStatDetail('currentGap')" class="watch-press-visual hidden w-full h-full max-w-[320px] mx-auto active:scale-[0.98] transition-all flex flex-col items-center justify-center relative gap-3">
-               <div class="relative flex justify-center items-center w-[240px] h-[240px] shrink-0">
-                 <svg class="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 240 240">
-                   <circle cx="120" cy="120" r="100" fill="transparent" stroke="var(--input-bg)" stroke-width="13"></circle>
-                   <circle id="heroRingFill" cx="120" cy="120" r="100" fill="transparent" stroke="url(#grad-orbit)" stroke-width="13" stroke-linecap="round" stroke-dasharray="628.32" stroke-dashoffset="628.32" filter="url(#glow-orbit)" style="transition: stroke-dashoffset 1s ease-out, stroke 0.6s ease;"></circle>
-                 </svg>
-                 <div class="absolute inset-0 flex flex-col items-center justify-center gap-1 px-2">
-                   <span id="heroRingStatus" class="text-[11px] font-extrabold uppercase tracking-widest text-amber-500 transition-colors duration-500">Pacing</span>
-                   <div id="stopwatch2" role="timer" aria-label="Time since last cigarette" class="numeric-display text-3xl font-black tracking-tighter leading-none" style="color: var(--text-main);">00:00:00</div>
-                   <div id="heroRecordBadge2" class="hidden text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.2)]">🏆 RECORD</div>
-                   <div id="heroOrbitMilestone" class="flex items-center gap-1 text-[9px] font-bold text-amber-500/80 leading-none transition-colors duration-500 max-w-[85%] overflow-hidden whitespace-nowrap text-ellipsis">
-                     <span id="heroOrbitMilestoneText">Next: --</span>
-                   </div>
-                 </div>
-               </div>
-               <div class="flex items-center justify-center gap-2 w-full px-4 leading-none">
-                 <span id="heroOrbitMoney" class="numeric-display text-[10px] font-bold text-emerald-500 transition-colors duration-500">--</span>
-                 <span class="text-[9px] font-bold" style="color: var(--text-muted);">saved</span>
-                 <span class="w-px h-3 shrink-0" style="background: var(--card-border);"></span>
-                 <i data-lucide="aperture" class="w-3 h-3 shrink-0" style="color: var(--accent);"></i>
-                 <p id="heroRingSub" class="text-[10px] font-bold text-amber-500 leading-none truncate">Target: --</p>
-               </div>
-            </div>
-
             <!-- WATCH 3: THE HORIZON -->
             <div id="watchStyle3" onclick="window.showStatDetail('currentGap')" class="watch-press-visual hidden w-full h-full max-w-[320px] mx-auto active:scale-[0.98] transition-all flex flex-col items-center justify-center text-center">
                <div class="w-full space-y-1.5 px-2">
@@ -649,7 +604,6 @@
           <!-- WATCH SWITCHER DOTS -->
           <div class="flex gap-2 mt-2 items-center justify-center cursor-pointer">
             <button id="watchDot1" onclick="window.switchWatchStyle(1)" class="w-2 h-2 rounded-full transition-all duration-300"></button>
-            <button id="watchDot2" onclick="window.switchWatchStyle(2)" class="w-2 h-2 rounded-full transition-all duration-300"></button>
             <button id="watchDot3" onclick="window.switchWatchStyle(3)" class="w-2 h-2 rounded-full transition-all duration-300"></button>
           </div>
 
