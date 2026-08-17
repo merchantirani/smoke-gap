@@ -6,7 +6,11 @@ const RUNTIME_CACHE = `pause-runtime-${CACHE_VERSION}`;
 // Files to precache on install (critical app files)
 const PRECACHE_FILES = [
   './index.html',
-  './app.js',
+  './js/state.js',
+  './js/tracker.js',
+  './js/charts.js',
+  './js/modals.js',
+  './js/history.js',
   './lucide.min.js',
   './tailwind-compiled.css',
   './manifest.json',
