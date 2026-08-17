@@ -45,4 +45,46 @@ function computeTotalSaved() {
   let timeElapsed = Date.now() - logs[0].timestamp;
   let expectedCigs = 1 + (timeElapsed / baselineGapMs);
   return Math.max(0, (expectedCigs - logs.length) * pricePerStick);
+}// ==================== APP CACHE REFRESH & CONFIRM ====================
+let pendingConfirmCallback = null;
+
+function showConfirm(title, message, onConfirm, type) {
+  const tEl = document.getElementById('confirmTitle');
+  const mEl = document.getElementById('confirmMessage');
+  const modal = document.getElementById('confirmModal');
+  if (tEl) tEl.innerText = title;
+  if (mEl) mEl.innerText = message;
+  pendingConfirmCallback = onConfirm;
+  if (modal) modal.classList.remove('hidden');
 }
+
+window.closeConfirmModal = function() {
+  const modal = document.getElementById('confirmModal');
+  if (modal) modal.classList.add('hidden');
+  pendingConfirmCallback = null;
+};
+
+window.confirmYes = function() {
+  const cb = pendingConfirmCallback;
+  window.closeConfirmModal();
+  if (cb) cb();
+};
+
+window.refreshAppCache = function() {
+  showConfirm("Refresh App Cache?", "This will clear old cached files and reload the app. Your data (logs, settings) will NOT be lost.", () => {
+    if ('caches' in window) {
+      caches.keys().then(keys => {
+        return Promise.all(keys.map(k => caches.delete(k)));
+      }).then(() => {
+        if (navigator.serviceWorker) {
+          navigator.serviceWorker.getRegistrations().then(regs => {
+            regs.forEach(r => r.unregister());
+          });
+        }
+        window.location.reload();
+      });
+    } else {
+      window.location.reload();
+    }
+  }, 'info');
+};
