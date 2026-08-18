@@ -409,6 +409,29 @@
   <div id="app-container"></div>
   <div id="modals-container"></div>
 
+  <!-- Bottom Tab Navigation -->
+  <nav id="bottomNav" class="fixed bottom-0 left-0 right-0 z-[9999] flex justify-around items-center py-2 px-2 border-t backdrop-blur-lg" style="background: var(--card-bg); border-color: var(--card-border); padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));">
+    <button id="tab-tracker" onclick="window.switchTab('tracker')" class="nav-btn flex flex-col items-center justify-center gap-1 py-2 px-4 rounded-xl transition-all" style="color: var(--accent); background: var(--accent-glow);">
+      <i data-lucide="home" class="w-5 h-5"></i>
+      <span class="text-[9px] font-bold uppercase tracking-wider">Home</span>
+    </button>
+    <button id="tab-insights" onclick="window.switchTab('insights')" class="nav-btn flex flex-col items-center justify-center gap-1 py-2 px-4 rounded-xl transition-all" style="color: var(--text-muted);">
+      <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+      <span class="text-[9px] font-bold uppercase tracking-wider">Insights</span>
+    </button>
+    <button id="tab-history" onclick="window.switchTab('history')" class="nav-btn flex flex-col items-center justify-center gap-1 py-2 px-4 rounded-xl transition-all" style="color: var(--text-muted);">
+      <i data-lucide="clock" class="w-5 h-5"></i>
+      <span class="text-[9px] font-bold uppercase tracking-wider">History</span>
+    </button>
+    <button id="tab-settings" onclick="window.switchTab('settings')" class="nav-btn flex flex-col items-center justify-center gap-1 py-2 px-4 rounded-xl transition-all" style="color: var(--text-muted);">
+      <i data-lucide="settings" class="w-5 h-5"></i>
+      <span class="text-[9px] font-bold uppercase tracking-wider">Settings</span>
+    </button>
+  </nav>
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="fixed top-4 left-4 right-4 z-[99999] flex flex-col items-center gap-2 pointer-events-none"></div>
+
   <!-- 1. JS Files Yahan Aayengi (</body> se theek pehle) -->
   <script src="state.js"></script>
   <script src="tracker.js"></script>
