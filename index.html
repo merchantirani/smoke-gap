@@ -151,12 +151,15 @@
       position: fixed;
       inset: 0;
       z-index: 10000;
-      display: flex;
+      display: none;
       align-items: flex-end;
       justify-content: center;
       background: var(--overlay-bg);
       backdrop-filter: blur(4px);
       -webkit-backdrop-filter: blur(4px);
+    }
+    .sheet:not(.hidden) {
+      display: flex;
     }
     .sheet-panel {
       width: 100%;

@@ -29,6 +29,19 @@ window.closeShieldDashboard = function() {
   if(m) m.classList.add('hidden');
 };
 
+// ==================== SOS INTERRUPTER ====================
+window.closeSosInterrupter = function(success) {
+  const m = document.getElementById('sosInterrupterModal');
+  if(m) m.classList.add('hidden');
+  if(sosTimer) clearInterval(sosTimer);
+  sosSecs = 15;
+  if(success) {
+    waves.push({ timestamp: Date.now(), duration: 15, success: true });
+    localStorage.setItem('smoke_waves', JSON.stringify(waves));
+    showToast("Craving defeated! +1 Shield");
+  }
+};
+
 function showToast(msg) {
   const c = document.getElementById('toastContainer'); if(!c) return;
   const t = document.createElement('div');
