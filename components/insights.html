@@ -1,0 +1,172 @@
+<section id="page-insights" class="page-section space-y-4 hidden">
+  <div class="flex justify-between items-center px-1 mb-2">
+    <h2 class="text-xl font-bold" style="color: var(--text-main);">Analytics Mirror</h2>
+    <span class="filter-select-wrapper"><select id="insightsDateFilter" onchange="window.toggleInsightsCustomRange()" class="bg-transparent text-xs font-bold outline-none cursor-pointer pr-5" style="color: var(--accent);">
+      <option value="today">Today</option><option value="7days" selected>Last 7 Days</option><option value="1month">1 Month</option><option value="all">All Time</option>
+      <option value="custom">Custom Range</option>
+    </select></span>
+  </div>
+  <div id="insightsCustomRange" class="hidden flex items-center gap-2 px-1">
+    <div class="flex-1 flex items-center gap-1.5">
+      <span class="text-[10px] font-bold uppercase shrink-0" style="color: var(--text-muted);">From</span>
+      <input type="date" id="insightsDateFrom" onchange="window.validateInsightsDates()" class="flex-1 px-2 py-1.5 rounded-xl border text-[11px] font-semibold outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);">
+    </div>
+    <div class="flex-1 flex items-center gap-1.5">
+      <span class="text-[10px] font-bold uppercase shrink-0" style="color: var(--text-muted);">To</span>
+      <input type="date" id="insightsDateTo" onchange="window.validateInsightsDates()" class="flex-1 px-2 py-1.5 rounded-xl border text-[11px] font-semibold outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);">
+    </div>
+    <button id="insightsClearCustom" onclick="window.clearInsightsCustomRange()" class="px-2.5 py-1.5 rounded-xl border text-[11px] font-bold active:scale-95 transition-all shrink-0" style="background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.2); color: #EF4444;"><i data-lucide="x" class="w-3 h-3"></i></button>
+  </div>
+
+  <div id="smartTextInsight" class="premium-card p-4 mb-4 text-xs font-medium leading-relaxed border-l-2 border-[var(--accent)]" style="color: var(--text-main);">--</div>
+
+  <div class="flex overflow-x-auto gap-3 pb-2 snap-x hide-scrollbar">
+    <div class="premium-card p-4 min-w-[140px] snap-start shrink-0">
+      <div class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2" style="color: var(--text-muted);"><i data-lucide="piggy-bank" class="w-3 h-3 text-emerald-500"></i> Total Saved</div>
+      <div id="insightTotalSaved" class="numeric-display text-xl font-bold text-emerald-500">AED 0</div>
+      <canvas id="sparkTotalSaved" class="mt-1.5" width="120" height="24" style="width:100%; height:24px; opacity:0.6;"></canvas>
+    </div>
+    <div class="premium-card p-4 min-w-[140px] snap-start shrink-0">
+      <div class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2" style="color: var(--text-muted);"><i data-lucide="trophy" class="w-3 h-3 text-amber-500"></i> Longest Gap</div>
+      <div id="insightLongestGap" class="numeric-display text-xl font-bold" style="color: var(--text-main);">--</div>
+      <canvas id="sparkLongestGap" class="mt-1.5" width="120" height="24" style="width:100%; height:24px; opacity:0.6;"></canvas>
+    </div>
+    <div class="premium-card p-4 min-w-[140px] snap-start shrink-0">
+      <div class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2" style="color: var(--text-muted);"><i data-lucide="shield-alert" class="w-3 h-3 text-sky-500"></i> Urge Win Rate</div>
+      <div id="insightWinRate" class="numeric-display text-xl font-bold" style="color: var(--text-main);">0%</div>
+      <canvas id="sparkWinRate" class="mt-1.5" width="120" height="24" style="width:100%; height:24px; opacity:0.6;"></canvas>
+    </div>
+    <div class="premium-card p-4 min-w-[140px] snap-start shrink-0">
+      <div class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2" style="color: var(--text-muted);"><i data-lucide="clock" class="w-3 h-3 text-sky-500"></i> Avg Gap</div>
+      <div id="insightAvgGap" class="numeric-display text-xl font-bold" style="color: var(--text-main);">--</div>
+      <canvas id="sparkAvgGap" class="mt-1.5" width="120" height="24" style="width:100%; height:24px; opacity:0.6;"></canvas>
+    </div>
+    <div class="premium-card p-4 min-w-[140px] snap-start shrink-0">
+      <div class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2" style="color: var(--text-muted);"><i data-lucide="alert-triangle" class="w-3 h-3 text-orange-500"></i> Peak Hour</div>
+      <div id="insightPeakHour" class="numeric-display text-xl font-bold" style="color: var(--text-main);">--</div>
+    </div>
+    <div class="premium-card p-4 min-w-[140px] snap-start shrink-0">
+      <div class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2" style="color: var(--text-muted);"><i data-lucide="brain-circuit" class="w-3 h-3 text-purple-500"></i> Top Trigger</div>
+      <div id="insightTopTrigger" class="text-lg font-bold truncate" style="color: var(--text-main);">--</div>
+    </div>
+    <div class="premium-card p-4 min-w-[140px] snap-start shrink-0">
+      <div class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2" style="color: var(--text-muted);"><i data-lucide="flame" class="w-3 h-3 text-red-500"></i> Heaviest Day</div>
+      <div id="insightHeaviestDay" class="text-lg font-bold" style="color: var(--text-main);">--</div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-2 gap-3">
+    <div class="premium-card p-3.5 relative overflow-hidden">
+      <div class="flex items-center gap-1.5 mb-1.5">
+        <i data-lucide="wallet" class="w-3 h-3 text-red-500 shrink-0"></i>
+        <p class="text-[8px] font-bold uppercase tracking-widest truncate" style="color: var(--text-muted);">Spent (<span id="selectedFilterLabel">7D</span>)</p>
+      </div>
+      <p id="insightPeriodSpend" class="numeric-display text-lg font-bold tracking-tight truncate" style="color: var(--text-main);">--</p>
+      <p id="insightPeriodCount" class="text-[9px] font-medium mt-0.5" style="color: var(--text-muted);">0 smoked</p>
+    </div>
+
+    <div id="lifeRegainedCard" class="premium-card p-3.5 relative overflow-hidden hidden">
+      <div class="flex items-center gap-1.5 mb-1.5">
+        <div class="w-4 h-4 rounded-lg flex items-center justify-center shrink-0" style="background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(14,165,233,0.15));">
+          <i data-lucide="heart-pulse" class="w-2.5 h-2.5 text-emerald-500"></i>
+        </div>
+        <p class="text-[8px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Life Regained</p>
+      </div>
+      <div id="lifeRegainedText" class="numeric-display text-lg font-bold tracking-tight" style="color: var(--text-main); line-height:1.3;"></div>
+      <div id="lifeRegainedSub" class="text-[9px] font-medium mt-0.5 truncate" style="color: var(--text-muted);"></div>
+    </div>
+  </div>
+
+  <div id="chartContainer" class="space-y-5">
+    <div id="chartEmptyState" class="premium-card p-6 text-center hidden space-y-3">
+      <div class="w-12 h-12 rounded-2xl mx-auto flex items-center justify-center mb-1" style="background: var(--accent-glow);"><i data-lucide="bar-chart-3" class="w-6 h-6" style="color: var(--accent);"></i></div>
+      <h3 class="text-sm font-bold" style="color: var(--text-main);">See Your Patterns Here</h3>
+      <p class="text-[11px] leading-relaxed" style="color: var(--text-muted);">Log a cigarette to start tracking your gaps, triggers, and daily trends.</p>
+      <button onclick="window.switchTab('tracker')" class="mt-1 px-5 py-2 rounded-full text-[10px] font-bold uppercase tracking-wider active:scale-95 transition-all border" style="background: var(--input-bg); border-color: var(--card-border); color: var(--accent);">Go to Tracker</button>
+    </div>
+    <div id="card-heatmap" class="premium-card p-5">
+      <div class="flex justify-between items-center mb-3">
+        <div class="flex items-center gap-2.5"><div class="w-7 h-7 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500"><i data-lucide="calendar-days" class="w-4 h-4"></i></div><h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">Consistency Calendar</h3></div>
+        <div class="drag-handle"><i data-lucide="grip-horizontal" class="w-4 h-4"></i></div>
+      </div>
+      <p class="text-[10px] mb-3 -mt-1" style="color: var(--text-muted);">Daily habit heatmap. Darker squares mean more cigarettes logged that day.</p>
+      <div id="calendarHeatmap" class="w-full overflow-x-auto hide-scrollbar flex gap-1.5 pt-2 justify-between"></div>
+    </div>
+    
+    <div id="card-1" class="premium-card p-5">
+      <div class="flex justify-between items-center mb-3">
+        <div class="flex items-center gap-2.5"><div class="w-7 h-7 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500"><i data-lucide="activity" class="w-4 h-4"></i></div><h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">Widen The Gap Trend</h3></div>
+        <div class="flex items-center gap-2"><span id="badge-chart1" class="hidden text-[9px] font-bold px-2 py-0.5 rounded border"></span><div class="drag-handle"><i data-lucide="grip-horizontal" class="w-4 h-4"></i></div></div>
+      </div>
+      <p class="text-[10px] mb-3 -mt-1" style="color: var(--text-muted);">How long you wait between cigarettes, over time. Line going up = gaps getting longer.</p>
+      <div class="chart-wrapper"><canvas id="chart1"></canvas></div>
+    </div>
+
+    <div id="card-4" class="premium-card p-5">
+      <div class="flex justify-between items-center mb-3">
+        <div class="flex items-center gap-2.5"><div class="w-7 h-7 rounded-full bg-sky-500/10 flex items-center justify-center text-sky-500"><i data-lucide="shield" class="w-4 h-4"></i></div><h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">Cravings Resisted</h3></div>
+        <div class="drag-handle"><i data-lucide="grip-horizontal" class="w-4 h-4"></i></div>
+      </div>
+      <p class="text-[10px] mb-3 -mt-1" style="color: var(--text-muted);">How many total cravings you successfully beat vs how many you smoked.</p>
+      <div class="chart-wrapper" style="height: 210px;"><canvas id="chart4"></canvas></div>
+    </div>
+
+    <div id="card-3" class="premium-card p-5">
+      <div class="flex justify-between items-center mb-3">
+        <div class="flex items-center gap-2.5"><div class="w-7 h-7 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500"><i data-lucide="banknote" class="w-4 h-4"></i></div><h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">Spend vs Save</h3></div>
+        <div class="flex items-center gap-2"><span id="badge-chart3" class="hidden text-[9px] font-bold px-2 py-0.5 rounded border"></span><div class="drag-handle"><i data-lucide="grip-horizontal" class="w-4 h-4"></i></div></div>
+      </div>
+      <p class="text-[10px] mb-3 -mt-1" style="color: var(--text-muted);">Red line = spent. Green line = saved vs your baseline rate.</p>
+      <div class="chart-wrapper"><canvas id="chart3"></canvas></div>
+    </div>
+
+    <div id="card-2" class="premium-card p-5">
+      <div class="flex justify-between items-center mb-3">
+        <div class="flex items-center gap-2.5"><div class="w-7 h-7 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500"><i data-lucide="bar-chart-2" class="w-4 h-4"></i></div><h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">Daily Volume</h3></div>
+        <div class="flex items-center gap-2"><span id="badge-chart2" class="hidden text-[9px] font-bold px-2 py-0.5 rounded border"></span><div class="drag-handle"><i data-lucide="grip-horizontal" class="w-4 h-4"></i></div></div>
+      </div>
+      <p class="text-[10px] mb-3 -mt-1" style="color: var(--text-muted);">Cigarettes per day — bars above the dashed line mean you went over your own daily goal.</p>
+      <div class="chart-wrapper"><canvas id="chart2"></canvas></div>
+    </div>
+
+    <div id="card-5" class="premium-card p-5">
+      <div class="flex justify-between items-center mb-3">
+        <div class="flex items-center gap-2.5"><div class="w-7 h-7 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-500"><i data-lucide="brain" class="w-4 h-4"></i></div><h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">Trigger Psychology</h3></div>
+        <div class="flex items-center gap-2"><span id="badge-chart5" class="hidden text-[9px] font-bold px-2 py-0.5 rounded border"></span><div class="drag-handle"><i data-lucide="grip-horizontal" class="w-4 h-4"></i></div></div>
+      </div>
+      <p class="text-[10px] mb-3 -mt-1" style="color: var(--text-muted);">Which tags you use most often — the bigger the slice, the more it drives you to smoke.</p>
+      <div class="chart-wrapper" style="height: 210px;"><canvas id="chart5"></canvas></div>
+    </div>
+
+    <div id="card-7" class="premium-card p-5">
+      <div class="flex justify-between items-center mb-3">
+        <div class="flex items-center gap-2.5"><div class="w-7 h-7 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-500"><i data-lucide="alarm-clock" class="w-4 h-4"></i></div><h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">Trigger Timing & Resilience</h3></div>
+        <div class="flex items-center gap-2"><span id="badge-chart6" class="hidden text-[9px] font-bold px-2 py-0.5 rounded border"></span><div class="drag-handle"><i data-lucide="grip-horizontal" class="w-4 h-4"></i></div></div>
+      </div>
+      <p class="text-[10px] mb-3 -mt-1" style="color: var(--text-muted);">Which triggers hit hardest at what time of day, and when willpower peaks.</p>
+      <div class="chart-wrapper" style="height: 220px;"><canvas id="chart6"></canvas></div>
+    </div>
+    
+    <div id="card-6" class="premium-card p-5 relative overflow-hidden">
+      <div class="flex justify-between items-center mb-3">
+        <div class="flex items-center gap-2.5"><div class="w-7 h-7 rounded-full bg-sky-500/10 flex items-center justify-center text-sky-500"><i data-lucide="map-pin" class="w-4 h-4"></i></div><h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">Thermal Heatmap</h3></div>
+        <div class="flex gap-3 items-center"><button onclick="window.openMapModal()" class="text-sky-500 text-xs font-bold uppercase tracking-wider">Expand</button><div class="drag-handle"><i data-lucide="grip-horizontal" class="w-4 h-4"></i></div></div>
+      </div>
+      <p class="text-[10px] mb-3 -mt-1" style="color: var(--text-muted);">Where you tend to smoke most, based on logged locations.</p>
+      <div id="mapContainer" class="w-full h-48 rounded-2xl z-10 overflow-hidden" style="border: 1px solid var(--card-border);"></div>
+    </div>
+  </div>
+
+  <div id="recoveryTimelineCard" class="premium-card p-5 relative overflow-hidden hidden">
+    <div class="flex items-center gap-3 mb-4">
+      <div class="w-9 h-9 rounded-2xl flex items-center justify-center" style="background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(34,197,94,0.15));">
+        <i data-lucide="heart-pulse" class="w-5 h-5 text-emerald-500"></i>
+      </div>
+      <div>
+        <h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">Body Recovery</h3>
+        <p id="recoverySubtitle" class="text-[9px] font-medium" style="color: var(--text-muted);"></p>
+      </div>
+    </div>
+    <div id="recoveryTimelineList" class="space-y-0"></div>
+  </div>
+</section>

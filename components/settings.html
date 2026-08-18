@@ -1,0 +1,259 @@
+<section id="page-settings" class="page-section hidden" style="padding: 0 10px 16px;">
+  <h2 class="text-2xl font-bold pb-1" style="color: var(--text-main); letter-spacing: -0.02em;">Settings</h2>
+  
+  <div class="settings-group">
+    <div class="settings-row">
+      <div class="settings-row-icon" style="background: rgba(245,158,11,0.12);"><i data-lucide="target" style="color: #F59E0B;"></i></div>
+      <div class="settings-row-content" style="flex: 1;">
+        <div class="settings-row-label">Motivation</div>
+        <input type="text" id="motivationInput" maxlength="100" onchange="window.updateSettings()" placeholder="Why are you quitting?" style="background: transparent; border: none; outline: none; color: var(--text-muted); font-size: 13px; width: 100%; margin-top: 2px; padding: 0;">
+      </div>
+    </div>
+    <div class="settings-row">
+      <div class="settings-row-icon" style="background: rgba(59,130,246,0.12);"><i data-lucide="palette" style="color: #3B82F6;"></i></div>
+      <div class="settings-row-content">
+        <div class="settings-row-label">Appearance</div>
+      </div>
+      <div class="settings-row-input">
+        <select id="themeSelect" onchange="window.updateSettings()"><option value="white">Clean White & Blue</option><option value="default">Amber Glow</option><option value="paper">Calm Paper</option><option value="oled">Pure OLED</option><option value="aurora">Aurora</option><option value="ocean">Midnight Ocean</option></select>
+      </div>
+      <svg class="settings-row-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+    </div>
+    <div class="settings-row">
+      <div class="settings-row-icon" style="background: rgba(156,163,175,0.12);"><i data-lucide="clock" style="color: #9CA3AF;"></i></div>
+      <div class="settings-row-content">
+        <div class="settings-row-label">Time Format</div>
+      </div>
+      <div class="settings-row-input">
+        <select id="timeFormatSelect" onchange="window.updateSettings()"><option value="12h">12-Hour</option><option value="24h">24-Hour</option></select>
+      </div>
+      <svg class="settings-row-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+    </div>
+    <div class="settings-row">
+      <div class="settings-row-icon" style="background: rgba(156,163,175,0.12);"><i data-lucide="lock" style="color: #9CA3AF;"></i></div>
+      <div class="settings-row-content">
+        <div class="settings-row-label">Log Cooldown</div>
+      </div>
+      <div class="settings-row-input">
+        <select id="lockSecsInput" onchange="window.updateSettings()"><option value="60">1 Minute</option><option value="300">5 Minutes</option><option value="600">10 Minutes</option></select>
+      </div>
+      <svg class="settings-row-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+    </div>
+    <div class="settings-row">
+      <div class="settings-row-icon" style="background: rgba(99,102,241,0.12);"><i data-lucide="smartphone" style="color: #6366F1;"></i></div>
+      <div class="settings-row-content">
+        <div class="settings-row-label">Haptic Feedback</div>
+      </div>
+      <label class="premium-toggle"><input type="checkbox" id="hapticsInput" onchange="window.updateSettings()" class="sr-only"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
+    </div>
+  </div>
+
+  <div class="settings-group">
+    <div class="settings-master-toggle">
+      <div class="settings-row-icon" style="background: rgba(139,92,246,0.12);"><i data-lucide="bell" style="color: #8B5CF6;"></i></div>
+      <div class="settings-row-content">
+        <div class="settings-row-label" style="font-weight: 600;">Notifications</div>
+      </div>
+      <button onclick="window.requestNotifPermission()" id="notifPermBtn" style="background: rgba(14,165,233,0.12); color: #0EA5E9; font-size: 12px; font-weight: 700; padding: 5px 10px; border-radius: 8px; border: none; cursor: pointer;">Enable</button>
+    </div>
+    <div class="settings-row">
+      <div class="settings-row-icon" style="background: rgba(245,158,11,0.12);"><i data-lucide="zap" style="color: #F59E0B;"></i></div>
+      <div class="settings-row-content">
+        <div class="settings-row-label">SOS Interrupter</div>
+        <div class="settings-row-sub">15s micro-action when logging</div>
+      </div>
+      <label class="premium-toggle"><input type="checkbox" id="notifEnableSosInput" onchange="window.toggleNotifSetting('notifEnableSos')" class="sr-only"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
+    </div>
+    <div class="settings-row">
+      <div class="settings-row-icon" style="background: rgba(16,185,129,0.12);"><i data-lucide="waves" style="color: #10B981;"></i></div>
+      <div class="settings-row-content">
+        <div class="settings-row-label">Wave Complete</div>
+        <div class="settings-row-sub">Notify when Ride It Out finishes</div>
+      </div>
+      <label class="premium-toggle"><input type="checkbox" id="notifWaveCompleteInput" onchange="window.toggleNotifSetting('notifWaveComplete')" class="sr-only"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
+    </div>
+    <div class="settings-row">
+      <div class="settings-row-icon" style="background: rgba(14,165,233,0.12);"><i data-lucide="trophy" style="color: #0EA5E9;"></i></div>
+      <div class="settings-row-content">
+        <div class="settings-row-label">Gap Widened</div>
+        <div class="settings-row-sub">Alert when beating personal record</div>
+      </div>
+      <label class="premium-toggle"><input type="checkbox" id="notifGapWidenedInput" onchange="window.toggleNotifSetting('notifGapWidened')" class="sr-only"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
+    </div>
+    <div class="settings-row">
+      <div class="settings-row-icon" style="background: rgba(249,115,22,0.12);"><i data-lucide="alarm-clock" style="color: #F97316;"></i></div>
+      <div class="settings-row-content">
+        <div class="settings-row-label">Forgotten Log</div>
+        <div class="settings-row-sub">Nudge at 1.5x your usual gap</div>
+      </div>
+      <label class="premium-toggle"><input type="checkbox" id="notifInactivityInput" onchange="window.toggleNotifSetting('notifInactivity')" class="sr-only"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
+    </div>
+    <div class="settings-row">
+      <div class="settings-row-icon" style="background: rgba(168,85,247,0.12);"><i data-lucide="brain" style="color: #A855F7;"></i></div>
+      <div class="settings-row-content">
+        <div class="settings-row-label">Predictive Craving</div>
+        <div class="settings-row-sub">Alert 10 mins before peak hour</div>
+      </div>
+      <label class="premium-toggle"><input type="checkbox" id="notifPredictiveInput" onchange="window.toggleNotifSetting('notifPredictive')" class="sr-only"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
+    </div>
+  </div>
+
+  <div class="settings-group">
+    <div class="settings-row">
+      <div class="settings-row-icon" style="background: rgba(34,197,94,0.12);"><i data-lucide="banknote" style="color: #22C55E;"></i></div>
+      <div class="settings-row-content">
+        <div class="settings-row-label">Currency</div>
+      </div>
+      <div class="settings-row-input">
+        <select id="currencySelect" onchange="window.updateSettings()"><option value="AED">AED</option><option value="USD">USD</option><option value="EUR">EUR</option><option value="GBP">GBP</option><option value="INR">INR</option></select>
+      </div>
+      <svg class="settings-row-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+    </div>
+    <div class="settings-row">
+      <div class="settings-row-icon" style="background: rgba(239,68,68,0.12);"><i data-lucide="gauge" style="color: #EF4444;"></i></div>
+      <div class="settings-row-content">
+        <div class="settings-row-label">Daily Cigarette Goal</div>
+        <div class="settings-row-sub">Stay under this limit each day</div>
+      </div>
+      <div class="settings-row-input">
+        <input type="number" id="dailyLimitInput" min="1" max="100" onchange="window.updateSettings()" class="numeric" value="15">
+      </div>
+    </div>
+    <div class="settings-row">
+      <div class="settings-row-icon" style="background: rgba(16,185,129,0.12);"><i data-lucide="trending-down" style="color: #10B981;"></i></div>
+      <div class="settings-row-content">
+        <div class="settings-row-label">Auto-Reduce Limit</div>
+        <div class="settings-row-sub">Lower goal by 1 stick each week</div>
+      </div>
+      <label class="premium-toggle"><input type="checkbox" id="autoReduceInput" onchange="window.updateSettings()" class="sr-only"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
+    </div>
+    <div class="settings-row">
+      <div class="settings-row-icon" style="background: rgba(59,130,246,0.12);"><i data-lucide="wallet" style="color: #3B82F6;"></i></div>
+      <div class="settings-row-content">
+        <div class="settings-row-label">Pack Price</div>
+        <div class="settings-row-sub">Cost of one full pack</div>
+      </div>
+      <div class="settings-row-input">
+        <input type="number" id="packPriceInput" min="0" max="9999" onchange="window.updateSettings()" class="numeric" value="20">
+      </div>
+    </div>
+    <div class="settings-row">
+      <div class="settings-row-icon" style="background: rgba(156,163,175,0.12);"><i data-lucide="package" style="color: #9CA3AF;"></i></div>
+      <div class="settings-row-content">
+        <div class="settings-row-label">Sticks Per Pack</div>
+      </div>
+      <div class="settings-row-input">
+        <input type="number" id="packSizeInput" min="1" max="100" onchange="window.updateSettings()" class="numeric" value="20">
+      </div>
+    </div>
+    <div class="settings-row">
+      <div class="settings-row-icon" style="background: rgba(245,158,11,0.12);"><i data-lucide="receipt" style="color: #F59E0B;"></i></div>
+      <div class="settings-row-content">
+        <div class="settings-row-label">Cost Per Cigarette</div>
+      </div>
+      <span id="costPerCigDisplay" class="numeric settings-row-value" style="color: var(--accent);">--</span>
+    </div>
+    <div class="settings-row">
+      <div class="settings-row-icon" style="background: rgba(59,130,246,0.12);"><i data-lucide="calendar" style="color: #3B82F6;"></i></div>
+      <div class="settings-row-content">
+        <div class="settings-row-label">Quit Date</div>
+        <div class="settings-row-sub">Your target date to quit completely</div>
+      </div>
+      <div class="settings-row-input">
+        <input type="date" id="quitDateInput" onchange="window.updateQuitDate()">
+      </div>
+    </div>
+  </div>
+
+  <div class="settings-group">
+    <div class="settings-row">
+      <div class="settings-row-icon" style="background: rgba(249,115,22,0.12);"><i data-lucide="tag" style="color: #F97316;"></i></div>
+      <div class="settings-row-content" style="flex: 1;">
+        <div class="settings-row-label">New Trigger Tag</div>
+      </div>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <input type="text" id="newTriggerInput" placeholder="New tag name..." style="width: 100px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--card-border); background: var(--input-bg); color: var(--text-main); font-size: 12px; outline: none;">
+        <button onclick="window.addCustomTrigger()" class="settings-action-btn" style="width: auto; padding: 6px 14px; font-size: 11px; min-height: auto;">Add</button>
+      </div>
+    </div>
+    <div id="triggerListSettings" style="padding: 10px 12px;"></div>
+  </div>
+
+  <div class="settings-group">
+    <div class="settings-row">
+      <div class="settings-row-icon" style="background: rgba(16,185,129,0.12);"><i data-lucide="database" style="color: #10B981;"></i></div>
+      <div class="settings-row-content">
+        <div class="settings-row-label">Data Summary</div>
+      </div>
+      <span id="dataSummaryText" class="settings-row-value" style="font-size: 11px;">0 logs</span>
+    </div>
+    <div id="backupReminderBanner" class="hidden" style="margin: 0 12px; padding: 10px 14px; border-radius: 10px; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.2); display: flex; align-items: center; gap: 8px;">
+      <i data-lucide="alert-triangle" style="width: 14px; height: 14px; color: #F59E0B;"></i>
+      <p id="backupReminderText" style="font-size: 11px; font-weight: 600; color: #F59E0B; flex: 1;">You haven't backed up your data yet</p>
+    </div>
+    <div class="settings-row" onclick="window.exportJSON()">
+      <div class="settings-row-icon" style="background: rgba(16,185,129,0.12);"><i data-lucide="upload-cloud" style="color: #10B981;"></i></div>
+      <div class="settings-row-content"><div class="settings-row-label">Backup Data</div></div>
+      <svg class="settings-row-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+    </div>
+    <div class="settings-row" onclick="document.getElementById('importFileInput').click()">
+      <div class="settings-row-icon" style="background: rgba(59,130,246,0.12);"><i data-lucide="download-cloud" style="color: #3B82F6;"></i></div>
+      <div class="settings-row-content"><div class="settings-row-label">Restore Data</div></div>
+      <svg class="settings-row-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+    </div>
+    <input type="file" id="importFileInput" class="hidden" accept=".json" onchange="window.importJSON(event)">
+    <div class="settings-row" onclick="window.exportLogsCSV()">
+      <div class="settings-row-icon" style="background: rgba(14,165,233,0.12);"><i data-lucide="file-text" style="color: #0EA5E9;"></i></div>
+      <div class="settings-row-content"><div class="settings-row-label">Export CSV</div><div class="settings-row-sub">Download spreadsheet</div></div>
+      <svg class="settings-row-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+    </div>
+    <div class="settings-row" onclick="window.setupPin()">
+      <div class="settings-row-icon" style="background: rgba(99,102,241,0.12);"><i data-lucide="lock" style="color: #6366F1;"></i></div>
+      <div class="settings-row-content"><div class="settings-row-label">Set App PIN</div></div>
+      <span id="pinStatusBtn" class="settings-row-value">Off</span>
+      <svg class="settings-row-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+    </div>
+    <div class="settings-row" onclick="window.restartOnboarding()">
+      <div class="settings-row-icon" style="background: rgba(168,85,247,0.12);"><i data-lucide="sparkles" style="color: #A855F7;"></i></div>
+      <div class="settings-row-content"><div class="settings-row-label">Show Tour Again</div></div>
+      <svg class="settings-row-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+    </div>
+    <div class="settings-row" onclick="window.resetSettings()">
+      <div class="settings-row-icon" style="background: rgba(156,163,175,0.12);"><i data-lucide="settings" style="color: #9CA3AF;"></i></div>
+      <div class="settings-row-content"><div class="settings-row-label">Reset Settings to Defaults</div></div>
+      <svg class="settings-row-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+    </div>
+    <div class="settings-row" onclick="window.refreshAppCache()">
+      <div class="settings-row-icon" style="background: rgba(6,182,212,0.12);"><i data-lucide="refresh-cw" style="color: #06B6D4;"></i></div>
+      <div class="settings-row-content"><div class="settings-row-label">Refresh App (Clear Cache)</div></div>
+      <svg class="settings-row-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+    </div>
+  </div>
+
+  <div class="settings-group">
+    <div class="settings-group-header">Danger Zone</div>
+    <div class="settings-row settings-destructive" onclick="window.resetData('24h')">
+      <div class="settings-row-icon" style="background: rgba(249,115,22,0.12);"><i data-lucide="clock" style="color: #F97316;"></i></div>
+      <div class="settings-row-content"><div class="settings-row-label">Wipe 24h Logs</div><div class="settings-row-sub">Delete today's cigarette logs only</div></div>
+      <svg class="settings-row-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+    </div>
+    <div class="settings-row settings-destructive" onclick="window.resetData('all')">
+      <div class="settings-row-icon" style="background: rgba(239,68,68,0.12);"><i data-lucide="trash-2" style="color: #EF4444;"></i></div>
+      <div class="settings-row-content"><div class="settings-row-label">Wipe All Data</div><div class="settings-row-sub">Permanently delete everything</div></div>
+      <svg class="settings-row-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+    </div>
+  </div>
+
+  <div class="settings-group">
+    <a href="privacy.html" target="_blank" rel="noopener noreferrer" class="settings-row" style="text-decoration: none;">
+      <div class="settings-row-icon" style="background: rgba(156,163,175,0.12);"><i data-lucide="shield" style="color: #9CA3AF;"></i></div>
+      <div class="settings-row-content"><div class="settings-row-label">Privacy Policy</div></div>
+      <svg class="settings-row-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+    </a>
+    <div class="settings-row">
+      <div class="settings-row-icon" style="background: rgba(156,163,175,0.12);"><i data-lucide="info" style="color: #9CA3AF;"></i></div>
+      <div class="settings-row-content"><div class="settings-row-label">App Version</div></div>
+      <span id="lastUpdatedText" class="settings-row-value" style="font-size: 11px;">v1.0</span>
+    </div>
+  </div>
+</section>
