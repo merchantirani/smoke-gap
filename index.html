@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+  <!-- Compiled Tailwind CSS for production -->
+  <link rel="stylesheet" href="tailwind-compiled.css">
   <meta name="theme-color" id="theme-color-meta" content="#F8FAFC" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <title>pause — Widen the gap.</title>
@@ -103,6 +105,299 @@
       --overlay-bg: rgba(10, 25, 41, 0.8); --modal-bg: #132F4C; --input-bg: rgba(56, 189, 248, 0.06);
       --heat-0: rgba(255, 255, 255, 0.03); --heat-1: #BAE6FD; --heat-2: #38BDF8; --heat-3: #0EA5E9; --heat-4: #0369A1; --heat-text: rgba(255, 255, 255, 0.75);
     }
+
+    /* Custom Component Styles */
+    html, body {
+      background-color: var(--bg-body);
+      color: var(--text-main);
+      font-family: "General Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    body {
+      min-height: 100vh;
+      padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+    }
+    #app-container { padding: 16px 12px; }
+    #modals-container { position: relative; z-index: 50; }
+
+    .page-section { display: none; }
+    .page-section:not(.hidden) { display: block; }
+
+    .premium-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 1rem;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .numeric-display { font-family: "Space Grotesk", monospace; font-variant-numeric: tabular-nums; }
+
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    .hold-btn { position: relative; overflow: hidden; }
+    .hold-btn #holdProgress {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.25);
+      width: 0;
+      transition: width 0.1s linear;
+    }
+    .hold-btn.is-holding { transform: scale(0.98); }
+
+    .sheet {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      background: var(--overlay-bg);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+    .sheet-panel {
+      width: 100%;
+      max-width: 500px;
+      max-height: 90vh;
+      background: var(--modal-bg);
+      border-radius: 1.5rem 1.5rem 0 0;
+      border: 1px solid var(--card-border);
+      border-bottom: none;
+      overflow-y: auto;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .sheet-handle {
+      width: 36px;
+      height: 4px;
+      background: var(--text-muted);
+      border-radius: 2px;
+      margin: 8px auto;
+      opacity: 0.3;
+    }
+    .sheet-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--card-border);
+    }
+    .sheet-title { font-size: 14px; font-weight: 700; color: var(--text-main); }
+    .sheet-close {
+      width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 50%;
+      background: var(--input-bg);
+      color: var(--text-muted);
+    }
+    .sheet-body { padding: 16px; }
+    .sheet-footer {
+      display: flex;
+      gap: 12px;
+      padding: 16px;
+      border-top: 1px solid var(--card-border);
+    }
+    .sheet-label {
+      display: block;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .sheet-input {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .sheet-input input {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--input-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      font-size: 13px;
+      color: var(--text-main);
+    }
+    .sheet-btn-primary {
+      flex: 1;
+      padding: 12px;
+      background: var(--accent);
+      color: var(--accent-text);
+      border: none;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .sheet-btn-ghost {
+      flex: 1;
+      padding: 12px;
+      background: var(--input-bg);
+      color: var(--text-main);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .sheet-btn-danger {
+      padding: 12px;
+      background: rgba(239, 68, 68, 0.1);
+      color: #EF4444;
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .dialog-card {
+      background: var(--modal-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 1.5rem;
+    }
+
+    .settings-group {
+      margin: 16px 0;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .settings-row {
+      display: flex;
+      align-items: center;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--card-border);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .settings-row:last-child { border-bottom: none; }
+    .settings-row:hover { background: var(--input-bg); }
+    .settings-row-icon {
+      width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 8px;
+      margin-right: 12px;
+    }
+    .settings-row-content { flex: 1; min-width: 0; }
+    .settings-row-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+    .settings-row-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .settings-row-input input, .settings-row-input select {
+      background: var(--input-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 13px;
+      color: var(--text-main);
+      text-align: right;
+      min-width: 80px;
+    }
+    .settings-row-chevron {
+      width: 16px; height: 16px;
+      color: var(--text-muted);
+      margin-left: 8px;
+      flex-shrink: 0;
+    }
+    .settings-row-value { font-size: 13px; color: var(--text-muted); margin-left: 8px; }
+    .settings-destructive { color: #EF4444; }
+    .settings-group-header {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      padding: 10px 14px 6px;
+    }
+
+    .premium-toggle { position: relative; display: inline-block; width: 44px; height: 26px; }
+    .premium-toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-track {
+      position: absolute;
+      inset: 0;
+      background: var(--input-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 13px;
+      transition: all 0.3s;
+    }
+    .toggle-thumb {
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 20px; height: 20px;
+      background: var(--text-muted);
+      border-radius: 50%;
+      transition: all 0.3s;
+    }
+    .premium-toggle input:checked + .toggle-track { background: var(--accent); border-color: var(--accent); }
+    .premium-toggle input:checked + .toggle-track .toggle-thumb {
+      transform: translateX(18px);
+      background: var(--accent-text);
+    }
+
+    .breath-circle {
+      width: 200px; height: 200px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 4s ease-in-out;
+    }
+
+    .goal-ring { position: relative; width: 100px; height: 100px; }
+    .goal-ring-bg { fill: none; stroke: var(--card-border); stroke-width: 8; }
+    .goal-ring-fill { fill: none; stroke: var(--accent); stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 0.5s ease; }
+    .goal-ring-text {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .goal-ring-pct { font-size: 18px; font-weight: 700; color: var(--text-main); font-family: "Space Grotesk", monospace; }
+    .goal-ring-label { font-size: 8px; color: var(--text-muted); text-transform: uppercase; }
+
+    .badge-card { transition: all 0.3s; }
+    .badge-card:not(.grayscale) { opacity: 1; }
+
+    .health-timeline { position: relative; }
+
+    .money-equiv-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+
+    .nav-active {
+      color: var(--accent) !important;
+      background: var(--accent-glow) !important;
+    }
+
+    @keyframes sos-pulse {
+      0% { transform: scale(1); opacity: 0.4; }
+      100% { transform: scale(1.5); opacity: 0; }
+    }
+    .sos-pulse-ring { animation: sos-pulse 1.5s ease-out infinite; }
+
+    @keyframes wave-breathe {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.05); opacity: 0.8; }
+    }
+    .wave-breathe { animation: wave-breathe 3s ease-in-out infinite; }
+
+    @keyframes relapse-celebrate {
+      0%, 100% { transform: scale(1) rotate(0deg); }
+      25% { transform: scale(1.05) rotate(-2deg); }
+      75% { transform: scale(1.05) rotate(2deg); }
+    }
+    .relapse-celebrate { animation: relapse-celebrate 2s ease-in-out infinite; }
   </style>
 </head>
 <body>
@@ -122,29 +417,38 @@
   <script>
     async function loadAppFiles() {
       try {
+        // Load all page HTMLs in parallel for faster loading
         const pages = ['tracker.html', 'insights.html', 'history.html', 'settings.html'];
-        let pagesHtml = '';
-        
-        for (let page of pages) {
-          let response = await fetch(page);
-          pagesHtml += await response.text();
-        }
-        document.getElementById('app-container').innerHTML = pagesHtml;
+        const pagePromises = pages.map(page => fetch(page).then(r => r.text()));
+        const modalsPromise = fetch('modals.html').then(r => r.text());
 
-        let modalsResponse = await fetch('modals.html');
-        document.getElementById('modals-container').innerHTML = await modalsResponse.text();
+        // Wait for all pages to load
+        const pagesHtmlArray = await Promise.all(pagePromises);
+        const modalsHtml = await modalsPromise;
 
-        // 3. Jab saari HTML theek se load ho jaye, tab app ko start karein
-        setTimeout(() => {
-          if (window.lucide) lucide.createIcons(); // Icons load karega
-          if (window.bootApp) window.bootApp();    // App ke logic ko start karega
-        }, 150);
+        // Insert all HTML into containers
+        document.getElementById('app-container').innerHTML = pagesHtmlArray.join('');
+        document.getElementById('modals-container').innerHTML = modalsHtml;
+
+        // Wait for DOM to fully update before initializing
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            // Initialize Lucide icons first
+            if (window.lucide) {
+              lucide.createIcons();
+            }
+            // Then boot the app
+            if (window.bootApp) {
+              window.bootApp();
+            }
+          });
+        });
 
       } catch (error) {
         console.error("Files load hone mein error:", error);
       }
     }
-    
+
     loadAppFiles();
   </script>
 </body>
