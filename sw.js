@@ -1,18 +1,13 @@
 // PAUSE SERVICE WORKER - Offline Caching v3.0 (Mobile Optimized)
-const CACHE_VERSION = 'v17';
+const CACHE_VERSION = 'v5';
 const CACHE_NAME = `pause-cache-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `pause-runtime-${CACHE_VERSION}`;
 
 // Files to precache on install (critical app files)
 const PRECACHE_FILES = [
   './index.html',
-  './js/state.js',
-  './js/tracker.js',
-  './js/charts.js',
-  './js/modals.js',
-  './js/history.js',
+  './app.js',
   './lucide.min.js',
-  './tailwind-compiled.css',
   './manifest.json',
   './icons/pause_icon_192.png',
   './icons/pause_icon_512.png',
@@ -160,8 +155,7 @@ async function staleWhileRevalidate(request) {
     })
     .catch(err => {
       console.log('[SW] CDN fetch failed:', request.url);
-      if (cached) return cached;
-      return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
+      return cached;
     });
 
   return cached || fetchPromise;

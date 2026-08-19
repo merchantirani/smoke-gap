@@ -3,8 +3,6 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
-  <!-- Compiled Tailwind CSS for production -->
-  <link rel="stylesheet" href="tailwind-compiled.css">
   <meta name="theme-color" id="theme-color-meta" content="#F8FAFC" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <title>pause — Widen the gap.</title>
@@ -41,6 +39,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="icons/pause_icon_180.png">
   <link rel="manifest" href="manifest.json">
 
+  <link rel="preconnect" href="https://cdn.tailwindcss.com">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <link rel="preconnect" href="https://unpkg.com">
   <link rel="preconnect" href="https://cdnjs.cloudflare.com">
@@ -48,18 +47,20 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
+  <!-- Preload critical fonts -->
   <link rel="preload" href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700&f[]=general-sans@400,500,600,700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700&f[]=general-sans@400,500,600,700&display=swap" rel="stylesheet"></noscript>
   <link rel="preload" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
 
+  <script src="https://cdn.tailwindcss.com"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <link rel="preload" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"></noscript>
   <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-  <script defer src="lucide.min.js"></script>
+  <script src="lucide.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   
   <style>
@@ -79,7 +80,7 @@
     }
     html.theme-paper, body.theme-paper {
       --bg-body: #F5F1E8; --text-main: #2D2A24; --text-muted: #6B6558;
-      --card-bg: rgba(255, 255, 255, 0.9); --card-border: rgba(180, 160, 140, 0.3);
+      --card-bg: rgba(255, 253, 249, 0.9); --card-border: rgba(180, 160, 140, 0.3);
       --accent: #C17D4F; --accent-glow: rgba(193, 125, 79, 0.25); --accent-text: #FFFFFF;
       --overlay-bg: rgba(45, 42, 36, 0.3); --modal-bg: #FFFCF7; --input-bg: rgba(193, 125, 79, 0.05);
       --heat-0: rgba(0, 0, 0, 0.03); --heat-1: #E8D4BE; --heat-2: #C9A779; --heat-3: #C17D4F; --heat-4: #8B5A3C; --heat-text: #3D362B;
@@ -105,377 +106,1667 @@
       --overlay-bg: rgba(10, 25, 41, 0.8); --modal-bg: #132F4C; --input-bg: rgba(56, 189, 248, 0.06);
       --heat-0: rgba(255, 255, 255, 0.03); --heat-1: #BAE6FD; --heat-2: #38BDF8; --heat-3: #0EA5E9; --heat-4: #0369A1; --heat-text: rgba(255, 255, 255, 0.75);
     }
+    
+    html, body { min-height: 100vh; min-height: 100dvh; background-color: var(--bg-body) !important; color: var(--text-main); font-family: 'General Sans', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; transition: background-color 0.35s ease, color 0.35s ease; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+    button, .nav-btn, .drag-handle, .dock-bar { user-select: none; -webkit-user-select: none; }
 
-    /* Custom Component Styles */
-    html, body {
-      background-color: var(--bg-body);
-      color: var(--text-main);
-      font-family: "General Sans", -apple-system, BlinkMacSystemFont, sans-serif;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
-    body {
-      min-height: 100vh;
-      padding-bottom: calc(5rem + env(safe-area-inset-bottom));
-    }
-    #app-container { padding: 16px 12px; }
-    #modals-container { position: relative; z-index: 50; }
+    .brand-title { font-family: 'Clash Display', sans-serif; font-weight: 700; letter-spacing: -0.04em; background: linear-gradient(135deg, var(--accent) 0%, var(--text-main) 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 2px 8px var(--accent-glow)); }
+    .numeric-display { font-family: 'Space Grotesk', monospace; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+    
+    .app-container { padding-bottom: calc(104px + env(safe-area-inset-bottom)); min-height: 100vh; min-height: 100dvh; }
+    
+    .premium-card { background: var(--card-bg); backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px); border: 1px solid var(--card-border); box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.05); border-radius: 1.5rem; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .premium-card:active { transform: scale(0.98); box-shadow: 0 4px 16px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.06); }
 
-    .page-section { display: none; }
-    .page-section:not(.hidden) { display: block; }
+    /* === Premium bottom-sheet system === */
+    .sheet { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; justify-content: flex-end; background: var(--overlay-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); transition: opacity 0.25s ease; }
+    .sheet-panel { position: relative; overflow: hidden; width: 100%; max-width: 28rem; margin: 0 auto; display: flex; flex-direction: column; max-height: min(86vh, 640px); background: var(--modal-bg); border-top: 1px solid var(--card-border); border-radius: 28px 28px 0 0; box-shadow: 0 -18px 48px rgba(0,0,0,0.35), 0 -2px 12px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.06); padding-bottom: calc(1rem + env(safe-area-inset-bottom)); animation: sheetUp 0.32s cubic-bezier(0.16, 1, 0.3, 1); }
+    .sheet-panel::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; z-index: 2; background: linear-gradient(90deg, var(--accent), transparent 80%); }
+    @keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .sheet-handle { width: 36px; height: 4px; border-radius: 999px; margin: 10px auto 0; background: rgba(128,128,128,0.4); flex-shrink: 0; }
+    .sheet-header { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.75rem 1.25rem 0.5rem; flex-shrink: 0; }
+    .sheet-body { flex: 1; overflow-y: auto; padding: 0.25rem 1.25rem 0.75rem; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+    .sheet-footer { display: flex; gap: 0.75rem; flex-shrink: 0; padding: 0.875rem 1.25rem 0.25rem; border-top: 1px solid var(--card-border); margin-top: 0.5rem; }
+    .sheet-btn-primary { flex: 1; padding: 0.85rem 1rem; border-radius: 0.9rem; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.03em; text-align: center; color: var(--accent-text); background: var(--accent); box-shadow: 0 8px 20px var(--accent-glow); transition: transform 0.15s ease, box-shadow 0.2s ease; }
+    .sheet-btn-primary:active { transform: scale(0.97); }
+    .sheet-btn-ghost { flex: 1; padding: 0.85rem 1rem; border-radius: 0.9rem; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.03em; text-align: center; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--card-border); transition: transform 0.15s ease; }
+    .sheet-btn-ghost:active { transform: scale(0.97); }
+    .sheet-btn-danger { flex: 1; padding: 0.85rem 1rem; border-radius: 0.9rem; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.03em; text-align: center; display: flex; align-items: center; justify-content: center; gap: 0.375rem; background: rgba(239,68,68,0.1); color: #EF4444; border: 1px solid rgba(239,68,68,0.25); transition: transform 0.15s ease; }
+    .sheet-btn-danger:active { transform: scale(0.97); }
+    .dialog-card { background: var(--modal-bg); border: 1px solid var(--card-border); border-radius: 24px; box-shadow: 0 24px 64px rgba(0,0,0,0.4), 0 4px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06); }
+    .sheet-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; color: var(--text-main); }
+    .sheet-label { display: block; font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); margin-bottom: 0.4rem; }
+    .sheet-close { width: 30px; height: 30px; border-radius: 999px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: var(--input-bg); color: var(--text-muted); transition: transform 0.15s ease; }
+    .sheet-close:active { transform: scale(0.9); }
+    .sheet-input { position: relative; display: flex; align-items: center; width: 100%; background: var(--input-bg); border: 1px solid var(--card-border); border-radius: 0.85rem; padding: 0.8rem 0.9rem; }
+    .sheet-input input { width: 100%; background: transparent; border: none; outline: none; color: var(--text-main); font-weight: 700; font-size: 0.9rem; padding-right: 30px; appearance: none; -webkit-appearance: none; }
+    .sheet-input input::-webkit-calendar-picker-indicator { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); opacity: 0.6; cursor: pointer; }
+    .badge-card { background: var(--input-bg); border-radius: 1rem; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+    .badge-card:not(.grayscale) { border-color: var(--accent) !important; box-shadow: 0 0 0 1px var(--accent), 0 8px 24px var(--accent-glow); transform: translateY(-1px); }
+    .badge-card .badge-lock { width: 14px; height: 14px; border-radius: 999px; display: flex; align-items: center; justify-content: center; background: rgba(128,128,128,0.18); }
 
-    .premium-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 1rem;
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-    }
-
-    .numeric-display { font-family: "Space Grotesk", monospace; font-variant-numeric: tabular-nums; }
-
+    .dock-bar { background: var(--card-bg); backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px); border: 1px solid var(--card-border); box-shadow: 0 18px 48px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.05); }
+    .nav-btn { color: var(--text-muted); position: relative; transition: color 0.3s ease; }
+    .nav-btn:active .tab-icon { transform: scale(0.88); }
+    .nav-btn .tab-icon { stroke-width: 2.2; transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), stroke-width 0.3s ease, filter 0.3s ease; }
+    .nav-btn .tab-label { font-size: 8px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; }
+    .nav-active { color: var(--accent); }
+    .nav-active .tab-icon { stroke-width: 2.7; transform: scale(1.12); filter: drop-shadow(0 2px 10px var(--accent-glow)); }
+    #navIndicator { opacity: 0; background: var(--accent-glow); box-shadow: 0 0 0 1px var(--card-border), 0 6px 20px var(--accent-glow); transition: left 0.55s cubic-bezier(0.34, 1.4, 0.64, 1), width 0.55s cubic-bezier(0.34, 1.4, 0.64, 1), opacity 0.35s ease; }
+    .drag-handle { touch-action: none; cursor: grab; padding: 8px; opacity: 0.4; }
+    .drag-handle:active { cursor: grabbing; opacity: 1; }
+    .sortable-ghost { opacity: 0.2; transform: scale(0.96); }
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .chart-wrapper { position: relative; width: 100%; height: 180px; }
+    .page-section { animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    .live-dot { animation: live-pulse 2s infinite ease-in-out; box-shadow: 0 0 8px currentColor; }
+    @keyframes live-pulse { 0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 8px currentColor; } 50% { opacity: 0.5; transform: scale(0.9); box-shadow: 0 0 4px currentColor; } }
+    .takeover-bg { background: radial-gradient(circle at center, var(--accent-glow) 0%, var(--bg-body) 80%); }
+    .custom-input-wrapper { position: relative; display: flex; align-items: center; width: 100%; }
+    .custom-input-wrapper input[type="date"], .custom-input-wrapper input[type="time"] { width: 100%; background: transparent; border: none; outline: none; color: var(--text-main); font-weight: 700; font-size: 0.95rem; padding-right: 32px; appearance: none; -webkit-appearance: none; }
+    .custom-input-wrapper input::-webkit-calendar-picker-indicator { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); opacity: 0.6; cursor: pointer; }
+    .hold-btn { position: relative; overflow: hidden; user-select: none; -webkit-touch-callout: none; touch-action: none; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .hold-btn:active { transform: scale(0.96); }
+    #holdProgress { position: absolute; top: 0; left: 0; height: 100%; width: 0%; background: rgba(239, 68, 68, 0.55); pointer-events: none; transition: width 0.05s linear; }
+    .hold-btn.is-holding { border-color: rgba(239, 68, 68, 0.6) !important; box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.15), 0 8px 24px rgba(239, 68, 68, 0.3); transform: scale(1.02); }
+    .ride-btn { position: relative; overflow: hidden; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); background: rgba(16,185,129,0.12); border-color: rgba(16,185,129,0.25); color: #10B981; }
+    .ride-btn:active { transform: scale(0.96); }
+    .ride-btn:hover { transform: scale(1.02); box-shadow: 0 12px 32px rgba(16,185,129,0.25), 0 0 0 3px rgba(16,185,129,0.1); }
 
-    .hold-btn { position: relative; overflow: hidden; }
-    .hold-btn #holdProgress {
-      position: absolute;
-      inset: 0;
-      background: rgba(0,0,0,0.25);
-      width: 0;
-      transition: width 0.1s linear;
-    }
-    .hold-btn.is-holding { transform: scale(0.98); }
+    @keyframes radarPing { 0% { transform: scale(0.88); opacity: 0.9; } 50% { transform: scale(1.22); opacity: 0.2; } 100% { transform: scale(0.88); opacity: 0.9; } }
+    @keyframes logoBreathe { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.04); opacity: 0.85; } }
+    .logo-breathe { animation: logoBreathe 3s ease-in-out infinite; }
+    @keyframes healBreathe { 0%, 100% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(16,185,129,0.3); } 50% { transform: scale(1.06); opacity: 0.82; box-shadow: 0 0 0 10px rgba(16,185,129,0); } }
+    .wave-breathe { animation: healBreathe 4s ease-in-out infinite; }
+    @keyframes shakeAnim { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
+    .shake-anim { animation: shakeAnim 0.4s ease-in-out; }
+    .sos-pulse-ring { animation: radarPing 1s cubic-bezier(0,0,0.2,1) infinite; }
+    @keyframes waveMotion { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+    .animate-wave { animation: waveMotion 3s linear infinite; }
 
-    .sheet {
-      position: fixed;
-      inset: 0;
-      z-index: 10000;
-      display: none;
-      align-items: flex-end;
-      justify-content: center;
-      background: var(--overlay-bg);
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
-    }
-    .sheet:not(.hidden) {
-      display: flex;
-    }
-    .sheet-panel {
-      width: 100%;
-      max-width: 500px;
-      max-height: 90vh;
-      background: var(--modal-bg);
-      border-radius: 1.5rem 1.5rem 0 0;
-      border: 1px solid var(--card-border);
-      border-bottom: none;
-      overflow-y: auto;
-      padding-bottom: env(safe-area-inset-bottom);
-    }
-    .sheet-handle {
-      width: 36px;
-      height: 4px;
-      background: var(--text-muted);
-      border-radius: 2px;
-      margin: 8px auto;
-      opacity: 0.3;
-    }
-    .sheet-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--card-border);
-    }
-    .sheet-title { font-size: 14px; font-weight: 700; color: var(--text-main); }
-    .sheet-close {
-      width: 28px; height: 28px;
-      display: flex; align-items: center; justify-content: center;
-      border-radius: 50%;
-      background: var(--input-bg);
-      color: var(--text-muted);
-    }
-    .sheet-body { padding: 16px; }
-    .sheet-footer {
-      display: flex;
-      gap: 12px;
-      padding: 16px;
-      border-top: 1px solid var(--card-border);
-    }
-    .sheet-label {
-      display: block;
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--text-muted);
-      margin-bottom: 8px;
-    }
-    .sheet-input {
-      position: relative;
-      display: flex;
-      align-items: center;
-    }
-    .sheet-input input {
-      width: 100%;
-      padding: 10px 12px;
-      background: var(--input-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
-      font-size: 13px;
-      color: var(--text-main);
-    }
-    .sheet-btn-primary {
-      flex: 1;
-      padding: 12px;
-      background: var(--accent);
-      color: var(--accent-text);
-      border: none;
-      border-radius: 12px;
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    .sheet-btn-ghost {
-      flex: 1;
-      padding: 12px;
-      background: var(--input-bg);
-      color: var(--text-main);
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
-      font-size: 12px;
-      font-weight: 700;
-    }
-    .sheet-btn-danger {
-      padding: 12px;
-      background: rgba(239, 68, 68, 0.1);
-      color: #EF4444;
-      border: 1px solid rgba(239, 68, 68, 0.2);
-      border-radius: 12px;
-      font-size: 12px;
-      font-weight: 700;
-    }
+    .heat-cell { width: 16px; height: 16px; border-radius: 3px; flex-shrink: 0; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; font-size: 7px; font-weight: 800; color: var(--heat-text); }
+    .heat-col { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; }
+    .scroll-fade-right { mask-image: linear-gradient(to right, black 85%, transparent 100%); -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%); }
+    .pin-btn { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+    .pin-btn:active { transform: scale(0.92); box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+    .pin-btn:hover { background: var(--input-bg); }
+    .filter-select-wrapper { position: relative; display: inline-flex; align-items: center; }
+    .filter-select-wrapper::after { content: ''; position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-left: 4.5px solid transparent; border-right: 4.5px solid transparent; border-top: 5px solid var(--accent); pointer-events: none; }
 
-    .dialog-card {
-      background: var(--modal-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 1.5rem;
-    }
+    /* Health Timeline Vertical */
+    .health-timeline { position: relative; padding-left: 28px; }
+    .health-timeline::before { content: ''; position: absolute; left: 10px; top: 0; bottom: 0; width: 2px; background: linear-gradient(180deg, var(--accent) 0%, var(--input-bg) 100%); border-radius: 2px; }
+    .health-timeline-item { position: relative; padding: 10px 0; opacity: 0.4; transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+    .health-timeline-item.unlocked { opacity: 1; }
+    .health-timeline-dot { position: absolute; left: -22px; top: 14px; width: 12px; height: 12px; border-radius: 50%; background: var(--input-bg); border: 2px solid var(--card-border); transition: all 0.5s ease; z-index: 1; }
+    .health-timeline-item.unlocked .health-timeline-dot { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 12px var(--accent-glow); }
+    .health-timeline-progress { width: 100%; height: 4px; border-radius: 999px; background: var(--input-bg); overflow: hidden; margin-top: 6px; }
+    .health-timeline-progress-fill { height: 100%; border-radius: 999px; background: var(--accent); transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
+    .health-timeline-unlock-anim { animation: timelineUnlock 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    @keyframes timelineUnlock { 0% { transform: scale(0.8); opacity: 0; } 50% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
 
-    .settings-group {
-      margin: 16px 0;
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 16px;
-      overflow: hidden;
-    }
-    .settings-row {
-      display: flex;
-      align-items: center;
-      padding: 12px 14px;
-      border-bottom: 1px solid var(--card-border);
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-    .settings-row:last-child { border-bottom: none; }
-    .settings-row:hover { background: var(--input-bg); }
-    .settings-row-icon {
-      width: 32px; height: 32px;
-      display: flex; align-items: center; justify-content: center;
-      border-radius: 8px;
-      margin-right: 12px;
-    }
+    /* Money Visualizer */
+    .money-equiv-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .money-equiv-item { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 6px; border-radius: 16px; background: var(--input-bg); border: 1px solid var(--card-border); transition: all 0.3s ease; }
+    .money-equiv-item:active { transform: scale(0.95); }
+    .money-equiv-icon { font-size: 22px; line-height: 1; }
+    .money-equiv-count { font-family: 'Space Grotesk', monospace; font-size: 14px; font-weight: 800; color: var(--text-main); }
+    .money-equiv-label { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); text-align: center; }
+    .goal-ring { position: relative; width: 100px; height: 100px; margin: 0 auto; }
+    .goal-ring svg { transform: rotate(-90deg); }
+    .goal-ring-bg { fill: none; stroke: var(--input-bg); stroke-width: 8; }
+    .goal-ring-fill { fill: none; stroke: var(--accent); stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1); }
+    .goal-ring-text { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .goal-ring-pct { font-family: 'Space Grotesk', monospace; font-size: 18px; font-weight: 800; color: var(--text-main); }
+    .goal-ring-label { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); }
+
+    /* Relapse Flow */
+    .relapse-celebrate { animation: relapsePop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    @keyframes relapsePop { 0% { transform: scale(0.7); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+    /* Breathing Exercise */
+    .breath-circle { width: 160px; height: 160px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto; transition: transform 0.3s ease, box-shadow 0.3s ease; }
+    .breath-circle-inhale { animation: breathInhale var(--breath-inhale, 4s) ease-in-out forwards; }
+    .breath-circle-hold { animation: breathHold var(--breath-hold, 0s) linear forwards; transform: scale(1.4); }
+    .breath-circle-exhale { animation: breathExhale var(--breath-exhale, 4s) ease-in-out forwards; }
+    @keyframes breathInhale { from { transform: scale(1); box-shadow: 0 0 0 0 var(--accent-glow); } to { transform: scale(1.4); box-shadow: 0 0 40px 10px var(--accent-glow); } }
+    @keyframes breathHold { from { transform: scale(1.4); box-shadow: 0 0 40px 10px var(--accent-glow); } to { transform: scale(1.4); box-shadow: 0 0 40px 10px var(--accent-glow); } }
+    @keyframes breathExhale { from { transform: scale(1.4); box-shadow: 0 0 40px 10px var(--accent-glow); } to { transform: scale(1); box-shadow: 0 0 0 0 var(--accent-glow); } }
+    .breath-phase-text { transition: opacity 0.3s ease; }
+    .breath-timer-text { font-family: 'Space Grotesk', monospace; }
+
+    /* Premium Toggle Switch */
+    .premium-toggle { position: relative; display: inline-flex; align-items: center; cursor: pointer; }
+    .premium-toggle .toggle-track { width: 2.5rem; height: 1.25rem; background: rgba(156, 163, 175, 0.3); border-radius: 9999px; transition: background-color 0.3s ease; position: relative; }
+    .premium-toggle input:checked + .toggle-track { background: var(--accent); }
+    .premium-toggle .toggle-thumb { width: 1rem; height: 1rem; background: #fff; border-radius: 9999px; position: absolute; top: 0.125rem; left: 0.125rem; transition: transform 0.3s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+    .premium-toggle input:checked + .toggle-track .toggle-thumb { transform: translateX(1.25rem); }
+    .premium-toggle input:focus + .toggle-track { box-shadow: 0 0 0 2px var(--accent-glow); }
+
+    /* ============ iOS-STYLE SETTINGS ============ */
+    .settings-group { background: var(--modal-bg); border: 1px solid var(--card-border); border-radius: 14px; overflow: hidden; margin-bottom: 20px; }
+    .settings-row { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 10px 16px; position: relative; }
+    .settings-row + .settings-row { border-top: 0.5px solid var(--card-border); }
+    .settings-row + .settings-row::before { content: ''; position: absolute; top: -0.5px; left: 57px; right: 0; height: 0.5px; background: var(--card-border); }
+    .settings-row + .settings-row { border-top: none; }
+    .settings-row-icon { width: 29px; height: 29px; border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .settings-row-icon i { width: 15px; height: 15px; }
     .settings-row-content { flex: 1; min-width: 0; }
-    .settings-row-label {
-      font-size: 13px;
+    .settings-row-label { font-size: 15px; font-weight: 500; color: var(--text-main); line-height: 1.3; }
+    .settings-row-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; line-height: 1.35; }
+    .settings-row-value { font-size: 15px; color: var(--text-muted); flex-shrink: 0; }
+    .settings-row-value.numeric { font-family: 'Space Grotesk', monospace; font-weight: 600; }
+    .settings-row-chevron { width: 14px; height: 14px; color: var(--text-muted); opacity: 0.4; flex-shrink: 0; margin-left: -4px; }
+    .settings-row-input { flex-shrink: 0; }
+    .settings-row-input input[type="number"],
+    .settings-row-input input[type="date"] { width: auto; min-width: 60px; background: transparent; border: none; outline: none; color: var(--text-main); font-family: 'Space Grotesk', monospace; font-weight: 700; font-size: 15px; text-align: right; padding: 4px 0; }
+    .settings-row-input select { background: transparent; border: none; outline: none; color: var(--text-muted); font-size: 15px; font-weight: 500; cursor: pointer; padding: 4px 0; appearance: none; -webkit-appearance: none; direction: rtl; }
+    .settings-row-input select::-webkit-appearance { appearance: none; -webkit-appearance: none; }
+    .settings-row-input input[type="text"] { background: var(--input-bg); border: 1px solid var(--card-border); border-radius: 10px; padding: 8px 12px; font-size: 14px; font-weight: 500; color: var(--text-main); outline: none; width: 100%; }
+    .settings-group-header { font-size: 13px; font-weight: 600; color: var(--text-muted); padding: 20px 20px 8px; letter-spacing: 0.01em; }
+    .settings-group-footer { font-size: 12px; color: var(--text-muted); padding: 8px 20px 4px; text-align: center; }
+    .settings-destructive { color: #EF4444; font-size: 15px; font-weight: 500; justify-content: center; }
+    .settings-destructive .settings-row-label { color: #EF4444; }
+    .settings-action-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 15px; font-weight: 500; padding: 12px 16px; background: transparent; border: none; color: var(--text-main); cursor: pointer; min-height: 48px; position: relative; }
+    .settings-action-btn + .settings-action-btn { border-top: 0.5px solid var(--card-border); }
+    .settings-action-btn + .settings-action-btn::before { content: ''; position: absolute; top: -0.5px; left: 57px; right: 0; height: 0.5px; background: var(--card-border); }
+    .settings-action-btn + .settings-action-btn { border-top: none; }
+    .settings-action-btn i { width: 15px; height: 15px; }
+    .settings-action-btn .action-icon { width: 29px; height: 29px; border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .settings-action-btn .action-icon i { width: 15px; height: 15px; }
+    .settings-master-toggle { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 10px 16px; }
+    .settings-master-toggle .settings-row-label { font-size: 15px; font-weight: 600; }
+    .settings-master-toggle .premium-toggle { margin-left: auto; }
+
+    /* Improved toggle with springy animation */
+    .premium-toggle { position: relative; display: inline-flex; align-items: center; cursor: pointer; }
+    .premium-toggle .toggle-track { width: 51px; height: 31px; background: rgba(120, 120, 128, 0.32); border-radius: 9999px; transition: background-color 0.25s ease; position: relative; flex-shrink: 0; }
+    .premium-toggle input:checked + .toggle-track { background: var(--accent); }
+    .premium-toggle .toggle-thumb { width: 27px; height: 27px; background: #fff; border-radius: 9999px; position: absolute; top: 2px; left: 2px; transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 3px 8px rgba(0,0,0,0.15), 0 1px 1px rgba(0,0,0,0.16); }
+    .premium-toggle input:checked + .toggle-track .toggle-thumb { transform: translateX(20px); }
+    .premium-toggle input:focus + .toggle-track { box-shadow: 0 0 0 2px var(--accent-glow); }
+
+    /* ============ PREMIUM TYPOGRAPHY SYSTEM ============
+       Unify weight/size across the app. Premium apps keep
+       micro-labels light (semibold), never full bold. */
+    b, strong { font-weight: 600; }
+
+    /* Micro-labels: soften heavy bold → semibold, unify tracking */
+    .text-\[8px\].font-bold.uppercase,
+    .text-\[9px\].font-bold.uppercase,
+    .text-\[10px\].font-bold.uppercase,
+    .text-\[11px\].font-bold.uppercase,
+    .text-\[8px\].font-extrabold.uppercase,
+    .text-\[9px\].font-extrabold.uppercase,
+    .text-\[10px\].font-extrabold.uppercase {
       font-weight: 600;
-      color: var(--text-main);
+      letter-spacing: 0.14em;
     }
-    .settings-row-sub {
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-top: 2px;
-    }
-    .settings-row-input input, .settings-row-input select {
-      background: var(--input-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 8px;
-      padding: 6px 10px;
-      font-size: 13px;
-      color: var(--text-main);
-      text-align: right;
-      min-width: 80px;
-    }
-    .settings-row-chevron {
-      width: 16px; height: 16px;
-      color: var(--text-muted);
-      margin-left: 8px;
-      flex-shrink: 0;
-    }
-    .settings-row-value { font-size: 13px; color: var(--text-muted); margin-left: 8px; }
-    .settings-destructive { color: #EF4444; }
-    .settings-group-header {
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--text-muted);
-      padding: 10px 14px 6px;
-    }
+    /* 8px is below the readable floor — bump to 9px */
+    .text-\[8px\].font-bold.uppercase { font-size: 9px; }
 
-    .premium-toggle { position: relative; display: inline-block; width: 44px; height: 26px; }
-    .premium-toggle input { opacity: 0; width: 0; height: 0; }
-    .toggle-track {
-      position: absolute;
-      inset: 0;
-      background: var(--input-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 13px;
-      transition: all 0.3s;
-    }
-    .toggle-thumb {
-      position: absolute;
-      top: 2px; left: 2px;
-      width: 20px; height: 20px;
-      background: var(--text-muted);
-      border-radius: 50%;
-      transition: all 0.3s;
-    }
-    .premium-toggle input:checked + .toggle-track { background: var(--accent); border-color: var(--accent); }
-    .premium-toggle input:checked + .toggle-track .toggle-thumb {
-      transform: translateX(18px);
-      background: var(--accent-text);
-    }
+    /* Stat values & key numbers: always Space Grotesk, crisp */
+    .numeric-display { font-family: 'Space Grotesk', monospace; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; -webkit-font-smoothing: antialiased; }
 
-    .breath-circle {
-      width: 200px; height: 200px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: transform 4s ease-in-out;
-    }
-
-    .goal-ring { position: relative; width: 100px; height: 100px; }
-    .goal-ring-bg { fill: none; stroke: var(--card-border); stroke-width: 8; }
-    .goal-ring-fill { fill: none; stroke: var(--accent); stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 0.5s ease; }
-    .goal-ring-text {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-    .goal-ring-pct { font-size: 18px; font-weight: 700; color: var(--text-main); font-family: "Space Grotesk", monospace; }
-    .goal-ring-label { font-size: 8px; color: var(--text-muted); text-transform: uppercase; }
-
-    .badge-card { transition: all 0.3s; }
-    .badge-card:not(.grayscale) { opacity: 1; }
-
-    .health-timeline { position: relative; }
-
-    .money-equiv-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-
-    .nav-active {
-      color: var(--accent) !important;
-      background: var(--accent-glow) !important;
-    }
-
-    @keyframes sos-pulse {
-      0% { transform: scale(1); opacity: 0.4; }
-      100% { transform: scale(1.5); opacity: 0; }
-    }
-    .sos-pulse-ring { animation: sos-pulse 1.5s ease-out infinite; }
-
-    @keyframes wave-breathe {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.05); opacity: 0.8; }
-    }
-    .wave-breathe { animation: wave-breathe 3s ease-in-out infinite; }
-
-    @keyframes relapse-celebrate {
-      0%, 100% { transform: scale(1) rotate(0deg); }
-      25% { transform: scale(1.05) rotate(-2deg); }
-      75% { transform: scale(1.05) rotate(2deg); }
-    }
-    .relapse-celebrate { animation: relapse-celebrate 2s ease-in-out infinite; }
+    /* Header pills: consistent compact type */
+    .premium-card .text-\[8px\], .premium-card .text-\[9px\] { line-height: 1.4; }
   </style>
 </head>
 <body>
 
- <!-- Yahan humari saari alag files khud load hongi -->
-  <div id="app-container"></div>
-  <div id="modals-container"></div>
+  <div id="appSkeleton" class="fixed inset-0 z-[99999] flex items-center justify-center bg-[var(--bg-body)] pointer-events-none" style="opacity: 0;">
+    <div class="w-8 h-8 border-2 border-gray-500/20 border-t-[var(--accent)] rounded-full animate-spin"></div>
+  </div>
 
-  <!-- Bottom Tab Navigation -->
-  <nav id="bottomNav" class="fixed bottom-0 left-0 right-0 z-[9999] flex justify-around items-center py-2 px-2 border-t backdrop-blur-lg" style="background: var(--card-bg); border-color: var(--card-border); padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));">
-    <button id="tab-tracker" onclick="window.switchTab('tracker')" class="nav-btn flex flex-col items-center justify-center gap-1 py-2 px-4 rounded-xl transition-all" style="color: var(--accent); background: var(--accent-glow);">
-      <i data-lucide="home" class="w-5 h-5"></i>
-      <span class="text-[9px] font-bold uppercase tracking-wider">Home</span>
-    </button>
-    <button id="tab-insights" onclick="window.switchTab('insights')" class="nav-btn flex flex-col items-center justify-center gap-1 py-2 px-4 rounded-xl transition-all" style="color: var(--text-muted);">
-      <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
-      <span class="text-[9px] font-bold uppercase tracking-wider">Insights</span>
-    </button>
-    <button id="tab-history" onclick="window.switchTab('history')" class="nav-btn flex flex-col items-center justify-center gap-1 py-2 px-4 rounded-xl transition-all" style="color: var(--text-muted);">
-      <i data-lucide="clock" class="w-5 h-5"></i>
-      <span class="text-[9px] font-bold uppercase tracking-wider">History</span>
-    </button>
-    <button id="tab-settings" onclick="window.switchTab('settings')" class="nav-btn flex flex-col items-center justify-center gap-1 py-2 px-4 rounded-xl transition-all" style="color: var(--text-muted);">
-      <i data-lucide="settings" class="w-5 h-5"></i>
-      <span class="text-[9px] font-bold uppercase tracking-wider">Settings</span>
-    </button>
-  </nav>
+  <!-- ONBOARDING OVERLAY -->
+  <div id="onboardingOverlay" class="fixed inset-0 z-[99998] flex flex-col items-center justify-center hidden" style="background-color: var(--bg-body);">
+    <div class="max-w-sm mx-auto px-6 w-full">
+      <div id="onboardingSlides" class="relative">
+        <div id="onboardSlide1" class="flex flex-col items-center text-center space-y-5">
+          <div class="w-20 h-20 rounded-3xl flex items-center justify-center" style="background: var(--accent-glow);">
+            <i data-lucide="sparkles" class="w-10 h-10" style="color: var(--accent);"></i>
+          </div>
+          <div>
+            <h2 class="brand-title text-3xl mb-1">pause</h2>
+            <p class="text-[10px] font-bold uppercase tracking-[0.2em]" style="color: var(--text-muted);">Widen the gap.</p>
+          </div>
+          <p class="text-sm leading-relaxed" style="color: var(--text-main);">Track every cigarette honestly — the app learns your patterns and helps you build <strong style="color: var(--accent);">wider gaps</strong> between them.</p>
+        </div>
 
-  <!-- Toast Container -->
-  <div id="toastContainer" class="fixed top-4 left-4 right-4 z-[99999] flex flex-col items-center gap-2 pointer-events-none"></div>
+        <div id="onboardSlide2" class="hidden flex flex-col items-center text-center space-y-5">
+          <div class="w-20 h-20 rounded-3xl flex items-center justify-center" style="background: rgba(239,68,68,0.1);">
+            <i data-lucide="flame" class="w-10 h-10" style="color: #EF4444;"></i>
+          </div>
+          <h2 class="text-xl font-bold" style="color: var(--text-main);">Log Every Stick</h2>
+          <p class="text-sm leading-relaxed" style="color: var(--text-muted);"><strong style="color: var(--text-main);">Press & Hold</strong> the button each time you smoke. Add tags to identify what triggered the urge — stress, boredom, social, etc.</p>
+        </div>
 
-  <!-- 1. JS Files Yahan Aayengi (</body> se theek pehle) -->
-  <script src="state.js"></script>
-  <script src="tracker.js"></script>
-  <script src="modals.js"></script>
-  <script src="charts.js"></script>
-  <script src="history.js"></script>
+        <div id="onboardSlide3" class="hidden flex flex-col items-center text-center space-y-5">
+          <div class="w-20 h-20 rounded-3xl flex items-center justify-center" style="background: rgba(14,165,233,0.1);">
+            <i data-lucide="waves" class="w-10 h-10" style="color: #0EA5E9;"></i>
+          </div>
+          <h2 class="text-xl font-bold" style="color: var(--text-main);">Ride It Out</h2>
+          <p class="text-sm leading-relaxed" style="color: var(--text-muted);">When a craving hits but you want to resist, start a <strong style="color: #0EA5E9;">Ride It Out</strong> timer. Cravings peak and pass in minutes — ride the wave and earn <strong style="color: var(--accent);">Shields</strong>.</p>
+        </div>
 
-  <!-- 2. App load karne wala function -->
+        <div id="onboardSlide4" class="hidden flex flex-col items-center text-center space-y-5">
+          <div class="w-20 h-20 rounded-3xl flex items-center justify-center" style="background: rgba(16,185,129,0.1);">
+            <i data-lucide="shield" class="w-10 h-10" style="color: #10B981;"></i>
+          </div>
+          <h2 class="text-xl font-bold" style="color: var(--text-main);">Earn Shields</h2>
+          <p class="text-sm leading-relaxed" style="color: var(--text-muted);">Every craving you beat earns a <strong style="color: #10B981;">Shield</strong>. Track your progress with detailed charts, watch your gaps widen, and unlock <strong style="color: var(--accent);">badges</strong> as you grow stronger.</p>
+        </div>
+
+        <div id="onboardSlide5" class="hidden flex flex-col items-center text-center space-y-5">
+          <div class="w-20 h-20 rounded-3xl flex items-center justify-center" style="background: rgba(245,158,11,0.1);">
+            <i data-lucide="cigarette" class="w-10 h-10" style="color: #F59E0B;"></i>
+          </div>
+          <h2 class="text-xl font-bold" style="color: var(--text-main);">Your Habit</h2>
+          <p class="text-sm leading-relaxed mb-2" style="color: var(--text-muted);">How many cigarettes do you smoke per day?</p>
+          <div class="flex items-center gap-4">
+            <button onclick="window.onboardAdjustSticks(-1)" class="w-12 h-12 rounded-full flex items-center justify-center border active:scale-90 transition-all text-xl font-bold" style="background: var(--input-bg); border-color: var(--card-border); color: var(--text-main);">−</button>
+            <div class="text-center">
+              <span id="onboardSticksCount" class="numeric-display text-4xl font-black" style="color: var(--accent);">10</span>
+              <p class="text-[9px] font-bold uppercase tracking-wider mt-1" style="color: var(--text-muted);">sticks / day</p>
+            </div>
+            <button onclick="window.onboardAdjustSticks(1)" class="w-12 h-12 rounded-full flex items-center justify-center border active:scale-90 transition-all text-xl font-bold" style="background: var(--input-bg); border-color: var(--card-border); color: var(--text-main);">+</button>
+          </div>
+        </div>
+
+        <div id="onboardSlide6" class="hidden flex flex-col items-center text-center space-y-5">
+          <div class="w-20 h-20 rounded-3xl flex items-center justify-center" style="background: rgba(239,68,68,0.1);">
+            <i data-lucide="wallet" class="w-10 h-10" style="color: #EF4444;"></i>
+          </div>
+          <h2 class="text-xl font-bold" style="color: var(--text-main);">Pack Price</h2>
+          <p class="text-sm leading-relaxed mb-2" style="color: var(--text-muted);">How much does a pack cost?</p>
+          <div class="w-full max-w-[260px] mx-auto space-y-2.5">
+            <div class="relative flex items-stretch rounded-2xl border overflow-hidden" style="background: var(--input-bg); border-color: var(--card-border);">
+              <select id="onboardCurrencySelect" onchange="window.updateOnboardCostPerCig()" class="px-3 text-xs font-bold border-r outline-none cursor-pointer" style="background: var(--input-bg); border-color: var(--card-border); color: var(--text-muted);">
+                <option value="AED">AED</option>
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="GBP">GBP</option>
+                <option value="INR">INR</option>
+              </select>
+              <input id="onboardPackPrice" type="number" value="20" min="1" oninput="window.updateOnboardCostPerCig()" class="flex-1 px-3 py-3.5 numeric-display text-xl font-black bg-transparent outline-none text-center" style="color: var(--text-main); -moz-appearance: textfield; appearance: textfield;">
+              <style>#onboardPackPrice::-webkit-inner-spin-button,#onboardPackPrice::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }</style>
+            </div>
+            <div class="flex items-center justify-between rounded-2xl border p-3" style="background: var(--input-bg); border-color: var(--card-border);">
+              <span class="text-[10px] font-bold uppercase tracking-wider" style="color: var(--text-muted);">Sticks per pack</span>
+              <input id="onboardPackSize" type="number" value="20" min="1" max="100" oninput="window.updateOnboardCostPerCig()" class="w-14 text-center numeric-display text-base font-bold bg-transparent outline-none" style="color: var(--text-main); -moz-appearance: textfield; appearance: textfield;">
+              <style>#onboardPackSize::-webkit-inner-spin-button,#onboardPackSize::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }</style>
+            </div>
+            <p class="text-[9px] font-medium" style="color: var(--text-muted);">≈ <span id="onboardCostPerCig">AED 1.0</span> per cigarette</p>
+          </div>
+        </div>
+
+        <div id="onboardSlide7" class="hidden flex flex-col items-center text-center space-y-5">
+          <div class="w-20 h-20 rounded-3xl flex items-center justify-center" style="background: rgba(16,185,129,0.1);">
+            <i data-lucide="target" class="w-10 h-10" style="color: #10B981;"></i>
+          </div>
+          <h2 class="text-xl font-bold" style="color: var(--text-main);">Your Goal</h2>
+          <p class="text-sm leading-relaxed mb-3" style="color: var(--text-muted);">What do you want to achieve?</p>
+          <div class="w-full space-y-2.5">
+            <button onclick="window.onboardSelectGoal('quit')" id="onboardGoalQuit" class="w-full p-4 rounded-2xl border text-left flex items-center gap-3 transition-all active:scale-[0.98]" style="border-color: var(--accent); background: var(--accent-glow);">
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background: rgba(16,185,129,0.15);"><span class="text-lg">🎯</span></div>
+              <div><p class="text-[11px] font-bold" style="color: var(--text-main);">Quit Completely</p><p class="text-[9px]" style="color: var(--text-muted);">Set a quit date and work towards zero.</p></div>
+            </button>
+            <button onclick="window.onboardSelectGoal('reduce')" id="onboardGoalReduce" class="w-full p-4 rounded-2xl border text-left flex items-center gap-3 transition-all active:scale-[0.98]" style="border-color: var(--card-border); background: var(--input-bg);">
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background: rgba(245,158,11,0.15);"><span class="text-lg">📉</span></div>
+              <div><p class="text-[11px] font-bold" style="color: var(--text-main);">Cut Down</p><p class="text-[9px]" style="color: var(--text-muted);">Gradually reduce with auto-limit.</p></div>
+            </button>
+            <button onclick="window.onboardSelectGoal('track')" id="onboardGoalTrack" class="w-full p-4 rounded-2xl border text-left flex items-center gap-3 transition-all active:scale-[0.98]" style="border-color: var(--card-border); background: var(--input-bg);">
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background: rgba(56,189,248,0.15);"><span class="text-lg">📊</span></div>
+              <div><p class="text-[11px] font-bold" style="color: var(--text-main);">Just Track</p><p class="text-[9px]" style="color: var(--text-muted);">No limits, just understand my habit.</p></div>
+            </button>
+          </div>
+        </div>
+
+        <div id="onboardSlide8" class="hidden flex flex-col items-center text-center space-y-5">
+          <div class="w-20 h-20 rounded-3xl flex items-center justify-center" style="background: rgba(139,92,246,0.1);">
+            <i data-lucide="calendar" class="w-10 h-10" style="color: #8B5CF6;"></i>
+          </div>
+          <h2 class="text-xl font-bold" style="color: var(--text-main);">Quit Date</h2>
+          <p class="text-sm leading-relaxed mb-2" style="color: var(--text-muted);">When do you want to quit? (Optional)</p>
+          <div class="w-full max-w-[220px] mx-auto">
+            <input id="onboardQuitDate" type="date" class="w-full p-3 rounded-2xl border text-center text-sm font-bold outline-none" style="background: var(--input-bg); border-color: var(--card-border); color: var(--text-main);">
+            <p class="text-[9px] mt-2" style="color: var(--text-muted);">You can skip this and set it later.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-center gap-3 my-8">
+        <div id="onboardDot1" class="w-2.5 h-2.5 rounded-full transition-all" style="background-color: var(--accent); width: 20px;"></div>
+        <div id="onboardDot2" class="w-2.5 h-2.5 rounded-full transition-all" style="background-color: rgba(156,163,175,0.3);"></div>
+        <div id="onboardDot3" class="w-2.5 h-2.5 rounded-full transition-all" style="background-color: rgba(156,163,175,0.3);"></div>
+        <div id="onboardDot4" class="w-2.5 h-2.5 rounded-full transition-all" style="background-color: rgba(156,163,175,0.3);"></div>
+        <div id="onboardDot5" class="w-2.5 h-2.5 rounded-full transition-all" style="background-color: rgba(156,163,175,0.3);"></div>
+        <div id="onboardDot6" class="w-2.5 h-2.5 rounded-full transition-all" style="background-color: rgba(156,163,175,0.3);"></div>
+        <div id="onboardDot7" class="w-2.5 h-2.5 rounded-full transition-all" style="background-color: rgba(156,163,175,0.3);"></div>
+        <div id="onboardDot8" class="w-2.5 h-2.5 rounded-full transition-all" style="background-color: rgba(156,163,175,0.3);"></div>
+      </div>
+
+      <div class="flex flex-col gap-3">
+        <button id="onboardNextBtn" onclick="window.onboardingNext()" class="w-full py-4 rounded-2xl font-bold text-sm shadow-lg active:scale-95 transition-all" style="background: var(--accent); color: var(--accent-text);">Next</button>
+        <button id="onboardSkipBtn" onclick="window.onboardingSkip()" class="text-xs font-bold py-2 active:scale-95 transition-all" style="color: var(--text-muted);">Skip Tour</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="lockScreen" class="fixed inset-0 flex flex-col items-center justify-center hidden" style="z-index: 10000; background-color: var(--bg-body);">
+    <div class="text-center space-y-8">
+      <i data-lucide="lock" class="w-12 h-12 mx-auto" style="color: var(--text-muted);"></i>
+      <h2 class="text-2xl font-semibold tracking-widest" style="color: var(--text-main);">Locked</h2>
+      <div class="flex gap-4 justify-center mb-8" id="pinDots">
+        <div class="w-3 h-3 rounded-full bg-gray-500 pin-dot"></div><div class="w-3 h-3 rounded-full bg-gray-500 pin-dot"></div>
+        <div class="w-3 h-3 rounded-full bg-gray-500 pin-dot"></div><div class="w-3 h-3 rounded-full bg-gray-500 pin-dot"></div>
+      </div>
+      <div class="grid grid-cols-3 gap-6 max-w-[280px] mx-auto text-2xl font-light">
+        <button onclick="window.enterPin(1)" class="w-16 h-16 premium-card rounded-full pin-btn">1</button><button onclick="window.enterPin(2)" class="w-16 h-16 premium-card rounded-full pin-btn">2</button><button onclick="window.enterPin(3)" class="w-16 h-16 premium-card rounded-full pin-btn">3</button>
+        <button onclick="window.enterPin(4)" class="w-16 h-16 premium-card rounded-full pin-btn">4</button><button onclick="window.enterPin(5)" class="w-16 h-16 premium-card rounded-full pin-btn">5</button><button onclick="window.enterPin(6)" class="w-16 h-16 premium-card rounded-full pin-btn">6</button>
+        <button onclick="window.enterPin(7)" class="w-16 h-16 premium-card rounded-full pin-btn">7</button><button onclick="window.enterPin(8)" class="w-16 h-16 premium-card rounded-full pin-btn">8</button><button onclick="window.enterPin(9)" class="w-16 h-16 premium-card rounded-full pin-btn">9</button>
+        <div></div><button onclick="window.enterPin(0)" class="w-16 h-16 premium-card rounded-full pin-btn">0</button><button onclick="window.clearPin()" class="w-16 h-16 premium-card rounded-full pin-btn text-red-500 text-sm font-bold">DEL</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-container max-w-md mx-auto">
+    <!-- COMPACT & STREAMLINED HEADER -->
+    <header class="sticky top-0 z-40" style="background: linear-gradient(to bottom, var(--bg-body) 85%, transparent);">
+      <div class="px-4 py-1.5 flex justify-between items-center">
+        <div>
+          <div class="flex items-center gap-1.5">
+            <h1 class="brand-title text-xl tracking-tight logo-breathe">pause</h1>
+            <span id="headerLiveDot" class="w-2 h-2 rounded-full bg-gray-400 live-dot mt-0.5" role="status" aria-label="Current gap status"></span>
+          </div>
+          <p id="headerTagline" class="text-[8px] font-bold uppercase tracking-[0.18em] transition-all duration-500" style="color: var(--text-muted);">Widen the gap.</p>
+        </div>
+
+        <div class="flex items-center gap-1.5">
+          <button onclick="window.showStatDetail('momentum')" class="premium-card px-2.5 py-1 rounded-full flex items-center gap-1 active:scale-95 transition-transform cursor-pointer">
+            <i data-lucide="zap" class="w-3 h-3 text-amber-500"></i>
+            <span id="momentumScoreHeader" class="numeric-display text-xs font-bold" style="color: var(--text-main);">0</span>
+          </button>
+          <button onclick="window.showShieldDashboard()" class="premium-card px-2.5 py-1 rounded-full flex items-center gap-1 active:scale-95 transition-transform cursor-pointer">
+            <i data-lucide="shield" class="w-3 h-3 text-sky-500"></i>
+            <span id="shieldCount" class="numeric-display text-xs font-bold text-sky-500">0</span>
+          </button>
+          <button onclick="window.showStatDetail('streak')" class="premium-card px-2.5 py-1 rounded-full flex items-center gap-1 active:scale-95 transition-transform cursor-pointer">
+            <i data-lucide="flame" class="w-3 h-3 text-orange-500"></i>
+            <span id="headerStreak" class="numeric-display text-xs font-bold text-orange-500">0d</span>
+          </button>
+          <button onclick="window.shareProgress()" class="premium-card w-7 h-7 rounded-full flex items-center justify-center active:scale-90 transition-transform cursor-pointer" aria-label="Share Progress" title="Share progress">
+            <i data-lucide="share-2" class="w-3.5 h-3.5" style="color: var(--accent);"></i>
+          </button>
+        </div>
+      </div>
+
+      <div id="lastSmokeRow" class="px-4 pb-2 flex justify-between items-center" style="display: none;">
+        <span class="flex items-center gap-1">
+          <i data-lucide="clock" class="w-3 h-3" style="color: var(--text-muted);"></i>
+          <span id="lastSmokeText" class="text-[9px] font-bold uppercase tracking-wider" style="color: var(--text-muted);">Last: --</span>
+        </span>
+        <span class="flex items-center gap-1">
+          <i data-lucide="bar-chart-2" class="w-3 h-3" style="color: var(--text-muted);"></i>
+          <span id="todayCountHeader" class="text-[9px] font-bold uppercase tracking-wider" style="color: var(--text-muted);">Today: 0</span>
+        </span>
+      </div>
+    </header>
+
+    <div class="p-4 space-y-4 pt-0">
+      
+      <section id="page-tracker" class="page-section space-y-4">
+        
+        <div id="emptyStateBanner" class="hidden premium-card p-4 text-center space-y-2 border" style="border-color: var(--accent);">
+          <div class="w-10 h-10 rounded-2xl mx-auto flex items-center justify-center" style="background: var(--accent-glow);"><i data-lucide="sparkles" class="w-5 h-5" style="color: var(--accent);"></i></div>
+          <div>
+            <h3 class="text-xs font-bold" style="color: var(--text-main);">Welcome to pause</h3>
+            <p class="text-[10px] leading-relaxed mt-0.5" style="color: var(--text-muted);">There's nothing to show yet because you haven't logged anything. Log honestly when you smoke — it's how the app learns your patterns.</p>
+          </div>
+        </div>
+
+        <div id="motivationTag" class="hidden mx-auto mb-1 w-max px-3 py-1 rounded-full border text-[9px] font-bold tracking-widest uppercase transition-all" style="background: var(--input-bg); border-color: var(--card-border); color: var(--text-muted);">
+          FOR: <span id="motivationText" style="color: var(--text-main);">--</span>
+        </div>
+
+        <!-- BALANCED FULL-SPACE UNIFIED WATCH CAROUSEL (SWIPE / TAP) -->
+        <div id="heroCarousel" class="relative flex flex-col items-center justify-center pt-1 pb-1">
+          
+          <div id="watchContainer" class="w-full relative min-h-[168px] flex items-center justify-center touch-pan-x" ontouchstart="window.touchStartX(event)" ontouchend="window.touchEndX(event)">
+            
+            <!-- WATCH 1: THE CLIMB -->
+            <div id="watchStyle1" onclick="window.showStatDetail('currentGap')" class="w-full max-w-[320px] mx-auto active:scale-[0.98] transition-all relative flex items-center justify-center gap-5 px-2">
+               <div class="relative shrink-0 w-8 h-40 rounded-full overflow-hidden border-2 flex flex-col justify-end shadow-inner" style="background-color: var(--input-bg); border-color: var(--card-border);">
+                 <div id="heroClimbFill" class="w-full transition-all duration-1000 ease-out rounded-full" style="height: 0%; background: linear-gradient(180deg, #FBBF24, #F59E0B); box-shadow: 0 0 12px rgba(245,158,11,0.4) inset;"></div>
+               </div>
+               <div class="flex flex-col items-start gap-1">
+                 <div class="flex items-center gap-1.5">
+                   <i data-lucide="mountain" class="w-3.5 h-3.5 text-amber-500"></i>
+                   <span class="text-[10px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">The Climb</span>
+                 </div>
+                 <span id="heroClimbStatus" class="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 w-max">Pacing</span>
+                 <div id="stopwatch1" class="numeric-display text-4xl font-black tracking-tighter" style="color: var(--text-main);">00:00:00</div>
+                 <div id="heroRecordBadge1" class="hidden text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.2)] w-max">🏆 RECORD</div>
+                 <p id="heroClimbSub" class="text-[10px] font-bold text-amber-500 leading-tight">Target: --</p>
+               </div>
+            </div>
+
+            <!-- WATCH 2: THE ORBIT -->
+            <div id="watchStyle2" onclick="window.showStatDetail('currentGap')" class="hidden w-full max-w-[320px] mx-auto active:scale-[0.98] transition-all flex flex-col items-center justify-center relative">
+               <div class="relative flex justify-center items-center w-40 h-40 mb-0.5">
+                 <svg class="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 120 120">
+                   <circle cx="60" cy="60" r="50" fill="transparent" stroke="var(--input-bg)" stroke-width="6"></circle>
+                   <circle id="heroRingFill" cx="60" cy="60" r="50" fill="transparent" stroke="var(--accent)" stroke-width="8" stroke-dasharray="314.16" stroke-dashoffset="314.16" stroke-linecap="round" style="transition: stroke-dashoffset 1s ease-out;"></circle>
+                 </svg>
+                 <div class="absolute inset-0 flex flex-col items-center justify-center pt-1">
+                   <span id="heroRingStatus" class="text-[9px] font-extrabold uppercase tracking-widest text-amber-500 mb-0.5">Pacing</span>
+                   <div id="stopwatch2" class="numeric-display text-3xl font-black tracking-tighter" style="color: var(--text-main);">00:00:00</div>
+                   <div id="heroRecordBadge2" class="hidden mt-1 text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.2)]">🏆 RECORD</div>
+                 </div>
+               </div>
+               <div class="flex items-center gap-1.5 justify-center w-full">
+                 <i data-lucide="aperture" class="w-3.5 h-3.5 text-amber-500"></i>
+                 <p id="heroRingSub" class="text-[10px] font-bold text-amber-500 leading-tight">Target: --</p>
+               </div>
+            </div>
+
+            <!-- WATCH 3: THE HORIZON -->
+            <div id="watchStyle3" onclick="window.showStatDetail('currentGap')" class="hidden w-full max-w-[320px] mx-auto active:scale-[0.98] transition-all flex flex-col items-center text-center">
+               <div class="w-full space-y-1.5 px-2">
+                 <div class="flex justify-between items-center px-1">
+                   <span class="text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5" style="color: var(--text-muted);"><i data-lucide="sunrise" class="w-3.5 h-3.5 text-amber-500"></i> The Horizon</span>
+                   <span id="heroHorizonStatus" class="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">Pacing</span>
+                 </div>
+                 <div id="stopwatch3" class="numeric-display text-4xl font-black tracking-tighter" style="color: var(--text-main);">00:00:00</div>
+                 <div id="heroRecordBadge3" class="hidden mx-auto text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.2)] w-max">🏆 NEW RECORD ZONE</div>
+                 <div class="relative w-full h-2.5 rounded-full overflow-hidden border mt-1.5" style="background-color: var(--input-bg); border-color: var(--card-border);">
+                   <div id="heroHorizonFill" class="h-full transition-all duration-1000 ease-out" style="width: 0%; background-color: var(--accent);"></div>
+                   <div id="heroHorizonMarker" class="absolute top-0 bottom-0 w-0.5 bg-white shadow-[0_0_6px_#fff] z-10 hidden" style="left: 70%;"></div>
+                 </div>
+                 <div class="flex justify-between items-center px-1">
+                   <p class="text-[8px] font-bold uppercase" style="color: var(--text-muted);">Progress</p>
+                   <p id="heroHorizonSub" class="text-[10px] font-bold text-amber-500 leading-tight">Target Avg: --</p>
+                 </div>
+               </div>
+            </div>
+
+          </div>
+
+          <!-- WATCH SWITCHER DOTS -->
+          <div class="flex gap-2 mt-2 items-center justify-center cursor-pointer">
+            <button id="watchDot1" onclick="window.switchWatchStyle(1)" class="w-2 h-2 rounded-full transition-all duration-300"></button>
+            <button id="watchDot2" onclick="window.switchWatchStyle(2)" class="w-2 h-2 rounded-full transition-all duration-300"></button>
+            <button id="watchDot3" onclick="window.switchWatchStyle(3)" class="w-2 h-2 rounded-full transition-all duration-300"></button>
+          </div>
+
+          <div id="smartStatusWrapper" class="mt-2 px-4 py-1.5 rounded-full border transition-all duration-500" style="background: var(--input-bg); border-color: var(--card-border); color: var(--text-muted);">
+            <span id="smartStatusText" class="text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5">
+              <i data-lucide="info" class="w-3 h-3"></i> Waiting for first log
+            </span>
+          </div>
+        </div>
+
+        <div class="space-y-2.5 relative pt-1">
+          <button id="mainLogBtn"
+                  onmousedown="window.startHold(event)" onmouseup="window.cancelHold(event)" onmouseleave="window.cancelHold(event)"
+                  ontouchstart="window.startHold(event)" ontouchend="window.cancelHold(event)" ontouchcancel="window.cancelHold(event)"
+                  class="hold-btn w-full py-4 rounded-2xl font-bold text-xs uppercase tracking-wider active:scale-95 transition-all border-2 relative overflow-hidden"
+                  style="background: var(--accent); color: var(--accent-text); border-color: var(--accent); box-shadow: 0 6px 24px var(--accent-glow);">
+            <div id="holdProgress"></div>
+            <span class="relative z-10 flex items-center justify-center gap-2">
+              <i data-lucide="flame" class="w-4 h-4" id="holdIcon"></i>
+              <span id="holdText">Hold to Smoke</span>
+            </span>
+          </button>
+
+          <button onclick="window.openBreathingModal()" class="w-full py-3 flex items-center justify-center gap-2 rounded-2xl active:scale-95 transition-all border" style="background: rgba(16,185,129,0.12); color: #10B981; border-color: rgba(16,185,129,0.25);">
+            <i data-lucide="wind" class="w-4 h-4" style="color: #10B981;"></i>
+            <span class="text-[10px] font-bold uppercase tracking-wider" style="color: #10B981;">Breathe & Ride</span>
+          </button>
+        </div>
+
+        <div id="waveOverlay" class="hidden premium-card relative overflow-hidden border flex flex-col items-center justify-center text-center shadow-2xl transition-all duration-500" style="border-color: rgba(16,185,129,0.4); min-height: 150px; background: linear-gradient(180deg, var(--card-bg) 0%, rgba(16,185,129,0.05) 100%);">
+          <div class="absolute inset-0 pointer-events-none flex items-end">
+            <svg viewBox="0 0 1200 120" preserveAspectRatio="none" class="w-[200%] animate-wave" id="waveSvgEl" style="height: 60px; opacity: 0.35;">
+              <path d="M 0,60 Q 150,10 300,60 T 600,60 Q 750,10 900,60 T 1200,60 V 120 H 0 Z" fill="#10B981"></path>
+            </svg>
+          </div>
+          <div class="relative z-10 w-full flex flex-col items-center py-3">
+            <i data-lucide="shield" class="w-6 h-6 wave-breathe mb-1" style="color:#10B981;"></i>
+            <p class="text-[8px] font-bold uppercase tracking-widest mb-0.5" style="color:#10B981">Riding the Wave</p>
+            <span id="waveCountdown" class="numeric-display text-3xl font-black tracking-tighter drop-shadow-md mb-1 wave-breathe" style="color: var(--text-main);">--:--</span>
+            <p id="waveMotivationalText" class="text-[9px] font-medium mt-0.5 mb-2 leading-snug px-6" style="color: var(--text-muted);">Breathe in... Hold... Exhale...</p>
+            <button onclick="window.cancelActiveWave()" class="px-3 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-wider transition-all active:scale-95 border backdrop-blur-md flex items-center gap-1" style="background: var(--input-bg); border-color: var(--card-border); color: var(--text-main);"><i data-lucide="x" class="w-3 h-3"></i> Cancel Wave</button>
+          </div>
+        </div>
+
+        <div class="space-y-2.5">
+          <!-- WILLPOWER: full-width hero daily stat -->
+          <div onclick="window.showStatDetail('count')" class="premium-card p-3.5 active:scale-95 transition-transform cursor-pointer relative overflow-hidden">
+            <div class="flex items-center justify-between mb-1">
+              <div class="flex items-center gap-1">
+                <i data-lucide="battery-charging" id="batteryIcon" class="w-3 h-3 text-emerald-500"></i>
+                <p class="text-[8px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Willpower</p>
+              </div>
+              <span id="batteryPctText" class="numeric-display text-[9px] font-bold text-emerald-500">100%</span>
+            </div>
+            <div class="w-full h-1.5 rounded-full overflow-hidden mb-1.5" style="background: var(--input-bg);">
+              <div id="batteryFillBar" class="h-full rounded-full transition-all duration-500 bg-emerald-500" style="width: 100%;"></div>
+            </div>
+            <div class="flex items-center justify-between">
+              <p id="todayCount" class="numeric-display text-base font-bold inline-flex items-baseline gap-1" style="color: var(--text-main);"><span id="todayCountText">0 / 15 Sticks</span></p>
+              <p id="limitWarningMsg" class="text-[8px] font-semibold text-amber-500 hidden leading-tight">Tomorrow is a fresh start.</p>
+            </div>
+          </div>
+
+          <!-- MONEY: today's spend + total saved merged -->
+          <div onclick="window.openMoneyVisualizer()" class="premium-card p-3.5 active:scale-95 transition-transform cursor-pointer">
+            <div class="grid grid-cols-2 gap-2">
+              <div class="rounded-xl p-3" style="background: var(--input-bg);">
+                <p class="text-[8px] font-bold uppercase tracking-widest mb-1.5 flex items-center gap-1.5" style="color: var(--text-muted);"><i data-lucide="wallet" class="w-3 h-3 text-red-500"></i> Spent Today</p>
+                <p id="todaySpend" class="numeric-display text-lg font-bold" style="color: #EF4444;">AED 0</p>
+                <p id="vsYesterdaySpend" class="text-[8px] font-bold mt-0.5 hidden"></p>
+              </div>
+              <div class="rounded-xl p-3" style="background: var(--input-bg);">
+                <p class="text-[8px] font-bold uppercase tracking-widest mb-1.5 flex items-center gap-1.5" style="color: var(--text-muted);"><i data-lucide="piggy-bank" class="w-3 h-3 text-emerald-500"></i> Total Saved</p>
+                <p id="totalSavedCard" class="numeric-display text-lg font-bold" style="color: #10B981;">AED 0</p>
+              </div>
+            </div>
+            <div class="flex items-center justify-end gap-1 mt-2 pr-1">
+              <span class="text-[9px] font-bold" style="color: var(--accent);">What you could buy</span>
+              <i data-lucide="chevron-right" class="w-3 h-3" style="color: var(--accent);"></i>
+            </div>
+          </div>
+
+          <!-- PROGRESS: defeated + best gap merged -->
+          <div class="premium-card p-3.5 flex items-center">
+            <div onclick="window.showStatDetail('resisted')" class="flex-1 active:scale-95 transition-transform cursor-pointer text-center">
+              <div class="flex items-center gap-1.5 justify-center mb-1.5"><div class="w-5 h-5 rounded-full bg-sky-500/10 flex items-center justify-center text-sky-500"><i data-lucide="shield" class="w-3 h-3"></i></div><p class="text-[8px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Defeated</p></div>
+              <p id="todayResisted" class="numeric-display text-lg font-bold" style="color: var(--text-main);">0</p>
+            </div>
+            <div class="w-px h-12 mx-2 shrink-0" style="background: var(--card-border);"></div>
+            <div onclick="window.showStatDetail('bestGap')" class="flex-1 active:scale-95 transition-transform cursor-pointer text-center">
+              <div class="flex items-center gap-1.5 justify-center mb-1.5"><div class="w-5 h-5 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500"><i data-lucide="trophy" class="w-3 h-3"></i></div><p class="text-[8px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Best Gap</p></div>
+              <p id="bestGapCard" class="numeric-display text-lg font-bold" style="color: var(--text-main);">--</p>
+            </div>
+          </div>
+        </div>
+
+        <div id="dailyChallengeCard" class="premium-card p-3.5 hidden">
+          <div class="flex items-center gap-2 mb-2">
+            <div class="w-7 h-7 rounded-lg flex items-center justify-center" style="background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(239,68,68,0.15));"><span class="text-sm">🎯</span></div>
+            <div class="flex-1">
+              <p class="text-[8px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Daily Challenge</p>
+              <p id="challengeText" class="text-[10px] font-bold leading-tight" style="color: var(--text-main);">Loading...</p>
+            </div>
+            <button id="challengeCompleteBtn" onclick="window.completeDailyChallenge()" class="px-3 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-wider transition-all active:scale-95" style="background: var(--accent); color: var(--accent-text);">Done</button>
+          </div>
+          <div id="challengeCompletedMsg" class="hidden text-center py-1">
+            <p class="text-[10px] font-bold" style="color: #10B981;">✓ Challenge completed! +1 Shield</p>
+          </div>
+        </div>
+
+        <div id="patternIntelCard" class="premium-card p-3.5 hidden">
+          <div class="flex items-center justify-between cursor-pointer" onclick="window.openPatternIntel()">
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 rounded-lg flex items-center justify-center" style="background: linear-gradient(135deg, rgba(56,189,248,0.15), rgba(139,92,246,0.15));"><i data-lucide="brain" class="w-3.5 h-3.5" style="color: #38BDF8;"></i></div>
+              <div>
+                <p class="text-[8px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Pattern Intelligence</p>
+                <p id="patternSummary" class="text-[9px] font-bold leading-tight" style="color: var(--text-main);">Analyzing your patterns...</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-[9px] font-bold uppercase tracking-wider" style="color: var(--accent);">View</span>
+              <i data-lucide="chevron-right" class="w-3.5 h-3.5" style="color: var(--text-muted);"></i>
+            </div>
+          </div>
+          <div class="h-1 w-full rounded-full overflow-hidden mt-2.5" style="background: var(--input-bg);">
+            <div id="patternTeaserLine" class="h-full rounded-full transition-all duration-1000" style="width:0%; background: linear-gradient(90deg, #38BDF8, #8B5CF6);"></div>
+          </div>
+        </div>
+
+        <div id="healthTimelineCard" class="premium-card p-3.5 hidden">
+          <div class="flex items-center justify-between cursor-pointer" onclick="window.openHealthTimeline()">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, rgba(239,68,68,0.15), rgba(245,158,11,0.15));"><i data-lucide="heart-pulse" class="w-4 h-4 text-red-400"></i></div>
+              <div>
+                <p class="text-[9px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Your Body's Recovery</p>
+                <p id="milestoneCount" class="text-[10px] font-bold" style="color: var(--accent);">0 of 9 unlocked</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-[9px] font-bold uppercase tracking-wider" style="color: var(--accent);">View</span>
+              <i data-lucide="chevron-right" class="w-4 h-4" style="color: var(--text-muted);"></i>
+            </div>
+          </div>
+          <div class="h-1 w-full rounded-full overflow-hidden mt-2.5" style="background: var(--input-bg);">
+            <div id="milestoneTeaserLine" class="h-full rounded-full transition-all duration-1000" style="width:0%; background: linear-gradient(90deg, #EF4444, #F59E0B);"></div>
+          </div>
+        </div>
+
+        <div class="space-y-2.5 pt-1">
+          <div class="flex items-center justify-between px-1 mb-0.5">
+            <h3 class="text-[10px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Recent Activity</h3>
+            <div class="flex gap-1.5">
+              <span id="homeTodayBeaten" class="numeric-display text-[8px] font-bold px-2 py-0.5 rounded bg-sky-500/10 text-sky-500 border border-sky-500/20">0 Defeated</span>
+              <span id="homeStreak" class="numeric-display text-[8px] font-bold px-2 py-0.5 rounded bg-orange-500/10 text-orange-500 border border-orange-500/20">🔥 0 Streak</span>
+            </div>
+          </div>
+          <div id="homeRecentLogs" class="space-y-2.5"></div>
+        </div>
+
+        <div id="progressPhotosSection" class="hidden space-y-2.5 pt-1">
+          <div class="flex items-center justify-between px-1">
+            <h3 class="text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5" style="color: var(--text-muted);"><i data-lucide="camera" class="w-3 h-3 text-purple-400"></i> Progress Photos</h3>
+            <div class="flex items-center gap-1.5">
+              <span id="photoCount" class="text-[9px] font-bold" style="color: var(--text-muted);">0/5</span>
+              <button id="addPhotoBtn" onclick="document.getElementById('photoUploadInput').click()" class="px-2.5 py-1 rounded-full border text-[9px] font-bold active:scale-95 transition-all flex items-center gap-1" style="background: var(--input-bg); border-color: var(--card-border); color: var(--accent);"><i data-lucide="plus" class="w-3 h-3"></i> Add</button>
+            </div>
+          </div>
+          <div id="photoGrid" class="grid grid-cols-3 gap-2"></div>
+        </div>
+
+        <input type="file" id="photoUploadInput" accept="image/*" class="hidden" onchange="window.handlePhotoUpload(event)">
+      </section>
+
+      <div id="photoViewerModal" class="hidden fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm transition-opacity" style="background-color: var(--overlay-bg);" onclick="if(event.target===this)window.closePhotoViewer()">
+        <div class="relative max-w-lg mx-4 rounded-2xl overflow-hidden shadow-2xl" style="background: var(--modal-bg); border: 1px solid var(--card-border);">
+          <div class="flex items-center justify-between p-3 border-b" style="border-color: var(--card-border);">
+            <span id="photoViewerDate" class="text-[10px] font-bold" style="color: var(--text-muted);"></span>
+            <div class="flex items-center gap-2">
+              <button id="photoViewerDelete" onclick="window.deleteViewedPhoto()" class="px-2.5 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 active:scale-95 transition-all" style="background: rgba(239,68,68,0.1); color: #EF4444;"><i data-lucide="trash-2" class="w-3 h-3"></i> Delete</button>
+              <button onclick="window.closePhotoViewer()" class="w-7 h-7 rounded-full flex items-center justify-center active:scale-95 transition-all" style="color: var(--text-muted);"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+          </div>
+          <img id="photoViewerImage" class="w-full max-h-[70vh] object-contain" src="" alt="Progress photo">
+        </div>
+      </div>
+
+      <section id="page-insights" class="page-section space-y-4 hidden">
+        <div class="flex justify-between items-center px-1 mb-2">
+          <h2 class="text-xl font-bold" style="color: var(--text-main);">Analytics Mirror</h2>
+          <span class="filter-select-wrapper"><select id="insightsDateFilter" onchange="window.toggleInsightsCustomRange()" class="bg-transparent text-xs font-bold outline-none cursor-pointer pr-5" style="color: var(--accent);">
+            <option value="today">Today</option><option value="7days" selected>Last 7 Days</option><option value="1month">1 Month</option><option value="all">All Time</option>
+            <option value="custom">Custom Range</option>
+          </select></span>
+        </div>
+        <div id="insightsCustomRange" class="hidden flex items-center gap-2 px-1">
+          <div class="flex-1 flex items-center gap-1.5">
+            <span class="text-[10px] font-bold uppercase shrink-0" style="color: var(--text-muted);">From</span>
+            <input type="date" id="insightsDateFrom" onchange="window.validateInsightsDates()" class="flex-1 px-2 py-1.5 rounded-xl border text-[11px] font-semibold outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);">
+          </div>
+          <div class="flex-1 flex items-center gap-1.5">
+            <span class="text-[10px] font-bold uppercase shrink-0" style="color: var(--text-muted);">To</span>
+            <input type="date" id="insightsDateTo" onchange="window.validateInsightsDates()" class="flex-1 px-2 py-1.5 rounded-xl border text-[11px] font-semibold outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);">
+          </div>
+          <button id="insightsClearCustom" onclick="window.clearInsightsCustomRange()" class="px-2.5 py-1.5 rounded-xl border text-[11px] font-bold active:scale-95 transition-all shrink-0" style="background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.2); color: #EF4444;"><i data-lucide="x" class="w-3 h-3"></i></button>
+        </div>
+
+        <div id="smartTextInsight" class="premium-card p-4 mb-4 text-xs font-medium leading-relaxed border-l-2 border-[var(--accent)]" style="color: var(--text-main);">--</div>
+
+        <div class="flex overflow-x-auto gap-3 pb-2 snap-x hide-scrollbar">
+          <div class="premium-card p-4 min-w-[140px] snap-start shrink-0">
+            <div class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2" style="color: var(--text-muted);"><i data-lucide="piggy-bank" class="w-3 h-3 text-emerald-500"></i> Total Saved</div>
+            <div id="insightTotalSaved" class="numeric-display text-xl font-bold text-emerald-500">AED 0</div>
+            <canvas id="sparkTotalSaved" class="mt-1.5" width="120" height="24" style="width:100%; height:24px; opacity:0.6;"></canvas>
+          </div>
+          <div class="premium-card p-4 min-w-[140px] snap-start shrink-0">
+            <div class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2" style="color: var(--text-muted);"><i data-lucide="trophy" class="w-3 h-3 text-amber-500"></i> Longest Gap</div>
+            <div id="insightLongestGap" class="numeric-display text-xl font-bold" style="color: var(--text-main);">--</div>
+            <canvas id="sparkLongestGap" class="mt-1.5" width="120" height="24" style="width:100%; height:24px; opacity:0.6;"></canvas>
+          </div>
+          <div class="premium-card p-4 min-w-[140px] snap-start shrink-0">
+            <div class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2" style="color: var(--text-muted);"><i data-lucide="shield-alert" class="w-3 h-3 text-sky-500"></i> Urge Win Rate</div>
+            <div id="insightWinRate" class="numeric-display text-xl font-bold" style="color: var(--text-main);">0%</div>
+            <canvas id="sparkWinRate" class="mt-1.5" width="120" height="24" style="width:100%; height:24px; opacity:0.6;"></canvas>
+          </div>
+          <div class="premium-card p-4 min-w-[140px] snap-start shrink-0">
+            <div class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2" style="color: var(--text-muted);"><i data-lucide="clock" class="w-3 h-3 text-sky-500"></i> Avg Gap</div>
+            <div id="insightAvgGap" class="numeric-display text-xl font-bold" style="color: var(--text-main);">--</div>
+            <canvas id="sparkAvgGap" class="mt-1.5" width="120" height="24" style="width:100%; height:24px; opacity:0.6;"></canvas>
+          </div>
+          <div class="premium-card p-4 min-w-[140px] snap-start shrink-0">
+            <div class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2" style="color: var(--text-muted);"><i data-lucide="alert-triangle" class="w-3 h-3 text-orange-500"></i> Peak Hour</div>
+            <div id="insightPeakHour" class="numeric-display text-xl font-bold" style="color: var(--text-main);">--</div>
+          </div>
+          <div class="premium-card p-4 min-w-[140px] snap-start shrink-0">
+            <div class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2" style="color: var(--text-muted);"><i data-lucide="brain-circuit" class="w-3 h-3 text-purple-500"></i> Top Trigger</div>
+            <div id="insightTopTrigger" class="text-lg font-bold truncate" style="color: var(--text-main);">--</div>
+          </div>
+          <div class="premium-card p-4 min-w-[140px] snap-start shrink-0">
+            <div class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2" style="color: var(--text-muted);"><i data-lucide="flame" class="w-3 h-3 text-red-500"></i> Heaviest Day</div>
+            <div id="insightHeaviestDay" class="text-lg font-bold" style="color: var(--text-main);">--</div>
+          </div>
+        </div>
+
+        <div class="premium-card p-5 relative overflow-hidden">
+          <div class="flex justify-between items-start gap-2 mb-2">
+            <p class="text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 leading-tight" style="color: var(--text-muted);">
+              <i data-lucide="wallet" class="w-3.5 h-3.5 text-red-500 shrink-0"></i> 
+              <span>Period Expense (<span id="selectedFilterLabel">Last 7 Days</span>)</span>
+            </p>
+            <span id="insightPeriodCount" class="numeric-display text-[9px] font-bold px-2 py-0.5 rounded-lg bg-red-500/10 text-red-500 border border-red-500/20 whitespace-nowrap shrink-0">0 Sticks</span>
+          </div>
+          <p id="insightPeriodSpend" class="numeric-display text-3xl font-bold tracking-tight truncate" style="color: var(--text-main);">--</p>
+        </div>
+
+        <div id="chartContainer" class="space-y-5">
+          <div id="chartEmptyState" class="premium-card p-6 text-center hidden space-y-3">
+            <div class="w-12 h-12 rounded-2xl mx-auto flex items-center justify-center mb-1" style="background: var(--accent-glow);"><i data-lucide="bar-chart-3" class="w-6 h-6" style="color: var(--accent);"></i></div>
+            <h3 class="text-sm font-bold" style="color: var(--text-main);">See Your Patterns Here</h3>
+            <p class="text-[11px] leading-relaxed" style="color: var(--text-muted);">Log a cigarette to start tracking your gaps, triggers, and daily trends.</p>
+            <button onclick="window.switchTab('tracker')" class="mt-1 px-5 py-2 rounded-full text-[10px] font-bold uppercase tracking-wider active:scale-95 transition-all border" style="background: var(--input-bg); border-color: var(--card-border); color: var(--accent);">Go to Tracker</button>
+          </div>
+          <div id="card-heatmap" class="premium-card p-5">
+            <div class="flex justify-between items-center mb-3">
+              <div class="flex items-center gap-2.5"><div class="w-7 h-7 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500"><i data-lucide="calendar-days" class="w-4 h-4"></i></div><h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">Consistency Calendar</h3></div>
+              <div class="drag-handle"><i data-lucide="grip-horizontal" class="w-4 h-4"></i></div>
+            </div>
+            <p class="text-[10px] mb-3 -mt-1" style="color: var(--text-muted);">Daily habit heatmap. Darker squares mean more cigarettes logged that day.</p>
+            <div id="calendarHeatmap" class="w-full overflow-x-auto hide-scrollbar flex gap-1.5 pt-2 justify-between"></div>
+          </div>
+          
+          <div id="card-1" class="premium-card p-5">
+            <div class="flex justify-between items-center mb-3">
+              <div class="flex items-center gap-2.5"><div class="w-7 h-7 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500"><i data-lucide="activity" class="w-4 h-4"></i></div><h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">Widen The Gap Trend</h3></div>
+              <div class="flex items-center gap-2"><span id="badge-chart1" class="hidden text-[9px] font-bold px-2 py-0.5 rounded border"></span><div class="drag-handle"><i data-lucide="grip-horizontal" class="w-4 h-4"></i></div></div>
+            </div>
+            <p class="text-[10px] mb-3 -mt-1" style="color: var(--text-muted);">How long you wait between cigarettes, over time. Line going up = gaps getting longer.</p>
+            <div class="chart-wrapper"><canvas id="chart1"></canvas></div>
+          </div>
+
+          <div id="card-4" class="premium-card p-5">
+            <div class="flex justify-between items-center mb-3">
+              <div class="flex items-center gap-2.5"><div class="w-7 h-7 rounded-full bg-sky-500/10 flex items-center justify-center text-sky-500"><i data-lucide="shield" class="w-4 h-4"></i></div><h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">Cravings Resisted</h3></div>
+              <div class="drag-handle"><i data-lucide="grip-horizontal" class="w-4 h-4"></i></div>
+            </div>
+            <p class="text-[10px] mb-3 -mt-1" style="color: var(--text-muted);">How many total cravings you successfully beat vs how many you smoked.</p>
+            <div class="chart-wrapper" style="height: 210px;"><canvas id="chart4"></canvas></div>
+          </div>
+          
+          <div id="card-2" class="premium-card p-5">
+            <div class="flex justify-between items-center mb-3">
+              <div class="flex items-center gap-2.5"><div class="w-7 h-7 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500"><i data-lucide="bar-chart-2" class="w-4 h-4"></i></div><h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">Daily Volume</h3></div>
+              <div class="flex items-center gap-2"><span id="badge-chart2" class="hidden text-[9px] font-bold px-2 py-0.5 rounded border"></span><div class="drag-handle"><i data-lucide="grip-horizontal" class="w-4 h-4"></i></div></div>
+            </div>
+            <p class="text-[10px] mb-3 -mt-1" style="color: var(--text-muted);">Cigarettes per day — bars above the dashed line mean you went over your own daily goal.</p>
+            <div class="chart-wrapper"><canvas id="chart2"></canvas></div>
+          </div>
+
+          <div id="card-3" class="premium-card p-5">
+            <div class="flex justify-between items-center mb-3">
+              <div class="flex items-center gap-2.5"><div class="w-7 h-7 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500"><i data-lucide="banknote" class="w-4 h-4"></i></div><h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">Spend vs Save</h3></div>
+              <div class="flex items-center gap-2"><span id="badge-chart3" class="hidden text-[9px] font-bold px-2 py-0.5 rounded border"></span><div class="drag-handle"><i data-lucide="grip-horizontal" class="w-4 h-4"></i></div></div>
+            </div>
+            <p class="text-[10px] mb-3 -mt-1" style="color: var(--text-muted);">Red line = spent. Green line = saved vs your baseline rate.</p>
+            <div class="chart-wrapper"><canvas id="chart3"></canvas></div>
+          </div>
+          
+          <div id="card-5" class="premium-card p-5">
+            <div class="flex justify-between items-center mb-3">
+              <div class="flex items-center gap-2.5"><div class="w-7 h-7 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-500"><i data-lucide="brain" class="w-4 h-4"></i></div><h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">Trigger Psychology</h3></div>
+              <div class="flex items-center gap-2"><span id="badge-chart5" class="hidden text-[9px] font-bold px-2 py-0.5 rounded border"></span><div class="drag-handle"><i data-lucide="grip-horizontal" class="w-4 h-4"></i></div></div>
+            </div>
+            <p class="text-[10px] mb-3 -mt-1" style="color: var(--text-muted);">Which tags you use most often — the bigger the slice, the more it drives you to smoke.</p>
+            <div class="chart-wrapper" style="height: 210px;"><canvas id="chart5"></canvas></div>
+          </div>
+
+          <div id="card-7" class="premium-card p-5">
+            <div class="flex justify-between items-center mb-3">
+              <div class="flex items-center gap-2.5"><div class="w-7 h-7 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-500"><i data-lucide="alarm-clock" class="w-4 h-4"></i></div><h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">Trigger Timing & Resilience</h3></div>
+              <div class="flex items-center gap-2"><span id="badge-chart6" class="hidden text-[9px] font-bold px-2 py-0.5 rounded border"></span><div class="drag-handle"><i data-lucide="grip-horizontal" class="w-4 h-4"></i></div></div>
+            </div>
+            <p class="text-[10px] mb-3 -mt-1" style="color: var(--text-muted);">Which triggers hit hardest at what time of day, and when willpower peaks.</p>
+            <div class="chart-wrapper" style="height: 220px;"><canvas id="chart6"></canvas></div>
+          </div>
+          
+          <div id="card-6" class="premium-card p-5 relative overflow-hidden">
+            <div class="flex justify-between items-center mb-3">
+              <div class="flex items-center gap-2.5"><div class="w-7 h-7 rounded-full bg-sky-500/10 flex items-center justify-center text-sky-500"><i data-lucide="map-pin" class="w-4 h-4"></i></div><h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">Thermal Heatmap</h3></div>
+              <div class="flex gap-3 items-center"><button onclick="window.openMapModal()" class="text-sky-500 text-xs font-bold uppercase tracking-wider">Expand</button><div class="drag-handle"><i data-lucide="grip-horizontal" class="w-4 h-4"></i></div></div>
+            </div>
+            <p class="text-[10px] mb-3 -mt-1" style="color: var(--text-muted);">Where you tend to smoke most, based on logged locations.</p>
+            <div id="mapContainer" class="w-full h-48 rounded-2xl z-10 overflow-hidden" style="border: 1px solid var(--card-border);"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. HISTORY TAB -->
+      <section id="page-history" class="page-section space-y-4 hidden">
+        <div class="flex justify-between items-center px-1">
+          <h2 class="text-xl font-bold" style="color: var(--text-main);">History Log</h2>
+          <select id="historyTagFilter" onchange="window.renderHistory('fullHistoryList')" class="bg-transparent text-xs font-bold outline-none cursor-pointer" style="color: var(--accent);">
+            <option value="all">All Tags</option>
+          </select>
+        </div>
+        <div class="flex flex-col gap-2 px-1">
+          <div class="relative">
+            <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2" style="color: var(--text-muted);"></i>
+            <input type="text" id="historySearch" oninput="window.toggleHistoryClearBtn()" placeholder="Search logs by trigger, tag..." class="w-full pl-9 pr-3 py-2 rounded-xl border text-xs font-semibold outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);">
+          </div>
+          <div class="flex gap-2">
+            <div class="flex-1 flex items-center gap-1.5">
+              <span class="text-[10px] font-bold uppercase shrink-0" style="color: var(--text-muted);">From</span>
+              <input type="date" id="historyDateFrom" onchange="window.toggleHistoryClearBtn()" class="flex-1 px-2 py-1.5 rounded-xl border text-[11px] font-semibold outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);">
+            </div>
+            <div class="flex-1 flex items-center gap-1.5">
+              <span class="text-[10px] font-bold uppercase shrink-0" style="color: var(--text-muted);">To</span>
+              <input type="date" id="historyDateTo" onchange="window.toggleHistoryClearBtn()" class="flex-1 px-2 py-1.5 rounded-xl border text-[11px] font-semibold outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);">
+            </div>
+            <button id="historyClearFilters" onclick="window.clearHistoryFilters()" class="hidden px-2.5 py-1.5 rounded-xl border text-[11px] font-bold active:scale-95 transition-all shrink-0" style="background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.2); color: #EF4444;"><i data-lucide="x" class="w-3 h-3"></i></button>
+          </div>
+        </div>
+        <div id="fullHistoryList" class="space-y-4"></div>
+        <div id="historyLoadMore" class="text-center hidden pt-2">
+            <button onclick="window.loadMoreHistory()" class="px-4 py-2 rounded-full border text-xs font-bold active:scale-95 transition-all" style="background: var(--input-bg); border-color: var(--card-border); color: var(--text-main);">Load More</button>
+        </div>
+      </section>
+      
+      <!-- 4. SETTINGS TAB -->
+      <section id="page-settings" class="page-section space-y-5 hidden">
+        <h2 class="text-xl font-bold px-1" style="color: var(--text-main);">Preferences</h2>
+        
+        <div class="premium-card p-5 space-y-4">
+          <h3 class="text-[10px] font-bold uppercase tracking-widest border-b pb-2 flex items-center gap-2" style="color: var(--text-muted); border-color: var(--card-border);"><i data-lucide="palette" class="w-3 h-3"></i> Identity & Appearance</h3>
+          <div class="flex flex-col">
+            <label class="text-xs font-semibold mb-1" style="color: var(--text-main);">Why are you widening the gap?</label>
+            <input type="text" id="motivationInput" maxlength="100" onchange="window.updateSettings()" placeholder="e.g., Health, Savings, Daughter" class="w-full p-2.5 rounded-xl border text-xs font-semibold outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);">
+            <p class="text-[9px] mt-1" style="color: var(--text-muted);">This reminds you during cravings.</p>
+          </div>
+          <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
+            <label class="text-xs font-semibold" style="color: var(--text-main);">Theme Mode</label>
+            <select id="themeSelect" onchange="window.updateSettings()" class="text-xs p-2 rounded-xl font-semibold border outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);"><option value="white">Clean White & Blue (Default)</option><option value="default">Amber Glow</option><option value="paper">Calm Paper</option><option value="oled">Pure OLED</option><option value="aurora">Aurora</option><option value="ocean">Midnight Ocean</option></select>
+          </div>
+          <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
+            <label class="text-xs font-semibold" style="color: var(--text-main);">Time Format</label>
+            <select id="timeFormatSelect" onchange="window.updateSettings()" class="text-xs p-2 rounded-xl font-semibold border outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);"><option value="12h">12-Hour (AM/PM)</option><option value="24h">24-Hour</option></select>
+          </div>
+          <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
+            <label class="text-xs font-semibold" style="color: var(--text-main);">Log Cooldown</label>
+            <select id="lockSecsInput" onchange="window.updateSettings()" class="text-xs p-2 rounded-xl font-semibold border outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);"><option value="60">1 Minute</option><option value="300">5 Minutes</option><option value="600">10 Minutes</option></select>
+          </div>
+          <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
+            <label class="text-xs font-semibold" style="color: var(--text-main);">Haptic Feedback</label>
+            <label class="premium-toggle"><input type="checkbox" id="hapticsInput" onchange="window.updateSettings()" class="sr-only"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
+          </div>
+        </div>
+
+        <div class="premium-card p-5 space-y-4">
+          <div class="flex justify-between items-center border-b pb-2" style="border-color: var(--card-border);">
+            <h3 class="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2" style="color: var(--text-muted);"><i data-lucide="bell" class="w-3.5 h-3.5 text-purple-500"></i> Smart Reminders & Friction</h3>
+            <button onclick="window.requestNotifPermission()" id="notifPermBtn" class="text-[10px] font-bold text-sky-500 uppercase tracking-wider">Enable Master</button>
+          </div>
+          
+          <div class="space-y-3 pt-1">
+            <div class="flex justify-between items-center">
+              <div>
+                <label class="text-xs font-semibold block" style="color: var(--text-main);">⚡ SOS Interrupter Screen</label>
+                <p class="text-[9px]" style="color: var(--text-muted);">Show 15s micro-action interrupter when logging</p>
+              </div>
+              <label class="premium-toggle"><input type="checkbox" id="notifEnableSosInput" onchange="window.toggleNotifSetting('notifEnableSos')" class="sr-only"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
+            </div>
+
+            <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
+              <div>
+                <label class="text-xs font-semibold block" style="color: var(--text-main);">🌊 Wave Complete Alerts</label>
+                <p class="text-[9px]" style="color: var(--text-muted);">Notify when Ride It Out timer finishes</p>
+              </div>
+              <label class="premium-toggle"><input type="checkbox" id="notifWaveCompleteInput" onchange="window.toggleNotifSetting('notifWaveComplete')" class="sr-only"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
+            </div>
+
+            <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
+              <div>
+                <label class="text-xs font-semibold block" style="color: var(--text-main);">🏆 Gap Widened Milestone</label>
+                <p class="text-[9px]" style="color: var(--text-muted);">Alert when current gap beats previous record</p>
+              </div>
+              <label class="premium-toggle"><input type="checkbox" id="notifGapWidenedInput" onchange="window.toggleNotifSetting('notifGapWidened')" class="sr-only"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
+            </div>
+
+            <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
+              <div>
+                <label class="text-xs font-semibold block" style="color: var(--text-main);">⏱️ Forgotten Log (1.5x Nudge)</label>
+                <p class="text-[9px]" style="color: var(--text-muted);">Reminder if usual gap time passes by 1.5x</p>
+              </div>
+              <label class="premium-toggle"><input type="checkbox" id="notifInactivityInput" onchange="window.toggleNotifSetting('notifInactivity')" class="sr-only"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
+            </div>
+
+            <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
+              <div>
+                <label class="text-xs font-semibold block" style="color: var(--text-main);">🧠 Predictive Craving Alerts</label>
+                <p class="text-[9px]" style="color: var(--text-muted);">Alerts 10 mins before your usual peak habit hour</p>
+              </div>
+              <label class="premium-toggle"><input type="checkbox" id="notifPredictiveInput" onchange="window.toggleNotifSetting('notifPredictive')" class="sr-only"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="premium-card p-5 space-y-4">
+          <h3 class="text-[10px] font-bold uppercase tracking-widest border-b pb-2 flex items-center gap-2" style="color: var(--text-muted); border-color: var(--card-border);"><i data-lucide="banknote" class="w-3 h-3"></i> Financials & Limits</h3>
+          <div class="flex justify-between items-center">
+            <label class="text-xs font-semibold" style="color: var(--text-main);">Currency</label>
+            <select id="currencySelect" onchange="window.updateSettings()" class="text-xs p-2 rounded-xl font-semibold border outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);"><option value="AED">AED (د.إ)</option><option value="USD">USD ($)</option><option value="EUR">EUR (€)</option><option value="GBP">GBP (£)</option><option value="INR">INR (₹)</option></select>
+          </div>
+          <div class="flex justify-between items-center">
+            <div class="pr-3">
+              <label class="text-xs font-semibold block" style="color: var(--text-main);">Daily Cigarette Goal</label>
+              <p class="text-[9px] leading-snug mt-0.5" style="color: var(--text-muted);">How many cigarettes/day you're aiming to stay under.</p>
+            </div>
+            <input type="number" id="dailyLimitInput" min="1" max="100" onchange="window.updateSettings()" class="numeric-display w-16 p-2 rounded-xl border text-center text-xs font-bold shrink-0" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);" value="15">
+          </div>
+          
+          <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
+            <div class="pr-3">
+              <label class="text-xs font-semibold block" style="color: var(--text-main);">Auto-Reduce Limit</label>
+              <p class="text-[9px] leading-snug mt-0.5" style="color: var(--text-muted);">Lower daily goal by 1 stick every week.</p>
+            </div>
+            <label class="premium-toggle shrink-0"><input type="checkbox" id="autoReduceInput" onchange="window.updateSettings()" class="sr-only"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
+          </div>
+
+          <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
+            <div class="pr-3">
+              <label class="text-xs font-semibold block" style="color: var(--text-main);">Pack Price</label>
+              <p class="text-[9px] leading-snug mt-0.5" style="color: var(--text-muted);">What one full pack costs you.</p>
+            </div>
+            <input type="number" id="packPriceInput" min="0" max="9999" onchange="window.updateSettings()" class="numeric-display w-20 p-2 rounded-xl border text-center text-xs font-bold shrink-0" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);" value="20">
+          </div>
+          <div class="flex justify-between items-center">
+            <div class="pr-3">
+              <label class="text-xs font-semibold block" style="color: var(--text-main);">Sticks Per Pack</label>
+              <p class="text-[9px] leading-snug mt-0.5" style="color: var(--text-muted);">How many sticks come in one pack.</p>
+            </div>
+            <input type="number" id="packSizeInput" min="1" max="100" onchange="window.updateSettings()" class="numeric-display w-16 p-2 rounded-xl border text-center text-xs font-bold shrink-0" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);" value="20">
+          </div>
+          <div class="flex justify-between items-center pt-3 border-t" style="border-color: var(--card-border);">
+            <label class="text-xs font-bold" style="color: var(--text-main);">Cost Per Cigarette</label>
+            <span id="costPerCigDisplay" class="numeric-display text-xs font-bold px-3 py-1.5 rounded-lg" style="background-color: var(--input-bg); color: var(--accent);">--</span>
+          </div>
+          <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
+            <div class="pr-3">
+              <label class="text-xs font-semibold block" style="color: var(--text-main);">Quit Date</label>
+              <p class="text-[9px] leading-snug mt-0.5" style="color: var(--text-muted);">Your target date to quit completely.</p>
+            </div>
+            <input type="date" id="quitDateInput" onchange="window.updateQuitDate()" class="numeric-display text-[11px] font-semibold p-2 rounded-xl border outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);">
+          </div>
+        </div>
+
+        <div class="premium-card p-5 space-y-4">
+          <h3 class="text-[10px] font-bold uppercase tracking-widest border-b pb-2 flex items-center gap-2" style="color: var(--text-muted); border-color: var(--card-border);"><i data-lucide="tag" class="w-3 h-3"></i> Custom Tags</h3>
+          <div class="flex gap-2">
+            <input type="text" id="newTriggerInput" placeholder="New tag name..." class="w-full p-2.5 rounded-xl border text-xs font-semibold outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);">
+            <button onclick="window.addCustomTrigger()" class="px-4 bg-amber-500/20 text-amber-500 font-bold text-xs rounded-xl hover:bg-amber-500/30">Add</button>
+          </div>
+          <div id="triggerListSettings" class="flex flex-wrap gap-2 pt-1"></div>
+        </div>
+
+        <div class="premium-card p-5 space-y-3">
+          <div class="flex justify-between items-end border-b pb-2" style="border-color: var(--card-border);">
+            <h3 class="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2" style="color: var(--text-muted);"><i data-lucide="database" class="w-3 h-3"></i> Data Backup & Security</h3>
+            <p id="dataSummaryText" class="text-[9px] font-medium" style="color: var(--text-muted);">0 logs • Since --</p>
+          </div>
+          <div id="backupReminderBanner" class="hidden flex items-center gap-2 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+            <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-500 shrink-0"></i>
+            <p id="backupReminderText" class="text-[10px] font-semibold text-amber-500 flex-1">You haven't backed up your data yet</p>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="window.exportJSON()" class="py-3 bg-emerald-500/10 text-emerald-500 font-bold text-[11px] rounded-xl text-center active:scale-95 transition-transform border border-emerald-500/20 flex flex-col items-center justify-center"><i data-lucide="upload-cloud" class="w-4 h-4 mb-1"></i> Backup Data</button>
+            <button onclick="document.getElementById('importFileInput').click()" class="py-3 bg-blue-500/10 text-blue-500 font-bold text-[11px] rounded-xl text-center active:scale-95 transition-transform border border-blue-500/20 flex flex-col items-center justify-center"><i data-lucide="download-cloud" class="w-4 h-4 mb-1"></i> Restore Data</button>
+            <input type="file" id="importFileInput" class="hidden" accept=".json" onchange="window.importJSON(event)">
+          </div>
+          <button onclick="window.exportLogsCSV()" class="w-full py-3 bg-sky-500/10 text-sky-500 font-bold text-xs rounded-xl text-center active:scale-95 transition-transform border border-sky-500/20 flex items-center justify-center gap-2"><i data-lucide="file-text" class="w-4 h-4"></i> Export CSV (Spreadsheet)</button>
+          <button onclick="window.setupPin()" id="pinStatusBtn" class="w-full py-3 bg-indigo-500/10 text-indigo-500 font-bold text-xs rounded-xl text-center active:scale-95 transition-transform">Set App PIN</button>
+          <button onclick="window.restartOnboarding()" class="w-full py-3 bg-purple-500/10 text-purple-500 font-bold text-xs rounded-xl text-center active:scale-95 transition-transform flex items-center justify-center gap-2"><i data-lucide="sparkles" class="w-4 h-4"></i> Show Tour Again</button>
+          <button onclick="window.resetSettings()" class="w-full py-3 font-bold text-xs rounded-xl text-center active:scale-95 transition-transform flex items-center justify-center gap-2" style="background: var(--input-bg); color: var(--text-muted);"><i data-lucide="settings" class="w-4 h-4"></i> Reset Settings to Defaults</button>
+          <button onclick="window.refreshAppCache()" class="w-full py-3 bg-cyan-500/10 text-cyan-500 font-bold text-xs rounded-xl text-center active:scale-95 transition-transform flex items-center justify-center gap-2"><i data-lucide="refresh-cw" class="w-4 h-4"></i> Refresh App (Clear Cache)</button>
+          <div class="pt-2 border-t" style="border-color: var(--card-border);"></div>
+          <p class="text-[8px] font-bold uppercase tracking-widest text-center" style="color: var(--text-muted);">Danger Zone</p>
+          <div class="pt-2 grid grid-cols-2 gap-2">
+            <button onclick="window.resetData('24h')" class="py-3 bg-orange-500/10 text-orange-500 font-bold text-[11px] rounded-xl text-center active:scale-95 transition-transform border border-orange-500/20">Wipe 24h Logs</button>
+            <button onclick="window.resetData('all')" class="py-3 bg-red-500/10 text-red-500 font-bold text-[11px] rounded-xl text-center active:scale-95 transition-transform border border-red-500/20">Wipe All Data</button>
+          </div>
+        </div>
+
+        <div class="premium-card p-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <i data-lucide="shield" class="w-4 h-4" style="color: var(--text-muted);"></i>
+              <span class="text-xs font-semibold" style="color: var(--text-main);">Privacy & Legal</span>
+            </div>
+          </div>
+          <div class="mt-3 space-y-2">
+            <a href="privacy.html" target="_blank" rel="noopener noreferrer" class="block w-full py-3 px-4 font-bold text-xs rounded-xl text-center active:scale-95 transition-transform border flex items-center justify-center gap-2" style="background: var(--input-bg); color: var(--text-muted); border-color: var(--card-border);">
+              <i data-lucide="file-text" class="w-4 h-4"></i> Privacy Policy
+            </a>
+            <p class="text-[9px] text-center" style="color: var(--text-muted);">Last updated: August 3, 2026</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="fixed bottom-0 left-0 right-0 z-40 px-3 pb-3 pointer-events-none" style="padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));">
+    <nav id="mainTabBar" class="relative max-w-md mx-auto dock-bar pointer-events-auto rounded-[28px] flex items-center justify-between px-2.5 py-2">
+      <div id="navIndicator" class="absolute top-1.5 bottom-1.5 rounded-2xl"></div>
+      <button onclick="window.switchTab('tracker')" id="tab-tracker" class="nav-btn nav-active flex-1 flex flex-col items-center gap-1 py-1.5 rounded-2xl"><i data-lucide="clock" class="tab-icon w-6 h-6"></i><span class="tab-label">Track</span></button>
+      <button onclick="window.switchTab('insights')" id="tab-insights" class="nav-btn flex-1 flex flex-col items-center gap-1 py-1.5 rounded-2xl"><i data-lucide="bar-chart-3" class="tab-icon w-6 h-6"></i><span class="tab-label">Data</span></button>
+      <button onclick="window.switchTab('history')" id="tab-history" class="nav-btn flex-1 flex flex-col items-center gap-1 py-1.5 rounded-2xl"><i data-lucide="list" class="tab-icon w-6 h-6"></i><span class="tab-label">Log</span></button>
+      <button onclick="window.switchTab('settings')" id="tab-settings" class="nav-btn flex-1 flex flex-col items-center gap-1 py-1.5 rounded-2xl"><i data-lucide="settings" class="tab-icon w-6 h-6"></i><span class="tab-label">Settings</span></button>
+    </nav>
+  </div>
+
+  <div id="sosInterrupterModal" class="hidden sheet" style="z-index: 25000;" onclick="if(event.target===this) window.closeSosInterrupter(false)">
+    <div class="sheet-panel">
+      <div class="sheet-handle"></div>
+      <div class="sheet-body space-y-4 text-center">
+        <div class="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center mx-auto text-amber-500 mt-2">
+          <i data-lucide="zap" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <span class="text-[10px] font-bold uppercase tracking-widest text-amber-500">Instant Pattern Break</span>
+          <h3 id="sosActionTitle" class="text-base font-bold mt-1" style="color: var(--text-main);">Drink a glass of cold water 💧</h3>
+          <p class="text-xs mt-1 leading-relaxed" style="color: var(--text-muted);">Urge dopamine spikes fade in 15 seconds. Give your brain a brief moment to reset.</p>
+        </div>
+
+        <div class="relative w-28 h-28 mx-auto flex items-center justify-center my-3">
+          <div id="sosPulseRing1" class="absolute inset-0 rounded-full border-2 border-amber-500/40 sos-pulse-ring"></div>
+          <div id="sosPulseRing2" class="absolute -inset-3 rounded-full border border-amber-500/20 sos-pulse-ring" style="animation-delay: 0.4s;"></div>
+          <div class="w-20 h-20 rounded-full bg-amber-500/15 border-2 border-amber-500 flex items-center justify-center shadow-[0_0_25px_var(--accent-glow)] z-10">
+            <span id="sosTimerNum" class="numeric-display text-4xl font-black text-amber-500 transition-transform duration-200">15</span>
+          </div>
+        </div>
+      </div>
+      <div class="sheet-footer flex-col">
+        <button onclick="window.closeSosInterrupter(true)" class="sheet-btn-primary" style="background: var(--accent); box-shadow: 0 8px 20px var(--accent-glow); display:flex; align-items:center; justify-content:center; gap:0.375rem;">
+          <i data-lucide="shield-check" class="w-4 h-4"></i> Craving Passed! (+1 Shield)
+        </button>
+        <button id="sosProceedBtn" onclick="window.closeSosInterrupter(false)" class="sheet-btn-ghost">Skip & Proceed to Log</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="triggerModal" class="hidden sheet" onclick="if(event.target===this) window.closeTriggerModal()">
+    <div class="sheet-panel">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <div class="w-[30px]"></div>
+        <h3 class="sheet-title">Edit Log Entry</h3>
+        <button onclick="window.closeTriggerModal()" class="sheet-close"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div class="sheet-body space-y-3.5">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="sheet-label" for="editLogDate">Date</label>
+            <div class="sheet-input"><input type="date" id="editLogDate" class="text-left font-bold" style="color: var(--text-main);"><i data-lucide="calendar" class="w-4 h-4 absolute right-3 pointer-events-none" style="color: var(--text-muted);"></i></div>
+          </div>
+          <div>
+            <label class="sheet-label" for="editLogTime">Time</label>
+            <div class="sheet-input"><input type="time" id="editLogTime" class="text-left font-bold" style="color: var(--text-main);"><i data-lucide="clock" class="w-4 h-4 absolute right-3 pointer-events-none" style="color: var(--text-muted);"></i></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex justify-between items-center mb-2"><p class="sheet-label mb-0">Craving Intensity</p><p id="editIntensityLabel" class="text-[10px] font-bold" style="color: var(--accent);">Moderate</p></div>
+          <div class="flex justify-between gap-2">
+            <button onclick="window.setEditIntensity(1)" id="editInt1" class="w-10 h-10 rounded-full border text-xs font-bold transition-all" style="border-color: var(--card-border); color: var(--text-main);">1</button>
+            <button onclick="window.setEditIntensity(2)" id="editInt2" class="w-10 h-10 rounded-full border text-xs font-bold transition-all" style="border-color: var(--card-border); color: var(--text-main);">2</button>
+            <button onclick="window.setEditIntensity(3)" id="editInt3" class="w-10 h-10 rounded-full border text-xs font-bold transition-all" style="border-color: var(--card-border); color: var(--text-main);">3</button>
+            <button onclick="window.setEditIntensity(4)" id="editInt4" class="w-10 h-10 rounded-full border text-xs font-bold transition-all" style="border-color: var(--card-border); color: var(--text-main);">4</button>
+            <button onclick="window.setEditIntensity(5)" id="editInt5" class="w-10 h-10 rounded-full border text-xs font-bold transition-all" style="border-color: var(--card-border); color: var(--text-main);">5</button>
+          </div>
+        </div>
+
+        <div>
+          <p class="sheet-label">How are you feeling?</p>
+          <div id="editMoodGrid" class="flex flex-wrap gap-2"></div>
+        </div>
+
+        <div>
+          <p class="sheet-label">Tags</p>
+          <div id="modalTriggerGrid" class="flex flex-wrap gap-2.5"></div>
+        </div>
+
+        <div>
+          <label class="sheet-label" for="editLogNote">Journal Note</label>
+          <textarea id="editLogNote" oninput="document.getElementById('editLogNoteCounter').innerText = this.value.length + '/200'" placeholder="Optional note (max 200 chars)..." maxlength="200" class="w-full p-2.5 rounded-xl border text-xs font-medium outline-none resize-none h-16" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);"></textarea>
+          <span id="editLogNoteCounter" class="text-[9px] font-bold mt-0.5 block text-right" style="color: var(--text-muted);">0/200</span>
+        </div>
+      </div>
+      <div class="sheet-footer">
+        <button onclick="window.deleteCurrentLog()" class="sheet-btn-danger"><i data-lucide="trash-2" class="w-4 h-4"></i> Delete Entry</button>
+        <button onclick="window.saveTags()" class="sheet-btn-primary">Save</button>
+      </div>
+    </div>
+  </div>
+  
+  <div id="smokeTakeover" class="hidden fixed inset-0 z-[20000] opacity-0 transition-opacity duration-500">
+    <div class="absolute inset-0 takeover-bg backdrop-blur-2xl cursor-pointer" onclick="window.closeSmokeTakeover()"></div>
+    <div class="absolute inset-0 flex flex-col">
+      <div class="flex items-center justify-between px-5 pt-[max(1.25rem,env(safe-area-inset-top))]">
+        <span class="text-[10px] font-extrabold uppercase tracking-[0.2em] flex items-center gap-2" style="color: var(--text-muted);"><i data-lucide="flame" class="w-3.5 h-3.5" style="color: var(--accent);"></i> Pause &amp; Reflect</span>
+        <button onclick="window.cancelSmokeTakeover(event)" class="sheet-close" title="Cancel"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div class="flex-1 flex flex-col items-center justify-center px-6 gap-7 pointer-events-none" style="padding-top: 0.25rem;">
+        <div class="relative flex items-center justify-center w-44 h-44">
+          <div class="absolute inset-0 rounded-full" style="background: var(--card-bg); border: 1px solid var(--card-border); box-shadow: 0 0 0 8px var(--input-bg), 0 0 70px var(--accent-glow), inset 0 1px 0 rgba(255,255,255,0.06);"></div>
+          <svg class="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 120 120"><circle cx="60" cy="60" r="54" fill="none" stroke="var(--card-border)" stroke-width="4"></circle><circle id="takeoverRing" cx="60" cy="60" r="54" fill="none" stroke="var(--accent)" stroke-width="6" stroke-dasharray="339.29" stroke-dashoffset="339.29" stroke-linecap="round" style="transition: stroke-dashoffset 1s linear; filter: drop-shadow(0 0 16px var(--accent-glow));"></circle></svg>
+          <div class="relative z-10 flex flex-col items-center">
+            <span id="takeoverNumber" class="numeric-display text-6xl font-light leading-none" style="color: var(--text-main);">6</span>
+            <span class="mt-1.5 text-[9px] font-bold uppercase tracking-[0.25em]" style="color: var(--text-muted);">seconds</span>
+          </div>
+        </div>
+        <div class="text-center max-w-[17rem]">
+          <p class="text-base font-bold tracking-tight" style="color: var(--text-main);">Light your cigarette.</p>
+          <p id="takeoverFact" class="mt-2 text-[11px] font-medium leading-relaxed opacity-0 transition-opacity duration-1000" style="color: var(--text-muted);">It's been -- since your last one.</p>
+        </div>
+      </div>
+      <div class="w-full max-w-md mx-auto px-4 pointer-events-auto" style="padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));">
+        <div class="rounded-[26px] border border-[var(--card-border)] bg-[var(--modal-bg)] shadow-[0_-10px_40px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.06)] px-4 pt-1 pb-4 max-h-[50vh] overflow-y-auto hide-scrollbar">
+          <div class="sheet-handle"></div>
+          <div class="mt-2">
+            <div class="flex items-center justify-between">
+              <span class="sheet-label">Craving Intensity</span>
+              <span id="takeoverIntensityLabel" class="text-[10px] font-extrabold uppercase tracking-wider" style="color: var(--accent);">Moderate</span>
+            </div>
+            <div class="mt-2.5 flex items-center justify-between gap-2 rounded-full border border-[var(--card-border)] bg-[var(--input-bg)] p-1.5">
+              <button onclick="window.setTakeoverIntensity(1)" id="toInt1" class="w-9 h-9 rounded-full border text-xs font-bold transition-all" style="border-color: var(--card-border); color: var(--text-main);">1</button>
+              <button onclick="window.setTakeoverIntensity(2)" id="toInt2" class="w-9 h-9 rounded-full border text-xs font-bold transition-all" style="border-color: var(--card-border); color: var(--text-main);">2</button>
+              <button onclick="window.setTakeoverIntensity(3)" id="toInt3" class="w-9 h-9 rounded-full border text-xs font-bold transition-all" style="border-color: var(--card-border); color: var(--text-main);">3</button>
+              <button onclick="window.setTakeoverIntensity(4)" id="toInt4" class="w-9 h-9 rounded-full border text-xs font-bold transition-all" style="border-color: var(--card-border); color: var(--text-main);">4</button>
+              <button onclick="window.setTakeoverIntensity(5)" id="toInt5" class="w-9 h-9 rounded-full border text-xs font-bold transition-all" style="border-color: var(--card-border); color: var(--text-main);">5</button>
+            </div>
+          </div>
+          <div class="mt-4">
+            <span class="sheet-label">How are you feeling?</span>
+            <div id="takeoverMoodGrid" class="mt-2.5 flex flex-wrap gap-2"></div>
+          </div>
+          <div class="mt-4">
+            <span class="sheet-label">Tap to tag <span class="normal-case tracking-normal font-semibold opacity-60">(optional)</span></span>
+            <div id="takeoverTagsGrid" class="mt-2.5 flex flex-wrap gap-2"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="statDetailModal" class="hidden sheet" onclick="if(event.target===this) window.closeStatDetail()">
+    <div class="sheet-panel">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <div class="flex items-center gap-3">
+          <div id="statDetailIcon" class="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-lg"><i data-lucide="info" class="w-6 h-6"></i></div>
+          <div class="flex-1 min-w-0">
+            <h3 id="statDetailTitle" class="sheet-title">Metric Insights</h3>
+            <p id="statDetailValue" class="numeric-display text-3xl font-bold mt-1 tracking-tight" style="color: var(--text-main);">--</p>
+          </div>
+        </div>
+        <button onclick="window.closeStatDetail()" class="sheet-close"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div class="sheet-body space-y-4">
+        <div class="rounded-2xl border-l-4 p-3.5" style="background-color: var(--input-bg); border-color: var(--accent);">
+          <p class="text-[8px] font-bold uppercase tracking-widest mb-1" style="color: var(--accent);">Why it matters</p>
+          <p id="statDetailDesc" class="text-xs font-medium leading-relaxed" style="color: var(--text-main);"></p>
+        </div>
+        <div id="statDetailProgressBox" class="space-y-1.5 hidden">
+          <div class="flex justify-between text-[10px] font-bold uppercase tracking-wider" style="color: var(--text-muted);">
+            <span id="statProgressLabel">Goal Progress</span>
+            <span id="statProgressPct">0%</span>
+          </div>
+          <div class="w-full h-2.5 rounded-full overflow-hidden" style="background-color: var(--input-bg);">
+            <div id="statProgressBar" class="h-full rounded-full transition-all duration-500" style="width: 0%; background: linear-gradient(90deg, #10B981, #34D399);"></div>
+          </div>
+        </div>
+        <div id="statDetailExtra" class="space-y-2.5 text-xs pt-1"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="patternIntelModal" class="hidden sheet" onclick="if(event.target===this) window.closePatternIntel()">
+    <div class="sheet-panel">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, rgba(56,189,248,0.15), rgba(139,92,246,0.15));"><i data-lucide="brain" class="w-4 h-4" style="color: #38BDF8;"></i></div>
+          <div>
+            <h3 class="text-sm font-bold uppercase tracking-widest" style="color: var(--text-main);">Pattern Intelligence</h3>
+            <p class="text-[9px] font-semibold" style="color: var(--text-muted);">Your smoking blueprint</p>
+          </div>
+        </div>
+        <button onclick="window.closePatternIntel()" class="sheet-close"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div class="sheet-body space-y-3">
+        <!-- Hero Intelligence -->
+        <div class="rounded-3xl p-4 relative overflow-hidden" style="background: linear-gradient(135deg, rgba(56,189,248,0.12) 0%, rgba(139,92,246,0.16) 100%); border: 1px solid rgba(139,92,246,0.22);">
+          <div class="absolute -top-6 -right-6 w-24 h-24 rounded-full opacity-30" style="background: radial-gradient(circle, #38BDF8 0%, transparent 70%);"></div>
+          <div class="flex items-center gap-3.5 relative">
+            <div class="relative shrink-0 w-16 h-16">
+              <svg class="w-16 h-16 -rotate-90" viewBox="0 0 64 64">
+                <circle cx="32" cy="32" r="28" fill="none" stroke="rgba(139,92,246,0.2)" stroke-width="5"></circle>
+                <circle id="intelScoreRing" cx="32" cy="32" r="28" fill="none" stroke="#38BDF8" stroke-width="5" stroke-linecap="round" stroke-dasharray="175.93" stroke-dashoffset="175.93" style="transition: stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1); filter: drop-shadow(0 0 6px rgba(56,189,248,0.5));"></circle>
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <div class="text-center">
+                  <span id="intelScore" class="numeric-display text-base font-bold leading-none" style="color: var(--text-main);">--</span>
+                  <p class="text-[7px] font-bold uppercase tracking-widest mt-0.5" style="color: var(--text-muted);">Insight</p>
+                </div>
+              </div>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5" style="color: #38BDF8;"><i data-lucide="brain" class="w-3 h-3"></i> Key Insight</p>
+              <p id="intelHeroText" class="text-[11px] font-semibold leading-snug mt-1" style="color: var(--text-main);">Analyzing your patterns...</p>
+            </div>
+          </div>
+        </div>
+        <!-- Weekly Comparison -->
+        <div class="premium-card p-3.5">
+          <p class="text-[9px] font-bold uppercase tracking-widest mb-2 flex items-center gap-1.5" style="color: var(--text-muted);"><i data-lucide="calendar-range" class="w-3 h-3" style="color: #38BDF8;"></i> This Week vs Last</p>
+          <div class="flex items-center gap-2">
+            <div class="flex-1 text-center">
+              <p id="patternThisWeek" class="numeric-display text-2xl font-bold" style="color: var(--text-main);">0</p>
+              <p class="text-[8px] font-bold" style="color: var(--text-muted);">This Week</p>
+            </div>
+            <div id="patternWeekArrow" class="text-lg font-bold">→</div>
+            <div class="flex-1 text-center">
+              <p id="patternLastWeek" class="numeric-display text-2xl font-bold" style="color: var(--text-main);">0</p>
+              <p class="text-[8px] font-bold" style="color: var(--text-muted);">Last Week</p>
+            </div>
+            <div id="patternWeekChange" class="px-2.5 py-1 rounded-full text-[10px] font-bold" style="background: var(--input-bg);">0%</div>
+          </div>
+        </div>
+        <!-- Day Pattern -->
+        <div class="premium-card p-3.5">
+          <p class="text-[9px] font-bold uppercase tracking-widest mb-2 flex items-center gap-1.5" style="color: var(--text-muted);"><i data-lucide="bar-chart-3" class="w-3 h-3" style="color: #38BDF8;"></i> Day Pattern</p>
+          <div id="patternDayBars" class="flex items-end gap-1 h-12"></div>
+          <p id="patternDayInsight" class="text-[9px] font-bold mt-1.5" style="color: var(--text-main);"></p>
+        </div>
+        <!-- Top Mood Triggers -->
+        <div class="premium-card p-3.5">
+          <p class="text-[9px] font-bold uppercase tracking-widest mb-2 flex items-center gap-1.5" style="color: var(--text-muted);"><i data-lucide="smile" class="w-3 h-3" style="color: #38BDF8;"></i> Mood Triggers</p>
+          <div id="patternMoodTriggers" class="space-y-2"></div>
+        </div>
+        <!-- Risk Combos -->
+        <div class="premium-card p-3.5">
+          <p class="text-[9px] font-bold uppercase tracking-widest mb-2 flex items-center gap-1.5" style="color: var(--text-muted);"><i data-lucide="alert-triangle" class="w-3 h-3" style="color: #38BDF8;"></i> Risk Zones</p>
+          <div id="patternRiskCombos" class="space-y-1.5"></div>
+        </div>
+        <!-- Trigger Trends -->
+        <div class="premium-card p-3.5">
+          <p class="text-[9px] font-bold uppercase tracking-widest mb-2 flex items-center gap-1.5" style="color: var(--text-muted);"><i data-lucide="trending-up" class="w-3 h-3" style="color: #38BDF8;"></i> Trigger Trends</p>
+          <div id="patternTriggerTrends" class="space-y-1.5"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="healthTimelineModal" class="hidden sheet" onclick="if(event.target===this) window.closeHealthTimeline()">
+    <div class="sheet-panel">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, rgba(239,68,68,0.15), rgba(245,158,11,0.15));"><i data-lucide="heart-pulse" class="w-4 h-4 text-red-400"></i></div>
+          <div>
+            <h3 class="text-sm font-bold uppercase tracking-widest" style="color: var(--text-main);">Your Body's Recovery</h3>
+            <p class="text-[9px] font-semibold" style="color: var(--text-muted);">What your body gains as gaps widen</p>
+          </div>
+        </div>
+        <button onclick="window.closeHealthTimeline()" class="sheet-close"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div class="sheet-body">
+        <!-- Recovery Hero Ring -->
+        <div class="rounded-3xl p-4 mb-3 relative overflow-hidden text-center" style="background: linear-gradient(135deg, rgba(239,68,68,0.12) 0%, rgba(16,185,129,0.14) 100%); border: 1px solid rgba(16,185,129,0.22);">
+          <div class="absolute -top-8 -right-8 w-28 h-28 rounded-full opacity-25" style="background: radial-gradient(circle, #10B981 0%, transparent 70%);"></div>
+          <div class="relative inline-flex items-center justify-center">
+            <svg class="w-36 h-36 -rotate-90" viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r="52" fill="none" stroke="var(--card-border)" stroke-width="9"></circle>
+              <circle id="milestoneRing" cx="60" cy="60" r="52" fill="none" stroke="#10B981" stroke-width="9" stroke-linecap="round" stroke-dasharray="326.73" stroke-dashoffset="326.73" style="transition: stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1); filter: drop-shadow(0 0 8px rgba(16,185,129,0.5));"></circle>
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center">
+              <span id="milestoneRecoveryPct" class="numeric-display text-5xl font-bold leading-none" style="color: var(--text-main);">0</span>
+              <span class="text-[9px] font-bold uppercase tracking-widest mt-1.5" style="color: var(--text-muted);">Recovery</span>
+            </div>
+          </div>
+          <div class="flex items-center justify-center gap-8 mt-4 relative">
+            <div class="text-center">
+              <p class="text-[8px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Longest Gap</p>
+              <p id="milestoneBestGap" class="numeric-display text-xl font-bold mt-0.5" style="color: var(--text-main);">--</p>
+            </div>
+            <div class="w-px h-8" style="background: var(--card-border);"></div>
+            <div class="text-center">
+              <p class="text-[8px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Milestones</p>
+              <p id="milestoneCountModal" class="numeric-display text-xl font-bold mt-0.5" style="color: var(--text-main);">0/9</p>
+            </div>
+          </div>
+        </div>
+        <div id="milestoneTimeline" class="health-timeline space-y-0"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="shieldDashboardModal" class="hidden sheet" onclick="if(event.target===this) window.closeShieldDashboard()">
+    <div class="sheet-panel">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <div class="flex items-center gap-2"><i data-lucide="shield-check" class="w-5 h-5" style="color: var(--accent);"></i><h3 class="text-sm font-bold uppercase tracking-widest" style="color: var(--accent);">Victory Gallery</h3></div>
+        <button onclick="window.closeShieldDashboard()" class="sheet-close"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div class="sheet-body space-y-5">
+
+    <div class="grid grid-cols-3 gap-2.5">
+      <div class="premium-card p-3 text-center">
+        <div class="w-9 h-9 rounded-xl mx-auto mb-1.5 flex items-center justify-center" style="background: rgba(56,189,248,0.12); color: #38BDF8;"><i data-lucide="swords" class="w-4 h-4"></i></div>
+        <div id="modalShieldCount" class="numeric-display text-2xl font-bold text-sky-500">0</div>
+        <div class="text-[9px] font-bold uppercase tracking-wider mt-1" style="color: var(--text-muted);">Total Defeats</div>
+      </div>
+      <div class="premium-card p-3 text-center">
+        <div class="w-9 h-9 rounded-xl mx-auto mb-1.5 flex items-center justify-center" style="background: rgba(245,158,11,0.12); color: #F59E0B;"><i data-lucide="flame" class="w-4 h-4"></i></div>
+        <div id="modalShieldStreak" class="numeric-display text-2xl font-bold text-amber-500">0</div>
+        <div class="text-[9px] font-bold uppercase tracking-wider mt-1" style="color: var(--text-muted);">Best Streak</div>
+      </div>
+      <div class="premium-card p-3 text-center">
+        <div class="w-9 h-9 rounded-xl mx-auto mb-1.5 flex items-center justify-center" style="background: rgba(16,185,129,0.12); color: #10B981;"><i data-lucide="clock" class="w-4 h-4"></i></div>
+        <div id="modalShieldMins" class="numeric-display text-2xl font-bold text-emerald-500">0</div>
+        <div class="text-[9px] font-bold uppercase tracking-wider mt-1" style="color: var(--text-muted);">Time Resisted</div>
+      </div>
+    </div>
+
+    <div class="premium-card p-4 flex flex-col items-center">
+      <p class="sheet-label text-center mb-3" style="color: var(--accent);">Next Badge</p>
+      <div class="relative flex justify-center items-center w-28 h-28 rounded-full" style="background: var(--input-bg); box-shadow: inset 0 2px 10px rgba(0,0,0,0.3);">
+        <svg class="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="44" fill="transparent" stroke="var(--card-border)" stroke-width="6"></circle>
+          <circle id="shieldProgressRing" cx="50" cy="50" r="44" fill="transparent" stroke="var(--accent)" stroke-width="6" stroke-dasharray="276.46" stroke-dashoffset="276.46" stroke-linecap="round" style="transition: stroke-dashoffset 0.8s ease-out; filter: drop-shadow(0 0 8px var(--accent-glow));"></circle>
+        </svg>
+        <div class="text-center z-10">
+          <span id="nextBadgeName" class="text-[10px] font-bold uppercase tracking-wider block" style="color: var(--accent);">First Win</span>
+          <span id="progressToNext" class="text-xs font-bold" style="color: var(--text-main);">0/1</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="space-y-2">
+      <div class="flex items-center gap-2 mb-2">
+        <div class="w-2 h-6 rounded-full" style="background: linear-gradient(180deg, #10B981, #34D399);"></div>
+        <h4 class="text-xs font-bold uppercase tracking-widest" style="color: var(--text-muted);">Quick Wins</h4>
+        <span class="text-[9px] px-2 py-0.5 rounded-full ml-auto" style="background: rgba(16,185,129,0.1); color: #10B981;">Getting Started</span>
+      </div>
+      <div class="grid grid-cols-3 gap-2">
+        <div id="badge1" class="badge-card relative flex flex-col items-center p-2 rounded-xl transition-all duration-500 border opacity-40 grayscale" data-shields="1" style="background: var(--input-bg); border-color: var(--card-border);">
+          <div class="absolute top-1 right-1"><i data-lucide="lock" class="badge-lock w-3 h-3" style="color: var(--text-muted);"></i></div>
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-1" style="background: linear-gradient(135deg, #10B981, #34D399);"><i data-lucide="zap" class="w-4 h-4 text-white"></i></div>
+          <span class="text-[9px] font-bold text-center leading-tight" style="color: var(--text-main);">First Victory</span>
+          <span class="text-[8px]" style="color: var(--text-muted);">1 Shield</span>
+        </div>
+        <div id="badge3" class="badge-card relative flex flex-col items-center p-2 rounded-xl transition-all duration-500 border opacity-40 grayscale" data-shields="3" style="background: var(--input-bg); border-color: var(--card-border);">
+          <div class="absolute top-1 right-1"><i data-lucide="lock" class="badge-lock w-3 h-3" style="color: var(--text-muted);"></i></div>
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-1" style="background: linear-gradient(135deg, #10B981, #34D399);"><i data-lucide="flame" class="w-4 h-4 text-white"></i></div>
+          <span class="text-[9px] font-bold text-center leading-tight" style="color: var(--text-main);">On Fire</span>
+          <span class="text-[8px]" style="color: var(--text-muted);">3 Shields</span>
+        </div>
+        <div id="badge5" class="badge-card relative flex flex-col items-center p-2 rounded-xl transition-all duration-500 border opacity-40 grayscale" data-shields="5" style="background: var(--input-bg); border-color: var(--card-border);">
+          <div class="absolute top-1 right-1"><i data-lucide="lock" class="badge-lock w-3 h-3" style="color: var(--text-muted);"></i></div>
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-1" style="background: linear-gradient(135deg, #10B981, #34D399);"><i data-lucide="trending-up" class="w-4 h-4 text-white"></i></div>
+          <span class="text-[9px] font-bold text-center leading-tight" style="color: var(--text-main);">Momentum</span>
+          <span class="text-[8px]" style="color: var(--text-muted);">5 Shields</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="space-y-2">
+      <div class="flex items-center gap-2 mb-2">
+        <div class="w-2 h-6 rounded-full" style="background: linear-gradient(180deg, #3B82F6, #60A5FA);"></div>
+        <h4 class="text-xs font-bold uppercase tracking-widest" style="color: var(--text-muted);">Building Habit</h4>
+        <span class="text-[9px] px-2 py-0.5 rounded-full ml-auto" style="background: rgba(59,130,246,0.1); color: #3B82F6;">Consistency</span>
+      </div>
+      <div class="grid grid-cols-3 gap-2">
+        <div id="badge10" class="badge-card relative flex flex-col items-center p-2 rounded-xl transition-all duration-500 border opacity-40 grayscale" data-shields="10" style="background: var(--input-bg); border-color: var(--card-border);">
+          <div class="absolute top-1 right-1"><i data-lucide="lock" class="badge-lock w-3 h-3" style="color: var(--text-muted);"></i></div>
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-1" style="background: linear-gradient(135deg, #3B82F6, #60A5FA);"><i data-lucide="award" class="w-4 h-4 text-white"></i></div>
+          <span class="text-[9px] font-bold text-center leading-tight" style="color: var(--text-main);">Iron Will</span>
+          <span class="text-[8px]" style="color: var(--text-muted);">10 Shields</span>
+        </div>
+        <div id="badge15" class="badge-card relative flex flex-col items-center p-2 rounded-xl transition-all duration-500 border opacity-40 grayscale" data-shields="15" style="background: var(--input-bg); border-color: var(--card-border);">
+          <div class="absolute top-1 right-1"><i data-lucide="lock" class="badge-lock w-3 h-3" style="color: var(--text-muted);"></i></div>
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-1" style="background: linear-gradient(135deg, #3B82F6, #60A5FA);"><i data-lucide="target" class="w-4 h-4 text-white"></i></div>
+          <span class="text-[9px] font-bold text-center leading-tight" style="color: var(--text-main);">Focused</span>
+          <span class="text-[8px]" style="color: var(--text-muted);">15 Shields</span>
+        </div>
+        <div id="badge25" class="badge-card relative flex flex-col items-center p-2 rounded-xl transition-all duration-500 border opacity-40 grayscale" data-shields="25" style="background: var(--input-bg); border-color: var(--card-border);">
+          <div class="absolute top-1 right-1"><i data-lucide="lock" class="badge-lock w-3 h-3" style="color: var(--text-muted);"></i></div>
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-1" style="background: linear-gradient(135deg, #3B82F6, #60A5FA);"><i data-lucide="shield" class="w-4 h-4 text-white"></i></div>
+          <span class="text-[9px] font-bold text-center leading-tight" style="color: var(--text-main);">Guardian</span>
+          <span class="text-[8px]" style="color: var(--text-muted);">25 Shields</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="space-y-2">
+      <div class="flex items-center gap-2 mb-2">
+        <div class="w-2 h-6 rounded-full" style="background: linear-gradient(180deg, #8B5CF6, #A78BFA);"></div>
+        <h4 class="text-xs font-bold uppercase tracking-widest" style="color: var(--text-muted);">Mastery</h4>
+        <span class="text-[9px] px-2 py-0.5 rounded-full ml-auto" style="background: rgba(139,92,246,0.1); color: #8B5CF6;">Excellence</span>
+      </div>
+      <div class="grid grid-cols-3 gap-2">
+        <div id="badge50" class="badge-card relative flex flex-col items-center p-2 rounded-xl transition-all duration-500 border opacity-40 grayscale" data-shields="50" style="background: var(--input-bg); border-color: var(--card-border);">
+          <div class="absolute top-1 right-1"><i data-lucide="lock" class="badge-lock w-3 h-3" style="color: var(--text-muted);"></i></div>
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-1" style="background: linear-gradient(135deg, #8B5CF6, #A78BFA);"><i data-lucide="trophy" class="w-4 h-4 text-white"></i></div>
+          <span class="text-[9px] font-bold text-center leading-tight" style="color: var(--text-main);">Unshakable</span>
+          <span class="text-[8px]" style="color: var(--text-muted);">50 Shields</span>
+        </div>
+        <div id="badge75" class="badge-card relative flex flex-col items-center p-2 rounded-xl transition-all duration-500 border opacity-40 grayscale" data-shields="75" style="background: var(--input-bg); border-color: var(--card-border);">
+          <div class="absolute top-1 right-1"><i data-lucide="lock" class="badge-lock w-3 h-3" style="color: var(--text-muted);"></i></div>
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-1" style="background: linear-gradient(135deg, #8B5CF6, #A78BFA);"><i data-lucide="star" class="w-4 h-4 text-white"></i></div>
+          <span class="text-[9px] font-bold text-center leading-tight" style="color: var(--text-main);">Champion</span>
+          <span class="text-[8px]" style="color: var(--text-muted);">75 Shields</span>
+        </div>
+        <div id="badge100" class="badge-card relative flex flex-col items-center p-2 rounded-xl transition-all duration-500 border opacity-40 grayscale" data-shields="100" style="background: var(--input-bg); border-color: var(--card-border);">
+          <div class="absolute top-1 right-1"><i data-lucide="lock" class="badge-lock w-3 h-3" style="color: var(--text-muted);"></i></div>
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-1" style="background: linear-gradient(135deg, #8B5CF6, #A78BFA);"><i data-lucide="crown" class="w-4 h-4 text-white"></i></div>
+          <span class="text-[9px] font-bold text-center leading-tight" style="color: var(--text-main);">Master</span>
+          <span class="text-[8px]" style="color: var(--text-muted);">100 Shields</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="space-y-2 pb-4">
+      <div class="flex items-center gap-2 mb-2">
+        <div class="w-2 h-6 rounded-full" style="background: linear-gradient(180deg, #F59E0B, #FBBF24);"></div>
+        <h4 class="text-xs font-bold uppercase tracking-widest" style="color: var(--text-muted);">Elite</h4>
+        <span class="text-[9px] px-2 py-0.5 rounded-full ml-auto" style="background: rgba(245,158,11,0.1); color: #F59E0B;">Legendary</span>
+      </div>
+      <div class="grid grid-cols-3 gap-2">
+        <div id="badge150" class="badge-card relative flex flex-col items-center p-2 rounded-xl transition-all duration-500 border opacity-40 grayscale" data-shields="150" style="background: var(--input-bg); border-color: var(--card-border);">
+          <div class="absolute top-1 right-1"><i data-lucide="lock" class="badge-lock w-3 h-3" style="color: var(--text-muted);"></i></div>
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-1" style="background: linear-gradient(135deg, #F59E0B, #FBBF24);"><i data-lucide="gem" class="w-4 h-4 text-white"></i></div>
+          <span class="text-[9px] font-bold text-center leading-tight" style="color: var(--text-main);">Legendary</span>
+          <span class="text-[8px]" style="color: var(--text-muted);">150 Shields</span>
+        </div>
+        <div id="badge200" class="badge-card relative flex flex-col items-center p-2 rounded-xl transition-all duration-500 border opacity-40 grayscale" data-shields="200" style="background: var(--input-bg); border-color: var(--card-border);">
+          <div class="absolute top-1 right-1"><i data-lucide="lock" class="badge-lock w-3 h-3" style="color: var(--text-muted);"></i></div>
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-1" style="background: linear-gradient(135deg, #F59E0B, #FBBF24);"><i data-lucide="zap" class="w-4 h-4 text-white"></i></div>
+          <span class="text-[9px] font-bold text-center leading-tight" style="color: var(--text-main);">Invincible</span>
+          <span class="text-[8px]" style="color: var(--text-muted);">200 Shields</span>
+        </div>
+        <div id="badge300" class="badge-card relative flex flex-col items-center p-2 rounded-xl transition-all duration-500 border opacity-40 grayscale" data-shields="300" style="background: var(--input-bg); border-color: var(--card-border);">
+          <div class="absolute top-1 right-1"><i data-lucide="lock" class="badge-lock w-3 h-3" style="color: var(--text-muted);"></i></div>
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-1" style="background: linear-gradient(135deg, #F59E0B, #FBBF24);"><i data-lucide="infinity" class="w-4 h-4 text-white"></i></div>
+          <span class="text-[9px] font-bold text-center leading-tight" style="color: var(--text-main);">Transcendent</span>
+          <span class="text-[8px]" style="color: var(--text-muted);">300 Shields</span>
+        </div>
+      </div>
+    </div>
+    </div>
+  </div>
+</div>
+
+  <div id="waveModal" class="hidden sheet" onclick="if(event.target===this) window.closeWaveModal()">
+    <div class="sheet-panel">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <div class="w-[30px]"></div>
+        <h3 class="sheet-title">Ride It Out</h3>
+        <button onclick="window.closeWaveModal()" class="sheet-close"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div class="sheet-body">
+        <p class="text-[11px] leading-relaxed text-center mb-4" style="color: var(--text-muted);">Cravings usually peak and pass within 3 to 5 minutes.<br>How long do you want to hold on?</p>
+        <div class="grid grid-cols-3 gap-3">
+          <button onclick="window.startWave(5)" class="py-4 flex flex-col items-center justify-center rounded-2xl bg-emerald-500/10 border border-emerald-500/20 active:scale-95 transition-transform text-emerald-500 font-bold">
+            <span class="numeric-display text-xl">5</span>
+            <span class="text-[9px] uppercase tracking-wider">Mins</span>
+          </button>
+          <button onclick="window.startWave(10)" class="relative py-4 flex flex-col items-center justify-center rounded-2xl bg-emerald-500/10 border border-emerald-500/20 active:scale-95 transition-transform text-emerald-500 font-bold overflow-hidden">
+            <div class="absolute top-0 inset-x-0 bg-emerald-500 text-white text-[8px] uppercase tracking-widest py-0.5 font-bold">Recommended</div>
+            <span class="numeric-display text-xl mt-3">10</span>
+            <span class="text-[9px] uppercase tracking-wider">Mins</span>
+          </button>
+          <button onclick="window.startWave(20)" class="py-4 flex flex-col items-center justify-center rounded-2xl bg-emerald-500/10 border border-emerald-500/20 active:scale-95 transition-transform text-emerald-500 font-bold"><span class="numeric-display text-xl">20</span><span class="text-[9px] uppercase tracking-wider">Mins</span></button>
+        </div>
+      </div>
+      <div class="sheet-footer">
+        <button onclick="window.closeWaveModal()" class="sheet-btn-ghost">Cancel</button>
+      </div>
+    </div>
+  </div>
+  <div id="mapModal" class="hidden fixed inset-0 z-50 flex flex-col p-4 backdrop-blur-md" style="background-color: var(--overlay-bg);"><div class="flex justify-between items-center mb-4 mt-8 px-2"><h3 class="text-lg font-bold" style="color: var(--text-main);">Thermal View</h3><button onclick="window.closeMapModal()" class="text-xs px-4 py-2 rounded-full font-bold active:scale-95 border" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);">Done</button></div><div id="mapModalContainer" class="w-full flex-1 rounded-3xl overflow-hidden shadow-2xl" style="border: 1px solid var(--card-border);"></div></div>
+  <div id="toastContainer" class="fixed top-4 left-0 right-0 z-[30000] flex flex-col items-center justify-start gap-2 pointer-events-none px-6" style="padding-top: env(safe-area-inset-top);"></div>
+  <!-- MONEY VISUALIZER MODAL -->
+  <div id="moneyVisualizerModal" class="hidden sheet" onclick="if(event.target===this) window.closeMoneyVisualizer()">
+    <div class="sheet-panel" style="max-height: 85vh;">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <p class="sheet-title"><i data-lucide="piggy-bank" class="w-3.5 h-3.5 inline-block mr-1 align-middle" style="color: var(--accent);"></i> What Your Savings Can Buy</p>
+        <button onclick="window.closeMoneyVisualizer()" class="sheet-close"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div class="sheet-body">
+        <div class="text-center mb-5">
+          <p class="text-[9px] font-bold uppercase tracking-widest mb-1" style="color: var(--text-muted);">Total Saved</p>
+          <p id="moneyTotalSaved" class="numeric-display text-3xl font-black" style="color: var(--accent);">AED 0</p>
+        </div>
+        <p class="text-[8px] font-bold uppercase tracking-widest mb-2 px-1" style="color: var(--text-muted);">Equivalent To</p>
+        <div id="moneyEquivGrid" class="money-equiv-grid mb-5"></div>
+        <div class="p-3.5 rounded-2xl border" style="background: var(--input-bg); border-color: var(--card-border);">
+          <p class="text-[8px] font-bold uppercase tracking-widest mb-2" style="color: var(--text-muted);">My Savings Goal</p>
+          <div class="flex items-center gap-2 mb-3">
+            <div class="goal-ring">
+              <svg width="100" height="100" viewBox="0 0 100 100">
+                <circle class="goal-ring-bg" cx="50" cy="50" r="42"></circle>
+                <circle id="goalRingFill" class="goal-ring-fill" cx="50" cy="50" r="42" stroke-dasharray="263.89" stroke-dashoffset="263.89"></circle>
+              </svg>
+              <div class="goal-ring-text">
+                <span id="goalRingPct" class="goal-ring-pct">0%</span>
+                <span class="goal-ring-label">of goal</span>
+              </div>
+            </div>
+            <div class="flex-1 space-y-2">
+              <div>
+                <label class="text-[8px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Item Name</label>
+                <input id="goalItemName" type="text" placeholder="e.g., PS5, New Phone" onchange="window.saveGoalSettings()" class="w-full p-2 rounded-xl border text-xs font-semibold outline-none mt-0.5" style="background: var(--bg-body); color: var(--text-main); border-color: var(--card-border);">
+              </div>
+              <div>
+                <label class="text-[8px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Target Amount (<span id="goalCurrencyLabel">AED</span>)</label>
+                <input id="goalTargetAmount" type="number" placeholder="e.g., 2000" onchange="window.saveGoalSettings()" class="w-full p-2 rounded-xl border text-xs font-semibold outline-none mt-0.5 numeric-display" style="background: var(--bg-body); color: var(--text-main); border-color: var(--card-border);">
+              </div>
+            </div>
+          </div>
+          <p id="goalStatusText" class="text-[9px] text-center font-bold" style="color: var(--text-muted);">Set a goal to track your savings progress</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BREATHING EXERCISES MODAL -->
+  <div id="breathingModal" class="hidden sheet" onclick="if(event.target===this) window.closeBreathingModal()">
+    <div class="sheet-panel" style="max-height: 90vh;">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <p class="sheet-title"><i data-lucide="wind" class="w-3.5 h-3.5 inline-block mr-1 align-middle" style="color: var(--accent);"></i> Breathe</p>
+        <button onclick="window.closeBreathingModal()" class="sheet-close"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div class="sheet-body flex flex-col items-center">
+        <!-- Exercise Selector -->
+        <div id="breathSelector" class="w-full space-y-2 mb-4">
+          <button onclick="window.selectBreathing('478')" class="w-full p-3 rounded-2xl border text-left active:scale-[0.98] transition-all flex items-center gap-3" style="background: var(--input-bg); border-color: var(--card-border);">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background: rgba(139,92,246,0.12);"><span class="text-lg">🌊</span></div>
+            <div><p class="text-[11px] font-bold" style="color: var(--text-main);">4-7-8 Relaxation</p><p class="text-[9px]" style="color: var(--text-muted);">Calm anxiety. Inhale 4s, hold 7s, exhale 8s.</p></div>
+          </button>
+          <button onclick="window.selectBreathing('box')" class="w-full p-3 rounded-2xl border text-left active:scale-[0.98] transition-all flex items-center gap-3" style="background: var(--input-bg); border-color: var(--card-border);">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background: rgba(56,189,248,0.12);"><span class="text-lg">📦</span></div>
+            <div><p class="text-[11px] font-bold" style="color: var(--text-main);">Box Breathing</p><p class="text-[9px]" style="color: var(--text-muted);">Focus & stress relief. 4-4-4-4 rhythm.</p></div>
+          </button>
+          <button onclick="window.selectBreathing('quick')" class="w-full p-3 rounded-2xl border text-left active:scale-[0.98] transition-all flex items-center gap-3" style="background: var(--input-bg); border-color: var(--card-border);">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background: rgba(16,185,129,0.12);"><span class="text-lg">⚡</span></div>
+            <div><p class="text-[11px] font-bold" style="color: var(--text-main);">Quick Craving Buster</p><p class="text-[9px]" style="color: var(--text-muted);">60 seconds. 3 deep breaths to beat the urge.</p></div>
+          </button>
+          <button onclick="window.selectBreathing('wave')" class="w-full p-3 rounded-2xl border text-left active:scale-[0.98] transition-all flex items-center gap-3" style="background: var(--input-bg); border-color: var(--card-border);">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background: rgba(16,185,129,0.12);"><span class="text-lg">🛡️</span></div>
+            <div><p class="text-[11px] font-bold" style="color: var(--text-main);">Wave Ride</p><p class="text-[9px]" style="color: var(--text-muted);">5, 10 or 20 min guided ride with breathing cues.</p></div>
+          </button>
+        </div>
+        <!-- Active Exercise View -->
+        <div id="breathActive" class="hidden w-full flex flex-col items-center">
+          <p id="breathExerciseName" class="text-[10px] font-bold uppercase tracking-widest mb-4" style="color: var(--text-muted);"></p>
+          <div id="breathCircle" class="breath-circle mb-4" style="background: var(--input-bg); border: 2px solid var(--card-border);">
+            <div class="text-center">
+              <p id="breathPhaseText" class="breath-phase-text text-sm font-bold uppercase tracking-wider mb-1" style="color: var(--accent);">Ready</p>
+              <p id="breathTimerText" class="breath-timer-text text-3xl font-black" style="color: var(--text-main);">0</p>
+            </div>
+          </div>
+          <p id="breathCycleInfo" class="text-[9px] font-bold mb-4" style="color: var(--text-muted);">Cycle 1 of 4</p>
+          <div class="flex gap-3 w-full">
+            <button id="breathPauseBtn" onclick="window.toggleBreathPause()" class="flex-1 py-3 rounded-2xl border text-[10px] font-bold uppercase tracking-wider active:scale-95 transition-all" style="background: var(--input-bg); border-color: var(--card-border); color: var(--text-main);">Pause</button>
+            <button onclick="window.stopBreathing()" class="flex-1 py-3 rounded-2xl border text-[10px] font-bold uppercase tracking-wider active:scale-95 transition-all" style="background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.25); color: #EF4444;">Stop</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RELAPSE FLOW MODAL -->
+  <div id="relapseModal" class="hidden sheet" onclick="if(event.target===this) window.closeRelapseModal()">
+    <div class="sheet-panel" style="max-height: 85vh;">
+      <div class="sheet-handle"></div>
+      <div class="sheet-body flex flex-col items-center text-center pt-2">
+        <div id="relapseIconWrap" class="w-20 h-20 rounded-full flex items-center justify-center mb-4 relapse-celebrate" style="background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(56,189,248,0.15)); border: 2px solid rgba(16,185,129,0.3);">
+          <span class="text-4xl">🌱</span>
+        </div>
+        <h2 class="text-lg font-bold mb-1" style="color: var(--text-main); font-family: 'Clash Display', sans-serif;">It's Okay.</h2>
+        <p id="relapseMessage" class="text-[11px] leading-relaxed mb-4 max-w-[260px]" style="color: var(--text-muted);"></p>
+        <div id="relapseStats" class="w-full space-y-2 mb-5"></div>
+        <div class="w-full space-y-2.5">
+          <button onclick="window.startRelapseRecovery()" class="w-full py-3.5 rounded-2xl font-bold text-[11px] uppercase tracking-wider active:scale-[0.98] transition-all flex items-center justify-center gap-2" style="background: var(--accent); color: var(--accent-text); box-shadow: 0 6px 20px var(--accent-glow);">
+            <i data-lucide="play" class="w-4 h-4"></i> Start Recovery Wave
+          </button>
+          <button onclick="window.closeRelapseModal()" class="w-full py-3 rounded-2xl font-bold text-[10px] uppercase tracking-wider active:scale-[0.98] transition-all border" style="background: var(--input-bg); border-color: var(--card-border); color: var(--text-main);">
+            Just Continue
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="confirmModal" class="hidden fixed inset-0 backdrop-blur-sm z-[10000] flex items-center justify-center p-6" style="background-color: var(--overlay-bg);" onclick="if(event.target===this) window.closeConfirmModal()">
+    <div class="dialog-card p-6 space-y-4 max-w-xs w-full text-center" style="padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));">
+      <div id="confirmIconWrap" class="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center" style="background-color: rgba(239,68,68,0.1);">
+        <i data-lucide="alert-triangle" id="confirmIcon" class="w-7 h-7 text-red-500"></i>
+      </div>
+      <h3 id="confirmTitle" class="text-sm font-bold" style="color: var(--text-main);">Are you sure?</h3>
+      <p id="confirmMessage" class="text-xs leading-relaxed" style="color: var(--text-muted);"></p>
+      <div class="flex gap-3 pt-1">
+        <button onclick="window.closeConfirmModal()" class="flex-1 py-3 rounded-xl text-xs font-bold active:scale-95 transition-transform" style="background-color: var(--input-bg); color: var(--text-main);">Cancel</button>
+        <button onclick="window.confirmYes()" id="confirmYesBtn" class="flex-1 py-3 rounded-xl text-xs font-bold active:scale-95 transition-transform" style="background-color: #EF4444; color: #fff;">Confirm</button>
+      </div>
+    </div>
+  </div>
+  <div id="pinSetupModal" class="hidden fixed inset-0 backdrop-blur-sm z-[10000] flex items-center justify-center p-6" style="background-color: var(--overlay-bg);" onclick="if(event.target===this) window.closePinSetupModal()"><div class="dialog-card p-6 space-y-4 max-w-xs w-full text-center" style="padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));"><i data-lucide="lock-keyhole" class="w-8 h-8 mx-auto" style="color: var(--accent);"></i><h3 class="text-sm font-bold uppercase tracking-widest" style="color: var(--text-main);">Set 4-Digit PIN</h3><input type="tel" inputmode="numeric" maxlength="4" id="pinSetupInput" placeholder="••••" data-ph-no-capture="true" class="numeric-display w-full text-center text-2xl tracking-[0.6em] p-3 rounded-xl border outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);"><p id="pinSetupError" class="text-[10px] text-red-500 hidden">Must be exactly 4 digits.</p><div class="flex gap-3 pt-1"><button onclick="window.closePinSetupModal()" class="flex-1 py-3 rounded-xl text-xs font-bold active:scale-95 transition-transform" style="background-color: var(--input-bg); color: var(--text-main);">Cancel</button><button onclick="window.savePinSetup()" class="flex-1 py-3 rounded-xl text-xs font-bold active:scale-95 transition-transform" style="background: var(--accent); color: var(--accent-text);">Save</button></div></div></div>
+
+  <!-- SCRIPT SINK - RELIABLE BOOTSTRAP -->
+  <script src="app.js"></script>
   <script>
-    async function loadAppFiles() {
-      try {
-        // Load all page HTMLs in parallel for faster loading
-        const pages = ['tracker.html', 'insights.html', 'history.html', 'settings.html'];
-        const pagePromises = pages.map(page => fetch(page).then(r => r.text()));
-        const modalsPromise = fetch('modals.html').then(r => r.text());
-
-        // Wait for all pages to load
-        const pagesHtmlArray = await Promise.all(pagePromises);
-        const modalsHtml = await modalsPromise;
-
-        // Insert all HTML into containers
-        document.getElementById('app-container').innerHTML = pagesHtmlArray.join('');
-        document.getElementById('modals-container').innerHTML = modalsHtml;
-
-        // Wait for DOM to fully update before initializing
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            // Initialize Lucide icons first
-            if (window.lucide) {
-              lucide.createIcons();
-            }
-            // Then boot the app
-            if (window.bootApp) {
-              window.bootApp();
-            }
-          });
-        });
-
-      } catch (error) {
-        console.error("Files load hone mein error:", error);
+    window.addEventListener('DOMContentLoaded', function() {
+      if (typeof window.bootApp === 'function') {
+        window.bootApp();
       }
-    }
-
-    loadAppFiles();
+    });
   </script>
+  <canvas id="shareCanvas" class="hidden" width="1080" height="1920"></canvas>
 </body>
 </html>
