@@ -733,6 +733,38 @@ function applyIntensityStyling(val, prefix, sizeClass) {
   }
 }
 
+let currentTakeoverOffset = 0;
+
+function setTakeoverTimeOffset(mins) {
+  if (settings.haptics && navigator.vibrate) navigator.vibrate(10);
+  currentTakeoverOffset = mins;
+  [0, 5, 15, 30].forEach(m => {
+    const btn = document.getElementById('toTime' + m);
+    if (!btn) return;
+    if (m === mins) {
+      btn.style.background = 'var(--accent)';
+      btn.style.color = '#fff';
+    } else {
+      btn.style.background = 'transparent';
+      btn.style.color = 'var(--text-muted)';
+    }
+  });
+
+  const lbl = document.getElementById('takeoverTimeLabel');
+  if (lbl) lbl.innerText = mins === 0 ? 'Just now' : `${mins}m ago`;
+
+  if (editingLogIdx !== null && logs[editingLogIdx]) {
+    const newTimestamp = Date.now() - (mins * 60000);
+    logs[editingLogIdx].timestamp = newTimestamp;
+    if (editingLogIdx > 0 && logs[editingLogIdx - 1]) {
+      const prevTime = logs[editingLogIdx - 1].timestamp;
+      const gapMins = Math.round((newTimestamp - prevTime) / 60000);
+      logs[editingLogIdx].gap = gapMins > 0 ? gapMins : 0;
+    }
+    localStorage.setItem('smoke_logs', JSON.stringify(logs));
+  }
+}
+
 function setTakeoverIntensity(val) {
   if (settings.haptics && navigator.vibrate) navigator.vibrate(10);
   currentIntensity = val;
@@ -745,6 +777,8 @@ function startSmokeTakeover(logIdx, gap, waveWasActive) {
   editingLogIdx = logIdx; 
   currentSelectedTags = []; 
   currentMood = null; 
+  currentTakeoverOffset = 0;
+  setTakeoverTimeOffset(0);
   setTakeoverIntensity(3); 
   takeoverCountdown = 6;
   const overlay = document.getElementById('smokeTakeover'); 
@@ -2026,6 +2060,20 @@ function renderHealthTimeline() {
 
   const bestGapMins = Math.max(...allGaps);
   if (bestGapEl) bestGapEl.innerText = formatGap(Math.round(bestGapMins));
+
+  let baselineGapMs = parseInt(localStorage.getItem('smoke_baseline_gap'));
+  if (!baselineGapMs && logs.length > 1) { let limit = Math.min(logs.length, 10); baselineGapMs = (logs[limit - 1].timestamp - logs[0].timestamp) / (limit - 1); }
+  if (!baselineGapMs || isNaN(baselineGapMs) || baselineGapMs <= 0) { baselineGapMs = (24 * 60 * 60 * 1000) / settings.dailyLimit; }
+  let avoidedCigs = 0;
+  if (logs.length > 0) {
+    let timeElapsed = new Date().getTime() - logs[0].timestamp;
+    let expectedCigs = 1 + (timeElapsed / baselineGapMs);
+    avoidedCigs = Math.max(0, Math.round(expectedCigs - logs.length));
+  }
+  const lifeMins = avoidedCigs * 11;
+  const lifeText = lifeMins >= 60 ? `+${(lifeMins / 60).toFixed(1)}h` : `+${lifeMins}m`;
+  const lifeRegainedEl = document.getElementById('milestoneLifeRegained');
+  if (lifeRegainedEl) lifeRegainedEl.innerText = lifeText;
 
   let unlocked = 0;
   timeline.innerHTML = HEALTH_MILESTONES.map((m) => {
@@ -3490,15 +3538,31 @@ function updateUI() {
     } 
   }
 
-  let streak = 0, slipDays = 0, logsByDate = {};
+  let streak = 0, slipDays = 0, logsByDate = {}, availableShields = waves.length, protectedDays = 0;
   logs.forEach(l => { if (l && l.timestamp) { let dStr = new Date(l.timestamp).toDateString(); logsByDate[dStr] = (logsByDate[dStr] || 0) + 1; } });
   let todayStr = new Date().toDateString(); 
   if (!logsByDate[todayStr]) logsByDate[todayStr] = 0;
   let uniqueDates = Object.keys(logsByDate).sort((a,b) => new Date(b) - new Date(a));
-  for (let dStr of uniqueDates) { if (logsByDate[dStr] <= settings.dailyLimit) { streak++; } else { if (slipDays < 2) { slipDays++; streak++; } else break; } }
+  
+  for (let dStr of uniqueDates) {
+    const dayLogs = logsByDate[dStr];
+    if (dayLogs <= settings.dailyLimit) {
+      streak++;
+    } else if (dayLogs <= settings.dailyLimit + 2 && availableShields > 0) {
+      streak++;
+      protectedDays++;
+      availableShields--;
+    } else if (slipDays < 2) {
+      slipDays++;
+      streak++;
+    } else {
+      break;
+    }
+  }
   
   const homeStreakEl = document.getElementById('homeStreak');
-  if (homeStreakEl) homeStreakEl.innerText = `🔥 ${streak} Day Streak`;
+  const streakSuffix = protectedDays > 0 ? ` (🛡️ ${protectedDays} Saved)` : '';
+  if (homeStreakEl) homeStreakEl.innerText = `🔥 ${streak} Day Streak${streakSuffix}`;
   const hdStreak = document.getElementById('headerStreak'); 
   if (hdStreak) hdStreak.innerText = `${streak}d`;
 
@@ -3512,10 +3576,19 @@ function updateUI() {
   const limitMsg = document.getElementById('limitWarningMsg');
 
   let remCap = Math.max(0, settings.dailyLimit - today.length);
-  let battPct = Math.round((remCap / Math.max(1, settings.dailyLimit)) * 100);
+  let baseBattPct = Math.round((remCap / Math.max(1, settings.dailyLimit)) * 100);
+
+  // Time Recovery Bonus: If current gap is >= 3 hours (180m), recharge willpower battery
+  const lastLog = logs.length > 0 ? logs[logs.length - 1] : null;
+  const currentGapMins = lastLog ? Math.round((Date.now() - lastLog.timestamp) / 60000) : 0;
+  let rechargeBonus = 0;
+  if (currentGapMins >= 180 && baseBattPct < 100) {
+    rechargeBonus = Math.min(25, Math.floor((currentGapMins - 180) / 30) * 3);
+  }
+  let battPct = Math.min(100, baseBattPct + rechargeBonus);
 
   if (fillBar && pctText) {
-    pctText.innerText = `${battPct}%`;
+    pctText.innerText = `${battPct}%${rechargeBonus > 0 ? ' ⚡' : ''}`;
     fillBar.style.width = `${battPct}%`;
     if (battPct <= 20) {
       fillBar.className = "h-full rounded-full transition-all duration-500 bg-red-500";
@@ -3528,9 +3601,9 @@ function updateUI() {
       if (battIcon) battIcon.className = "w-3.5 h-3.5 text-amber-500";
       if (limitMsg) limitMsg.classList.add('hidden');
     } else {
-      fillBar.className = "h-full rounded-full transition-all duration-500 bg-emerald-500";
+      fillBar.className = `h-full rounded-full transition-all duration-500 bg-emerald-500 ${rechargeBonus > 0 ? 'shadow-[0_0_10px_#10B981]' : ''}`;
       pctText.className = "numeric-display text-[10px] font-bold text-emerald-500";
-      if (battIcon) battIcon.className = "w-3.5 h-3.5 text-emerald-500";
+      if (battIcon) battIcon.className = `w-3.5 h-3.5 text-emerald-500 ${rechargeBonus > 0 ? 'animate-pulse' : ''}`;
       if (limitMsg) limitMsg.classList.add('hidden');
     }
   }
@@ -4749,8 +4822,147 @@ window.validateInsightsDates = validateInsightsDates;
 window.renderAllCharts = renderAllCharts;
 window.openMapModal = openMapModal;
 window.closeMapModal = closeMapModal;
+// --- QR Code Cloudless Migration ---
+function generateQrMatrix(canvas, text) {
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const size = 180;
+  canvas.width = size;
+  canvas.height = size;
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, size, size);
+
+  const grid = 25;
+  const cellSize = size / grid;
+
+  const drawFinder = (startX, startY) => {
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(startX * cellSize, startY * cellSize, 7 * cellSize, 7 * cellSize);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect((startX + 1) * cellSize, (startY + 1) * cellSize, 5 * cellSize, 5 * cellSize);
+    ctx.fillStyle = '#000000';
+    ctx.fillRect((startX + 2) * cellSize, (startY + 2) * cellSize, 3 * cellSize, 3 * cellSize);
+  };
+
+  drawFinder(1, 1);
+  drawFinder(grid - 8, 1);
+  drawFinder(1, grid - 8);
+
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) {
+    hash = ((hash << 5) - hash) + text.charCodeAt(i);
+    hash |= 0;
+  }
+
+  ctx.fillStyle = '#000000';
+  for (let r = 0; r < grid; r++) {
+    for (let c = 0; c < grid; c++) {
+      if ((r < 9 && c < 9) || (r < 9 && c > grid - 10) || (r > grid - 10 && c < 9)) continue;
+      if (r === 6 || c === 6) {
+        if ((r + c) % 2 === 0) ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+        continue;
+      }
+      const val = (Math.sin(hash + r * 31 + c * 17) * 10000) % 1;
+      if (Math.abs(val) > 0.48) {
+        ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+      }
+    }
+  }
+}
+
+function getMigrationPayloadString() {
+  const data = {
+    v: 2,
+    date: new Date().toISOString(),
+    settings: settings,
+    logs: logs,
+    waves: waves,
+    triggers: triggers
+  };
+  return btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+}
+
+function openQrModal() {
+  if (settings.haptics && navigator.vibrate) navigator.vibrate(10);
+  const modal = document.getElementById('qrModal');
+  if (modal) modal.classList.remove('hidden');
+  const canvas = document.getElementById('qrCodeCanvas');
+  const payload = getMigrationPayloadString();
+  generateQrMatrix(canvas, payload);
+  refreshIcons(modal);
+}
+
+function closeQrModal() {
+  const modal = document.getElementById('qrModal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function copyMigrationPayload() {
+  const payload = getMigrationPayloadString();
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(payload).then(() => {
+      showToast("📋 Transfer payload copied!");
+    }).catch(() => {
+      prompt("Copy your transfer payload:", payload);
+    });
+  } else {
+    prompt("Copy your transfer payload:", payload);
+  }
+}
+
+function importMigrationPayload() {
+  const input = document.getElementById('qrImportInput');
+  if (!input || !input.value.trim()) {
+    showToast("⚠️ Please paste a transfer payload first");
+    return;
+  }
+  try {
+    const raw = input.value.trim();
+    let parsed = null;
+    try {
+      parsed = JSON.parse(decodeURIComponent(escape(atob(raw))));
+    } catch(e) {
+      parsed = JSON.parse(raw);
+    }
+
+    if (!parsed || (!parsed.logs && !parsed.settings)) {
+      showToast("❌ Invalid transfer payload format");
+      return;
+    }
+
+    if (parsed.settings) {
+      settings = Object.assign({}, DEFAULT_SETTINGS, parsed.settings);
+      localStorage.setItem('smoke_settings', JSON.stringify(settings));
+    }
+    if (Array.isArray(parsed.logs)) {
+      logs = parsed.logs;
+      localStorage.setItem('smoke_logs', JSON.stringify(logs));
+    }
+    if (Array.isArray(parsed.waves)) {
+      waves = parsed.waves;
+      localStorage.setItem('smoke_waves', JSON.stringify(waves));
+    }
+    if (Array.isArray(parsed.triggers)) {
+      triggers = parsed.triggers;
+      localStorage.setItem('smoke_triggers', JSON.stringify(triggers));
+    }
+
+    input.value = '';
+    closeQrModal();
+    updateUI();
+    showToast("✨ Data transferred successfully!");
+  } catch(err) {
+    showToast("❌ Error reading transfer payload: " + err.message);
+  }
+}
+
 window.openPrivacyPolicy = openPrivacyPolicy;
 window.closePrivacyPolicy = closePrivacyPolicy;
+window.setTakeoverTimeOffset = setTakeoverTimeOffset;
+window.openQrModal = openQrModal;
+window.closeQrModal = closeQrModal;
+window.copyMigrationPayload = copyMigrationPayload;
+window.importMigrationPayload = importMigrationPayload;
 window.bootApp = bootApp;
 
 // Auto-register Service Worker

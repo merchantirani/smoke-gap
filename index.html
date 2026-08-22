@@ -1474,15 +1474,19 @@
             <p id="backupReminderText" class="text-[10px] font-semibold text-amber-500 flex-1">You haven't backed up your data yet</p>
           </div>
 
-          <!-- BACKUP & RESTORE 2-COLUMN GRID -->
-          <div class="grid grid-cols-2 gap-2.5">
-            <button onclick="window.exportJSON()" class="p-3 rounded-xl border text-center active:scale-95 transition-all flex flex-col items-center justify-center gap-1.5 cursor-pointer" style="background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.2); color: #10B981;">
+          <!-- BACKUP & RESTORE 3-BUTTON ACTION GRID -->
+          <div class="grid grid-cols-3 gap-2">
+            <button onclick="window.exportJSON()" class="p-2.5 rounded-xl border text-center active:scale-95 transition-all flex flex-col items-center justify-center gap-1 cursor-pointer" style="background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.2); color: #10B981;">
               <i data-lucide="upload-cloud" class="w-4 h-4"></i>
-              <span class="text-[11px] font-bold">Backup (JSON)</span>
+              <span class="text-[10px] font-bold">Backup</span>
             </button>
-            <button onclick="document.getElementById('importFileInput').click()" class="p-3 rounded-xl border text-center active:scale-95 transition-all flex flex-col items-center justify-center gap-1.5 cursor-pointer" style="background: rgba(56,189,248,0.08); border-color: rgba(56,189,248,0.2); color: #38BDF8;">
+            <button onclick="document.getElementById('importFileInput').click()" class="p-2.5 rounded-xl border text-center active:scale-95 transition-all flex flex-col items-center justify-center gap-1 cursor-pointer" style="background: rgba(56,189,248,0.08); border-color: rgba(56,189,248,0.2); color: #38BDF8;">
               <i data-lucide="download-cloud" class="w-4 h-4"></i>
-              <span class="text-[11px] font-bold">Restore (JSON)</span>
+              <span class="text-[10px] font-bold">Restore</span>
+            </button>
+            <button onclick="window.openQrModal()" class="p-2.5 rounded-xl border text-center active:scale-95 transition-all flex flex-col items-center justify-center gap-1 cursor-pointer" style="background: rgba(168,85,247,0.08); border-color: rgba(168,85,247,0.2); color: #A855F7;">
+              <i data-lucide="qr-code" class="w-4 h-4"></i>
+              <span class="text-[10px] font-bold">QR Transfer</span>
             </button>
             <input type="file" id="importFileInput" class="hidden" accept=".json" onchange="window.importJSON(event)">
           </div>
@@ -1686,12 +1690,27 @@
       <div class="w-full max-w-md mx-auto px-4 pointer-events-auto" style="padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));">
         <div class="rounded-[26px] border border-[var(--card-border)] bg-[var(--modal-bg)] shadow-[0_-10px_40px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.06)] px-4 pt-1 pb-4 max-h-[50vh] overflow-y-auto hide-scrollbar">
           <div class="sheet-handle"></div>
+          
+          <!-- QUICK TIME OFFSET -->
           <div class="mt-2">
+            <div class="flex items-center justify-between">
+              <span class="sheet-label">When did you smoke?</span>
+              <span id="takeoverTimeLabel" class="text-[9px] font-bold" style="color: var(--accent);">Just now</span>
+            </div>
+            <div class="mt-1.5 flex items-center justify-between gap-1.5 rounded-2xl border border-[var(--card-border)] bg-[var(--input-bg)] p-1">
+              <button type="button" onclick="window.setTakeoverTimeOffset(0)" id="toTime0" class="flex-1 py-1.5 rounded-xl text-[10px] font-bold transition-all" style="background: var(--accent); color: #fff;">Just now</button>
+              <button type="button" onclick="window.setTakeoverTimeOffset(5)" id="toTime5" class="flex-1 py-1.5 rounded-xl text-[10px] font-bold transition-all" style="color: var(--text-muted);">5m ago</button>
+              <button type="button" onclick="window.setTakeoverTimeOffset(15)" id="toTime15" class="flex-1 py-1.5 rounded-xl text-[10px] font-bold transition-all" style="color: var(--text-muted);">15m ago</button>
+              <button type="button" onclick="window.setTakeoverTimeOffset(30)" id="toTime30" class="flex-1 py-1.5 rounded-xl text-[10px] font-bold transition-all" style="color: var(--text-muted);">30m ago</button>
+            </div>
+          </div>
+
+          <div class="mt-3">
             <div class="flex items-center justify-between">
               <span class="sheet-label">Craving Intensity</span>
               <span id="takeoverIntensityLabel" class="text-[10px] font-extrabold uppercase tracking-wider" style="color: var(--accent);">Moderate</span>
             </div>
-            <div class="mt-2.5 flex items-center justify-between gap-2 rounded-full border border-[var(--card-border)] bg-[var(--input-bg)] p-1.5">
+            <div class="mt-2 flex items-center justify-between gap-2 rounded-full border border-[var(--card-border)] bg-[var(--input-bg)] p-1.5">
               <button onclick="window.setTakeoverIntensity(1)" id="toInt1" class="w-9 h-9 rounded-full border text-xs font-bold transition-all" style="border-color: var(--card-border); color: var(--text-main);">1</button>
               <button onclick="window.setTakeoverIntensity(2)" id="toInt2" class="w-9 h-9 rounded-full border text-xs font-bold transition-all" style="border-color: var(--card-border); color: var(--text-main);">2</button>
               <button onclick="window.setTakeoverIntensity(3)" id="toInt3" class="w-9 h-9 rounded-full border text-xs font-bold transition-all" style="border-color: var(--card-border); color: var(--text-main);">3</button>
@@ -1848,15 +1867,18 @@
               <span class="text-[9px] font-bold uppercase tracking-widest mt-1.5" style="color: var(--text-muted);">Recovery</span>
             </div>
           </div>
-          <div class="flex items-center justify-center gap-8 mt-4 relative">
-            <div class="text-center">
+          <div class="grid grid-cols-3 gap-2 mt-4 relative">
+            <div class="text-center p-2 rounded-2xl" style="background: var(--input-bg);">
               <p class="text-[8px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Longest Gap</p>
-              <p id="milestoneBestGap" class="numeric-display text-xl font-bold mt-0.5" style="color: var(--text-main);">--</p>
+              <p id="milestoneBestGap" class="numeric-display text-sm font-bold mt-0.5 truncate" style="color: var(--text-main);">--</p>
             </div>
-            <div class="w-px h-8" style="background: var(--card-border);"></div>
-            <div class="text-center">
+            <div class="text-center p-2 rounded-2xl" style="background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.2);">
+              <p class="text-[8px] font-bold uppercase tracking-widest text-emerald-400">Life Regained</p>
+              <p id="milestoneLifeRegained" class="numeric-display text-sm font-black text-emerald-400 mt-0.5 truncate">+0m</p>
+            </div>
+            <div class="text-center p-2 rounded-2xl" style="background: var(--input-bg);">
               <p class="text-[8px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">Milestones</p>
-              <p id="milestoneCountModal" class="numeric-display text-xl font-bold mt-0.5" style="color: var(--text-main);">0/9</p>
+              <p id="milestoneCountModal" class="numeric-display text-sm font-bold mt-0.5 truncate" style="color: var(--text-main);">0/9</p>
             </div>
           </div>
         </div>
@@ -2208,6 +2230,47 @@
     </div>
   </div>
 
+  <!-- ONE-TAP QR CODE CLOUDLESS MIGRATION MODAL -->
+  <div id="qrModal" class="hidden sheet" onclick="if(event.target===this) window.closeQrModal()">
+    <div class="sheet-panel" style="max-height: 88vh;">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl flex items-center justify-center" style="background: rgba(168,85,247,0.12); color: #A855F7;"><i data-lucide="qr-code" class="w-4 h-4"></i></div>
+          <div>
+            <h3 class="sheet-title">Device Transfer</h3>
+            <p class="text-[9px] font-semibold text-purple-400">100% Offline &amp; Instant</p>
+          </div>
+        </div>
+        <button onclick="window.closeQrModal()" class="sheet-close"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div class="sheet-body space-y-4 text-center">
+        <div class="p-3.5 rounded-2xl border text-xs leading-relaxed space-y-1 text-left" style="background: var(--input-bg); border-color: var(--card-border);">
+          <p class="font-bold" style="color: var(--text-main);">📱 Move data to a new device</p>
+          <p style="color: var(--text-muted);">Copy the data transfer payload below or paste a payload from your previous device to instantly restore all your logs, streaks, shields, and settings.</p>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-white flex flex-col items-center justify-center max-w-[220px] mx-auto shadow-lg">
+          <canvas id="qrCodeCanvas" class="w-44 h-44"></canvas>
+          <p class="text-[9px] font-bold text-gray-700 mt-2">pause Transfer Matrix</p>
+        </div>
+
+        <div class="space-y-2">
+          <button onclick="window.copyMigrationPayload()" class="w-full py-3 rounded-xl font-bold text-xs active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer" style="background: var(--accent); color: var(--accent-text); box-shadow: 0 4px 14px var(--accent-glow);">
+            <i data-lucide="copy" class="w-4 h-4"></i> Copy Transfer Payload
+          </button>
+          <div class="flex gap-2">
+            <input type="text" id="qrImportInput" placeholder="Paste transfer payload here..." class="w-full p-2.5 rounded-xl border text-xs font-medium outline-none" style="background: var(--input-bg); border-color: var(--card-border); color: var(--text-main);">
+            <button onclick="window.importMigrationPayload()" class="px-4 rounded-xl font-bold text-xs active:scale-95 transition-all shrink-0 cursor-pointer" style="background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: #10B981;">Import</button>
+          </div>
+        </div>
+      </div>
+      <div class="sheet-footer">
+        <button onclick="window.closeQrModal()" class="sheet-btn-ghost">Done</button>
+      </div>
+    </div>
+  </div>
+
   <!-- IN-APP PRIVACY POLICY SHEET MODAL -->
   <div id="privacyModal" class="hidden sheet" onclick="if(event.target===this) window.closePrivacyPolicy()">
     <div class="sheet-panel" style="max-height: 88vh;">
@@ -2276,7 +2339,7 @@
   <div id="pinSetupModal" class="hidden fixed inset-0 backdrop-blur-sm z-[10000] flex items-center justify-center p-6" style="background-color: var(--overlay-bg);" onclick="if(event.target===this) window.closePinSetupModal()"><div class="dialog-card p-6 space-y-4 max-w-xs w-full text-center" style="padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));"><i data-lucide="lock-keyhole" class="w-8 h-8 mx-auto" style="color: var(--accent);"></i><h3 class="text-sm font-bold uppercase tracking-widest" style="color: var(--text-main);">Set 4-Digit PIN</h3><input type="tel" inputmode="numeric" maxlength="4" id="pinSetupInput" placeholder="••••" data-ph-no-capture="true" class="numeric-display w-full text-center text-2xl tracking-[0.6em] p-3 rounded-xl border outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);"><p id="pinSetupError" class="text-[10px] text-red-500 hidden">Must be exactly 4 digits.</p><div class="flex gap-3 pt-1"><button onclick="window.closePinSetupModal()" class="flex-1 py-3 rounded-xl text-xs font-bold active:scale-95 transition-transform" style="background-color: var(--input-bg); color: var(--text-main);">Cancel</button><button onclick="window.savePinSetup()" class="flex-1 py-3 rounded-xl text-xs font-bold active:scale-95 transition-transform" style="background: var(--accent); color: var(--accent-text);">Save</button></div></div></div>
 
   <!-- SCRIPT SINK - RELIABLE BOOTSTRAP -->
-  <script src="app.js?v=2.4.8"></script>
+  <script src="app.js?v=2.4.9"></script>
   <script>
     window.addEventListener('DOMContentLoaded', function() {
       if (typeof window.bootApp === 'function') {
