@@ -64,6 +64,22 @@ let mainTimer = null;
 let waveTimer = null;
 let cooldownTimer = null;
 
+let _cachedAvgGapMs = 3600000;
+let _cachedPrevGapMs = 0;
+let _lastNudgeCheckSec = 0;
+
+function recalculateCachedGaps() {
+  if (!logs || logs.length === 0) {
+    _cachedAvgGapMs = 3600000;
+    _cachedPrevGapMs = 0;
+    return;
+  }
+  const prevLog = logs[logs.length - 1];
+  _cachedPrevGapMs = prevLog && prevLog.gap ? prevLog.gap * 60000 : 0;
+  const allGaps = logs.map(l => l.gap).filter(g => g !== null && g !== undefined);
+  _cachedAvgGapMs = allGaps.length ? (allGaps.reduce((a, b) => a + b, 0) / allGaps.length) * 60000 : 3600000;
+}
+
 let storedPinHash = localStorage.getItem('smoke_pin_hash');
 let hasPin = !!storedPinHash;
 let enteredPin = "";
@@ -210,11 +226,18 @@ function formatGap(m) {
 }
 
 let _lucideTimer = null;
-function refreshIcons() {
-  if (_lucideTimer) clearTimeout(_lucideTimer);
-  _lucideTimer = setTimeout(() => {
-    if (window.lucide) window.lucide.createIcons();
-  }, 30);
+function refreshIcons(root) {
+  if (!window.lucide) return;
+  if (root && root.nodeType) {
+    try { window.lucide.createIcons({ root }); } catch(e){}
+    return;
+  }
+  if (_lucideTimer) cancelAnimationFrame(_lucideTimer);
+  _lucideTimer = requestAnimationFrame(() => {
+    if (window.lucide) {
+      try { window.lucide.createIcons(); } catch(e){}
+    }
+  });
 }
 
 function moodDefFor(val) {
@@ -3428,11 +3451,12 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
     statusWrapper.className = newClass; 
     statusText.innerHTML = newHtml; 
     statusText.dataset.rawHtml = newHtml; 
-    refreshIcons(); 
+    refreshIcons(statusWrapper); 
   }
 }
 
 function updateUI() {
+  recalculateCachedGaps();
   const shieldEl = document.getElementById('shieldCount');
   if (shieldEl) shieldEl.innerText = waves.length;
   
@@ -4491,29 +4515,29 @@ function bootCore() {
   if (mainTimer) clearInterval(mainTimer);
   mainTimer = setInterval(() => {
     try {
-      checkPeakNudge();
+      const now = Date.now();
+      if (now - _lastNudgeCheckSec > 60000) {
+        _lastNudgeCheckSec = now;
+        checkPeakNudge();
+      }
       updateLastSmokeDisplay();
 
       if (!logs || logs.length === 0) return;
-      const diff = new Date().getTime() - logs[logs.length-1].timestamp;
-      const prevLog = logs[logs.length-1];
-      const prevGapMs = prevLog.gap ? prevLog.gap * 60000 : 0;
-      const allGaps = logs.map(l => l.gap).filter(g => g !== null && g !== undefined);
-      const avgGapMs = allGaps.length ? (allGaps.reduce((a,b)=>a+b, 0) / allGaps.length) * 60000 : 3600000;
+      const diff = now - logs[logs.length - 1].timestamp;
 
-      if (prevGapMs > 0 && diff >= prevGapMs && !gapWidenedNotified) {
+      if (_cachedPrevGapMs > 0 && diff >= _cachedPrevGapMs && !gapWidenedNotified) {
         gapWidenedNotified = true;
         localStorage.setItem('smoke_gap_widened_notified', 'true');
-        sendSystemNotification("🎉 Gap Widened!", `Great progress! You just beat your previous gap (${formatGap(Math.round(prevGapMs/60000))}). You're setting a personal best.`, 'notifGapWidened');
+        sendSystemNotification("🎉 Gap Widened!", `Great progress! You just beat your previous gap (${formatGap(Math.round(_cachedPrevGapMs/60000))}). You're setting a personal best.`, 'notifGapWidened');
         spawnConfetti();
       }
-      if (avgGapMs > 0 && diff >= avgGapMs * 1.5 && waveEndTime <= 0 && !inactivityNotified) {
+      if (_cachedAvgGapMs > 0 && diff >= _cachedAvgGapMs * 1.5 && waveEndTime <= 0 && !inactivityNotified) {
         inactivityNotified = true;
         sendSystemNotification("🚬 Did you forget to log?", "It's been longer than your average gap. Log your stick or keep widening the gap!", 'notifInactivity');
       }
 
       if (document.hidden) return; 
-      updateHeroDisplay(diff, prevGapMs, avgGapMs);
+      updateHeroDisplay(diff, _cachedPrevGapMs, _cachedAvgGapMs);
     } catch(err) { 
       console.error('Main timer error:', err); 
     }
