@@ -1161,7 +1161,8 @@ function setupPin() {
       localStorage.removeItem('smoke_pin_hash'); 
       hasPin = false; 
       storedPinHash = null; 
-      location.reload(); 
+      updatePinBadgeUI();
+      showToast("PIN removed"); 
     }); 
   } else { 
     const inp = document.getElementById('pinSetupInput'); 
@@ -1187,13 +1188,30 @@ function savePinSetup() {
     hasPin = true; 
     storedPinHash = hashPin(p); 
     closePinSetupModal(); 
-    const btn = document.getElementById('pinStatusBtn');
-    if (btn) btn.innerText = "Remove PIN"; 
-    showToast("PIN saved"); 
+    updatePinBadgeUI();
+    showToast("4-Digit PIN saved 🔒"); 
   } else { 
     const err = document.getElementById('pinSetupError');
     if (err) err.classList.remove('hidden'); 
   } 
+}
+
+function updatePinBadgeUI() {
+  const badge = document.getElementById('pinStatusBadge');
+  const btn = document.getElementById('pinStatusBtn');
+  if (hasPin) {
+    if (badge) {
+      badge.innerText = "Active 🔒";
+      badge.className = "text-[9px] font-bold text-emerald-400";
+    }
+    if (btn) btn.innerText = "Remove";
+  } else {
+    if (badge) {
+      badge.innerText = "Not Configured";
+      badge.className = "text-[9px] font-bold text-gray-400";
+    }
+    if (btn) btn.innerText = "Set PIN";
+  }
 }
 
 // --- Themes & Settings ---
@@ -1208,27 +1226,139 @@ function applyTheme(t) {
   if (metaTheme) metaTheme.setAttribute('content', THEME_META_COLORS[t] || THEME_META_COLORS.white);
 }
 
-function updateSettings() {
-  settings.theme = document.getElementById('themeSelect').value; 
-  settings.timeFormat = document.getElementById('timeFormatSelect').value; 
-  settings.currency = document.getElementById('currencySelect').value;
-  settings.dailyLimit = Math.max(1, Math.min(100, parseInt(document.getElementById('dailyLimitInput').value) || 15));
-  settings.packPrice = Math.max(0, Math.min(9999, parseFloat(document.getElementById('packPriceInput').value) || 0));
-  settings.packSize = Math.max(1, Math.min(100, parseInt(document.getElementById('packSizeInput').value) || 20));
-  settings.lockSecs = parseInt(document.getElementById('lockSecsInput').value) || 300; 
-  settings.haptics = document.getElementById('hapticsInput').checked;
-  settings.motivation = document.getElementById('motivationInput').value.substring(0, 100);
+function selectTheme(themeName) {
+  settings.theme = themeName;
+  localStorage.setItem('smoke_settings', JSON.stringify(settings));
+  applyTheme(themeName);
+  updateThemeSwatchesUI();
+  try { updateUI(); } catch(err){}
+  if (!document.getElementById('page-insights').classList.contains('hidden')) renderAllCharts();
+  if (window.posthog) posthog.capture('settings_updated', { theme: themeName });
+  showToast(`Theme switched to ${themeName.charAt(0).toUpperCase() + themeName.slice(1)} ✨`);
+}
+
+function updateThemeSwatchesUI() {
+  const current = settings.theme || 'white';
+  document.querySelectorAll('.theme-swatch-card').forEach(el => {
+    const t = el.getAttribute('data-theme');
+    const chk = el.querySelector('.theme-check');
+    if (t === current) {
+      el.style.borderColor = 'var(--accent)';
+      el.style.boxShadow = '0 0 0 2px var(--accent-glow), 0 4px 14px rgba(0,0,0,0.15)';
+      el.style.opacity = '1';
+      if (chk) chk.classList.remove('hidden');
+    } else {
+      el.style.borderColor = 'var(--card-border)';
+      el.style.boxShadow = 'none';
+      el.style.opacity = '0.65';
+      if (chk) chk.classList.add('hidden');
+    }
+  });
+}
+
+function adjustSetting(key, delta, min, max) {
+  let val = (key === 'packPrice') ? (parseFloat(settings[key]) || 0) : (parseInt(settings[key]) || 0);
+  val = Math.max(min, Math.min(max, val + delta));
+  if (key === 'packPrice') val = Math.round(val * 10) / 10;
+  settings[key] = val;
   
-  const prevAutoReduce = settings.autoReduce;
-  settings.autoReduce = document.getElementById('autoReduceInput').checked;
-  if (settings.autoReduce && !prevAutoReduce) {
-    localStorage.setItem('smoke_last_reduce_date', new Date().toDateString());
+  const inputEl = document.getElementById(key + 'Input');
+  if (inputEl) inputEl.value = val;
+  const displayEl = document.getElementById(key + 'Display');
+  if (displayEl) displayEl.innerText = val;
+  
+  localStorage.setItem('smoke_settings', JSON.stringify(settings));
+  updateCostPerCigDisplay();
+  try { updateUI(); } catch(err){}
+  if (settings.haptics && navigator.vibrate) navigator.vibrate(15);
+}
+
+function setTimeFormat(fmt) {
+  settings.timeFormat = fmt;
+  localStorage.setItem('smoke_settings', JSON.stringify(settings));
+  const sel = document.getElementById('timeFormatSelect');
+  if (sel) sel.value = fmt;
+  
+  document.querySelectorAll('.time-fmt-btn').forEach(btn => {
+    if (btn.getAttribute('data-fmt') === fmt) {
+      btn.style.background = 'var(--accent)';
+      btn.style.color = 'var(--accent-text)';
+    } else {
+      btn.style.background = 'transparent';
+      btn.style.color = 'var(--text-muted)';
+    }
+  });
+  if (settings.haptics && navigator.vibrate) navigator.vibrate(15);
+  try { updateUI(); } catch(err){}
+  if (!document.getElementById('page-history').classList.contains('hidden')) renderHistory('fullHistoryList');
+}
+
+function setLockSecs(secs) {
+  settings.lockSecs = parseInt(secs) || 300;
+  localStorage.setItem('smoke_settings', JSON.stringify(settings));
+  const sel = document.getElementById('lockSecsInput');
+  if (sel) sel.value = settings.lockSecs;
+  
+  document.querySelectorAll('.cooldown-btn').forEach(btn => {
+    if (parseInt(btn.getAttribute('data-secs')) === settings.lockSecs) {
+      btn.style.background = 'var(--accent)';
+      btn.style.color = 'var(--accent-text)';
+    } else {
+      btn.style.background = 'transparent';
+      btn.style.color = 'var(--text-muted)';
+    }
+  });
+  if (settings.haptics && navigator.vibrate) navigator.vibrate(15);
+}
+
+function updateMotivationCounter() {
+  const mot = document.getElementById('motivationInput');
+  const counter = document.getElementById('motivationCounter');
+  if (mot && counter) {
+    counter.innerText = `${mot.value.length}/100`;
   }
+}
+
+function updateSettings() {
+  const thmEl = document.getElementById('themeSelect');
+  if (thmEl) settings.theme = thmEl.value; 
+  const tfEl = document.getElementById('timeFormatSelect');
+  if (tfEl) settings.timeFormat = tfEl.value; 
+  const curEl = document.getElementById('currencySelect');
+  if (curEl) settings.currency = curEl.value;
+  
+  const dLim = document.getElementById('dailyLimitInput');
+  if (dLim) settings.dailyLimit = Math.max(1, Math.min(100, parseInt(dLim.value) || 15));
+  const pPrice = document.getElementById('packPriceInput');
+  if (pPrice) settings.packPrice = Math.max(0, Math.min(9999, parseFloat(pPrice.value) || 0));
+  const pSize = document.getElementById('packSizeInput');
+  if (pSize) settings.packSize = Math.max(1, Math.min(100, parseInt(pSize.value) || 20));
+  const lk = document.getElementById('lockSecsInput');
+  if (lk) settings.lockSecs = parseInt(lk.value) || 300; 
+  
+  const hap = document.getElementById('hapticsInput');
+  if (hap) settings.haptics = hap.checked;
+  const mot = document.getElementById('motivationInput');
+  if (mot) {
+    settings.motivation = mot.value.substring(0, 100);
+    updateMotivationCounter();
+  }
+  
+  const autoREl = document.getElementById('autoReduceInput');
+  const prevAutoReduce = settings.autoReduce;
+  if (autoREl) {
+    settings.autoReduce = autoREl.checked;
+    if (settings.autoReduce && !prevAutoReduce) {
+      localStorage.setItem('smoke_last_reduce_date', new Date().toDateString());
+    }
+  }
+  
   localStorage.setItem('smoke_settings', JSON.stringify(settings));
   if (window.posthog) posthog.capture('settings_updated', { theme: settings.theme, dailyLimit: settings.dailyLimit, autoReduce: settings.autoReduce });
   
   applyTheme(settings.theme); 
   updateCostPerCigDisplay();
+  updateThemeSwatchesUI();
   try { updateUI(); } catch(err){}
   if (!document.getElementById('page-insights').classList.contains('hidden')) renderAllCharts();
   if (!document.getElementById('page-history').classList.contains('hidden')) renderHistory('fullHistoryList');
@@ -1236,26 +1366,35 @@ function updateSettings() {
 
 function updateCostPerCigDisplay() { 
   const el = document.getElementById('costPerCigDisplay'); 
-  if (el) el.innerText = `${settings.currency} ${(settings.packPrice / settings.packSize).toFixed(2)}`; 
+  if (el) {
+    const cost = (settings.packPrice && settings.packSize) ? (settings.packPrice / settings.packSize).toFixed(2) : '0.00';
+    el.innerText = `${settings.currency || 'AED'} ${cost}`; 
+  }
 }
 
 function updateQuitDate() {
   const el = document.getElementById('quitDateInput');
   if (!el) return;
-  const today = new Date().toISOString().split('T')[0];
-  el.max = today;
-  if (el.value && el.value > today) el.value = today;
   settings.quitDate = el.value || '';
   localStorage.setItem('smoke_settings', JSON.stringify(settings));
-  showToast(settings.quitDate ? `Quit date set for ${settings.quitDate}` : 'Quit date cleared');
+  showToast(settings.quitDate ? `Target quit date set: ${settings.quitDate} 🎯` : 'Quit date cleared');
+}
+
+function clearQuitDate() {
+  const el = document.getElementById('quitDateInput');
+  if (el) el.value = '';
+  settings.quitDate = '';
+  localStorage.setItem('smoke_settings', JSON.stringify(settings));
+  showToast('Quit date cleared');
 }
 
 function resetSettings() {
-  if (!confirm('Reset all settings to defaults? Your logs and progress will be kept.')) return;
-  const keepLogs = { quitDate: settings.quitDate };
-  settings = Object.assign({}, DEFAULT_SETTINGS, keepLogs);
-  localStorage.setItem('smoke_settings', JSON.stringify(settings));
-  location.reload();
+  showConfirm('Reset Settings?', 'This will reset themes, limits, and preferences to defaults. Your logged cigarettes and streaks are 100% preserved.', () => {
+    const keepLogs = { quitDate: settings.quitDate };
+    settings = Object.assign({}, DEFAULT_SETTINGS, keepLogs);
+    localStorage.setItem('smoke_settings', JSON.stringify(settings));
+    location.reload();
+  });
 }
 
 function sendSystemNotification(title, body, key) {
@@ -4214,8 +4353,14 @@ function bootApp() {
   applyTheme(settings.theme);
   try {
     const dLim = document.getElementById('dailyLimitInput'); if (dLim) dLim.value = settings.dailyLimit;
+    const dLimDisp = document.getElementById('dailyLimitDisplay'); if (dLimDisp) dLimDisp.innerText = settings.dailyLimit;
+    
     const pPrice = document.getElementById('packPriceInput'); if (pPrice) pPrice.value = settings.packPrice;
+    const pPriceDisp = document.getElementById('packPriceDisplay'); if (pPriceDisp) pPriceDisp.innerText = settings.packPrice;
+    
     const pSize = document.getElementById('packSizeInput'); if (pSize) pSize.value = settings.packSize;
+    const pSizeDisp = document.getElementById('packSizeDisplay'); if (pSizeDisp) pSizeDisp.innerText = settings.packSize;
+    
     const thm = document.getElementById('themeSelect'); if (thm) thm.value = settings.theme;
     const tf = document.getElementById('timeFormatSelect'); if (tf) tf.value = settings.timeFormat;
     const cur = document.getElementById('currencySelect'); if (cur) cur.value = settings.currency || 'AED';
@@ -4223,6 +4368,12 @@ function bootApp() {
     const hap = document.getElementById('hapticsInput'); if (hap) hap.checked = settings.haptics;
     const mot = document.getElementById('motivationInput'); if (mot) mot.value = settings.motivation || '';
     const autoR = document.getElementById('autoReduceInput'); if (autoR) autoR.checked = settings.autoReduce || false;
+
+    updateThemeSwatchesUI();
+    setTimeFormat(settings.timeFormat || '12h');
+    setLockSecs(settings.lockSecs || 300);
+    updateMotivationCounter();
+    updatePinBadgeUI();
 
     const notifKeys = ['notifWaveComplete', 'notifGapWidened', 'notifInactivity', 'notifPredictive', 'notifEnableSos'];
     notifKeys.forEach(k => {
@@ -4236,7 +4387,6 @@ function bootApp() {
   const qdInput = document.getElementById('quitDateInput');
   if (qdInput) {
     qdInput.value = settings.quitDate || '';
-    qdInput.max = new Date().toISOString().split('T')[0];
   }
 
   try { loadChartOrder(); } catch(e) {}
@@ -4277,8 +4427,7 @@ function bootApp() {
   if (hasPin) {
     const lockScreen = document.getElementById('lockScreen');
     if (lockScreen) lockScreen.classList.remove('hidden');
-    const pinStatusBtn = document.getElementById('pinStatusBtn');
-    if (pinStatusBtn) pinStatusBtn.innerText = "Remove PIN";
+    updatePinBadgeUI();
     hideSkeleton();
   } else {
     bootCore();
@@ -4317,7 +4466,13 @@ window.setupPin = setupPin;
 window.closePinSetupModal = closePinSetupModal;
 window.savePinSetup = savePinSetup;
 window.updateSettings = updateSettings;
+window.selectTheme = selectTheme;
+window.adjustSetting = adjustSetting;
+window.setTimeFormat = setTimeFormat;
+window.setLockSecs = setLockSecs;
+window.updateMotivationCounter = updateMotivationCounter;
 window.updateQuitDate = updateQuitDate;
+window.clearQuitDate = clearQuitDate;
 window.resetSettings = resetSettings;
 window.requestNotifPermission = requestNotifPermission;
 window.toggleNotifSetting = toggleNotifSetting;

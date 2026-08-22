@@ -1029,182 +1029,433 @@
         </div>
       </section>
       
-      <!-- 4. SETTINGS TAB -->
+      <!-- 4. SETTINGS TAB (ULTRA LUXURY EXECUTIVE ARCHITECTURE) -->
       <section id="page-settings" class="page-section space-y-5 hidden">
-        <h2 class="text-xl font-bold px-1" style="color: var(--text-main);">Preferences</h2>
+        <div class="flex items-center justify-between px-1">
+          <div>
+            <h2 class="text-xl font-black tracking-tight" style="color: var(--text-main);">Preferences</h2>
+            <p class="text-[10px] font-semibold" style="color: var(--text-muted);">Personalize your habit architecture</p>
+          </div>
+          <span class="text-[9px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full border bg-amber-500/10 text-amber-500 border-amber-500/20">Executive</span>
+        </div>
         
+        <!-- CARD 1: IDENTITY & MISSION -->
         <div class="premium-card p-5 space-y-4">
-          <h3 class="text-[10px] font-bold uppercase tracking-widest border-b pb-2 flex items-center gap-2" style="color: var(--text-muted); border-color: var(--card-border);"><i data-lucide="palette" class="w-3 h-3"></i> Identity & Appearance</h3>
-          <div class="flex flex-col">
-            <label class="text-xs font-semibold mb-1" style="color: var(--text-main);">Why are you widening the gap?</label>
-            <input type="text" id="motivationInput" maxlength="100" onchange="window.updateSettings()" placeholder="e.g., Health, Savings, Daughter" class="w-full p-2.5 rounded-xl border text-xs font-semibold outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);">
-            <p class="text-[9px] mt-1" style="color: var(--text-muted);">This reminds you during cravings.</p>
+          <div class="flex items-center gap-2.5 border-b pb-3" style="border-color: var(--card-border);">
+            <div class="w-8 h-8 rounded-xl flex items-center justify-center" style="background: var(--accent-glow); color: var(--accent);">
+              <i data-lucide="sparkles" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">Identity &amp; Mission</h3>
+              <p class="text-[9px]" style="color: var(--text-muted);">Your core reason to widen the gap</p>
+            </div>
           </div>
-          <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
-            <label class="text-xs font-semibold" style="color: var(--text-main);">Theme Mode</label>
-            <select id="themeSelect" onchange="window.updateSettings()" class="text-xs p-2 rounded-xl font-semibold border outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);"><option value="white">Clean White & Blue (Default)</option><option value="default">Amber Glow</option><option value="paper">Calm Paper</option><option value="oled">Pure OLED</option><option value="aurora">Aurora</option><option value="ocean">Midnight Ocean</option></select>
+
+          <div class="space-y-1.5">
+            <div class="flex justify-between items-center">
+              <label class="text-[11px] font-bold" style="color: var(--text-main);">Why are you quitting / pacing?</label>
+              <span id="motivationCounter" class="text-[9px] font-bold" style="color: var(--text-muted);">0/100</span>
+            </div>
+            <input type="text" id="motivationInput" maxlength="100" oninput="window.updateMotivationCounter()" onchange="window.updateSettings()" placeholder="e.g., Family, Marathon, Health, Financial Freedom" class="w-full p-3 rounded-xl border text-xs font-semibold outline-none transition-all" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);">
+            <p class="text-[9px]" style="color: var(--text-muted);">This affirmation is highlighted during intense craving moments.</p>
           </div>
-          <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
-            <label class="text-xs font-semibold" style="color: var(--text-main);">Time Format</label>
-            <select id="timeFormatSelect" onchange="window.updateSettings()" class="text-xs p-2 rounded-xl font-semibold border outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);"><option value="12h">12-Hour (AM/PM)</option><option value="24h">24-Hour</option></select>
+
+          <!-- TARGET QUIT DATE -->
+          <div class="flex justify-between items-center pt-3 border-t" style="border-color: var(--card-border);">
+            <div>
+              <label class="text-[11px] font-bold block" style="color: var(--text-main);">Target Quit / Milestone Date</label>
+              <p class="text-[9px]" style="color: var(--text-muted);">Your goal target date to be completely smoke-free.</p>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <input type="date" id="quitDateInput" onchange="window.updateQuitDate()" class="numeric-display text-xs font-bold p-2 rounded-xl border outline-none cursor-pointer" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);">
+              <button type="button" onclick="window.clearQuitDate()" class="w-7 h-7 rounded-full flex items-center justify-center border text-[10px] text-red-400 active:scale-95 transition-all cursor-pointer" style="background: var(--input-bg); border-color: var(--card-border);" title="Clear date"><i data-lucide="x" class="w-3 h-3"></i></button>
+            </div>
           </div>
-          <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
-            <label class="text-xs font-semibold" style="color: var(--text-main);">Log Cooldown</label>
-            <select id="lockSecsInput" onchange="window.updateSettings()" class="text-xs p-2 rounded-xl font-semibold border outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);"><option value="60">1 Minute</option><option value="300">5 Minutes</option><option value="600">10 Minutes</option></select>
-          </div>
-          <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
-            <label class="text-xs font-semibold" style="color: var(--text-main);">Haptic Feedback</label>
-            <label class="premium-toggle"><input type="checkbox" id="hapticsInput" onchange="window.updateSettings()" class="sr-only"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
+
+          <!-- APP LOCK PIN -->
+          <div class="flex justify-between items-center pt-3 border-t" style="border-color: var(--card-border);">
+            <div class="flex items-center gap-2.5">
+              <div class="w-7 h-7 rounded-lg flex items-center justify-center" style="background: rgba(139,92,246,0.12); color: #8B5CF6;">
+                <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+              </div>
+              <div>
+                <label class="text-[11px] font-bold block" style="color: var(--text-main);">App Security PIN</label>
+                <span id="pinStatusBadge" class="text-[9px] font-bold text-gray-400">Not Configured</span>
+              </div>
+            </div>
+            <button onclick="window.setupPin()" id="pinStatusBtn" class="px-3.5 py-1.5 rounded-full border text-[10px] font-bold active:scale-95 transition-all cursor-pointer" style="background: var(--input-bg); border-color: var(--card-border); color: var(--accent);">Set PIN</button>
           </div>
         </div>
 
+        <!-- CARD 2: VISUAL THEMES & DISPLAY -->
         <div class="premium-card p-5 space-y-4">
-          <div class="flex justify-between items-center border-b pb-2" style="border-color: var(--card-border);">
-            <h3 class="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2" style="color: var(--text-muted);"><i data-lucide="bell" class="w-3.5 h-3.5 text-purple-500"></i> Smart Reminders & Friction</h3>
-            <button onclick="window.requestNotifPermission()" id="notifPermBtn" class="text-[10px] font-bold text-sky-500 uppercase tracking-wider">Enable Master</button>
+          <div class="flex items-center gap-2.5 border-b pb-3" style="border-color: var(--card-border);">
+            <div class="w-8 h-8 rounded-xl flex items-center justify-center" style="background: rgba(56,189,248,0.12); color: #38BDF8;">
+              <i data-lucide="palette" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">Visual Atmosphere</h3>
+              <p class="text-[9px]" style="color: var(--text-muted);">Select your handcrafted luxury color theme</p>
+            </div>
+          </div>
+
+          <!-- THEME SWATCHES 3x2 GRID -->
+          <div class="grid grid-cols-3 gap-2.5 pt-1">
+            <!-- 1. Clean White -->
+            <button type="button" onclick="window.selectTheme('white')" data-theme="white" class="theme-swatch-card p-2.5 rounded-xl border text-left flex flex-col justify-between transition-all duration-200 cursor-pointer active:scale-95" style="background: rgba(255,255,255,0.06); border-color: var(--card-border);">
+              <div class="flex items-center justify-between mb-2">
+                <div class="w-4 h-4 rounded-full border" style="background: #F8FAFC; border-color: #2563EB;"></div>
+                <span class="theme-check hidden text-[10px] font-black text-blue-500">✓</span>
+              </div>
+              <span class="text-[10px] font-bold block leading-tight" style="color: var(--text-main);">Clean White</span>
+              <span class="text-[8px]" style="color: var(--text-muted);">Default Crisp</span>
+            </button>
+
+            <!-- 2. Amber Glow -->
+            <button type="button" onclick="window.selectTheme('default')" data-theme="default" class="theme-swatch-card p-2.5 rounded-xl border text-left flex flex-col justify-between transition-all duration-200 cursor-pointer active:scale-95" style="background: rgba(255,255,255,0.06); border-color: var(--card-border);">
+              <div class="flex items-center justify-between mb-2">
+                <div class="w-4 h-4 rounded-full border" style="background: #090A0F; border-color: #F59E0B;"></div>
+                <span class="theme-check hidden text-[10px] font-black text-amber-500">✓</span>
+              </div>
+              <span class="text-[10px] font-bold block leading-tight" style="color: var(--text-main);">Amber Glow</span>
+              <span class="text-[8px]" style="color: var(--text-muted);">Dark Gold</span>
+            </button>
+
+            <!-- 3. Calm Paper -->
+            <button type="button" onclick="window.selectTheme('paper')" data-theme="paper" class="theme-swatch-card p-2.5 rounded-xl border text-left flex flex-col justify-between transition-all duration-200 cursor-pointer active:scale-95" style="background: rgba(255,255,255,0.06); border-color: var(--card-border);">
+              <div class="flex items-center justify-between mb-2">
+                <div class="w-4 h-4 rounded-full border" style="background: #F5F1E8; border-color: #C17D4F;"></div>
+                <span class="theme-check hidden text-[10px] font-black text-amber-700">✓</span>
+              </div>
+              <span class="text-[10px] font-bold block leading-tight" style="color: var(--text-main);">Calm Paper</span>
+              <span class="text-[8px]" style="color: var(--text-muted);">Warm Minimal</span>
+            </button>
+
+            <!-- 4. Pure OLED -->
+            <button type="button" onclick="window.selectTheme('oled')" data-theme="oled" class="theme-swatch-card p-2.5 rounded-xl border text-left flex flex-col justify-between transition-all duration-200 cursor-pointer active:scale-95" style="background: rgba(255,255,255,0.06); border-color: var(--card-border);">
+              <div class="flex items-center justify-between mb-2">
+                <div class="w-4 h-4 rounded-full border" style="background: #000000; border-color: #64FFDA;"></div>
+                <span class="theme-check hidden text-[10px] font-black text-emerald-400">✓</span>
+              </div>
+              <span class="text-[10px] font-bold block leading-tight" style="color: var(--text-main);">Pure OLED</span>
+              <span class="text-[8px]" style="color: var(--text-muted);">Deep Neon</span>
+            </button>
+
+            <!-- 5. Aurora -->
+            <button type="button" onclick="window.selectTheme('aurora')" data-theme="aurora" class="theme-swatch-card p-2.5 rounded-xl border text-left flex flex-col justify-between transition-all duration-200 cursor-pointer active:scale-95" style="background: rgba(255,255,255,0.06); border-color: var(--card-border);">
+              <div class="flex items-center justify-between mb-2">
+                <div class="w-4 h-4 rounded-full border" style="background: #120B1F; border-color: #DC78FF;"></div>
+                <span class="theme-check hidden text-[10px] font-black text-purple-400">✓</span>
+              </div>
+              <span class="text-[10px] font-bold block leading-tight" style="color: var(--text-main);">Aurora</span>
+              <span class="text-[8px]" style="color: var(--text-muted);">Purple Glow</span>
+            </button>
+
+            <!-- 6. Midnight Ocean -->
+            <button type="button" onclick="window.selectTheme('ocean')" data-theme="ocean" class="theme-swatch-card p-2.5 rounded-xl border text-left flex flex-col justify-between transition-all duration-200 cursor-pointer active:scale-95" style="background: rgba(255,255,255,0.06); border-color: var(--card-border);">
+              <div class="flex items-center justify-between mb-2">
+                <div class="w-4 h-4 rounded-full border" style="background: #0A1929; border-color: #38BDF8;"></div>
+                <span class="theme-check hidden text-[10px] font-black text-sky-400">✓</span>
+              </div>
+              <span class="text-[10px] font-bold block leading-tight" style="color: var(--text-main);">Ocean</span>
+              <span class="text-[8px]" style="color: var(--text-muted);">Navy Blue</span>
+            </button>
+          </div>
+
+          <select id="themeSelect" onchange="window.updateSettings()" class="hidden"><option value="white">Clean White</option><option value="default">Amber Glow</option><option value="paper">Calm Paper</option><option value="oled">Pure OLED</option><option value="aurora">Aurora</option><option value="ocean">Midnight Ocean</option></select>
+
+          <!-- TIME FORMAT -->
+          <div class="flex justify-between items-center pt-3 border-t" style="border-color: var(--card-border);">
+            <div>
+              <label class="text-[11px] font-bold block" style="color: var(--text-main);">Time Format</label>
+              <p class="text-[9px]" style="color: var(--text-muted);">Log timestamps display format</p>
+            </div>
+            <div class="flex gap-1 rounded-xl p-1 border" style="background: var(--input-bg); border-color: var(--card-border);">
+              <button type="button" onclick="window.setTimeFormat('12h')" data-fmt="12h" class="time-fmt-btn px-3 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer">12-Hour</button>
+              <button type="button" onclick="window.setTimeFormat('24h')" data-fmt="24h" class="time-fmt-btn px-3 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer">24-Hour</button>
+            </div>
+            <select id="timeFormatSelect" onchange="window.updateSettings()" class="hidden"><option value="12h">12-Hour</option><option value="24h">24-Hour</option></select>
+          </div>
+
+          <!-- LOG COOLDOWN -->
+          <div class="flex justify-between items-center pt-3 border-t" style="border-color: var(--card-border);">
+            <div>
+              <label class="text-[11px] font-bold block" style="color: var(--text-main);">Accidental Log Cooldown</label>
+              <p class="text-[9px]" style="color: var(--text-muted);">Prevents double-logging</p>
+            </div>
+            <div class="flex gap-1 rounded-xl p-1 border" style="background: var(--input-bg); border-color: var(--card-border);">
+              <button type="button" onclick="window.setLockSecs(60)" data-secs="60" class="cooldown-btn px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer">1m</button>
+              <button type="button" onclick="window.setLockSecs(300)" data-secs="300" class="cooldown-btn px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer">5m</button>
+              <button type="button" onclick="window.setLockSecs(600)" data-secs="600" class="cooldown-btn px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer">10m</button>
+            </div>
+            <select id="lockSecsInput" onchange="window.updateSettings()" class="hidden"><option value="60">1m</option><option value="300">5m</option><option value="600">10m</option></select>
+          </div>
+
+          <!-- HAPTIC FEEDBACK -->
+          <div class="flex justify-between items-center pt-3 border-t" style="border-color: var(--card-border);">
+            <div>
+              <label class="text-[11px] font-bold block" style="color: var(--text-main);">Tactile Haptic Feedback</label>
+              <p class="text-[9px]" style="color: var(--text-muted);">Vibrate on button holds and habit milestones</p>
+            </div>
+            <label class="premium-toggle shrink-0"><input type="checkbox" id="hapticsInput" onchange="window.updateSettings()" class="sr-only"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
+          </div>
+        </div>
+
+        <!-- CARD 3: FINANCIALS & DAILY LIMITS (TACTILE STEPPERS) -->
+        <div class="premium-card p-5 space-y-4">
+          <div class="flex items-center gap-2.5 border-b pb-3" style="border-color: var(--card-border);">
+            <div class="w-8 h-8 rounded-xl flex items-center justify-center" style="background: rgba(16,185,129,0.12); color: #10B981;">
+              <i data-lucide="banknote" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">Financials &amp; Daily Limits</h3>
+              <p class="text-[9px]" style="color: var(--text-muted);">Track your money saved and daily target limits</p>
+            </div>
+          </div>
+
+          <!-- CURRENCY -->
+          <div class="flex justify-between items-center">
+            <div>
+              <label class="text-[11px] font-bold block" style="color: var(--text-main);">Active Currency</label>
+              <p class="text-[9px]" style="color: var(--text-muted);">Used across all savings calculations</p>
+            </div>
+            <select id="currencySelect" onchange="window.updateSettings()" class="text-xs p-2.5 rounded-xl font-bold border outline-none cursor-pointer" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);">
+              <option value="AED">AED (د.إ)</option>
+              <option value="USD">USD ($)</option>
+              <option value="EUR">EUR (€)</option>
+              <option value="GBP">GBP (£)</option>
+              <option value="INR">INR (₹)</option>
+            </select>
+          </div>
+
+          <!-- DAILY LIMIT STEPPER -->
+          <div class="flex justify-between items-center pt-3 border-t" style="border-color: var(--card-border);">
+            <div>
+              <label class="text-[11px] font-bold block" style="color: var(--text-main);">Daily Stick Goal</label>
+              <p class="text-[9px]" style="color: var(--text-muted);">Max sticks you aim to smoke each day</p>
+            </div>
+            <div class="flex items-center gap-2 bg-[var(--input-bg)] border border-[var(--card-border)] p-1 rounded-xl">
+              <button type="button" onclick="window.adjustSetting('dailyLimit', -1, 1, 100)" class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm bg-[var(--card-bg)] active:scale-90 transition-transform cursor-pointer" style="color: var(--text-main);">−</button>
+              <span id="dailyLimitDisplay" class="numeric-display text-sm font-extrabold w-10 text-center" style="color: var(--text-main);">15</span>
+              <button type="button" onclick="window.adjustSetting('dailyLimit', 1, 1, 100)" class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm bg-[var(--card-bg)] active:scale-90 transition-transform cursor-pointer" style="color: var(--text-main);">+</button>
+            </div>
+            <input type="number" id="dailyLimitInput" value="15" class="hidden">
+          </div>
+
+          <!-- AUTO-REDUCE TOGGLE -->
+          <div class="flex justify-between items-center pt-3 border-t" style="border-color: var(--card-border);">
+            <div>
+              <label class="text-[11px] font-bold block" style="color: var(--text-main);">Auto-Reduce Limit</label>
+              <p class="text-[9px]" style="color: var(--text-muted);">Automatically lowers your daily goal by 1 stick every 7 days</p>
+            </div>
+            <label class="premium-toggle shrink-0"><input type="checkbox" id="autoReduceInput" onchange="window.updateSettings()" class="sr-only"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
+          </div>
+
+          <!-- PACK PRICE & SIZE -->
+          <div class="grid grid-cols-2 gap-3 pt-3 border-t" style="border-color: var(--card-border);">
+            <div class="space-y-1.5">
+              <label class="text-[11px] font-bold block" style="color: var(--text-main);">Pack Price</label>
+              <div class="flex items-center gap-1.5 bg-[var(--input-bg)] border border-[var(--card-border)] p-1 rounded-xl">
+                <button type="button" onclick="window.adjustSetting('packPrice', -1, 0, 9999)" class="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs bg-[var(--card-bg)] active:scale-90 transition-transform cursor-pointer" style="color: var(--text-main);">−</button>
+                <span id="packPriceDisplay" class="numeric-display text-xs font-extrabold flex-1 text-center" style="color: var(--text-main);">20</span>
+                <button type="button" onclick="window.adjustSetting('packPrice', 1, 0, 9999)" class="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs bg-[var(--card-bg)] active:scale-90 transition-transform cursor-pointer" style="color: var(--text-main);">+</button>
+              </div>
+              <input type="number" id="packPriceInput" value="20" class="hidden">
+            </div>
+
+            <div class="space-y-1.5">
+              <label class="text-[11px] font-bold block" style="color: var(--text-main);">Sticks Per Pack</label>
+              <div class="flex items-center gap-1.5 bg-[var(--input-bg)] border border-[var(--card-border)] p-1 rounded-xl">
+                <button type="button" onclick="window.adjustSetting('packSize', -1, 1, 100)" class="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs bg-[var(--card-bg)] active:scale-90 transition-transform cursor-pointer" style="color: var(--text-main);">−</button>
+                <span id="packSizeDisplay" class="numeric-display text-xs font-extrabold flex-1 text-center" style="color: var(--text-main);">20</span>
+                <button type="button" onclick="window.adjustSetting('packSize', 1, 1, 100)" class="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs bg-[var(--card-bg)] active:scale-90 transition-transform cursor-pointer" style="color: var(--text-main);">+</button>
+              </div>
+              <input type="number" id="packSizeInput" value="20" class="hidden">
+            </div>
+          </div>
+
+          <!-- COST PER STICK LIVE KPI -->
+          <div class="flex justify-between items-center p-3 rounded-xl border" style="background: var(--input-bg); border-color: var(--card-border);">
+            <div class="flex items-center gap-2">
+              <i data-lucide="tag" class="w-3.5 h-3.5" style="color: var(--accent);"></i>
+              <span class="text-[11px] font-bold" style="color: var(--text-main);">Calculated Cost Per Stick:</span>
+            </div>
+            <span id="costPerCigDisplay" class="numeric-display text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">--</span>
+          </div>
+        </div>
+
+        <!-- CARD 4: SMART NOTIFICATIONS & NEURAL INTERRUPTERS -->
+        <div class="premium-card p-5 space-y-4">
+          <div class="flex justify-between items-center border-b pb-3" style="border-color: var(--card-border);">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-xl flex items-center justify-center" style="background: rgba(139,92,246,0.12); color: #8B5CF6;">
+                <i data-lucide="bell" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">Smart Reminders &amp; Alerts</h3>
+                <p class="text-[9px]" style="color: var(--text-muted);">Neural habit friction and nudges</p>
+              </div>
+            </div>
+            <button onclick="window.requestNotifPermission()" id="notifPermBtn" class="text-[9px] font-extrabold px-3 py-1 rounded-full border bg-sky-500/10 text-sky-500 border-sky-500/20 active:scale-95 transition-all cursor-pointer">Enable Master</button>
           </div>
           
           <div class="space-y-3 pt-1">
             <div class="flex justify-between items-center">
               <div>
-                <label class="text-xs font-semibold block" style="color: var(--text-main);">⚡ SOS Interrupter Screen</label>
-                <p class="text-[9px]" style="color: var(--text-muted);">Show 15s micro-action interrupter when logging</p>
+                <label class="text-[11px] font-bold block" style="color: var(--text-main);">⚡ SOS Pattern Interrupter</label>
+                <p class="text-[9px]" style="color: var(--text-muted);">15s micro-action screen before logging to break dopamine loop</p>
               </div>
-              <label class="premium-toggle"><input type="checkbox" id="notifEnableSosInput" onchange="window.toggleNotifSetting('notifEnableSos')" class="sr-only"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
+              <label class="premium-toggle shrink-0"><input type="checkbox" id="notifEnableSosInput" onchange="window.toggleNotifSetting('notifEnableSos')" class="sr-only"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
             </div>
 
-            <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
+            <div class="flex justify-between items-center pt-2.5 border-t" style="border-color: var(--card-border);">
               <div>
-                <label class="text-xs font-semibold block" style="color: var(--text-main);">🌊 Wave Complete Alerts</label>
-                <p class="text-[9px]" style="color: var(--text-muted);">Notify when Ride It Out timer finishes</p>
+                <label class="text-[11px] font-bold block" style="color: var(--text-main);">🌊 Wave Complete Alerts</label>
+                <p class="text-[9px]" style="color: var(--text-muted);">Notify when Ride It Out delay timer finishes</p>
               </div>
-              <label class="premium-toggle"><input type="checkbox" id="notifWaveCompleteInput" onchange="window.toggleNotifSetting('notifWaveComplete')" class="sr-only"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
+              <label class="premium-toggle shrink-0"><input type="checkbox" id="notifWaveCompleteInput" onchange="window.toggleNotifSetting('notifWaveComplete')" class="sr-only"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
             </div>
 
-            <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
+            <div class="flex justify-between items-center pt-2.5 border-t" style="border-color: var(--card-border);">
               <div>
-                <label class="text-xs font-semibold block" style="color: var(--text-main);">🏆 Gap Widened Milestone</label>
-                <p class="text-[9px]" style="color: var(--text-muted);">Alert when current gap beats previous record</p>
+                <label class="text-[11px] font-bold block" style="color: var(--text-main);">🏆 Gap Record Broken Alerts</label>
+                <p class="text-[9px]" style="color: var(--text-muted);">Alert when your current gap beats your previous personal best</p>
               </div>
-              <label class="premium-toggle"><input type="checkbox" id="notifGapWidenedInput" onchange="window.toggleNotifSetting('notifGapWidened')" class="sr-only"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
+              <label class="premium-toggle shrink-0"><input type="checkbox" id="notifGapWidenedInput" onchange="window.toggleNotifSetting('notifGapWidened')" class="sr-only"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
             </div>
 
-            <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
+            <div class="flex justify-between items-center pt-2.5 border-t" style="border-color: var(--card-border);">
               <div>
-                <label class="text-xs font-semibold block" style="color: var(--text-main);">⏱️ Forgotten Log (1.5x Nudge)</label>
-                <p class="text-[9px]" style="color: var(--text-muted);">Reminder if usual gap time passes by 1.5x</p>
+                <label class="text-[11px] font-bold block" style="color: var(--text-main);">⏱️ Forgotten Log (1.5x Nudge)</label>
+                <p class="text-[9px]" style="color: var(--text-muted);">Reminder if your usual gap time passes by 1.5x</p>
               </div>
-              <label class="premium-toggle"><input type="checkbox" id="notifInactivityInput" onchange="window.toggleNotifSetting('notifInactivity')" class="sr-only"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
+              <label class="premium-toggle shrink-0"><input type="checkbox" id="notifInactivityInput" onchange="window.toggleNotifSetting('notifInactivity')" class="sr-only"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
             </div>
 
-            <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
+            <div class="flex justify-between items-center pt-2.5 border-t" style="border-color: var(--card-border);">
               <div>
-                <label class="text-xs font-semibold block" style="color: var(--text-main);">🧠 Predictive Craving Alerts</label>
-                <p class="text-[9px]" style="color: var(--text-muted);">Alerts 10 mins before your usual peak habit hour</p>
+                <label class="text-[11px] font-bold block" style="color: var(--text-main);">🧠 Predictive Urge Warnings</label>
+                <p class="text-[9px]" style="color: var(--text-muted);">Alert 10 mins before your highest risk smoking hour</p>
               </div>
-              <label class="premium-toggle"><input type="checkbox" id="notifPredictiveInput" onchange="window.toggleNotifSetting('notifPredictive')" class="sr-only"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
+              <label class="premium-toggle shrink-0"><input type="checkbox" id="notifPredictiveInput" onchange="window.toggleNotifSetting('notifPredictive')" class="sr-only"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
             </div>
           </div>
         </div>
 
+        <!-- CARD 5: CUSTOM PSYCHOLOGY TAGS -->
         <div class="premium-card p-5 space-y-4">
-          <h3 class="text-[10px] font-bold uppercase tracking-widest border-b pb-2 flex items-center gap-2" style="color: var(--text-muted); border-color: var(--card-border);"><i data-lucide="banknote" class="w-3 h-3"></i> Financials & Limits</h3>
-          <div class="flex justify-between items-center">
-            <label class="text-xs font-semibold" style="color: var(--text-main);">Currency</label>
-            <select id="currencySelect" onchange="window.updateSettings()" class="text-xs p-2 rounded-xl font-semibold border outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);"><option value="AED">AED (د.إ)</option><option value="USD">USD ($)</option><option value="EUR">EUR (€)</option><option value="GBP">GBP (£)</option><option value="INR">INR (₹)</option></select>
-          </div>
-          <div class="flex justify-between items-center">
-            <div class="pr-3">
-              <label class="text-xs font-semibold block" style="color: var(--text-main);">Daily Cigarette Goal</label>
-              <p class="text-[9px] leading-snug mt-0.5" style="color: var(--text-muted);">How many cigarettes/day you're aiming to stay under.</p>
+          <div class="flex items-center gap-2.5 border-b pb-3" style="border-color: var(--card-border);">
+            <div class="w-8 h-8 rounded-xl flex items-center justify-center" style="background: rgba(245,158,11,0.12); color: #F59E0B;">
+              <i data-lucide="tags" class="w-4 h-4"></i>
             </div>
-            <input type="number" id="dailyLimitInput" min="1" max="100" onchange="window.updateSettings()" class="numeric-display w-16 p-2 rounded-xl border text-center text-xs font-bold shrink-0" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);" value="15">
-          </div>
-          
-          <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
-            <div class="pr-3">
-              <label class="text-xs font-semibold block" style="color: var(--text-main);">Auto-Reduce Limit</label>
-              <p class="text-[9px] leading-snug mt-0.5" style="color: var(--text-muted);">Lower daily goal by 1 stick every week.</p>
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">Psychology &amp; Custom Tags</h3>
+              <p class="text-[9px]" style="color: var(--text-muted);">Manage your personal trigger categories</p>
             </div>
-            <label class="premium-toggle shrink-0"><input type="checkbox" id="autoReduceInput" onchange="window.updateSettings()" class="sr-only"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
           </div>
 
-          <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
-            <div class="pr-3">
-              <label class="text-xs font-semibold block" style="color: var(--text-main);">Pack Price</label>
-              <p class="text-[9px] leading-snug mt-0.5" style="color: var(--text-muted);">What one full pack costs you.</p>
-            </div>
-            <input type="number" id="packPriceInput" min="0" max="9999" onchange="window.updateSettings()" class="numeric-display w-20 p-2 rounded-xl border text-center text-xs font-bold shrink-0" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);" value="20">
-          </div>
-          <div class="flex justify-between items-center">
-            <div class="pr-3">
-              <label class="text-xs font-semibold block" style="color: var(--text-main);">Sticks Per Pack</label>
-              <p class="text-[9px] leading-snug mt-0.5" style="color: var(--text-muted);">How many sticks come in one pack.</p>
-            </div>
-            <input type="number" id="packSizeInput" min="1" max="100" onchange="window.updateSettings()" class="numeric-display w-16 p-2 rounded-xl border text-center text-xs font-bold shrink-0" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);" value="20">
-          </div>
-          <div class="flex justify-between items-center pt-3 border-t" style="border-color: var(--card-border);">
-            <label class="text-xs font-bold" style="color: var(--text-main);">Cost Per Cigarette</label>
-            <span id="costPerCigDisplay" class="numeric-display text-xs font-bold px-3 py-1.5 rounded-lg" style="background-color: var(--input-bg); color: var(--accent);">--</span>
-          </div>
-          <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--card-border);">
-            <div class="pr-3">
-              <label class="text-xs font-semibold block" style="color: var(--text-main);">Quit Date</label>
-              <p class="text-[9px] leading-snug mt-0.5" style="color: var(--text-muted);">Your target date to quit completely.</p>
-            </div>
-            <input type="date" id="quitDateInput" onchange="window.updateQuitDate()" class="numeric-display text-[11px] font-semibold p-2 rounded-xl border outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);">
-          </div>
-        </div>
-
-        <div class="premium-card p-5 space-y-4">
-          <h3 class="text-[10px] font-bold uppercase tracking-widest border-b pb-2 flex items-center gap-2" style="color: var(--text-muted); border-color: var(--card-border);"><i data-lucide="tag" class="w-3 h-3"></i> Custom Tags</h3>
           <div class="flex gap-2">
-            <input type="text" id="newTriggerInput" placeholder="New tag name..." class="w-full p-2.5 rounded-xl border text-xs font-semibold outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);">
-            <button onclick="window.addCustomTrigger()" class="px-4 bg-amber-500/20 text-amber-500 font-bold text-xs rounded-xl hover:bg-amber-500/30">Add</button>
+            <input type="text" id="newTriggerInput" placeholder="New trigger (e.g., Stress, Gaming)..." class="w-full p-2.5 rounded-xl border text-xs font-semibold outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);">
+            <button onclick="window.addCustomTrigger()" class="px-4 rounded-xl font-bold text-xs active:scale-95 transition-all shrink-0 cursor-pointer" style="background: var(--accent); color: var(--accent-text);">Add</button>
           </div>
           <div id="triggerListSettings" class="flex flex-wrap gap-2 pt-1"></div>
         </div>
 
-        <div class="premium-card p-5 space-y-3">
-          <div class="flex justify-between items-end border-b pb-2" style="border-color: var(--card-border);">
-            <h3 class="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2" style="color: var(--text-muted);"><i data-lucide="database" class="w-3 h-3"></i> Data Backup & Security</h3>
-            <p id="dataSummaryText" class="text-[9px] font-medium" style="color: var(--text-muted);">0 logs • Since --</p>
+        <!-- CARD 6: DATA BACKUP, EXPORT & MAINTENANCE -->
+        <div class="premium-card p-5 space-y-4">
+          <div class="flex justify-between items-center border-b pb-3" style="border-color: var(--card-border);">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-xl flex items-center justify-center" style="background: rgba(16,185,129,0.12); color: #10B981;">
+                <i data-lucide="database" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">Data &amp; Security</h3>
+                <p id="dataSummaryText" class="text-[9px]" style="color: var(--text-muted);">0 logs recorded</p>
+              </div>
+            </div>
           </div>
-          <div id="backupReminderBanner" class="hidden flex items-center gap-2 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+
+          <div id="backupReminderBanner" class="hidden flex items-center gap-2.5 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
             <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-500 shrink-0"></i>
             <p id="backupReminderText" class="text-[10px] font-semibold text-amber-500 flex-1">You haven't backed up your data yet</p>
           </div>
-          <div class="grid grid-cols-2 gap-2">
-            <button onclick="window.exportJSON()" class="py-3 bg-emerald-500/10 text-emerald-500 font-bold text-[11px] rounded-xl text-center active:scale-95 transition-transform border border-emerald-500/20 flex flex-col items-center justify-center"><i data-lucide="upload-cloud" class="w-4 h-4 mb-1"></i> Backup Data</button>
-            <button onclick="document.getElementById('importFileInput').click()" class="py-3 bg-blue-500/10 text-blue-500 font-bold text-[11px] rounded-xl text-center active:scale-95 transition-transform border border-blue-500/20 flex flex-col items-center justify-center"><i data-lucide="download-cloud" class="w-4 h-4 mb-1"></i> Restore Data</button>
+
+          <!-- BACKUP & RESTORE 2-COLUMN GRID -->
+          <div class="grid grid-cols-2 gap-2.5">
+            <button onclick="window.exportJSON()" class="p-3 rounded-xl border text-center active:scale-95 transition-all flex flex-col items-center justify-center gap-1.5 cursor-pointer" style="background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.2); color: #10B981;">
+              <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+              <span class="text-[11px] font-bold">Backup (JSON)</span>
+            </button>
+            <button onclick="document.getElementById('importFileInput').click()" class="p-3 rounded-xl border text-center active:scale-95 transition-all flex flex-col items-center justify-center gap-1.5 cursor-pointer" style="background: rgba(56,189,248,0.08); border-color: rgba(56,189,248,0.2); color: #38BDF8;">
+              <i data-lucide="download-cloud" class="w-4 h-4"></i>
+              <span class="text-[11px] font-bold">Restore (JSON)</span>
+            </button>
             <input type="file" id="importFileInput" class="hidden" accept=".json" onchange="window.importJSON(event)">
           </div>
-          <button onclick="window.exportLogsCSV()" class="w-full py-3 bg-sky-500/10 text-sky-500 font-bold text-xs rounded-xl text-center active:scale-95 transition-transform border border-sky-500/20 flex items-center justify-center gap-2"><i data-lucide="file-text" class="w-4 h-4"></i> Export CSV (Spreadsheet)</button>
-          <button onclick="window.setupPin()" id="pinStatusBtn" class="w-full py-3 bg-indigo-500/10 text-indigo-500 font-bold text-xs rounded-xl text-center active:scale-95 transition-transform">Set App PIN</button>
-          <button onclick="window.restartOnboarding()" class="w-full py-3 bg-purple-500/10 text-purple-500 font-bold text-xs rounded-xl text-center active:scale-95 transition-transform flex items-center justify-center gap-2"><i data-lucide="sparkles" class="w-4 h-4"></i> Show Tour Again</button>
-          <button onclick="window.resetSettings()" class="w-full py-3 font-bold text-xs rounded-xl text-center active:scale-95 transition-transform flex items-center justify-center gap-2" style="background: var(--input-bg); color: var(--text-muted);"><i data-lucide="settings" class="w-4 h-4"></i> Reset Settings to Defaults</button>
-          <button onclick="window.refreshAppCache()" class="w-full py-3 bg-cyan-500/10 text-cyan-500 font-bold text-xs rounded-xl text-center active:scale-95 transition-transform flex items-center justify-center gap-2"><i data-lucide="refresh-cw" class="w-4 h-4"></i> Refresh App (Clear Cache)</button>
-          <div class="pt-2 border-t" style="border-color: var(--card-border);"></div>
-          <p class="text-[8px] font-bold uppercase tracking-widest text-center" style="color: var(--text-muted);">Danger Zone</p>
-          <div class="pt-2 grid grid-cols-2 gap-2">
-            <button onclick="window.resetData('24h')" class="py-3 bg-orange-500/10 text-orange-500 font-bold text-[11px] rounded-xl text-center active:scale-95 transition-transform border border-orange-500/20">Wipe 24h Logs</button>
-            <button onclick="window.resetData('all')" class="py-3 bg-red-500/10 text-red-500 font-bold text-[11px] rounded-xl text-center active:scale-95 transition-transform border border-red-500/20">Wipe All Data</button>
+
+          <!-- ACTION BUTTONS LIST -->
+          <div class="space-y-2 pt-1">
+            <button onclick="window.exportLogsCSV()" class="w-full py-2.5 px-3 rounded-xl border text-xs font-bold active:scale-95 transition-all flex items-center justify-between cursor-pointer" style="background: var(--input-bg); border-color: var(--card-border); color: var(--text-main);">
+              <div class="flex items-center gap-2">
+                <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-400"></i>
+                <span>Export CSV (Excel / Numbers)</span>
+              </div>
+              <i data-lucide="chevron-right" class="w-4 h-4 text-gray-500"></i>
+            </button>
+
+            <button onclick="window.restartOnboarding()" class="w-full py-2.5 px-3 rounded-xl border text-xs font-bold active:scale-95 transition-all flex items-center justify-between cursor-pointer" style="background: var(--input-bg); border-color: var(--card-border); color: var(--text-main);">
+              <div class="flex items-center gap-2">
+                <i data-lucide="sparkles" class="w-4 h-4 text-purple-400"></i>
+                <span>Replay Guided App Tour</span>
+              </div>
+              <i data-lucide="chevron-right" class="w-4 h-4 text-gray-500"></i>
+            </button>
+
+            <button onclick="window.refreshAppCache()" class="w-full py-2.5 px-3 rounded-xl border text-xs font-bold active:scale-95 transition-all flex items-center justify-between cursor-pointer" style="background: var(--input-bg); border-color: var(--card-border); color: var(--text-main);">
+              <div class="flex items-center gap-2">
+                <i data-lucide="refresh-cw" class="w-4 h-4 text-cyan-400"></i>
+                <span>Refresh App &amp; Clear Cache</span>
+              </div>
+              <i data-lucide="chevron-right" class="w-4 h-4 text-gray-500"></i>
+            </button>
+
+            <button onclick="window.resetSettings()" class="w-full py-2.5 px-3 rounded-xl border text-xs font-bold active:scale-95 transition-all flex items-center justify-between cursor-pointer" style="background: var(--input-bg); border-color: var(--card-border); color: var(--text-muted);">
+              <div class="flex items-center gap-2">
+                <i data-lucide="settings" class="w-4 h-4"></i>
+                <span>Reset Settings to Defaults</span>
+              </div>
+              <i data-lucide="chevron-right" class="w-4 h-4 text-gray-500"></i>
+            </button>
           </div>
         </div>
 
-        <div class="premium-card p-4">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <i data-lucide="shield" class="w-4 h-4" style="color: var(--text-muted);"></i>
-              <span class="text-xs font-semibold" style="color: var(--text-main);">Privacy & Legal</span>
+        <!-- CARD 7: DANGER ZONE -->
+        <div class="premium-card p-5 space-y-3" style="border-color: rgba(239,68,68,0.25);">
+          <div class="flex items-center gap-2.5 border-b pb-3" style="border-color: rgba(239,68,68,0.15);">
+            <div class="w-8 h-8 rounded-xl flex items-center justify-center" style="background: rgba(239,68,68,0.12); color: #EF4444;">
+              <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-red-500">Danger Zone</h3>
+              <p class="text-[9px]" style="color: var(--text-muted);">Irreversible data actions</p>
             </div>
           </div>
-          <div class="mt-3 space-y-2">
-            <a href="privacy.html" target="_blank" rel="noopener noreferrer" class="block w-full py-3 px-4 font-bold text-xs rounded-xl text-center active:scale-95 transition-transform border flex items-center justify-center gap-2" style="background: var(--input-bg); color: var(--text-muted); border-color: var(--card-border);">
-              <i data-lucide="file-text" class="w-4 h-4"></i> Privacy Policy
-            </a>
-            <p class="text-[9px] text-center" style="color: var(--text-muted);">Last updated: August 3, 2026</p>
+          <div class="grid grid-cols-2 gap-2.5 pt-1">
+            <button onclick="window.resetData('24h')" class="py-2.5 px-2 rounded-xl text-center active:scale-95 transition-all border text-[10px] font-extrabold uppercase tracking-wider cursor-pointer" style="background: rgba(245,158,11,0.08); border-color: rgba(245,158,11,0.25); color: #F59E0B;">Wipe 24h Logs</button>
+            <button onclick="window.resetData('all')" class="py-2.5 px-2 rounded-xl text-center active:scale-95 transition-all border text-[10px] font-extrabold uppercase tracking-wider cursor-pointer" style="background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.3); color: #EF4444;">Wipe All Data</button>
           </div>
+        </div>
+
+        <!-- CARD 8: LEGAL & BUILD VERSION -->
+        <div class="premium-card p-4 flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
+            <div>
+              <span class="text-xs font-bold block" style="color: var(--text-main);">Pause Architecture</span>
+              <span class="text-[9px]" style="color: var(--text-muted);">v2.4.0 • Zero Cloud Tracking</span>
+            </div>
+          </div>
+          <a href="privacy.html" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-full border text-[10px] font-bold active:scale-95 transition-all" style="background: var(--input-bg); border-color: var(--card-border); color: var(--accent);">Privacy Policy</a>
         </div>
       </section>
     </div>
