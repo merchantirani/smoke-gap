@@ -3279,18 +3279,18 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
     let percent = diff / prevGapMs;
     if (percent < 1) {
       let rem = Math.ceil((prevGapMs - diff) / 60000);
-      newClass = 'mt-3 px-5 py-2 rounded-full border transition-all duration-500 bg-amber-500/10 border-amber-500/20';
-      newHtml = `<i data-lucide="alert-circle" class="w-3.5 h-3.5 text-amber-500"></i><span class="text-amber-500">${rem} min${rem>1?'s':''} left to beat previous gap</span>`;
+      newClass = 'mt-2 px-3.5 py-1 rounded-full border transition-all duration-500 bg-amber-500/10 border-amber-500/20 flex items-center justify-center';
+      newHtml = `<i data-lucide="alert-circle" class="w-3 h-3 text-amber-500"></i><span class="text-amber-500 text-[9px] font-bold uppercase tracking-wider">${rem}m left to beat previous gap</span>`;
       dotColor = '#10B981';
     } else {
       let extra = Math.floor((diff - prevGapMs) / 60000);
-      newClass = 'mt-3 px-5 py-2 rounded-full border transition-all duration-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.15)]';
-      newHtml = `<i data-lucide="trophy" class="w-3.5 h-3.5 text-emerald-500"></i><span class="text-emerald-500">Widened the gap by +${formatGap(extra)}</span>`;
+      newClass = 'mt-2 px-3.5 py-1 rounded-full border transition-all duration-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.15)] flex items-center justify-center';
+      newHtml = `<i data-lucide="trophy" class="w-3 h-3 text-emerald-400"></i><span class="text-emerald-400 text-[9px] font-bold uppercase tracking-wider">Gap Widened: +${formatGap(extra)}</span>`;
       dotColor = '#10B981';
     }
   } else {
-    newClass = 'mt-3 px-5 py-2 rounded-full border transition-all duration-500 bg-sky-500/10 border-sky-500/20';
-    newHtml = `<i data-lucide="rocket" class="w-3.5 h-3.5 text-sky-500"></i><span class="text-sky-500">Setting your first baseline gap</span>`;
+    newClass = 'mt-2 px-3.5 py-1 rounded-full border transition-all duration-500 bg-sky-500/10 border-sky-500/20 flex items-center justify-center';
+    newHtml = `<i data-lucide="rocket" class="w-3 h-3 text-sky-400"></i><span class="text-sky-400 text-[9px] font-bold uppercase tracking-wider">Setting first baseline gap</span>`;
     dotColor = '#0EA5E9';
   }
 
