@@ -160,8 +160,13 @@
     .chart-wrapper { position: relative; width: 100%; height: 180px; }
     .page-section { animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-    .live-dot { animation: live-pulse 2s infinite ease-in-out; box-shadow: 0 0 8px currentColor; }
-    @keyframes live-pulse { 0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 8px currentColor; } 50% { opacity: 0.5; transform: scale(0.9); box-shadow: 0 0 4px currentColor; } }
+    .apple-indicator-dot { width: 8px; height: 8px; border-radius: 9999px; display: inline-block; flex-shrink: 0; transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+    .apple-indicator-dot.dot-green { background-color: #22C55E; box-shadow: 0 0 10px rgba(34, 197, 94, 0.9), 0 0 2px #fff; animation: livePulse 2.5s infinite ease-in-out; }
+    .apple-indicator-dot.dot-amber { background-color: #F59E0B; box-shadow: 0 0 10px rgba(245, 158, 11, 0.9), 0 0 2px #fff; animation: livePulse 2s infinite ease-in-out; }
+    .apple-indicator-dot.dot-red { background-color: #EF4444; box-shadow: 0 0 14px rgba(239, 68, 68, 0.95), 0 0 3px #fff; animation: urgentPulse 1.2s infinite ease-in-out; }
+    .apple-indicator-dot.dot-blue { background-color: #38BDF8; box-shadow: 0 0 10px rgba(56, 189, 248, 0.9), 0 0 2px #fff; animation: livePulse 3s infinite ease-in-out; }
+    @keyframes livePulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(0.92); opacity: 0.75; } }
+    @keyframes urgentPulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.3); opacity: 0.65; } }
     .takeover-bg { background: radial-gradient(circle at center, var(--accent-glow) 0%, var(--bg-body) 80%); }
     .custom-input-wrapper { position: relative; display: flex; align-items: center; width: 100%; }
     .custom-input-wrapper input[type="date"], .custom-input-wrapper input[type="time"] { width: 100%; background: transparent; border: none; outline: none; color: var(--text-main); font-weight: 700; font-size: 0.95rem; padding-right: 32px; appearance: none; -webkit-appearance: none; }
@@ -472,33 +477,54 @@
   </div>
 
   <div class="app-container max-w-md mx-auto">
-    <!-- COMPACT & STREAMLINED DYNAMIC ISLAND HEADER -->
-    <header class="sticky top-0 z-40 backdrop-blur-xl border-b transition-all" style="background: linear-gradient(to bottom, var(--bg-body) 92%, transparent); border-color: var(--card-border);">
-      <div class="px-4 py-2 flex justify-between items-center max-w-md mx-auto">
-        <div class="flex items-center gap-2">
-          <div class="flex items-center gap-1.5 cursor-pointer active:scale-95 transition-transform" onclick="window.switchTab('tracker')">
-            <h1 class="brand-title text-xl tracking-tight logo-breathe">pause</h1>
-            <span id="headerLiveDot" class="w-2 h-2 rounded-full bg-emerald-500 live-dot shadow-[0_0_8px_rgba(16,185,129,0.6)]" role="status" aria-label="Current gap status"></span>
+    <!-- LUXURY APPLE DYNAMIC HEADER -->
+    <header class="sticky top-0 z-40 backdrop-blur-2xl border-b transition-all" style="background: linear-gradient(to bottom, var(--bg-body) 94%, transparent); border-color: var(--card-border);">
+      <div class="px-4 pt-3 pb-2 max-w-md mx-auto space-y-1.5">
+        <!-- Top Row: Brand + Status Pill + Action Controls -->
+        <div class="flex justify-between items-center">
+          
+          <!-- Left: Brand + Apple Indicator LED + Dynamic Status Tagline -->
+          <div class="cursor-pointer active:scale-95 transition-transform" onclick="window.switchTab('tracker')">
+            <div class="flex items-center gap-2">
+              <h1 class="brand-title text-2xl tracking-tight logo-breathe font-black">pause</h1>
+              <!-- Apple Luminescent Indicator LED -->
+              <span id="headerLiveDot" class="apple-indicator-dot dot-green" role="status" aria-label="Current gap status" title="Gap Health Status"></span>
+            </div>
+            <p id="headerTagline" class="text-[9px] font-extrabold uppercase tracking-[0.2em] transition-all duration-500 mt-0.5" style="color: var(--text-muted);">Widen the gap.</p>
           </div>
-          <span id="headerTagline" class="hidden sm:inline-block text-[8px] font-extrabold uppercase tracking-[0.16em] px-2 py-0.5 rounded-full border bg-white/5" style="color: var(--text-muted); border-color: var(--card-border);">Widen The Gap</span>
+
+          <!-- Right: Sleek Unified Executive Capsule & Share -->
+          <div class="flex items-center gap-2">
+            <!-- Streak & Shields Unified Capsule (Tap to open drawer) -->
+            <div onclick="window.showShieldDashboard()" class="px-3 py-1.5 rounded-full border flex items-center gap-2 active:scale-95 transition-transform cursor-pointer shadow-sm" style="background: var(--input-bg); border-color: var(--card-border);">
+              <span class="flex items-center gap-1">
+                <i data-lucide="flame" class="w-3.5 h-3.5 text-orange-500"></i>
+                <span id="headerStreak" class="numeric-display text-xs font-black text-orange-500">0d</span>
+              </span>
+              <span class="w-[1px] h-3 bg-white/10"></span>
+              <span class="flex items-center gap-1">
+                <i data-lucide="shield" class="w-3.5 h-3.5 text-sky-400"></i>
+                <span id="shieldCount" class="numeric-display text-xs font-black text-sky-400">0</span>
+              </span>
+            </div>
+
+            <!-- Share Action Button -->
+            <button onclick="window.shareProgress()" class="w-8 h-8 rounded-full border flex items-center justify-center active:scale-90 transition-transform cursor-pointer shadow-sm" style="background: var(--input-bg); border-color: var(--card-border);" aria-label="Share Progress" title="Share progress">
+              <i data-lucide="share-2" class="w-3.5 h-3.5" style="color: var(--accent);"></i>
+            </button>
+          </div>
         </div>
 
-        <div class="flex items-center gap-1.5">
-          <button onclick="window.showStatDetail('momentum')" class="px-2.5 py-1 rounded-full border flex items-center gap-1 active:scale-90 transition-transform cursor-pointer" style="background: var(--input-bg); border-color: var(--card-border);" title="Momentum Score">
+        <!-- Subtle Context Sub-row: Last Log & Today Count -->
+        <div id="lastSmokeRow" class="flex justify-between items-center pt-1 border-t text-[9px] font-bold tracking-wider uppercase" style="border-color: var(--card-border);">
+          <span class="flex items-center gap-1.5">
+            <i data-lucide="clock" class="w-3 h-3" style="color: var(--text-muted);"></i>
+            <span id="lastSmokeText" style="color: var(--text-muted);">Last: --</span>
+          </span>
+          <span class="flex items-center gap-1.5">
             <i data-lucide="zap" class="w-3 h-3 text-amber-500"></i>
-            <span id="momentumScoreHeader" class="numeric-display text-[11px] font-extrabold" style="color: var(--text-main);">0</span>
-          </button>
-          <button onclick="window.showShieldDashboard()" class="px-2.5 py-1 rounded-full border flex items-center gap-1 active:scale-90 transition-transform cursor-pointer" style="background: var(--input-bg); border-color: var(--card-border);" title="Cravings Defeated">
-            <i data-lucide="shield" class="w-3 h-3 text-sky-400"></i>
-            <span id="shieldCount" class="numeric-display text-[11px] font-extrabold text-sky-400">0</span>
-          </button>
-          <button onclick="window.showStatDetail('streak')" class="px-2.5 py-1 rounded-full border flex items-center gap-1 active:scale-90 transition-transform cursor-pointer" style="background: var(--input-bg); border-color: var(--card-border);" title="Streak">
-            <i data-lucide="flame" class="w-3 h-3 text-orange-500"></i>
-            <span id="headerStreak" class="numeric-display text-[11px] font-extrabold text-orange-500">0d</span>
-          </button>
-          <button onclick="window.shareProgress()" class="w-7 h-7 rounded-full border flex items-center justify-center active:scale-90 transition-transform cursor-pointer" style="background: var(--input-bg); border-color: var(--card-border);" aria-label="Share Progress" title="Share progress">
-            <i data-lucide="share-2" class="w-3.5 h-3.5" style="color: var(--accent);"></i>
-          </button>
+            <span id="todayCountHeader" style="color: var(--text-muted);">Today: 0 Sticks</span>
+          </span>
         </div>
       </div>
     </header>
@@ -522,7 +548,7 @@
         <!-- BALANCED FULL-SPACE UNIFIED WATCH CAROUSEL (SWIPE / TAP) -->
         <div id="heroCarousel" class="relative flex flex-col items-center justify-center pt-1 pb-1">
           
-          <div id="watchContainer" class="w-full relative min-h-[250px] flex items-center justify-center touch-pan-x" ontouchstart="window.touchStartX(event)" ontouchend="window.touchEndX(event)">
+          <div id="watchContainer" class="w-full relative min-h-[255px] flex items-center justify-center touch-pan-x" ontouchstart="window.touchStartX(event)" ontouchend="window.touchEndX(event)">
             
             <!-- WATCH 1: THE CLIMB (CENTERED PILLAR GAUGE) -->
             <div id="watchStyle1" onclick="window.showStatDetail('currentGap')" class="w-full max-w-[340px] mx-auto active:scale-[0.98] transition-all relative flex items-center justify-center gap-7 px-3 cursor-pointer">
@@ -614,30 +640,26 @@
           </div>
         </div>
 
-        <!-- EXECUTIVE DUAL ACTION HUB (SIDE-BY-SIDE ERGONOMIC CONTROL) -->
-        <div class="grid grid-cols-4 gap-2 pt-0.5">
-          <!-- Primary: Hold to Smoke (3 cols) -->
-          <div class="col-span-3">
-            <button id="mainLogBtn"
-                    onmousedown="window.startHold(event)" onmouseup="window.cancelHold(event)" onmouseleave="window.cancelHold(event)"
-                    ontouchstart="window.startHold(event)" ontouchend="window.cancelHold(event)" ontouchcancel="window.cancelHold(event)"
-                    class="hold-btn w-full py-3.5 rounded-2xl font-black text-xs uppercase tracking-wider active:scale-95 transition-all border-2 relative overflow-hidden flex items-center justify-center gap-2 cursor-pointer select-none"
-                    style="background: var(--accent); color: var(--accent-text); border-color: var(--accent); box-shadow: 0 6px 20px var(--accent-glow);">
-              <div id="holdProgress"></div>
-              <span class="relative z-10 flex items-center justify-center gap-2 font-black">
-                <i data-lucide="flame" class="w-4 h-4" id="holdIcon"></i>
-                <span id="holdText">Hold to Smoke</span>
-              </span>
-            </button>
-          </div>
+        <!-- TACTILE ACTION HUB -->
+        <div class="space-y-2 pt-1">
+          <!-- Primary Hold to Smoke -->
+          <button id="mainLogBtn"
+                  onmousedown="window.startHold(event)" onmouseup="window.cancelHold(event)" onmouseleave="window.cancelHold(event)"
+                  ontouchstart="window.startHold(event)" ontouchend="window.cancelHold(event)" ontouchcancel="window.cancelHold(event)"
+                  class="hold-btn w-full py-4 rounded-2xl font-black text-xs uppercase tracking-wider active:scale-95 transition-all border-2 relative overflow-hidden flex items-center justify-center gap-2 cursor-pointer shadow-xl select-none"
+                  style="background: var(--accent); color: var(--accent-text); border-color: var(--accent); box-shadow: 0 8px 24px var(--accent-glow);">
+            <div id="holdProgress"></div>
+            <span class="relative z-10 flex items-center justify-center gap-2 font-black">
+              <i data-lucide="flame" class="w-4 h-4" id="holdIcon"></i>
+              <span id="holdText">Hold to Smoke</span>
+            </span>
+          </button>
 
-          <!-- Companion: Ride Urge / Delay Timer (1 col) -->
-          <div class="col-span-1">
-            <button onclick="window.openWaveModal()" class="w-full h-full py-3.5 flex flex-col items-center justify-center rounded-2xl active:scale-95 transition-all border cursor-pointer" style="background: rgba(16,185,129,0.12); color: #10B981; border-color: rgba(16,185,129,0.25);" title="Ride the Urge">
-              <i data-lucide="shield" class="w-4 h-4 text-emerald-400 mb-0.5"></i>
-              <span class="text-[8px] font-black uppercase tracking-wider text-emerald-400">Ride Urge</span>
-            </button>
-          </div>
+          <!-- Companion Ride Urge & Delay Bar -->
+          <button onclick="window.openWaveModal()" class="w-full py-2.5 flex items-center justify-center gap-2 rounded-2xl active:scale-95 transition-all border cursor-pointer backdrop-blur-md" style="background: rgba(16,185,129,0.1); color: #10B981; border-color: rgba(16,185,129,0.25);" title="Ride the Urge">
+            <i data-lucide="shield" class="w-4 h-4 text-emerald-400"></i>
+            <span class="text-[9px] font-extrabold uppercase tracking-wider text-emerald-400">Ride Urge (10m Delay)</span>
+          </button>
         </div>
 
         <!-- DELAY WAVE OVERLAY (WHEN ACTIVE) -->
@@ -2117,7 +2139,7 @@
   <div id="pinSetupModal" class="hidden fixed inset-0 backdrop-blur-sm z-[10000] flex items-center justify-center p-6" style="background-color: var(--overlay-bg);" onclick="if(event.target===this) window.closePinSetupModal()"><div class="dialog-card p-6 space-y-4 max-w-xs w-full text-center" style="padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));"><i data-lucide="lock-keyhole" class="w-8 h-8 mx-auto" style="color: var(--accent);"></i><h3 class="text-sm font-bold uppercase tracking-widest" style="color: var(--text-main);">Set 4-Digit PIN</h3><input type="tel" inputmode="numeric" maxlength="4" id="pinSetupInput" placeholder="••••" data-ph-no-capture="true" class="numeric-display w-full text-center text-2xl tracking-[0.6em] p-3 rounded-xl border outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);"><p id="pinSetupError" class="text-[10px] text-red-500 hidden">Must be exactly 4 digits.</p><div class="flex gap-3 pt-1"><button onclick="window.closePinSetupModal()" class="flex-1 py-3 rounded-xl text-xs font-bold active:scale-95 transition-transform" style="background-color: var(--input-bg); color: var(--text-main);">Cancel</button><button onclick="window.savePinSetup()" class="flex-1 py-3 rounded-xl text-xs font-bold active:scale-95 transition-transform" style="background: var(--accent); color: var(--accent-text);">Save</button></div></div></div>
 
   <!-- SCRIPT SINK - RELIABLE BOOTSTRAP -->
-  <script src="app.js?v=2.4.3"></script>
+  <script src="app.js?v=2.4.4"></script>
   <script>
     window.addEventListener('DOMContentLoaded', function() {
       if (typeof window.bootApp === 'function') {

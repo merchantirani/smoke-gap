@@ -3272,8 +3272,28 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
     }
   }
 
-  let dotColor = '#9CA3AF', newClass = '', newHtml = '';
+  let newClass = '', newHtml = '', dotDotClass = 'dot-green';
   const liveDot = document.getElementById('headerLiveDot');
+
+  const todayLogs = logs.filter(l => l.timestamp && new Date(l.timestamp).toDateString() === new Date().toDateString());
+  const lastLogItem = logs.length > 0 ? logs[logs.length - 1] : null;
+  const lastGapMins = lastLogItem && lastLogItem.gap ? lastLogItem.gap : null;
+  const isOnFire = (logs.length >= 2 && lastGapMins !== null && lastGapMins <= 30) || (todayLogs.length >= Math.ceil(settings.dailyLimit * 0.8));
+
+  if (isOnFire) {
+    dotDotClass = 'dot-red';
+  } else if (prevGapMs > 0) {
+    let percent = diff / prevGapMs;
+    if (percent < 0.7) {
+      dotDotClass = 'dot-green';
+    } else if (percent < 1) {
+      dotDotClass = 'dot-amber';
+    } else {
+      dotDotClass = 'dot-green';
+    }
+  } else {
+    dotDotClass = 'dot-blue';
+  }
 
   if (prevGapMs > 0) {
     let percent = diff / prevGapMs;
@@ -3281,20 +3301,19 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
       let rem = Math.ceil((prevGapMs - diff) / 60000);
       newClass = 'mt-2 px-3.5 py-1 rounded-full border transition-all duration-500 bg-amber-500/10 border-amber-500/20 flex items-center justify-center';
       newHtml = `<i data-lucide="alert-circle" class="w-3 h-3 text-amber-500"></i><span class="text-amber-500 text-[9px] font-bold uppercase tracking-wider">${rem}m left to beat previous gap</span>`;
-      dotColor = '#10B981';
     } else {
       let extra = Math.floor((diff - prevGapMs) / 60000);
       newClass = 'mt-2 px-3.5 py-1 rounded-full border transition-all duration-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.15)] flex items-center justify-center';
       newHtml = `<i data-lucide="trophy" class="w-3 h-3 text-emerald-400"></i><span class="text-emerald-400 text-[9px] font-bold uppercase tracking-wider">Gap Widened: +${formatGap(extra)}</span>`;
-      dotColor = '#10B981';
     }
   } else {
     newClass = 'mt-2 px-3.5 py-1 rounded-full border transition-all duration-500 bg-sky-500/10 border-sky-500/20 flex items-center justify-center';
     newHtml = `<i data-lucide="rocket" class="w-3 h-3 text-sky-400"></i><span class="text-sky-400 text-[9px] font-bold uppercase tracking-wider">Setting first baseline gap</span>`;
-    dotColor = '#0EA5E9';
   }
 
-  if (liveDot) { liveDot.style.backgroundColor = dotColor; liveDot.style.boxShadow = `0 0 8px ${dotColor}`; }
+  if (liveDot) {
+    liveDot.className = `apple-indicator-dot ${dotDotClass}`;
+  }
   const statusWrapper = document.getElementById('smartStatusWrapper');
   const statusText = document.getElementById('smartStatusText');
   if (statusText && statusText.dataset.rawHtml !== newHtml) { 
