@@ -3003,74 +3003,85 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
     }
   }
 
-  const fill1 = document.getElementById('heroHorizonFill');
-  const marker1 = document.getElementById('heroHorizonMarker');
-  const badge1 = document.getElementById('heroRecordBadge3');
-  const status1 = document.getElementById('heroHorizonStatus');
-  const sub1 = document.getElementById('heroHorizonSub');
+  // --- Style 1: The Climb ---
+  const fillClimb = document.getElementById('heroClimbFill');
+  const badge1 = document.getElementById('heroRecordBadge1');
+  const status1 = document.getElementById('heroClimbStatus');
+  const sub1 = document.getElementById('heroClimbSub');
 
-  if (fill1 && avgGapMs > 0) {
-    if (marker1) marker1.classList.remove('hidden');
+  if (fillClimb && avgGapMs > 0) {
+    fillClimb.style.height = `${pct}%`;
     if (isVictory) {
-      fill1.style.width = `${pct}%`; 
-      fill1.style.backgroundColor = '#10B981'; 
-      fill1.style.boxShadow = "0 0 15px rgba(16, 185, 129, 0.4)";
+      fillClimb.style.background = 'linear-gradient(180deg, #34D399, #10B981)'; 
+      fillClimb.style.boxShadow = "0 0 15px rgba(16, 185, 129, 0.5)";
       if (badge1) badge1.classList.remove('hidden');
-      if (status1) { status1.innerText = "Victory Zone"; status1.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"; }
+      if (status1) { status1.innerText = "Victory Zone"; status1.className = "text-[9px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 w-max"; }
       if (sub1) sub1.innerText = `Record Extended: +${formatGap(extraMins)}`;
     } else {
-      fill1.style.width = `${pct}%`; 
-      fill1.style.backgroundColor = 'var(--accent)'; 
-      fill1.style.boxShadow = "none";
+      fillClimb.style.background = 'linear-gradient(180deg, #FBBF24, #F59E0B)'; 
+      fillClimb.style.boxShadow = "0 0 12px rgba(245,158,11,0.4) inset";
       if (badge1) badge1.classList.add('hidden');
-      if (status1) { status1.innerText = "Pacing"; status1.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20"; }
-      if (sub1) sub1.innerText = `Target Avg: ${formatGap(Math.round(avgGapMs/60000))} (${remMins}m left)`;
+      if (status1) { status1.innerText = "Pacing"; status1.className = "text-[9px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 w-max"; }
+      if (sub1) sub1.innerText = `Target: ${formatGap(Math.round(avgGapMs/60000))} (${remMins}m left)`;
     }
   }
 
+  // --- Style 2: The Precision Chrono Orbit ---
   const ringFill = document.getElementById('heroRingFill');
   const badge2 = document.getElementById('heroRecordBadge2');
   const status2 = document.getElementById('heroRingStatus');
   const sub2 = document.getElementById('heroRingSub');
+  const pct2 = document.getElementById('heroRingPct');
   
   if (ringFill && avgGapMs > 0) {
     let ringPct = isVictory ? Math.min(100, 70 + bonusPct) : pct;
-    const offset = 314.16 - (314.16 * (ringPct / 100));
+    const circumference = 515.22;
+    const offset = circumference - (circumference * (ringPct / 100));
     ringFill.style.strokeDashoffset = offset;
+
+    if (pct2) {
+      const livePct = Math.min(999, Math.round((diff / avgGapMs) * 100));
+      pct2.innerText = isVictory ? `+${formatGap(extraMins)} past target` : `${livePct}% of target`;
+      pct2.style.color = isVictory ? '#10B981' : 'var(--accent)';
+    }
 
     if (isVictory) {
       ringFill.style.stroke = '#10B981'; 
-      ringFill.style.filter = "drop-shadow(0 0 8px rgba(16, 185, 129, 0.5))";
+      ringFill.style.filter = "drop-shadow(0 0 10px rgba(16, 185, 129, 0.6))";
       if (badge2) badge2.classList.remove('hidden');
-      if (status2) { status2.innerText = "Victory Zone"; status2.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"; }
+      if (status2) { status2.innerText = "Victory Zone"; status2.className = "text-[9px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 mb-0.5"; }
       if (sub2) sub2.innerText = `Target Beaten: +${formatGap(extraMins)}`;
     } else {
       ringFill.style.stroke = 'var(--accent)'; 
       ringFill.style.filter = "drop-shadow(0 0 8px var(--accent-glow))";
       if (badge2) badge2.classList.add('hidden');
-      if (status2) { status2.innerText = "Pacing"; status2.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20"; }
+      if (status2) { status2.innerText = "Pacing"; status2.className = "text-[9px] font-extrabold uppercase tracking-widest px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 mb-0.5"; }
       if (sub2) sub2.innerText = `Target: ${formatGap(Math.round(avgGapMs/60000))} (${remMins}m left)`;
     }
   }
 
-  const fill3 = document.getElementById('heroClimbFill');
-  const badge3 = document.getElementById('heroRecordBadge1');
-  const status3 = document.getElementById('heroClimbStatus');
-  const sub3 = document.getElementById('heroClimbSub');
+  // --- Style 3: The Horizon Speedometer ---
+  const fillHorizon = document.getElementById('heroHorizonFill');
+  const markerHorizon = document.getElementById('heroHorizonMarker');
+  const badge3 = document.getElementById('heroRecordBadge3');
+  const status3 = document.getElementById('heroHorizonStatus');
+  const sub3 = document.getElementById('heroHorizonSub');
 
-  if (fill3 && avgGapMs > 0) {
-    fill3.style.height = `${pct}%`;
+  if (fillHorizon && avgGapMs > 0) {
+    if (markerHorizon) markerHorizon.classList.remove('hidden');
     if (isVictory) {
-      fill3.style.background = 'linear-gradient(180deg, #34D399, #10B981)'; 
-      fill3.style.boxShadow = "0 0 15px rgba(16, 185, 129, 0.5)";
+      fillHorizon.style.width = `${pct}%`; 
+      fillHorizon.style.backgroundColor = '#10B981'; 
+      fillHorizon.style.boxShadow = "0 0 15px rgba(16, 185, 129, 0.4)";
       if (badge3) badge3.classList.remove('hidden');
-      if (status3) { status3.innerText = "Victory Zone"; status3.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 w-max"; }
-      if (sub3) sub3.innerText = `Record Extended: +${formatGap(extraMins)}`;
+      if (status3) { status3.innerText = "Victory Zone"; status3.className = "text-[9px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"; }
+      if (sub3) sub3.innerText = `+${formatGap(extraMins)} (New Record)`;
     } else {
-      fill3.style.background = 'linear-gradient(180deg, #FBBF24, #10B981)'; 
-      fill3.style.boxShadow = "0 0 12px rgba(245,158,11,0.4) inset";
+      fillHorizon.style.width = `${pct}%`; 
+      fillHorizon.style.backgroundColor = 'var(--accent)'; 
+      fillHorizon.style.boxShadow = "none";
       if (badge3) badge3.classList.add('hidden');
-      if (status3) { status3.innerText = "Pacing"; status3.className = "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 w-max"; }
+      if (status3) { status3.innerText = "Pacing"; status3.className = "text-[9px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20"; }
       if (sub3) sub3.innerText = `Target: ${formatGap(Math.round(avgGapMs/60000))} (${remMins}m left)`;
     }
   }
