@@ -1875,42 +1875,113 @@ function renderHistory(tId = 'fullHistoryList', homeLimit = 3) {
 
 function renderHistoryItem(l) {
   const prev = l.origIdx > 0 ? logs[l.origIdx - 1] : null;
-  let trendClass = 'bg-gray-500/10 text-gray-400', trendIcon = 'minus', valueColor = 'var(--accent)';
-  if (l.gap !== null && l.gap !== undefined && prev && prev.gap !== null && prev.gap !== undefined) {
-    if (l.gap > prev.gap) { trendClass = 'bg-emerald-500/10 text-emerald-500'; trendIcon = 'trending-up'; valueColor = '#10B981'; }
-    else if (l.gap < prev.gap) { trendClass = 'bg-red-500/10 text-red-500'; trendIcon = 'trending-down'; valueColor = '#EF4444'; }
-  }
+  const timeStr = l.timestamp ? formatAppTime(new Date(l.timestamp)) : '--:--';
   
-  let tagsArr = (Array.isArray(l.tags) && l.tags.length > 0) ? l.tags : (l.trigger ? [l.trigger] : ['Uncategorized']);
-  const visibleTags = tagsArr.slice(0, 2).map(esc).join(', ');
-  const extraCount = tagsArr.length - 2; 
-  const tagsDisplay = extraCount > 0 ? `${visibleTags} <span class="opacity-60">+${extraCount} more</span>` : visibleTags;
+  // Gap analysis & trend
+  let gapBadgeHtml = '';
+  let gapColor = 'var(--text-main)';
+  let trendDotClass = 'bg-gray-400';
   
-  let intensityDots = ''; 
-  let intVal = l.intensity || 3;
-  for (let i = 1; i <= 5; i++) { 
-    intensityDots += `<div class="w-1.5 h-1.5 rounded-full" style="background-color: ${i <= intVal ? 'var(--accent)' : 'rgba(156,163,175,0.2)'};"></div>`; 
+  if (l.gap !== null && l.gap !== undefined) {
+    if (prev && prev.gap !== null && prev.gap !== undefined) {
+      const diffMins = l.gap - prev.gap;
+      if (diffMins > 0) {
+        trendDotClass = 'bg-emerald-500 shadow-[0_0_8px_#10B981]';
+        gapColor = '#10B981';
+        gapBadgeHtml = `<span class="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">📈 +${formatGap(diffMins)}</span>`;
+      } else if (diffMins < 0) {
+        trendDotClass = 'bg-amber-500';
+        gapColor = 'var(--accent)';
+        gapBadgeHtml = `<span class="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">📉 -${formatGap(Math.abs(diffMins))}</span>`;
+      } else {
+        gapBadgeHtml = `<span class="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-gray-500/10 text-gray-400">Equal</span>`;
+      }
+    } else {
+      gapBadgeHtml = `<span class="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-sky-500/10 text-sky-400">Baseline</span>`;
+    }
   }
 
-  const timeStr = l.timestamp ? formatAppTime(new Date(l.timestamp)) : '--:--';
+  // Tags Chips
+  let tagsArr = (Array.isArray(l.tags) && l.tags.length > 0) ? l.tags : (l.trigger ? [l.trigger] : []);
+  let tagsHtml = tagsArr.slice(0, 2).map(t => {
+    let emoji = '🏷️';
+    if (/coffee|morning/i.test(t)) emoji = '☕';
+    else if (/stress|work/i.test(t)) emoji = '⚡';
+    else if (/meal|food|lunch|dinner/i.test(t)) emoji = '🍽️';
+    else if (/drive|car|traffic/i.test(t)) emoji = '🚗';
+    else if (/bored|idle/i.test(t)) emoji = '🥱';
+    else if (/social|party|friend/i.test(t)) emoji = '👥';
+    return `<span class="inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-lg" style="background: var(--input-bg); border: 1px solid var(--card-border); color: var(--text-main);">${emoji} ${esc(t)}</span>`;
+  }).join(' ');
+
+  if (tagsArr.length > 2) {
+    tagsHtml += ` <span class="text-[8px] font-bold opacity-60">+${tagsArr.length - 2}</span>`;
+  }
+
+  // Mood Chip
   const moodDef = moodDefFor(l.mood);
-  const moodHtml = moodDef
-    ? `<span class="mr-1 inline-flex items-center justify-center w-4 h-4 rounded-full shrink-0" title="Mood: ${moodDef.label}" style="background:${moodDef.color};color:#fff;"><i data-lucide="${moodDef.icon}" class="w-2.5 h-2.5"></i></span>`
-    : (l.mood ? `<span class="mr-1">${l.mood}</span>` : '');
-  const noteHtml = l.note ? `<div class="flex items-start gap-1 mt-1.5"><i data-lucide="edit-3" class="w-2.5 h-2.5 shrink-0 mt-0.5" style="color: var(--text-muted);"></i><span class="text-[10px] leading-relaxed italic" style="color: var(--text-muted);">${esc(l.note.substring(0, 200))}</span></div>` : '';
+  const moodHtml = moodDef ? `
+    <span class="inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-lg" style="background: ${moodDef.color}18; border: 1px solid ${moodDef.color}35; color: ${moodDef.color};">
+      <i data-lucide="${moodDef.icon}" class="w-2.5 h-2.5"></i> ${moodDef.label}
+    </span>
+  ` : '';
+
+  // Intensity Micro Bar (5 micro segments)
+  let intVal = l.intensity || 3;
+  let intensitySegments = '';
+  for (let i = 1; i <= 5; i++) {
+    const isFilled = i <= intVal;
+    let segColor = 'rgba(156,163,175,0.2)';
+    if (isFilled) {
+      segColor = intVal <= 2 ? '#10B981' : (intVal === 3 ? '#F59E0B' : '#EF4444');
+    }
+    intensitySegments += `<div class="w-1.5 h-2.5 rounded-sm" style="background-color: ${segColor};"></div>`;
+  }
+
+  // Note Snippet (clean 1-line quote only if note exists)
+  const noteHtml = l.note ? `
+    <div class="pt-1.5 mt-1 border-t flex items-center gap-1.5 text-[9.5px] italic truncate" style="border-color: var(--card-border); color: var(--text-muted);">
+      <i data-lucide="message-square" class="w-2.5 h-2.5 shrink-0 opacity-60"></i>
+      <span class="truncate">"${esc(l.note.substring(0, 100))}"</span>
+    </div>
+  ` : '';
+
+  const hasSubrow = tagsHtml || moodHtml;
 
   return `
-  <div onclick="window.openTriggerModal(${l.origIdx})" class="premium-card p-4 flex justify-between items-center relative overflow-hidden cursor-pointer active:scale-[0.98] transition-transform hover:bg-gray-500/5">
-    <button onclick="event.stopPropagation();window.deleteLogFromHistory(${l.origIdx})" class="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center active:scale-90 transition-all z-10 hover:bg-red-500/10" style="color: rgba(239,68,68,0.4);" title="Delete this log"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
-    <div class="flex items-start gap-3 flex-1 min-w-0 pr-3">
-      <div class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${trendClass}"><i data-lucide="${trendIcon}" class="w-3.5 h-3.5"></i></div>
-      <div class="flex-1 min-w-0">
-        <div class="font-bold tracking-wide flex items-center gap-2" style="color: var(--text-main);">${timeStr}${moodHtml}<div class="flex gap-0.5 ml-2">${intensityDots}</div></div>
-        <div class="text-[10px] font-bold uppercase mt-0.5 flex items-start gap-1" style="color: var(--text-muted);"><i data-lucide="tag" class="w-3 h-3 shrink-0 mt-0.5"></i><span class="leading-relaxed whitespace-normal break-words">${tagsDisplay}</span></div>
-        ${noteHtml}
+  <div onclick="window.openTriggerModal(${l.origIdx})" class="premium-card p-3 rounded-2xl relative overflow-hidden cursor-pointer active:scale-[0.98] transition-all hover:bg-gray-500/5 space-y-1.5">
+    <!-- Top Row: Time + Gap Duration + Trend Badge -->
+    <div class="flex items-center justify-between gap-2">
+      <!-- Left: Indicator dot + Time -->
+      <div class="flex items-center gap-2">
+        <div class="w-2 h-2 rounded-full ${trendDotClass}"></div>
+        <span class="text-xs font-black tracking-tight" style="color: var(--text-main); font-variant-numeric: tabular-nums;">${timeStr}</span>
+      </div>
+
+      <!-- Right: Gap Duration + Delta Badge + Delete Button -->
+      <div class="flex items-center gap-2">
+        ${gapBadgeHtml}
+        <div class="numeric-display font-black text-xs tracking-tight" style="color: ${gapColor}; font-variant-numeric: tabular-nums;">${formatGap(l.gap)}</div>
+        <button onclick="event.stopPropagation();window.deleteLogFromHistory(${l.origIdx})" class="w-6 h-6 rounded-full flex items-center justify-center text-gray-500 hover:text-red-400 active:scale-90 transition-all cursor-pointer" title="Delete log">
+          <i data-lucide="trash-2" class="w-3 h-3"></i>
+        </button>
       </div>
     </div>
-    <div class="numeric-display font-bold text-base shrink-0" style="color: ${valueColor};">${formatGap(l.gap)}</div>
+
+    <!-- Middle Row: Tags + Mood + Intensity Bar (Clean & Compact) -->
+    ${hasSubrow || intVal ? `
+    <div class="flex items-center justify-between gap-2 pt-0.5">
+      <div class="flex items-center gap-1.5 flex-wrap flex-1 min-w-0">
+        ${moodHtml}
+        ${tagsHtml}
+      </div>
+      <div class="flex items-center gap-0.5 shrink-0" title="Intensity: ${intVal}/5">
+        ${intensitySegments}
+      </div>
+    </div>
+    ` : ''}
+
+    ${noteHtml}
   </div>`;
 }
 
