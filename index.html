@@ -501,14 +501,83 @@
           </div>
         </div>
 
+        <!-- SLIDE 5: INSTALL APP & ADD TO HOME SCREEN -->
+        <div id="onboardSlide5" class="hidden flex flex-col items-center text-center space-y-4">
+          <!-- Glowing App Icon -->
+          <div class="relative flex items-center justify-center">
+            <div class="w-16 h-16 rounded-[22px] flex items-center justify-center shadow-2xl relative z-10" style="background: linear-gradient(135deg, #1C1E2A 0%, #0B0C12 100%); border: 1.5px solid var(--accent); box-shadow: 0 0 25px var(--accent-glow);">
+              <i data-lucide="sparkles" class="w-8 h-8" style="color: var(--accent);"></i>
+            </div>
+            <div class="absolute -inset-2 rounded-full blur-xl opacity-50 bg-amber-500"></div>
+          </div>
+
+          <div>
+            <h2 class="text-xl font-black tracking-tight" style="color: var(--text-main);">Install <span class="brand-title">pause</span> App</h2>
+            <p class="text-[10px] font-semibold mt-0.5" style="color: var(--accent);">Add to your Home Screen for Full Native Experience</p>
+          </div>
+
+          <!-- Platform Selector Tabs -->
+          <div class="w-full flex p-1 rounded-xl border" style="background: var(--input-bg); border-color: var(--card-border);">
+            <button type="button" onclick="window.switchInstallGuide('ios')" id="installTabIos" class="flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer" style="background: var(--card-bg); color: var(--text-main); border: 1px solid var(--card-border);">
+              <span>🍎 iPhone / iPad</span>
+            </button>
+            <button type="button" onclick="window.switchInstallGuide('android')" id="installTabAndroid" class="flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer" style="color: var(--text-muted);">
+              <span>🤖 Android / PC</span>
+            </button>
+          </div>
+
+          <!-- iOS Safari Visual Guide -->
+          <div id="installGuideIos" class="w-full p-4 rounded-2xl border text-left space-y-3" style="background: var(--input-bg); border-color: var(--card-border);">
+            <div class="flex items-center gap-3">
+              <div class="w-7 h-7 rounded-xl flex items-center justify-center font-black text-xs shrink-0" style="background: rgba(56,189,248,0.15); color: #38BDF8;">1</div>
+              <div class="flex-1 min-w-0">
+                <p class="text-[11px] font-bold" style="color: var(--text-main);">Tap Safari's Share Icon</p>
+                <p class="text-[9px]" style="color: var(--text-muted);">Look for the <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-white/10 text-white font-mono text-[9px]">⬆️ Share</span> button in Safari bottom bar</p>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3 pt-2 border-t" style="border-color: var(--card-border);">
+              <div class="w-7 h-7 rounded-xl flex items-center justify-center font-black text-xs shrink-0" style="background: rgba(16,185,129,0.15); color: #10B981;">2</div>
+              <div class="flex-1 min-w-0">
+                <p class="text-[11px] font-bold" style="color: var(--text-main);">Select "Add to Home Screen"</p>
+                <p class="text-[9px]" style="color: var(--text-muted);">Scroll down the share sheet and tap <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-white/10 text-white font-mono text-[9px]">➕ Add to Home Screen</span></p>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3 pt-2 border-t" style="border-color: var(--card-border);">
+              <div class="w-7 h-7 rounded-xl flex items-center justify-center font-black text-xs shrink-0" style="background: rgba(245,158,11,0.15); color: #F59E0B;">3</div>
+              <div class="flex-1 min-w-0">
+                <p class="text-[11px] font-bold" style="color: var(--text-main);">Tap "Add" &amp; Launch</p>
+                <p class="text-[9px]" style="color: var(--text-muted);">Tap Add in top right. Opens as a full distraction-free standalone app!</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Android / Desktop 1-Click Install Card -->
+          <div id="installGuideAndroid" class="hidden w-full p-4 rounded-2xl border text-center space-y-3" style="background: var(--input-bg); border-color: var(--card-border);">
+            <div class="py-2">
+              <button type="button" onclick="window.triggerOnboardInstall()" class="w-full py-3.5 px-4 rounded-xl font-black text-xs uppercase tracking-wider active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg cursor-pointer" style="background: linear-gradient(135deg, #10B981, #059669); color: #fff; box-shadow: 0 6px 20px rgba(16,185,129,0.3);">
+                <i data-lucide="download" class="w-4 h-4"></i> 1-Tap Install App
+              </button>
+            </div>
+            <p class="text-[9px] leading-relaxed" style="color: var(--text-muted);">If prompt doesn't open: Tap Chrome's 3 dots (<span class="font-bold text-white">⋮</span>) ➔ <strong>"Add to Home Screen"</strong> or <strong>"Install app"</strong>.</p>
+          </div>
+
+          <div class="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider text-emerald-400">
+            <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+            <span>Works 100% Offline • Zero App Store Downloads</span>
+          </div>
+        </div>
+
       </div>
 
-      <!-- 4-DOT PAGINATION -->
+      <!-- 5-DOT PAGINATION -->
       <div class="flex justify-center gap-2.5 my-6">
         <div id="onboardDot1" class="w-6 h-2 rounded-full transition-all duration-300" style="background-color: var(--accent);"></div>
         <div id="onboardDot2" class="w-2 h-2 rounded-full transition-all duration-300" style="background-color: rgba(156,163,175,0.3);"></div>
         <div id="onboardDot3" class="w-2 h-2 rounded-full transition-all duration-300" style="background-color: rgba(156,163,175,0.3);"></div>
         <div id="onboardDot4" class="w-2 h-2 rounded-full transition-all duration-300" style="background-color: rgba(156,163,175,0.3);"></div>
+        <div id="onboardDot5" class="w-2 h-2 rounded-full transition-all duration-300" style="background-color: rgba(156,163,175,0.3);"></div>
       </div>
 
       <!-- ACTION BUTTONS -->
@@ -2339,7 +2408,7 @@
   <div id="pinSetupModal" class="hidden fixed inset-0 backdrop-blur-sm z-[10000] flex items-center justify-center p-6" style="background-color: var(--overlay-bg);" onclick="if(event.target===this) window.closePinSetupModal()"><div class="dialog-card p-6 space-y-4 max-w-xs w-full text-center" style="padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));"><i data-lucide="lock-keyhole" class="w-8 h-8 mx-auto" style="color: var(--accent);"></i><h3 class="text-sm font-bold uppercase tracking-widest" style="color: var(--text-main);">Set 4-Digit PIN</h3><input type="tel" inputmode="numeric" maxlength="4" id="pinSetupInput" placeholder="••••" data-ph-no-capture="true" class="numeric-display w-full text-center text-2xl tracking-[0.6em] p-3 rounded-xl border outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);"><p id="pinSetupError" class="text-[10px] text-red-500 hidden">Must be exactly 4 digits.</p><div class="flex gap-3 pt-1"><button onclick="window.closePinSetupModal()" class="flex-1 py-3 rounded-xl text-xs font-bold active:scale-95 transition-transform" style="background-color: var(--input-bg); color: var(--text-main);">Cancel</button><button onclick="window.savePinSetup()" class="flex-1 py-3 rounded-xl text-xs font-bold active:scale-95 transition-transform" style="background: var(--accent); color: var(--accent-text);">Save</button></div></div></div>
 
   <!-- SCRIPT SINK - RELIABLE BOOTSTRAP -->
-  <script src="app.js?v=2.4.9"></script>
+  <script src="app.js?v=2.5.0"></script>
   <script>
     window.addEventListener('DOMContentLoaded', function() {
       if (typeof window.bootApp === 'function') {

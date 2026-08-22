@@ -1,5 +1,5 @@
 // PAUSE SERVICE WORKER - Offline Caching v4.0 (Always-Fresh Network-First)
-const CACHE_VERSION = 'v14';
+const CACHE_VERSION = 'v15';
 const CACHE_NAME = `pause-cache-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `pause-runtime-${CACHE_VERSION}`;
 

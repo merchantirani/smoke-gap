@@ -1634,18 +1634,20 @@ function resetData(type) {
 
 function exportLogsCSV() {
   if (!logs || logs.length === 0) { showToast("No logs to export yet"); return; }
-  let csvContent = "Timestamp,Date,Time,Gap_Minutes,Tags,Intensity,Latitude,Longitude\n";
+  let csvContent = "Timestamp,Date,Time,Gap_Minutes,Tags,Mood,Intensity,Note,Latitude,Longitude\n";
   logs.forEach(l => {
     let d = new Date(l.timestamp); 
     let tagsArr = (Array.isArray(l.tags) && l.tags.length > 0) ? l.tags : (l.trigger ? [l.trigger] : ['Uncategorized']);
-    let tagsStr = tagsArr.join(' | ');
-    csvContent += `${l.timestamp},"${d.toLocaleDateString()}","${formatAppTime(d)}",${l.gap ?? ''},"${tagsStr}",${l.intensity||3},${l.lat||''},${l.lng||''}\n`;
+    let tagsStr = tagsArr.join(' | ').replace(/"/g, '""');
+    let moodStr = (l.mood || '').replace(/"/g, '""');
+    let noteStr = (l.note || '').replace(/"/g, '""');
+    csvContent += `${l.timestamp},"${d.toLocaleDateString()}","${formatAppTime(d)}",${l.gap ?? ''},"${tagsStr}","${moodStr}",${l.intensity||3},"${noteStr}",${l.lat||''},${l.lng||''}\n`;
   });
   let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); 
   let url = URL.createObjectURL(blob); 
   let link = document.createElement("a"); 
   link.setAttribute("href", url); 
-  link.setAttribute("download", `SmokeGap_Logs_${new Date().toISOString().slice(0,10)}.csv`); 
+  link.setAttribute("download", `pause_Logs_${new Date().toISOString().slice(0,10)}.csv`); 
   document.body.appendChild(link); 
   link.click(); 
   document.body.removeChild(link); 
@@ -2546,9 +2548,56 @@ function showOnboarding() {
   refreshIcons();
 }
 
+function switchInstallGuide(platform) {
+  const isIos = platform === 'ios';
+  const tabIos = document.getElementById('installTabIos');
+  const tabAndroid = document.getElementById('installTabAndroid');
+  const guideIos = document.getElementById('installGuideIos');
+  const guideAndroid = document.getElementById('installGuideAndroid');
+
+  if (tabIos && tabAndroid) {
+    if (isIos) {
+      tabIos.style.background = 'var(--card-bg)';
+      tabIos.style.color = 'var(--text-main)';
+      tabIos.style.border = '1px solid var(--card-border)';
+      tabAndroid.style.background = 'transparent';
+      tabAndroid.style.color = 'var(--text-muted)';
+      tabAndroid.style.border = 'none';
+    } else {
+      tabAndroid.style.background = 'var(--card-bg)';
+      tabAndroid.style.color = 'var(--text-main)';
+      tabAndroid.style.border = '1px solid var(--card-border)';
+      tabIos.style.background = 'transparent';
+      tabIos.style.color = 'var(--text-muted)';
+      tabIos.style.border = 'none';
+    }
+  }
+
+  if (guideIos) guideIos.classList.toggle('hidden', !isIos);
+  if (guideAndroid) guideAndroid.classList.toggle('hidden', isIos);
+  refreshIcons();
+}
+
+function triggerOnboardInstall() {
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt();
+    deferredInstallPrompt.userChoice.then(res => {
+      if (res.outcome === 'accepted') {
+        showToast("✨ Installing pause app...");
+        finishOnboarding();
+      }
+      deferredInstallPrompt = null;
+    });
+  } else {
+    showToast("ℹ️ Tap browser menu (⋮) ➔ Add to Home screen");
+  }
+}
+
 function onboardingNext() {
   if (settings.haptics && navigator.vibrate) navigator.vibrate(15);
-  if (onboardingStep < 4) {
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+  if (onboardingStep < 4 || (onboardingStep === 4 && !isStandalone)) {
     const curSlide = document.getElementById('onboardSlide' + onboardingStep);
     if (curSlide) curSlide.classList.add('hidden');
     const prevDot = document.getElementById('onboardDot' + onboardingStep);
@@ -2570,9 +2619,20 @@ function onboardingNext() {
     const skipBtn = document.getElementById('onboardSkipBtn');
     if (skipBtn) skipBtn.style.display = 'none';
 
+    if (onboardingStep === 5) {
+      const isIos = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+      switchInstallGuide(isIos ? 'ios' : 'android');
+    }
+
     const nextBtn = document.getElementById('onboardNextBtn');
     if (nextBtn) {
-      nextBtn.innerText = onboardingStep === 4 ? 'Start Widening The Gap ➔' : 'Next ➔';
+      if (onboardingStep === 4) {
+        nextBtn.innerText = isStandalone ? 'Start Widening The Gap ➔' : 'Next: Add to Home Screen ➔';
+      } else if (onboardingStep === 5) {
+        nextBtn.innerText = 'Open pause Dashboard ➔';
+      } else {
+        nextBtn.innerText = 'Next ➔';
+      }
     }
     refreshIcons();
   } else {
@@ -4959,6 +5019,8 @@ function importMigrationPayload() {
 window.openPrivacyPolicy = openPrivacyPolicy;
 window.closePrivacyPolicy = closePrivacyPolicy;
 window.setTakeoverTimeOffset = setTakeoverTimeOffset;
+window.switchInstallGuide = switchInstallGuide;
+window.triggerOnboardInstall = triggerOnboardInstall;
 window.openQrModal = openQrModal;
 window.closeQrModal = closeQrModal;
 window.copyMigrationPayload = copyMigrationPayload;
