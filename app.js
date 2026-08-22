@@ -2282,61 +2282,154 @@ function stopBreathing() {
 }
 
 // --- Onboarding Setup ---
+// --- Onboarding Setup (4-Step Psychological Architecture) ---
+let onboardSelectedTriggers = ['Morning Coffee', 'Stress & Work'];
+
+function onboardToggleTrigger(triggerName) {
+  if (settings.haptics && navigator.vibrate) navigator.vibrate(12);
+  const idx = onboardSelectedTriggers.indexOf(triggerName);
+  if (idx > -1) {
+    if (onboardSelectedTriggers.length > 1) {
+      onboardSelectedTriggers.splice(idx, 1);
+    }
+  } else {
+    onboardSelectedTriggers.push(triggerName);
+  }
+  updateOnboardTriggersUI();
+}
+
+function updateOnboardTriggersUI() {
+  const triggerMap = {
+    'Morning Coffee': 'trig-MorningCoffee',
+    'Stress & Work': 'trig-StressWork',
+    'After Meals': 'trig-AfterMeals',
+    'Driving & Traffic': 'trig-DrivingTraffic',
+    'Boredom & Habit': 'trig-BoredomHabit',
+    'Social & Friends': 'trig-SocialFriends'
+  };
+
+  Object.entries(triggerMap).forEach(([name, btnId]) => {
+    const el = document.getElementById(btnId);
+    if (!el) return;
+    const isSelected = onboardSelectedTriggers.includes(name);
+    if (isSelected) {
+      el.style.borderColor = 'var(--accent)';
+      el.style.background = 'var(--accent-glow)';
+      el.style.boxShadow = '0 0 12px var(--accent-glow)';
+    } else {
+      el.style.borderColor = 'var(--card-border)';
+      el.style.background = 'var(--input-bg)';
+      el.style.boxShadow = 'none';
+    }
+  });
+}
+
 function onboardAdjustSticks(delta) {
   onboardSticks = Math.max(1, Math.min(80, onboardSticks + delta));
   const el = document.getElementById('onboardSticksCount');
   if (el) el.innerText = onboardSticks;
   if (settings.haptics && navigator.vibrate) navigator.vibrate(10);
+  updateOnboardCostPerCig();
+}
+
+function updateOnboardCostPerCig() {
+  const priceInput = document.getElementById('onboardPackPrice');
+  const price = priceInput ? (parseFloat(priceInput.value) || 20) : 20;
+  const curEl = document.getElementById('onboardCurrencySelect');
+  const cur = curEl ? (curEl.value || 'AED') : 'AED';
+  
+  const costPerStick = (price / 20);
+  const yearlySticks = onboardSticks * 365;
+  const yearlySpend = Math.round(yearlySticks * costPerStick);
+  const save2Sticks = Math.round(2 * 365 * costPerStick);
+
+  const spendEl = document.getElementById('onboardYearlySpend');
+  if (spendEl) spendEl.innerText = `${cur} ${yearlySpend.toLocaleString()} / yr`;
+
+  const teaserEl = document.getElementById('onboardImpactTeaser');
+  if (teaserEl) {
+    teaserEl.innerHTML = `At ${onboardSticks} sticks/day, you smoke ~${yearlySticks.toLocaleString()} cigarettes a year. Widening your gap by 20m saves <strong class="text-emerald-400 font-bold">${cur} ${save2Sticks.toLocaleString()}</strong> this year.`;
+  }
 }
 
 function onboardSelectGoal(goal) {
   onboardGoal = goal;
-  ['quit', 'reduce', 'track'].forEach(g => {
+  if (settings.haptics && navigator.vibrate) navigator.vibrate(15);
+  ['reduce', 'quit', 'track'].forEach(g => {
     const el = document.getElementById('onboardGoal' + g.charAt(0).toUpperCase() + g.slice(1));
     if (el) {
       if (g === goal) {
         el.style.borderColor = 'var(--accent)';
         el.style.background = 'var(--accent-glow)';
+        el.style.boxShadow = '0 0 12px var(--accent-glow)';
       } else {
         el.style.borderColor = 'var(--card-border)';
         el.style.background = 'var(--input-bg)';
+        el.style.boxShadow = 'none';
       }
     }
   });
-}
 
-function updateOnboardCostPerCig() {
-  const price = parseFloat(document.getElementById('onboardPackPrice').value) || 20;
-  const size = parseInt(document.getElementById('onboardPackSize').value) || 20;
-  const cur = document.getElementById('onboardCurrencySelect').value || 'AED';
-  const cost = size > 0 ? (price / size).toFixed(1) : '0';
-  const label = document.getElementById('onboardCostPerCig');
-  if (label) label.innerText = `${cur} ${cost}`;
+  const quitContainer = document.getElementById('onboardQuitDateContainer');
+  if (quitContainer) {
+    if (goal === 'quit') {
+      quitContainer.classList.remove('hidden');
+    } else {
+      quitContainer.classList.add('hidden');
+    }
+  }
 }
 
 function initOnboardingSetup() {
-  onboardSticks = Math.max(1, Math.min(80, settings.dailyLimit || 10));
+  onboardingStep = 1;
+  onboardSticks = Math.max(1, Math.min(80, settings.dailyLimit || 15));
   const sticksEl = document.getElementById('onboardSticksCount');
   if (sticksEl) sticksEl.innerText = onboardSticks;
   const curEl = document.getElementById('onboardCurrencySelect');
   if (curEl) curEl.value = settings.currency || 'AED';
   const priceEl = document.getElementById('onboardPackPrice');
   if (priceEl) priceEl.value = settings.packPrice || 20;
-  const sizeEl = document.getElementById('onboardPackSize');
-  if (sizeEl) sizeEl.value = settings.packSize || 20;
+
   updateOnboardCostPerCig();
+  updateOnboardTriggersUI();
+  onboardSelectGoal(onboardGoal || 'reduce');
+
+  for (let i = 1; i <= 4; i++) {
+    const slide = document.getElementById('onboardSlide' + i);
+    if (slide) {
+      if (i === 1) slide.classList.remove('hidden');
+      else slide.classList.add('hidden');
+    }
+    const dot = document.getElementById('onboardDot' + i);
+    if (dot) {
+      if (i === 1) {
+        dot.style.backgroundColor = 'var(--accent)';
+        dot.style.width = '24px';
+      } else {
+        dot.style.backgroundColor = 'rgba(156,163,175,0.3)';
+        dot.style.width = '8px';
+      }
+    }
+  }
+
+  const nextBtn = document.getElementById('onboardNextBtn');
+  if (nextBtn) nextBtn.innerText = 'Next ➔';
+  const skipBtn = document.getElementById('onboardSkipBtn');
+  if (skipBtn) skipBtn.style.display = 'block';
 }
 
 function saveOnboardingSetup() {
   const sticks = onboardSticks;
-  const packPrice = parseFloat(document.getElementById('onboardPackPrice').value) || 20;
-  const packSize = parseInt(document.getElementById('onboardPackSize').value) || 20;
-  const cur = document.getElementById('onboardCurrencySelect').value || 'AED';
-  const quitDate = document.getElementById('onboardQuitDate').value || '';
+  const priceInput = document.getElementById('onboardPackPrice');
+  const packPrice = priceInput ? (parseFloat(priceInput.value) || 20) : 20;
+  const curEl = document.getElementById('onboardCurrencySelect');
+  const cur = curEl ? (curEl.value || 'AED') : 'AED';
+  const qdInput = document.getElementById('onboardQuitDate');
+  const quitDate = qdInput ? qdInput.value : '';
 
   settings.dailyLimit = sticks;
   settings.packPrice = packPrice;
-  settings.packSize = packSize;
+  settings.packSize = 20;
   settings.currency = cur;
 
   if (onboardGoal === 'quit') {
@@ -2348,41 +2441,53 @@ function saveOnboardingSetup() {
     settings.autoReduce = false;
   }
 
+  // Prepend selected triggers to the triggers list so they appear first
+  if (onboardSelectedTriggers && onboardSelectedTriggers.length > 0) {
+    onboardSelectedTriggers.forEach(t => {
+      if (!triggers.includes(t)) triggers.unshift(t);
+    });
+    localStorage.setItem('smoke_triggers', JSON.stringify(triggers));
+  }
+
   localStorage.setItem('smoke_settings', JSON.stringify(settings));
 }
 
 function showOnboarding() {
-  document.getElementById('onboardingOverlay').classList.remove('hidden');
+  const overlay = document.getElementById('onboardingOverlay');
+  if (overlay) overlay.classList.remove('hidden');
   initOnboardingSetup();
   refreshIcons();
 }
 
 function onboardingNext() {
-  if (onboardingStep < 8) {
-    document.getElementById('onboardSlide' + onboardingStep).classList.add('hidden');
+  if (settings.haptics && navigator.vibrate) navigator.vibrate(15);
+  if (onboardingStep < 4) {
+    const curSlide = document.getElementById('onboardSlide' + onboardingStep);
+    if (curSlide) curSlide.classList.add('hidden');
     const prevDot = document.getElementById('onboardDot' + onboardingStep);
     if (prevDot) {
-      prevDot.className = 'w-2.5 h-2.5 rounded-full transition-all';
       prevDot.style.backgroundColor = 'rgba(156,163,175,0.3)';
-      prevDot.style.width = '10px';
-    }
-    onboardingStep++;
-    document.getElementById('onboardSlide' + onboardingStep).classList.remove('hidden');
-    const curDot = document.getElementById('onboardDot' + onboardingStep);
-    if (curDot) {
-      curDot.className = 'w-2.5 h-2.5 rounded-full transition-all';
-      curDot.style.backgroundColor = 'var(--accent)';
-      curDot.style.width = '20px';
+      prevDot.style.width = '8px';
     }
 
-    if (onboardingStep >= 5) {
-      const skipBtn = document.getElementById('onboardSkipBtn');
-      if (skipBtn) skipBtn.style.display = 'none';
+    onboardingStep++;
+
+    const nextSlide = document.getElementById('onboardSlide' + onboardingStep);
+    if (nextSlide) nextSlide.classList.remove('hidden');
+    const curDot = document.getElementById('onboardDot' + onboardingStep);
+    if (curDot) {
+      curDot.style.backgroundColor = 'var(--accent)';
+      curDot.style.width = '24px';
     }
+
+    const skipBtn = document.getElementById('onboardSkipBtn');
+    if (skipBtn) skipBtn.style.display = 'none';
+
     const nextBtn = document.getElementById('onboardNextBtn');
     if (nextBtn) {
-      nextBtn.innerText = onboardingStep === 8 ? 'Get Started' : 'Next';
+      nextBtn.innerText = onboardingStep === 4 ? 'Start Widening The Gap ➔' : 'Next ➔';
     }
+    refreshIcons();
   } else {
     saveOnboardingSetup();
     finishOnboarding();
@@ -2390,6 +2495,7 @@ function onboardingNext() {
 }
 
 function onboardingSkip() {
+  if (onboardingStep >= 2) saveOnboardingSetup();
   finishOnboarding();
 }
 
@@ -2399,12 +2505,14 @@ function restartOnboarding() {
 }
 
 function finishOnboarding() {
-  if (onboardingStep >= 5) saveOnboardingSetup();
   localStorage.setItem('smoke_onboarding_done', 'true');
-  document.getElementById('onboardingOverlay').classList.add('hidden');
+  const overlay = document.getElementById('onboardingOverlay');
+  if (overlay) overlay.classList.add('hidden');
   if (hasPin) {
-    document.getElementById('lockScreen').classList.remove('hidden');
-    document.getElementById('pinStatusBtn').innerText = "Remove PIN";
+    const lock = document.getElementById('lockScreen');
+    if (lock) lock.classList.remove('hidden');
+    const pinBtn = document.getElementById('pinStatusBtn');
+    if (pinBtn) pinBtn.innerText = "Remove PIN";
   } else {
     bootCore();
   }
@@ -4579,6 +4687,7 @@ window.toggleBreathPause = toggleBreathPause;
 window.stopBreathing = stopBreathing;
 window.onboardAdjustSticks = onboardAdjustSticks;
 window.onboardSelectGoal = onboardSelectGoal;
+window.onboardToggleTrigger = onboardToggleTrigger;
 window.updateOnboardCostPerCig = updateOnboardCostPerCig;
 window.onboardingNext = onboardingNext;
 window.onboardingSkip = onboardingSkip;

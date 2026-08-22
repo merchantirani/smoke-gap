@@ -324,137 +324,195 @@
     <div class="w-8 h-8 border-2 border-gray-500/20 border-t-[var(--accent)] rounded-full animate-spin"></div>
   </div>
 
-  <!-- ONBOARDING OVERLAY -->
+  <!-- ONBOARDING OVERLAY (HIGH-IMPACT 4-STEP PSYCHOLOGICAL FLOW) -->
   <div id="onboardingOverlay" class="fixed inset-0 z-[99998] flex flex-col items-center justify-center hidden" style="background-color: var(--bg-body);">
-    <div class="max-w-sm mx-auto px-6 w-full">
+    <div class="max-w-sm mx-auto px-5 w-full">
       <div id="onboardingSlides" class="relative">
-        <div id="onboardSlide1" class="flex flex-col items-center text-center space-y-5">
-          <div class="w-20 h-20 rounded-3xl flex items-center justify-center" style="background: var(--accent-glow);">
-            <i data-lucide="sparkles" class="w-10 h-10" style="color: var(--accent);"></i>
+        
+        <!-- SLIDE 1: THE PHILOSOPHY & PSYCHOLOGY -->
+        <div id="onboardSlide1" class="flex flex-col items-center text-center space-y-4">
+          <div class="w-16 h-16 rounded-3xl flex items-center justify-center shadow-lg" style="background: var(--accent-glow); border: 1px solid var(--card-border);">
+            <i data-lucide="sparkles" class="w-8 h-8" style="color: var(--accent);"></i>
           </div>
           <div>
-            <h2 class="brand-title text-3xl mb-1">pause</h2>
-            <p class="text-[10px] font-bold uppercase tracking-[0.2em]" style="color: var(--text-muted);">Widen the gap.</p>
+            <h2 class="brand-title text-3xl tracking-tight font-black mb-1">pause</h2>
+            <p class="text-[9px] font-extrabold uppercase tracking-[0.25em]" style="color: var(--accent);">Control Your Habit • No Judgment</p>
           </div>
-          <p class="text-sm leading-relaxed" style="color: var(--text-main);">Track every cigarette honestly — the app learns your patterns and helps you build <strong style="color: var(--accent);">wider gaps</strong> between them.</p>
-        </div>
-
-        <div id="onboardSlide2" class="hidden flex flex-col items-center text-center space-y-5">
-          <div class="w-20 h-20 rounded-3xl flex items-center justify-center" style="background: rgba(239,68,68,0.1);">
-            <i data-lucide="flame" class="w-10 h-10" style="color: #EF4444;"></i>
-          </div>
-          <h2 class="text-xl font-bold" style="color: var(--text-main);">Log Every Stick</h2>
-          <p class="text-sm leading-relaxed" style="color: var(--text-muted);"><strong style="color: var(--text-main);">Press & Hold</strong> the button each time you smoke. Add tags to identify what triggered the urge — stress, boredom, social, etc.</p>
-        </div>
-
-        <div id="onboardSlide3" class="hidden flex flex-col items-center text-center space-y-5">
-          <div class="w-20 h-20 rounded-3xl flex items-center justify-center" style="background: rgba(14,165,233,0.1);">
-            <i data-lucide="waves" class="w-10 h-10" style="color: #0EA5E9;"></i>
-          </div>
-          <h2 class="text-xl font-bold" style="color: var(--text-main);">Ride It Out</h2>
-          <p class="text-sm leading-relaxed" style="color: var(--text-muted);">When a craving hits but you want to resist, start a <strong style="color: #0EA5E9;">Ride It Out</strong> timer. Cravings peak and pass in minutes — ride the wave and earn <strong style="color: var(--accent);">Shields</strong>.</p>
-        </div>
-
-        <div id="onboardSlide4" class="hidden flex flex-col items-center text-center space-y-5">
-          <div class="w-20 h-20 rounded-3xl flex items-center justify-center" style="background: rgba(16,185,129,0.1);">
-            <i data-lucide="shield" class="w-10 h-10" style="color: #10B981;"></i>
-          </div>
-          <h2 class="text-xl font-bold" style="color: var(--text-main);">Earn Shields</h2>
-          <p class="text-sm leading-relaxed" style="color: var(--text-muted);">Every craving you beat earns a <strong style="color: #10B981;">Shield</strong>. Track your progress with detailed charts, watch your gaps widen, and unlock <strong style="color: var(--accent);">badges</strong> as you grow stronger.</p>
-        </div>
-
-        <div id="onboardSlide5" class="hidden flex flex-col items-center text-center space-y-5">
-          <div class="w-20 h-20 rounded-3xl flex items-center justify-center" style="background: rgba(245,158,11,0.1);">
-            <i data-lucide="cigarette" class="w-10 h-10" style="color: #F59E0B;"></i>
-          </div>
-          <h2 class="text-xl font-bold" style="color: var(--text-main);">Your Habit</h2>
-          <p class="text-sm leading-relaxed mb-2" style="color: var(--text-muted);">How many cigarettes do you smoke per day?</p>
-          <div class="flex items-center gap-4">
-            <button onclick="window.onboardAdjustSticks(-1)" class="w-12 h-12 rounded-full flex items-center justify-center border active:scale-90 transition-all text-xl font-bold" style="background: var(--input-bg); border-color: var(--card-border); color: var(--text-main);">−</button>
-            <div class="text-center">
-              <span id="onboardSticksCount" class="numeric-display text-4xl font-black" style="color: var(--accent);">10</span>
-              <p class="text-[9px] font-bold uppercase tracking-wider mt-1" style="color: var(--text-muted);">sticks / day</p>
+          <div class="p-4 rounded-2xl border text-left space-y-2.5" style="background: var(--input-bg); border-color: var(--card-border);">
+            <div class="flex items-start gap-2.5">
+              <span class="text-base">🧠</span>
+              <p class="text-xs leading-relaxed" style="color: var(--text-main);"><strong style="color: var(--accent);">No forced cold turkey.</strong> Science shows that delaying a craving by just 10–15 minutes breaks the brain's automatic addiction loop.</p>
             </div>
-            <button onclick="window.onboardAdjustSticks(1)" class="w-12 h-12 rounded-full flex items-center justify-center border active:scale-90 transition-all text-xl font-bold" style="background: var(--input-bg); border-color: var(--card-border); color: var(--text-main);">+</button>
+            <div class="flex items-start gap-2.5 pt-2 border-t" style="border-color: var(--card-border);">
+              <span class="text-base">⏱️</span>
+              <p class="text-xs leading-relaxed" style="color: var(--text-muted);">Track when you smoke, ride urges when you can, and simply <strong style="color: var(--text-main);">widen the gap</strong> between cigarettes.</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider text-emerald-400">
+            <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+            <span>100% On-Device Private • Zero Cloud Tracking</span>
           </div>
         </div>
 
-        <div id="onboardSlide6" class="hidden flex flex-col items-center text-center space-y-5">
-          <div class="w-20 h-20 rounded-3xl flex items-center justify-center" style="background: rgba(239,68,68,0.1);">
-            <i data-lucide="wallet" class="w-10 h-10" style="color: #EF4444;"></i>
+        <!-- SLIDE 2: HABIT BASELINE & LIVE IMPACT PREVIEW -->
+        <div id="onboardSlide2" class="hidden flex flex-col items-center text-center space-y-4">
+          <div class="w-14 h-14 rounded-2xl flex items-center justify-center" style="background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.25);">
+            <i data-lucide="flame" class="w-7 h-7 text-amber-500"></i>
           </div>
-          <h2 class="text-xl font-bold" style="color: var(--text-main);">Pack Price</h2>
-          <p class="text-sm leading-relaxed mb-2" style="color: var(--text-muted);">How much does a pack cost?</p>
-          <div class="w-full max-w-[260px] mx-auto space-y-2.5">
-            <div class="relative flex items-stretch rounded-2xl border overflow-hidden" style="background: var(--input-bg); border-color: var(--card-border);">
-              <select id="onboardCurrencySelect" onchange="window.updateOnboardCostPerCig()" class="px-3 text-xs font-bold border-r outline-none cursor-pointer" style="background: var(--input-bg); border-color: var(--card-border); color: var(--text-muted);">
-                <option value="AED">AED</option>
-                <option value="USD">USD</option>
-                <option value="EUR">EUR</option>
-                <option value="GBP">GBP</option>
-                <option value="INR">INR</option>
-              </select>
-              <input id="onboardPackPrice" type="number" value="20" min="1" oninput="window.updateOnboardCostPerCig()" class="flex-1 px-3 py-3.5 numeric-display text-xl font-black bg-transparent outline-none text-center" style="color: var(--text-main); -moz-appearance: textfield; appearance: textfield;">
-              <style>#onboardPackPrice::-webkit-inner-spin-button,#onboardPackPrice::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }</style>
+          <div>
+            <h2 class="text-lg font-black" style="color: var(--text-main);">Your Daily Baseline</h2>
+            <p class="text-[10px] font-medium" style="color: var(--text-muted);">Let's calculate your financial & habit reality</p>
+          </div>
+
+          <!-- Dual Stepper Card -->
+          <div class="w-full space-y-3 p-3.5 rounded-2xl border text-left" style="background: var(--input-bg); border-color: var(--card-border);">
+            <!-- Daily Sticks Stepper -->
+            <div class="flex justify-between items-center">
+              <div>
+                <label class="text-[11px] font-bold block" style="color: var(--text-main);">Daily Cigarettes</label>
+                <p class="text-[9px]" style="color: var(--text-muted);">How many you usually smoke</p>
+              </div>
+              <div class="flex items-center bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl overflow-hidden">
+                <button type="button" onclick="window.onboardAdjustSticks(-1)" class="w-8 h-8 flex items-center justify-center font-bold text-sm bg-white/5 active:scale-90 transition-all cursor-pointer" style="color: var(--text-main);">−</button>
+                <span id="onboardSticksCount" class="numeric-display text-sm font-black w-10 text-center" style="color: var(--accent);">15</span>
+                <button type="button" onclick="window.onboardAdjustSticks(1)" class="w-8 h-8 flex items-center justify-center font-bold text-sm bg-white/5 active:scale-90 transition-all cursor-pointer" style="color: var(--text-main);">+</button>
+              </div>
             </div>
-            <div class="flex items-center justify-between rounded-2xl border p-3" style="background: var(--input-bg); border-color: var(--card-border);">
-              <span class="text-[10px] font-bold uppercase tracking-wider" style="color: var(--text-muted);">Sticks per pack</span>
-              <input id="onboardPackSize" type="number" value="20" min="1" max="100" oninput="window.updateOnboardCostPerCig()" class="w-14 text-center numeric-display text-base font-bold bg-transparent outline-none" style="color: var(--text-main); -moz-appearance: textfield; appearance: textfield;">
-              <style>#onboardPackSize::-webkit-inner-spin-button,#onboardPackSize::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }</style>
+
+            <!-- Pack Price & Currency -->
+            <div class="flex justify-between items-center pt-2.5 border-t" style="border-color: var(--card-border);">
+              <div>
+                <label class="text-[11px] font-bold block" style="color: var(--text-main);">Pack Price & Currency</label>
+                <p class="text-[9px]" style="color: var(--text-muted);">Cost per pack of 20</p>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <select id="onboardCurrencySelect" onchange="window.updateOnboardCostPerCig()" class="px-2 py-1 rounded-lg border text-[10px] font-bold outline-none cursor-pointer" style="background: var(--card-bg); border-color: var(--card-border); color: var(--text-main);">
+                  <option value="AED">AED</option>
+                  <option value="USD">USD ($)</option>
+                  <option value="EUR">EUR (€)</option>
+                  <option value="GBP">GBP (£)</option>
+                  <option value="INR">INR (₹)</option>
+                </select>
+                <input id="onboardPackPrice" type="number" value="20" min="1" oninput="window.updateOnboardCostPerCig()" class="numeric-display w-14 text-center py-1 rounded-lg border text-xs font-bold outline-none" style="background: var(--card-bg); border-color: var(--card-border); color: var(--text-main);">
+                <input id="onboardPackSize" type="hidden" value="20">
+              </div>
             </div>
-            <p class="text-[9px] font-medium" style="color: var(--text-muted);">≈ <span id="onboardCostPerCig">AED 1.0</span> per cigarette</p>
+          </div>
+
+          <!-- Live Psychological Hook / Impact Box -->
+          <div class="w-full p-3 rounded-2xl border text-left space-y-1.5" style="background: linear-gradient(135deg, rgba(239,68,68,0.08), rgba(245,158,11,0.08)); border-color: rgba(245,158,11,0.25);">
+            <div class="flex justify-between items-center">
+              <span class="text-[9px] font-bold uppercase tracking-wider text-amber-500 flex items-center gap-1"><i data-lucide="alert-triangle" class="w-3 h-3"></i> Yearly Impact</span>
+              <span id="onboardYearlySpend" class="numeric-display text-xs font-black text-red-400">AED 5,475 / yr</span>
+            </div>
+            <p id="onboardImpactTeaser" class="text-[10px] leading-snug" style="color: var(--text-muted);">At 15 sticks/day, you smoke ~5,475 cigarettes a year. Widening your gap by 20m saves <strong class="text-emerald-400">AED 1,460</strong> this year.</p>
           </div>
         </div>
 
-        <div id="onboardSlide7" class="hidden flex flex-col items-center text-center space-y-5">
-          <div class="w-20 h-20 rounded-3xl flex items-center justify-center" style="background: rgba(16,185,129,0.1);">
-            <i data-lucide="target" class="w-10 h-10" style="color: #10B981;"></i>
+        <!-- SLIDE 3: TRIGGER MAPPING -->
+        <div id="onboardSlide3" class="hidden flex flex-col items-center text-center space-y-4">
+          <div class="w-14 h-14 rounded-2xl flex items-center justify-center" style="background: rgba(56,189,248,0.12); border: 1px solid rgba(56,189,248,0.25);">
+            <i data-lucide="brain" class="w-7 h-7 text-sky-400"></i>
           </div>
-          <h2 class="text-xl font-bold" style="color: var(--text-main);">Your Goal</h2>
-          <p class="text-sm leading-relaxed mb-3" style="color: var(--text-muted);">What do you want to achieve?</p>
+          <div>
+            <h2 class="text-lg font-black" style="color: var(--text-main);">When Does Craving Hit Hardest?</h2>
+            <p class="text-[10px] font-medium" style="color: var(--text-muted);">Select your primary smoking triggers</p>
+          </div>
+
+          <!-- Selectable Trigger Grid -->
+          <div class="grid grid-cols-2 gap-2.5 w-full">
+            <button type="button" onclick="window.onboardToggleTrigger('Morning Coffee')" id="trig-MorningCoffee" class="onboard-trig-btn p-3 rounded-2xl border text-left flex items-center gap-2.5 active:scale-95 transition-all cursor-pointer" style="background: var(--input-bg); border-color: var(--card-border);">
+              <span class="text-xl">☕</span>
+              <div><p class="text-[11px] font-bold" style="color: var(--text-main);">Morning</p><p class="text-[8px]" style="color: var(--text-muted);">Coffee & waking up</p></div>
+            </button>
+            <button type="button" onclick="window.onboardToggleTrigger('Stress & Work')" id="trig-StressWork" class="onboard-trig-btn p-3 rounded-2xl border text-left flex items-center gap-2.5 active:scale-95 transition-all cursor-pointer" style="background: var(--input-bg); border-color: var(--card-border);">
+              <span class="text-xl">⚡</span>
+              <div><p class="text-[11px] font-bold" style="color: var(--text-main);">Stress</p><p class="text-[8px]" style="color: var(--text-muted);">Work & pressure</p></div>
+            </button>
+            <button type="button" onclick="window.onboardToggleTrigger('After Meals')" id="trig-AfterMeals" class="onboard-trig-btn p-3 rounded-2xl border text-left flex items-center gap-2.5 active:scale-95 transition-all cursor-pointer" style="background: var(--input-bg); border-color: var(--card-border);">
+              <span class="text-xl">🍽️</span>
+              <div><p class="text-[11px] font-bold" style="color: var(--text-main);">After Food</p><p class="text-[8px]" style="color: var(--text-muted);">Post lunch/dinner</p></div>
+            </button>
+            <button type="button" onclick="window.onboardToggleTrigger('Driving & Traffic')" id="trig-DrivingTraffic" class="onboard-trig-btn p-3 rounded-2xl border text-left flex items-center gap-2.5 active:scale-95 transition-all cursor-pointer" style="background: var(--input-bg); border-color: var(--card-border);">
+              <span class="text-xl">🚗</span>
+              <div><p class="text-[11px] font-bold" style="color: var(--text-main);">Driving</p><p class="text-[8px]" style="color: var(--text-muted);">Commute & traffic</p></div>
+            </button>
+            <button type="button" onclick="window.onboardToggleTrigger('Boredom & Habit')" id="trig-BoredomHabit" class="onboard-trig-btn p-3 rounded-2xl border text-left flex items-center gap-2.5 active:scale-95 transition-all cursor-pointer" style="background: var(--input-bg); border-color: var(--card-border);">
+              <span class="text-xl">🥱</span>
+              <div><p class="text-[11px] font-bold" style="color: var(--text-main);">Boredom</p><p class="text-[8px]" style="color: var(--text-muted);">Idle time & habit</p></div>
+            </button>
+            <button type="button" onclick="window.onboardToggleTrigger('Social & Friends')" id="trig-SocialFriends" class="onboard-trig-btn p-3 rounded-2xl border text-left flex items-center gap-2.5 active:scale-95 transition-all cursor-pointer" style="background: var(--input-bg); border-color: var(--card-border);">
+              <span class="text-xl">👥</span>
+              <div><p class="text-[11px] font-bold" style="color: var(--text-main);">Social</p><p class="text-[8px]" style="color: var(--text-muted);">With friends & outing</p></div>
+            </button>
+          </div>
+          <p class="text-[9px] font-medium" style="color: var(--text-muted);">You can select multiple. Pause will learn to protect you at these exact times.</p>
+        </div>
+
+        <!-- SLIDE 4: STRATEGY & GOAL -->
+        <div id="onboardSlide4" class="hidden flex flex-col items-center text-center space-y-4">
+          <div class="w-14 h-14 rounded-2xl flex items-center justify-center" style="background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.25);">
+            <i data-lucide="target" class="w-7 h-7 text-emerald-400"></i>
+          </div>
+          <div>
+            <h2 class="text-lg font-black" style="color: var(--text-main);">Choose Your Strategy</h2>
+            <p class="text-[10px] font-medium" style="color: var(--text-muted);">How would you like to pace yourself?</p>
+          </div>
+
+          <!-- Strategy Options -->
           <div class="w-full space-y-2.5">
-            <button onclick="window.onboardSelectGoal('quit')" id="onboardGoalQuit" class="w-full p-4 rounded-2xl border text-left flex items-center gap-3 transition-all active:scale-[0.98]" style="border-color: var(--accent); background: var(--accent-glow);">
-              <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background: rgba(16,185,129,0.15);"><span class="text-lg">🎯</span></div>
-              <div><p class="text-[11px] font-bold" style="color: var(--text-main);">Quit Completely</p><p class="text-[9px]" style="color: var(--text-muted);">Set a quit date and work towards zero.</p></div>
+            <!-- 1. Gradual Reduction -->
+            <button type="button" onclick="window.onboardSelectGoal('reduce')" id="onboardGoalReduce" class="w-full p-3.5 rounded-2xl border text-left flex items-center gap-3 transition-all active:scale-[0.98] cursor-pointer" style="border-color: var(--accent); background: var(--accent-glow);">
+              <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style="background: rgba(245,158,11,0.15);"><span class="text-lg">📉</span></div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-1.5">
+                  <p class="text-[11px] font-bold" style="color: var(--text-main);">Gradual Reduction</p>
+                  <span class="text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20">Recommended</span>
+                </div>
+                <p class="text-[9px]" style="color: var(--text-muted);">Auto-lowers daily limit by 1 stick every 7 days. Smooth & painless.</p>
+              </div>
             </button>
-            <button onclick="window.onboardSelectGoal('reduce')" id="onboardGoalReduce" class="w-full p-4 rounded-2xl border text-left flex items-center gap-3 transition-all active:scale-[0.98]" style="border-color: var(--card-border); background: var(--input-bg);">
-              <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background: rgba(245,158,11,0.15);"><span class="text-lg">📉</span></div>
-              <div><p class="text-[11px] font-bold" style="color: var(--text-main);">Cut Down</p><p class="text-[9px]" style="color: var(--text-muted);">Gradually reduce with auto-limit.</p></div>
+
+            <!-- 2. Target Quit -->
+            <button type="button" onclick="window.onboardSelectGoal('quit')" id="onboardGoalQuit" class="w-full p-3.5 rounded-2xl border text-left flex items-center gap-3 transition-all active:scale-[0.98] cursor-pointer" style="border-color: var(--card-border); background: var(--input-bg);">
+              <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style="background: rgba(16,185,129,0.15);"><span class="text-lg">🎯</span></div>
+              <div class="flex-1 min-w-0">
+                <p class="text-[11px] font-bold" style="color: var(--text-main);">Target Clean Quit</p>
+                <p class="text-[9px]" style="color: var(--text-muted);">Set a target date and work towards complete freedom.</p>
+              </div>
             </button>
-            <button onclick="window.onboardSelectGoal('track')" id="onboardGoalTrack" class="w-full p-4 rounded-2xl border text-left flex items-center gap-3 transition-all active:scale-[0.98]" style="border-color: var(--card-border); background: var(--input-bg);">
-              <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background: rgba(56,189,248,0.15);"><span class="text-lg">📊</span></div>
-              <div><p class="text-[11px] font-bold" style="color: var(--text-main);">Just Track</p><p class="text-[9px]" style="color: var(--text-muted);">No limits, just understand my habit.</p></div>
+
+            <!-- Optional Quit Date Input (Revealed if quit selected) -->
+            <div id="onboardQuitDateContainer" class="hidden p-2.5 rounded-xl border text-center space-y-1" style="background: var(--input-bg); border-color: var(--card-border);">
+              <label class="text-[9px] font-bold uppercase tracking-wider block" style="color: var(--text-muted);">Target Quit Date</label>
+              <input id="onboardQuitDate" type="date" class="w-full p-2 rounded-lg border text-center text-xs font-bold outline-none" style="background: var(--card-bg); border-color: var(--card-border); color: var(--text-main);">
+            </div>
+
+            <!-- 3. Mindful Tracking -->
+            <button type="button" onclick="window.onboardSelectGoal('track')" id="onboardGoalTrack" class="w-full p-3.5 rounded-2xl border text-left flex items-center gap-3 transition-all active:scale-[0.98] cursor-pointer" style="border-color: var(--card-border); background: var(--input-bg);">
+              <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style="background: rgba(56,189,248,0.15);"><span class="text-lg">📊</span></div>
+              <div class="flex-1 min-w-0">
+                <p class="text-[11px] font-bold" style="color: var(--text-main);">Just Track Mindfully</p>
+                <p class="text-[9px]" style="color: var(--text-muted);">No limits. Simply understand triggers and timer gaps first.</p>
+              </div>
             </button>
           </div>
         </div>
 
-        <div id="onboardSlide8" class="hidden flex flex-col items-center text-center space-y-5">
-          <div class="w-20 h-20 rounded-3xl flex items-center justify-center" style="background: rgba(139,92,246,0.1);">
-            <i data-lucide="calendar" class="w-10 h-10" style="color: #8B5CF6;"></i>
-          </div>
-          <h2 class="text-xl font-bold" style="color: var(--text-main);">Quit Date</h2>
-          <p class="text-sm leading-relaxed mb-2" style="color: var(--text-muted);">When do you want to quit? (Optional)</p>
-          <div class="w-full max-w-[220px] mx-auto">
-            <input id="onboardQuitDate" type="date" class="w-full p-3 rounded-2xl border text-center text-sm font-bold outline-none" style="background: var(--input-bg); border-color: var(--card-border); color: var(--text-main);">
-            <p class="text-[9px] mt-2" style="color: var(--text-muted);">You can skip this and set it later.</p>
-          </div>
-        </div>
       </div>
 
-      <div class="flex justify-center gap-3 my-8">
-        <div id="onboardDot1" class="w-2.5 h-2.5 rounded-full transition-all" style="background-color: var(--accent); width: 20px;"></div>
-        <div id="onboardDot2" class="w-2.5 h-2.5 rounded-full transition-all" style="background-color: rgba(156,163,175,0.3);"></div>
-        <div id="onboardDot3" class="w-2.5 h-2.5 rounded-full transition-all" style="background-color: rgba(156,163,175,0.3);"></div>
-        <div id="onboardDot4" class="w-2.5 h-2.5 rounded-full transition-all" style="background-color: rgba(156,163,175,0.3);"></div>
-        <div id="onboardDot5" class="w-2.5 h-2.5 rounded-full transition-all" style="background-color: rgba(156,163,175,0.3);"></div>
-        <div id="onboardDot6" class="w-2.5 h-2.5 rounded-full transition-all" style="background-color: rgba(156,163,175,0.3);"></div>
-        <div id="onboardDot7" class="w-2.5 h-2.5 rounded-full transition-all" style="background-color: rgba(156,163,175,0.3);"></div>
-        <div id="onboardDot8" class="w-2.5 h-2.5 rounded-full transition-all" style="background-color: rgba(156,163,175,0.3);"></div>
+      <!-- 4-DOT PAGINATION -->
+      <div class="flex justify-center gap-2.5 my-6">
+        <div id="onboardDot1" class="w-6 h-2 rounded-full transition-all duration-300" style="background-color: var(--accent);"></div>
+        <div id="onboardDot2" class="w-2 h-2 rounded-full transition-all duration-300" style="background-color: rgba(156,163,175,0.3);"></div>
+        <div id="onboardDot3" class="w-2 h-2 rounded-full transition-all duration-300" style="background-color: rgba(156,163,175,0.3);"></div>
+        <div id="onboardDot4" class="w-2 h-2 rounded-full transition-all duration-300" style="background-color: rgba(156,163,175,0.3);"></div>
       </div>
 
-      <div class="flex flex-col gap-3">
-        <button id="onboardNextBtn" onclick="window.onboardingNext()" class="w-full py-4 rounded-2xl font-bold text-sm shadow-lg active:scale-95 transition-all" style="background: var(--accent); color: var(--accent-text);">Next</button>
-        <button id="onboardSkipBtn" onclick="window.onboardingSkip()" class="text-xs font-bold py-2 active:scale-95 transition-all" style="color: var(--text-muted);">Skip Tour</button>
+      <!-- ACTION BUTTONS -->
+      <div class="flex flex-col gap-2.5">
+        <button id="onboardNextBtn" onclick="window.onboardingNext()" class="w-full py-4 rounded-2xl font-black text-xs uppercase tracking-wider shadow-lg active:scale-95 transition-all cursor-pointer" style="background: var(--accent); color: var(--accent-text); box-shadow: 0 8px 24px var(--accent-glow);">Next ➔</button>
+        <button id="onboardSkipBtn" onclick="window.onboardingSkip()" class="text-[11px] font-bold py-1.5 active:scale-95 transition-all cursor-pointer" style="color: var(--text-muted);">Skip Introduction</button>
       </div>
     </div>
   </div>
@@ -493,25 +551,20 @@
             <p id="headerTagline" class="text-[9px] font-extrabold uppercase tracking-[0.2em] transition-all duration-500 mt-0.5" style="color: var(--text-muted);">Widen the gap.</p>
           </div>
 
-          <!-- Right: Sleek Unified Executive Capsule & Share -->
-          <div class="flex items-center gap-2">
+          <!-- Right: Sleek Unified Executive Capsule -->
+          <div class="flex items-center">
             <!-- Streak & Shields Unified Capsule (Tap to open drawer) -->
-            <div onclick="window.showShieldDashboard()" class="px-3 py-1.5 rounded-full border flex items-center gap-2 active:scale-95 transition-transform cursor-pointer shadow-sm" style="background: var(--input-bg); border-color: var(--card-border);">
-              <span class="flex items-center gap-1">
+            <div onclick="window.showShieldDashboard()" class="px-3.5 py-1.5 rounded-full border flex items-center gap-2.5 active:scale-95 transition-transform cursor-pointer shadow-sm" style="background: var(--input-bg); border-color: var(--card-border);" title="View Shields & Streak Dashboard">
+              <span class="flex items-center gap-1.5">
                 <i data-lucide="flame" class="w-3.5 h-3.5 text-orange-500"></i>
                 <span id="headerStreak" class="numeric-display text-xs font-black text-orange-500">0d</span>
               </span>
               <span class="w-[1px] h-3 bg-white/10"></span>
-              <span class="flex items-center gap-1">
+              <span class="flex items-center gap-1.5">
                 <i data-lucide="shield" class="w-3.5 h-3.5 text-sky-400"></i>
                 <span id="shieldCount" class="numeric-display text-xs font-black text-sky-400">0</span>
               </span>
             </div>
-
-            <!-- Share Action Button -->
-            <button onclick="window.shareProgress()" class="w-8 h-8 rounded-full border flex items-center justify-center active:scale-90 transition-transform cursor-pointer shadow-sm" style="background: var(--input-bg); border-color: var(--card-border);" aria-label="Share Progress" title="Share progress">
-              <i data-lucide="share-2" class="w-3.5 h-3.5" style="color: var(--accent);"></i>
-            </button>
           </div>
         </div>
 
@@ -2139,7 +2192,7 @@
   <div id="pinSetupModal" class="hidden fixed inset-0 backdrop-blur-sm z-[10000] flex items-center justify-center p-6" style="background-color: var(--overlay-bg);" onclick="if(event.target===this) window.closePinSetupModal()"><div class="dialog-card p-6 space-y-4 max-w-xs w-full text-center" style="padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));"><i data-lucide="lock-keyhole" class="w-8 h-8 mx-auto" style="color: var(--accent);"></i><h3 class="text-sm font-bold uppercase tracking-widest" style="color: var(--text-main);">Set 4-Digit PIN</h3><input type="tel" inputmode="numeric" maxlength="4" id="pinSetupInput" placeholder="••••" data-ph-no-capture="true" class="numeric-display w-full text-center text-2xl tracking-[0.6em] p-3 rounded-xl border outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);"><p id="pinSetupError" class="text-[10px] text-red-500 hidden">Must be exactly 4 digits.</p><div class="flex gap-3 pt-1"><button onclick="window.closePinSetupModal()" class="flex-1 py-3 rounded-xl text-xs font-bold active:scale-95 transition-transform" style="background-color: var(--input-bg); color: var(--text-main);">Cancel</button><button onclick="window.savePinSetup()" class="flex-1 py-3 rounded-xl text-xs font-bold active:scale-95 transition-transform" style="background: var(--accent); color: var(--accent-text);">Save</button></div></div></div>
 
   <!-- SCRIPT SINK - RELIABLE BOOTSTRAP -->
-  <script src="app.js?v=2.4.4"></script>
+  <script src="app.js?v=2.4.6"></script>
   <script>
     window.addEventListener('DOMContentLoaded', function() {
       if (typeof window.bootApp === 'function') {
