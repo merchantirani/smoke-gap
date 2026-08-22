@@ -2,101 +2,82 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Privacy Policy — pause</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    :root {
+      --bg-body: #090A0F; --card-bg: #11131A; --text-main: #F3F4F6; --text-muted: #9CA3AF;
+      --card-border: rgba(255, 255, 255, 0.08); --accent: #F59E0B; --accent-glow: rgba(245, 158, 11, 0.2);
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg-body: #F8FAFC; --card-bg: #FFFFFF; --text-main: #0F172A; --text-muted: #64748B;
+        --card-border: rgba(203, 213, 225, 0.8); --accent: #2563EB; --accent-glow: rgba(37, 99, 235, 0.15);
+      }
+    }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-      line-height: 1.7;
-      color: #1a1a1a;
-      background: #f8fafc;
-      padding: 2rem 1rem;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.7; color: var(--text-main); background-color: var(--bg-body);
+      padding: 0 1rem 3rem; -webkit-font-smoothing: antialiased;
     }
+    .sticky-nav {
+      position: sticky; top: 0; z-index: 100; background: var(--bg-body);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--card-border);
+      padding: calc(0.75rem + env(safe-area-inset-top)) 1rem 0.75rem;
+      margin: 0 -1rem 1.5rem; display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-back-btn {
+      display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 9999px;
+      font-size: 13px; font-weight: 700; color: var(--text-main); background: var(--card-bg);
+      border: 1px solid var(--card-border); text-decoration: none; transition: transform 0.15s ease; cursor: pointer;
+    }
+    .nav-back-btn:active { transform: scale(0.94); }
+    .nav-title { font-size: 13px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); }
     .container {
-      max-width: 800px;
-      margin: 0 auto;
-      background: white;
-      padding: 3rem;
-      border-radius: 16px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+      max-width: 760px; margin: 0 auto; background: var(--card-bg); padding: 2.5rem 2rem;
+      border-radius: 24px; border: 1px solid var(--card-border); box-shadow: 0 8px 32px rgba(0,0,0,0.12);
     }
-    h1 {
-      font-size: 2rem;
-      margin-bottom: 0.5rem;
-      color: #0f172a;
+    h1 { font-size: 1.85rem; font-weight: 800; margin-bottom: 0.35rem; color: var(--text-main); letter-spacing: -0.03em; }
+    .app-name { font-size: 1rem; font-weight: 600; color: var(--accent); margin-bottom: 1.5rem; }
+    .effective-date { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--card-border); }
+    h2 { font-size: 1.2rem; font-weight: 700; margin: 2rem 0 0.75rem 0; color: var(--text-main); padding-bottom: 0.4rem; border-bottom: 1px solid var(--card-border); }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.5rem 0; color: var(--text-main); }
+    p, ul, ol { margin-bottom: 1rem; color: var(--text-muted); font-size: 14.5px; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 1.25rem; }
+    li { margin-bottom: 0.4rem; color: var(--text-muted); }
+    a { color: var(--accent); text-decoration: none; font-weight: 600; }
+    a:hover { text-decoration: underline; }
+    .highlight { background: var(--accent-glow); border-left: 4px solid var(--accent); padding: 1rem 1.25rem; margin: 1.5rem 0; border-radius: 0 12px 12px 0; font-size: 14px; color: var(--text-main); }
+    .contact-box { background: rgba(255,255,255,0.02); border: 1px solid var(--card-border); padding: 1.25rem; border-radius: 16px; margin-top: 1.5rem; }
+    .bottom-return-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 28px;
+      border-radius: 16px; font-size: 14px; font-weight: 800; background: var(--accent); color: #FFFFFF;
+      text-decoration: none; box-shadow: 0 8px 24px var(--accent-glow); transition: transform 0.15s ease; margin-top: 1rem;
     }
-    .app-name {
-      font-size: 1.1rem;
-      color: #64748b;
-      margin-bottom: 2rem;
-    }
-    .effective-date {
-      font-size: 0.9rem;
-      color: #94a3b8;
-      margin-bottom: 2rem;
-      padding-bottom: 1rem;
-      border-bottom: 1px solid #e2e8f0;
-    }
-    h2 {
-      font-size: 1.3rem;
-      margin: 2rem 0 1rem 0;
-      color: #0f172a;
-      padding-bottom: 0.5rem;
-      border-bottom: 2px solid #e2e8f0;
-    }
-    h3 {
-      font-size: 1.1rem;
-      margin: 1.5rem 0 0.75rem 0;
-      color: #334155;
-    }
-    p, ul, ol {
-      margin-bottom: 1rem;
-      color: #475569;
-    }
-    ul, ol {
-      padding-left: 1.5rem;
-      margin-bottom: 1.5rem;
-    }
-    li {
-      margin-bottom: 0.5rem;
-      color: #475569;
-    }
-    a {
-      color: #2563eb;
-      text-decoration: none;
-    }
-    a:hover {
-      text-decoration: underline;
-    }
-    .highlight {
-      background: #f0f9ff;
-      border-left: 4px solid #2563eb;
-      padding: 1rem 1.5rem;
-      margin: 1.5rem 0;
-      border-radius: 0 8px 8px 0;
-    }
-    .contact-box {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      padding: 1.5rem;
-      border-radius: 12px;
-      margin-top: 2rem;
-    }
-    @media (max-width: 640px) {
-      .container { padding: 1.5rem; }
-      h1 { font-size: 1.5rem; }
-    }
+    .bottom-return-btn:active { transform: scale(0.96); }
+    @media (max-width: 640px) { .container { padding: 1.5rem 1.25rem; } h1 { font-size: 1.5rem; } }
   </style>
 </head>
 <body>
+  <!-- Sticky Top Navigation Bar -->
+  <header class="sticky-nav">
+    <a href="index.html" class="nav-back-btn" onclick="if(window.history.length > 1) { window.history.back(); return false; }">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      <span>Back to App</span>
+    </a>
+    <span class="nav-title">Privacy Policy</span>
+    <div style="width: 70px;"></div>
+  </header>
+
   <div class="container">
     <h1>Privacy Policy</h1>
     <p class="app-name">pause — Smoking Cessation Tracker</p>
-    <p class="effective-date">Effective Date: August 3, 2026</p>
+    <p class="effective-date">Effective Date: August 2026</p>
 
     <div class="highlight">
-      <strong>Quick Summary:</strong> pause respects your privacy. All your personal data stays on your device. We only collect anonymous usage analytics to improve the app experience. We never sell, share, or monetize your personal information.
+      <strong>🔒 Quick Summary:</strong> pause is 100% on-device private. Your personal habit logs, timestamps, notes, and triggers stay exclusively on your local device. We never sell, monetize, or transmit your private health data.
     </div>
 
     <h2>1. Introduction</h2>
@@ -277,11 +258,17 @@
     <h2>15. Consent</h2>
     <p>By using pause, you consent to this Privacy Policy and our data practices as described herein.</p>
 
-    <hr style="margin: 2rem 0; border: none; border-top: 1px solid #e2e8f0;">
+    <hr style="margin: 2rem 0; border: none; border-top: 1px solid var(--card-border);">
 
-    <p style="text-align: center; color: #94a3b8; font-size: 0.85rem;">
+    <div style="text-align: center; margin: 1.5rem 0;">
+      <a href="index.html" class="bottom-return-btn" onclick="if(window.history.length > 1) { window.history.back(); return false; }">
+        ← Return to App Dashboard
+      </a>
+    </div>
+
+    <p style="text-align: center; color: var(--text-muted); font-size: 0.85rem;">
       This policy is compliant with GDPR, CCPA, and Google Play Store requirements.<br>
-      Last updated: August 3, 2026
+      Last updated: August 2026
     </p>
   </div>
 </body>

@@ -605,21 +605,21 @@
           
           <div id="watchContainer" class="w-full relative min-h-[255px] flex items-center justify-center touch-pan-x" ontouchstart="window.touchStartX(event)" ontouchend="window.touchEndX(event)">
             
-            <!-- WATCH 1: THE CLIMB (CENTERED PILLAR GAUGE) -->
-            <div id="watchStyle1" onclick="window.showStatDetail('currentGap')" class="w-full max-w-[340px] mx-auto active:scale-[0.98] transition-all relative flex items-center justify-center gap-7 px-3 cursor-pointer">
-               <!-- Glowing Liquid Tube Gauge -->
-               <div class="relative shrink-0 w-10 h-44 rounded-full overflow-hidden border-2 flex flex-col justify-end shadow-inner" style="background-color: var(--input-bg); border-color: var(--card-border);">
+            <!-- WATCH 1: THE CLIMB (SYMMETRICALLY CENTERED LUXURY ASCENT) -->
+            <div id="watchStyle1" onclick="window.showStatDetail('currentGap')" class="w-full max-w-[320px] mx-auto active:scale-[0.98] transition-all relative flex items-center justify-center gap-5 px-3 cursor-pointer">
+               <!-- Glowing Liquid Climb Pillar Gauge -->
+               <div class="relative shrink-0 w-8 h-40 rounded-full overflow-hidden border flex flex-col justify-end shadow-inner" style="background-color: var(--input-bg); border-color: var(--card-border);">
                  <div id="heroClimbFill" class="w-full transition-all duration-1000 ease-out rounded-full" style="height: 0%; background: linear-gradient(180deg, #FBBF24, #F59E0B); box-shadow: 0 0 16px rgba(245,158,11,0.5) inset;"></div>
                </div>
                
-               <!-- Balanced Typography Stack -->
-               <div class="flex flex-col items-start justify-center gap-1 flex-1 min-w-0">
+               <!-- Center-Balanced Typography Stack -->
+               <div class="flex flex-col items-start justify-center gap-1 min-w-0">
                  <div class="flex items-center gap-2">
                    <i data-lucide="mountain" class="w-3.5 h-3.5 text-amber-500"></i>
                    <span class="text-[10px] font-bold uppercase tracking-widest" style="color: var(--text-muted);">The Climb</span>
-                   <span id="heroClimbStatus" class="ml-1 text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">Pacing</span>
+                   <span id="heroClimbStatus" class="text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">Pacing</span>
                  </div>
-                 <div id="stopwatch1" class="numeric-display text-4xl sm:text-5xl font-black tracking-tight" style="color: var(--text-main);">00:00:00</div>
+                 <div id="stopwatch1" class="numeric-display text-4xl sm:text-5xl font-black tracking-tight" style="color: var(--text-main); font-variant-numeric: tabular-nums;">00:00:00</div>
                  <div id="heroRecordBadge1" class="hidden text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.2)] w-max">🏆 RECORD</div>
                  <div class="px-2.5 py-0.5 rounded-full border text-[9px] font-bold mt-0.5" style="background: var(--input-bg); border-color: var(--card-border);">
                    <p id="heroClimbSub" class="text-amber-500 leading-tight">Target: --</p>
@@ -717,16 +717,46 @@
           </button>
         </div>
 
-        <!-- DELAY WAVE OVERLAY (WHEN ACTIVE) -->
-        <div id="waveOverlay" class="hidden premium-card relative overflow-hidden border flex flex-col items-center justify-center text-center shadow-2xl transition-all duration-500 p-4" style="border-color: rgba(16,185,129,0.4); min-height: 120px; background: linear-gradient(180deg, var(--card-bg) 0%, rgba(16,185,129,0.05) 100%);">
-          <div class="absolute inset-0 pointer-events-none flex items-end">
-            <svg viewBox="0 0 1200 120" preserveAspectRatio="none" class="w-[200%] animate-wave" id="waveSvgEl" style="height: 50px; opacity: 0.35;">
-              <path d="M 0,60 Q 150,10 300,60 T 600,60 Q 750,10 900,60 T 1200,60 V 120 H 0 Z" fill="#10B981"></path>
+        <!-- LUXURY ACTIVE RIDE URGE WAVE CARD -->
+        <div id="waveOverlay" class="hidden premium-card relative overflow-hidden border flex flex-col items-center justify-center text-center shadow-2xl transition-all duration-500 p-5 space-y-3" style="border-color: rgba(16,185,129,0.5); background: linear-gradient(180deg, rgba(16,185,129,0.12) 0%, var(--card-bg) 100%);">
+          <!-- Ambient Bioluminescent Wave Glow Background -->
+          <div class="absolute inset-0 pointer-events-none overflow-hidden">
+            <div class="absolute -top-12 left-1/2 -translate-x-1/2 w-48 h-24 rounded-full blur-2xl opacity-40 bg-emerald-500"></div>
+            <svg viewBox="0 0 1200 120" preserveAspectRatio="none" class="absolute bottom-0 inset-x-0 w-[200%] animate-wave" style="height: 44px; opacity: 0.2;">
+              <path d="M 0,60 Q 150,15 300,60 T 600,60 Q 750,15 900,60 T 1200,60 V 120 H 0 Z" fill="#10B981"></path>
             </svg>
           </div>
-          <div class="relative z-10 w-full flex flex-col items-center">
-            <i data-lucide="shield" class="w-6 h-6 wave-breathe mb-1" style="color:#10B981;"></i>
-            <button onclick="window.cancelActiveWave()" class="px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider transition-all active:scale-95 border backdrop-blur-md flex items-center gap-1 mt-1 cursor-pointer" style="background: var(--input-bg); border-color: var(--card-border); color: var(--text-main);"><i data-lucide="x" class="w-3 h-3"></i> Cancel Wave</button>
+
+          <!-- Header & Live Pulse Icon -->
+          <div class="relative z-10 flex items-center gap-2">
+            <div class="w-6 h-6 rounded-full flex items-center justify-center bg-emerald-500/20 text-emerald-400">
+              <i data-lucide="waves" class="w-3.5 h-3.5 animate-pulse"></i>
+            </div>
+            <span class="text-[10px] font-extrabold uppercase tracking-[0.2em] text-emerald-400">Surge Delay Active</span>
+            <span id="waveShieldRewardPill" class="text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">+1 🛡️ on Finish</span>
+          </div>
+
+          <!-- Large Countdown Timer -->
+          <div class="relative z-10">
+            <div id="waveCountdown" class="numeric-display text-4xl sm:text-5xl font-black tracking-tight text-emerald-400 drop-shadow-[0_0_15px_rgba(16,185,129,0.4)]">10:00</div>
+          </div>
+
+          <!-- Progress Bar -->
+          <div class="relative z-10 w-full max-w-[240px] h-1.5 rounded-full overflow-hidden border" style="background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.25);">
+            <div id="waveProgressBar" class="h-full rounded-full transition-all duration-1000 bg-emerald-400 shadow-[0_0_8px_#10B981]" style="width: 0%;"></div>
+          </div>
+
+          <!-- Mindful Motivational Guidance Text -->
+          <p id="waveMotivationalText" class="relative z-10 text-[11px] font-medium leading-relaxed max-w-xs transition-opacity duration-300" style="color: var(--text-main);">Notice the urge without acting on it. Cravings rise, peak, and naturally fade in minutes.</p>
+
+          <!-- Tactile Control Buttons -->
+          <div class="relative z-10 flex items-center gap-2 pt-1">
+            <button onclick="window.openBreathingModal()" class="px-3.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 border flex items-center gap-1.5 cursor-pointer shadow-sm" style="background: rgba(14,165,233,0.15); border-color: rgba(14,165,233,0.3); color: #38BDF8;">
+              <i data-lucide="wind" class="w-3.5 h-3.5"></i> Guided Breathe
+            </button>
+            <button onclick="window.cancelActiveWave()" class="px-3.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 border flex items-center gap-1 cursor-pointer shadow-sm" style="background: var(--input-bg); border-color: var(--card-border); color: var(--text-muted);">
+              <i data-lucide="x" class="w-3.5 h-3.5"></i> Cancel
+            </button>
           </div>
         </div>
 
@@ -1519,7 +1549,7 @@
               <span class="text-[9px]" style="color: var(--text-muted);">v2.4.0 • Zero Cloud Tracking</span>
             </div>
           </div>
-          <a href="privacy.html" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-full border text-[10px] font-bold active:scale-95 transition-all" style="background: var(--input-bg); border-color: var(--card-border); color: var(--accent);">Privacy Policy</a>
+          <button onclick="window.openPrivacyPolicy()" type="button" class="px-3 py-1.5 rounded-full border text-[10px] font-bold active:scale-95 transition-all cursor-pointer" style="background: var(--input-bg); border-color: var(--card-border); color: var(--accent);">Privacy Policy</button>
         </div>
       </section>
     </div>
@@ -2178,6 +2208,58 @@
     </div>
   </div>
 
+  <!-- IN-APP PRIVACY POLICY SHEET MODAL -->
+  <div id="privacyModal" class="hidden sheet" onclick="if(event.target===this) window.closePrivacyPolicy()">
+    <div class="sheet-panel" style="max-height: 88vh;">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl flex items-center justify-center" style="background: rgba(16,185,129,0.12); color: #10B981;"><i data-lucide="shield-check" class="w-4 h-4"></i></div>
+          <div>
+            <h3 class="sheet-title">Privacy Policy</h3>
+            <p class="text-[9px] font-semibold text-emerald-400">100% On-Device & Private</p>
+          </div>
+        </div>
+        <button onclick="window.closePrivacyPolicy()" class="sheet-close"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div class="sheet-body space-y-4 text-left">
+        <div class="p-3.5 rounded-2xl border text-xs leading-relaxed space-y-2" style="background: var(--input-bg); border-color: var(--card-border);">
+          <p class="font-bold" style="color: var(--text-main);">🔒 Zero Cloud Tracking Guarantee</p>
+          <p style="color: var(--text-muted);">All your personal logs, timestamps, notes, and habits stay exclusively on your local device. We never sell, transmit, or monetize your health data.</p>
+        </div>
+
+        <div class="space-y-1.5">
+          <h4 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">1. What We Store Locally</h4>
+          <ul class="text-[11px] space-y-1 list-disc pl-4" style="color: var(--text-muted);">
+            <li>Smoking logs, timestamps, and craving triggers</li>
+            <li>App configuration, daily limits, pack price, and goals</li>
+            <li>Resisted cravings history and shield awards</li>
+          </ul>
+        </div>
+
+        <div class="space-y-1.5">
+          <h4 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">2. Your Data Sovereignty</h4>
+          <ul class="text-[11px] space-y-1 list-disc pl-4" style="color: var(--text-muted);">
+            <li><strong>Export:</strong> Download your entire dataset as JSON/CSV anytime in Settings.</li>
+            <li><strong>Delete:</strong> Wipe all records permanently via Clear Data in Settings.</li>
+          </ul>
+        </div>
+
+        <div class="space-y-1.5">
+          <h4 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-main);">3. Anonymous Telemetry</h4>
+          <p class="text-[11px] leading-relaxed" style="color: var(--text-muted);">We use PostHog strictly for anonymous crash reporting and performance metrics. No personally identifiable or health information is ever collected.</p>
+        </div>
+
+        <div class="pt-2">
+          <a href="privacy.html" target="_blank" class="text-xs font-bold text-sky-400 underline">View Full External Document ➔</a>
+        </div>
+      </div>
+      <div class="sheet-footer">
+        <button onclick="window.closePrivacyPolicy()" class="sheet-btn-primary">Got It</button>
+      </div>
+    </div>
+  </div>
+
   <div id="confirmModal" class="hidden fixed inset-0 backdrop-blur-sm z-[10000] flex items-center justify-center p-6" style="background-color: var(--overlay-bg);" onclick="if(event.target===this) window.closeConfirmModal()">
     <div class="dialog-card p-6 space-y-4 max-w-xs w-full text-center" style="padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));">
       <div id="confirmIconWrap" class="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center" style="background-color: rgba(239,68,68,0.1);">
@@ -2194,7 +2276,7 @@
   <div id="pinSetupModal" class="hidden fixed inset-0 backdrop-blur-sm z-[10000] flex items-center justify-center p-6" style="background-color: var(--overlay-bg);" onclick="if(event.target===this) window.closePinSetupModal()"><div class="dialog-card p-6 space-y-4 max-w-xs w-full text-center" style="padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));"><i data-lucide="lock-keyhole" class="w-8 h-8 mx-auto" style="color: var(--accent);"></i><h3 class="text-sm font-bold uppercase tracking-widest" style="color: var(--text-main);">Set 4-Digit PIN</h3><input type="tel" inputmode="numeric" maxlength="4" id="pinSetupInput" placeholder="••••" data-ph-no-capture="true" class="numeric-display w-full text-center text-2xl tracking-[0.6em] p-3 rounded-xl border outline-none" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);"><p id="pinSetupError" class="text-[10px] text-red-500 hidden">Must be exactly 4 digits.</p><div class="flex gap-3 pt-1"><button onclick="window.closePinSetupModal()" class="flex-1 py-3 rounded-xl text-xs font-bold active:scale-95 transition-transform" style="background-color: var(--input-bg); color: var(--text-main);">Cancel</button><button onclick="window.savePinSetup()" class="flex-1 py-3 rounded-xl text-xs font-bold active:scale-95 transition-transform" style="background: var(--accent); color: var(--accent-text);">Save</button></div></div></div>
 
   <!-- SCRIPT SINK - RELIABLE BOOTSTRAP -->
-  <script src="app.js?v=2.4.7"></script>
+  <script src="app.js?v=2.4.8"></script>
   <script>
     window.addEventListener('DOMContentLoaded', function() {
       if (typeof window.bootApp === 'function') {

@@ -982,7 +982,7 @@ function waveTick() {
   const o = document.getElementById('waveOverlay'); 
   if (!o) return;
   let rem = Math.ceil((waveEndTime - new Date().getTime()) / 1000); 
-  let totalSecs = waveDurationMs / 1000;
+  let totalSecs = (waveDurationMs || 600000) / 1000;
   if (rem <= 0) {
     clearInterval(waveTimer); 
     waveEndTime = 0; 
@@ -995,19 +995,23 @@ function waveTick() {
     showToast("🛡️ Craving Defeated! +1 Shield");
     sendSystemNotification("🛡️ Craving Defeated!", "Awesome job! You successfully rode out the craving wave. +1 Shield unlocked.", 'notifWaveComplete');
     celebrateBadgeIfUnlocked();
-    if (window.posthog) posthog.capture('ride_wave_completed', { duration_mins: waveDurationMs / 60000 });
+    if (window.posthog) posthog.capture('ride_wave_completed', { duration_mins: (waveDurationMs || 600000) / 60000 });
     try { updateUI(); } catch(e){}
   } else {
-    const mm = Math.floor(rem/60).toString().padStart(2,'0'), ss = (rem%60).toString().padStart(2,'0');
+    const mm = Math.floor(rem / 60).toString().padStart(2, '0');
+    const ss = (rem % 60).toString().padStart(2, '0');
     const countdownEl = document.getElementById('waveCountdown');
     if (countdownEl) countdownEl.innerText = `${mm}:${ss}`;
+
     const elapsedFrac = Math.min(1, Math.max(0, (totalSecs - rem) / totalSecs));
+    const progressEl = document.getElementById('waveProgressBar');
+    if (progressEl) progressEl.style.width = `${Math.round(elapsedFrac * 100)}%`;
 
     let txt = "Breathe in... Hold... Exhale...";
-    if (elapsedFrac < 0.2) txt = "Notice the urge without acting on it. Where do you feel it?";
-    else if (elapsedFrac < 0.5) txt = "Cravings are like ocean waves. They rise, peak, and crash.";
-    else if (elapsedFrac < 0.8) txt = "The urge is peaking now. Just ride it out, it will pass.";
-    else txt = "You're doing great. The craving is fading away.";
+    if (elapsedFrac < 0.25) txt = "Notice the urge without acting on it. Cravings rise, peak, and naturally fade in minutes.";
+    else if (elapsedFrac < 0.55) txt = "Cravings are like ocean waves. Stay centered — you are riding through the surge.";
+    else if (elapsedFrac < 0.85) txt = "The urge is peaking now. Just 2 more minutes and your dopamine circuit resets.";
+    else txt = "Almost there! The craving is subsiding. You've earned this shield.";
     
     const txtEl = document.getElementById('waveMotivationalText');
     if (txtEl && txtEl.innerText !== txt) { 
@@ -2068,6 +2072,18 @@ function openHealthTimeline() {
 
 function closeHealthTimeline() {
   const modal = document.getElementById('healthTimelineModal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function openPrivacyPolicy() {
+  if (settings.haptics && navigator.vibrate) navigator.vibrate(10);
+  const modal = document.getElementById('privacyModal');
+  if (modal) modal.classList.remove('hidden');
+  refreshIcons(modal);
+}
+
+function closePrivacyPolicy() {
+  const modal = document.getElementById('privacyModal');
   if (modal) modal.classList.add('hidden');
 }
 
@@ -4733,6 +4749,8 @@ window.validateInsightsDates = validateInsightsDates;
 window.renderAllCharts = renderAllCharts;
 window.openMapModal = openMapModal;
 window.closeMapModal = closeMapModal;
+window.openPrivacyPolicy = openPrivacyPolicy;
+window.closePrivacyPolicy = closePrivacyPolicy;
 window.bootApp = bootApp;
 
 // Auto-register Service Worker
