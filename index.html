@@ -115,30 +115,29 @@
     
     .app-container { padding-bottom: calc(104px + env(safe-area-inset-bottom)); min-height: 100vh; min-height: 100dvh; }
     
-    .premium-card { background: var(--card-bg); backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px); border: 1px solid var(--card-border); box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.05); border-radius: 1.5rem; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-    .premium-card:active { transform: scale(0.98); box-shadow: 0 4px 16px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.06); }
+    .premium-card { background: var(--card-bg); backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px); border: 1px solid var(--card-border); box-shadow: 0 4px 20px -2px rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.06); border-radius: 1.25rem; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+    .premium-card:active { transform: scale(0.985); }
 
-    /* === Premium bottom-sheet system === */
-    .sheet { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; justify-content: flex-end; background: var(--overlay-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); transition: opacity 0.25s ease; }
-    .sheet-panel { position: relative; overflow: hidden; width: 100%; max-width: 28rem; margin: 0 auto; display: flex; flex-direction: column; max-height: min(86vh, 640px); background: var(--modal-bg); border-top: 1px solid var(--card-border); border-radius: 28px 28px 0 0; box-shadow: 0 -18px 48px rgba(0,0,0,0.35), 0 -2px 12px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.06); padding-bottom: calc(1rem + env(safe-area-inset-bottom)); animation: sheetUp 0.32s cubic-bezier(0.16, 1, 0.3, 1); }
-    .sheet-panel::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; z-index: 2; background: linear-gradient(90deg, var(--accent), transparent 80%); }
+    /* === Unified Master Bottom-Sheet System (iOS / WHOOP Executive Standard) === */
+    .sheet { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; justify-content: flex-end; background: var(--overlay-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); transition: opacity 0.25s ease; }
+    .sheet-panel { position: relative; overflow: hidden; width: 100%; max-width: 28rem; margin: 0 auto; display: flex; flex-direction: column; max-height: min(88vh, 660px); background: var(--modal-bg); border-top: 1px solid var(--card-border); border-radius: 28px 28px 0 0; box-shadow: 0 -16px 48px rgba(0,0,0,0.35), 0 -2px 10px rgba(0,0,0,0.15); padding-bottom: calc(1rem + env(safe-area-inset-bottom)); animation: sheetUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
     @keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-    .sheet-handle { width: 36px; height: 4px; border-radius: 999px; margin: 10px auto 0; background: rgba(128,128,128,0.4); flex-shrink: 0; }
-    .sheet-header { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.75rem 1.25rem 0.5rem; flex-shrink: 0; }
-    .sheet-body { flex: 1; overflow-y: auto; padding: 0.25rem 1.25rem 0.75rem; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
-    .sheet-footer { display: flex; gap: 0.75rem; flex-shrink: 0; padding: 0.875rem 1.25rem 0.25rem; border-top: 1px solid var(--card-border); margin-top: 0.5rem; }
-    .sheet-btn-primary { flex: 1; padding: 0.85rem 1rem; border-radius: 0.9rem; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.03em; text-align: center; color: var(--accent-text); background: var(--accent); box-shadow: 0 8px 20px var(--accent-glow); transition: transform 0.15s ease, box-shadow 0.2s ease; }
+    .sheet-handle { width: 36px; height: 4px; border-radius: 999px; margin: 12px auto 4px; background: rgba(156,163,175,0.35); flex-shrink: 0; }
+    .sheet-header { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.85rem 1.25rem 0.65rem; border-bottom: 1px solid var(--card-border); flex-shrink: 0; }
+    .sheet-body { flex: 1; overflow-y: auto; padding: 1rem 1.25rem; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+    .sheet-footer { display: flex; gap: 0.75rem; flex-shrink: 0; padding: 0.85rem 1.25rem 0.25rem; border-top: 1px solid var(--card-border); margin-top: 0.5rem; }
+    .sheet-btn-primary { flex: 1; padding: 0.85rem 1rem; border-radius: 1rem; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.04em; text-align: center; color: var(--accent-text); background: var(--accent); box-shadow: 0 6px 20px var(--accent-glow); transition: transform 0.15s ease, box-shadow 0.2s ease; }
     .sheet-btn-primary:active { transform: scale(0.97); }
-    .sheet-btn-ghost { flex: 1; padding: 0.85rem 1rem; border-radius: 0.9rem; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.03em; text-align: center; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--card-border); transition: transform 0.15s ease; }
+    .sheet-btn-ghost { flex: 1; padding: 0.85rem 1rem; border-radius: 1rem; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.04em; text-align: center; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--card-border); transition: transform 0.15s ease; }
     .sheet-btn-ghost:active { transform: scale(0.97); }
-    .sheet-btn-danger { flex: 1; padding: 0.85rem 1rem; border-radius: 0.9rem; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.03em; text-align: center; display: flex; align-items: center; justify-content: center; gap: 0.375rem; background: rgba(239,68,68,0.1); color: #EF4444; border: 1px solid rgba(239,68,68,0.25); transition: transform 0.15s ease; }
+    .sheet-btn-danger { flex: 1; padding: 0.85rem 1rem; border-radius: 1rem; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.04em; text-align: center; display: flex; align-items: center; justify-content: center; gap: 0.375rem; background: rgba(239,68,68,0.1); color: #EF4444; border: 1px solid rgba(239,68,68,0.25); transition: transform 0.15s ease; }
     .sheet-btn-danger:active { transform: scale(0.97); }
-    .dialog-card { background: var(--modal-bg); border: 1px solid var(--card-border); border-radius: 24px; box-shadow: 0 24px 64px rgba(0,0,0,0.4), 0 4px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06); }
-    .sheet-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; color: var(--text-main); }
-    .sheet-label { display: block; font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); margin-bottom: 0.4rem; }
-    .sheet-close { width: 30px; height: 30px; border-radius: 999px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: var(--input-bg); color: var(--text-muted); transition: transform 0.15s ease; }
+    .dialog-card { background: var(--modal-bg); border: 1px solid var(--card-border); border-radius: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 4px 16px rgba(0,0,0,0.2); }
+    .sheet-title { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-main); }
+    .sheet-label { display: block; font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); margin-bottom: 0.4rem; }
+    .sheet-close { width: 32px; height: 32px; border-radius: 999px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: var(--input-bg); border: 1px solid var(--card-border); color: var(--text-muted); transition: transform 0.15s ease, background 0.15s ease; }
     .sheet-close:active { transform: scale(0.9); }
-    .sheet-input { position: relative; display: flex; align-items: center; width: 100%; background: var(--input-bg); border: 1px solid var(--card-border); border-radius: 0.85rem; padding: 0.8rem 0.9rem; }
+    .sheet-input { position: relative; display: flex; align-items: center; width: 100%; background: var(--input-bg); border: 1px solid var(--card-border); border-radius: 0.9rem; padding: 0.75rem 0.9rem; }
     .sheet-input input { width: 100%; background: transparent; border: none; outline: none; color: var(--text-main); font-weight: 700; font-size: 0.9rem; padding-right: 30px; appearance: none; -webkit-appearance: none; }
     .sheet-input input::-webkit-calendar-picker-indicator { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); opacity: 0.6; cursor: pointer; }
     .badge-card { background: var(--input-bg); border-radius: 1rem; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -838,8 +837,13 @@
           <button id="insightsClearCustom" onclick="window.clearInsightsCustomRange()" class="px-2.5 py-1.5 rounded-xl border text-[11px] font-bold active:scale-95 transition-all shrink-0" style="background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.2); color: #EF4444;"><i data-lucide="x" class="w-3 h-3"></i></button>
         </div>
 
-        <!-- SMART AI INSIGHT BANNER -->
-        <div id="smartTextInsight" class="premium-card p-4 mb-2 text-xs font-medium leading-relaxed border-l-2 border-[var(--accent)]" style="color: var(--text-main);">--</div>
+        <!-- SMART AI INSIGHT BANNER (UNIFIED WITH BENTO GRID) -->
+        <div class="premium-card p-4 flex items-center gap-3.5 mb-2">
+          <div class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style="background: var(--accent-glow); color: var(--accent);">
+            <i data-lucide="sparkles" class="w-4 h-4"></i>
+          </div>
+          <div id="smartTextInsight" class="text-xs font-medium leading-relaxed flex-1" style="color: var(--text-main);">--</div>
+        </div>
 
         <!-- UNIFIED 2x2 EXECUTIVE KPI MIRROR -->
         <div class="grid grid-cols-2 gap-2.5">
@@ -1219,6 +1223,15 @@
   <div id="sosInterrupterModal" class="hidden sheet" style="z-index: 25000;" onclick="if(event.target===this) window.closeSosInterrupter(false)">
     <div class="sheet-panel">
       <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded-lg flex items-center justify-center" style="background: var(--accent-glow); color: var(--accent);">
+            <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+          </div>
+          <h3 class="sheet-title">Pattern Interrupter</h3>
+        </div>
+        <button onclick="window.closeSosInterrupter(false)" class="sheet-close"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
       <div class="sheet-body space-y-4 text-center">
         <div class="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center mx-auto text-amber-500 mt-2">
           <i data-lucide="zap" class="w-6 h-6"></i>
@@ -1250,8 +1263,12 @@
     <div class="sheet-panel">
       <div class="sheet-handle"></div>
       <div class="sheet-header">
-        <div class="w-[30px]"></div>
-        <h3 class="sheet-title">Edit Log Entry</h3>
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded-lg flex items-center justify-center" style="background: var(--accent-glow); color: var(--accent);">
+            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+          </div>
+          <h3 class="sheet-title">Edit Log Entry</h3>
+        </div>
         <button onclick="window.closeTriggerModal()" class="sheet-close"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
       <div class="sheet-body space-y-3.5">
@@ -1355,16 +1372,16 @@
       <div class="sheet-handle"></div>
       <div class="sheet-header">
         <div class="flex items-center gap-3">
-          <div id="statDetailIcon" class="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-lg"><i data-lucide="info" class="w-6 h-6"></i></div>
+          <div id="statDetailIcon" class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background: var(--accent-glow); color: var(--accent);"><i data-lucide="info" class="w-5 h-5"></i></div>
           <div class="flex-1 min-w-0">
             <h3 id="statDetailTitle" class="sheet-title">Metric Insights</h3>
-            <p id="statDetailValue" class="numeric-display text-3xl font-bold mt-1 tracking-tight" style="color: var(--text-main);">--</p>
+            <p id="statDetailValue" class="numeric-display text-2xl font-bold mt-0.5 tracking-tight" style="color: var(--text-main);">--</p>
           </div>
         </div>
         <button onclick="window.closeStatDetail()" class="sheet-close"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
       <div class="sheet-body space-y-4">
-        <div class="rounded-2xl border-l-4 p-3.5" style="background-color: var(--input-bg); border-color: var(--accent);">
+        <div class="p-3.5 rounded-2xl border" style="background-color: var(--input-bg); border-color: var(--card-border);">
           <p class="text-[8px] font-bold uppercase tracking-widest mb-1" style="color: var(--accent);">Why it matters</p>
           <p id="statDetailDesc" class="text-xs font-medium leading-relaxed" style="color: var(--text-main);"></p>
         </div>
@@ -1387,9 +1404,9 @@
       <div class="sheet-handle"></div>
       <div class="sheet-header">
         <div class="flex items-center gap-2.5">
-          <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, rgba(56,189,248,0.15), rgba(139,92,246,0.15));"><i data-lucide="brain" class="w-4 h-4" style="color: #38BDF8;"></i></div>
+          <div class="w-8 h-8 rounded-xl flex items-center justify-center" style="background: rgba(56,189,248,0.12); color: #38BDF8;"><i data-lucide="brain" class="w-4 h-4"></i></div>
           <div>
-            <h3 class="text-sm font-bold uppercase tracking-widest" style="color: var(--text-main);">Pattern Intelligence</h3>
+            <h3 class="sheet-title">Pattern Intelligence</h3>
             <p class="text-[9px] font-semibold" style="color: var(--text-muted);">Your smoking blueprint</p>
           </div>
         </div>
@@ -1464,9 +1481,9 @@
       <div class="sheet-handle"></div>
       <div class="sheet-header">
         <div class="flex items-center gap-2.5">
-          <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, rgba(239,68,68,0.15), rgba(245,158,11,0.15));"><i data-lucide="heart-pulse" class="w-4 h-4 text-red-400"></i></div>
+          <div class="w-8 h-8 rounded-xl flex items-center justify-center" style="background: rgba(239,68,68,0.12); color: #EF4444;"><i data-lucide="heart-pulse" class="w-4 h-4"></i></div>
           <div>
-            <h3 class="text-sm font-bold uppercase tracking-widest" style="color: var(--text-main);">Your Body's Recovery</h3>
+            <h3 class="sheet-title">Your Body's Recovery</h3>
             <p class="text-[9px] font-semibold" style="color: var(--text-muted);">What your body gains as gaps widen</p>
           </div>
         </div>
@@ -1507,7 +1524,13 @@
     <div class="sheet-panel">
       <div class="sheet-handle"></div>
       <div class="sheet-header">
-        <div class="flex items-center gap-2"><i data-lucide="shield-check" class="w-5 h-5" style="color: var(--accent);"></i><h3 class="text-sm font-bold uppercase tracking-widest" style="color: var(--accent);">Victory Gallery</h3></div>
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl flex items-center justify-center" style="background: var(--accent-glow); color: var(--accent);"><i data-lucide="shield-check" class="w-4 h-4"></i></div>
+          <div>
+            <h3 class="sheet-title">Victory Gallery</h3>
+            <p class="text-[9px] font-semibold" style="color: var(--text-muted);">Defeated cravings &amp; milestones</p>
+          </div>
+        </div>
         <button onclick="window.closeShieldDashboard()" class="sheet-close"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
       <div class="sheet-body space-y-5">
@@ -1663,8 +1686,13 @@
     <div class="sheet-panel">
       <div class="sheet-handle"></div>
       <div class="sheet-header">
-        <div class="w-[30px]"></div>
-        <h3 class="sheet-title">Ride It Out</h3>
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl flex items-center justify-center" style="background: rgba(16,185,129,0.12); color: #10B981;"><i data-lucide="waves" class="w-4 h-4"></i></div>
+          <div>
+            <h3 class="sheet-title">Ride It Out</h3>
+            <p class="text-[9px] font-semibold" style="color: var(--text-muted);">Surge delay timer</p>
+          </div>
+        </div>
         <button onclick="window.closeWaveModal()" class="sheet-close"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
       <div class="sheet-body">
@@ -1687,14 +1715,29 @@
       </div>
     </div>
   </div>
-  <div id="mapModal" class="hidden fixed inset-0 z-50 flex flex-col p-4 backdrop-blur-md" style="background-color: var(--overlay-bg);"><div class="flex justify-between items-center mb-4 mt-8 px-2"><h3 class="text-lg font-bold" style="color: var(--text-main);">Thermal View</h3><button onclick="window.closeMapModal()" class="text-xs px-4 py-2 rounded-full font-bold active:scale-95 border" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--card-border);">Done</button></div><div id="mapModalContainer" class="w-full flex-1 rounded-3xl overflow-hidden shadow-2xl" style="border: 1px solid var(--card-border);"></div></div>
+  <div id="mapModal" class="hidden fixed inset-0 z-50 flex flex-col p-4 backdrop-blur-md" style="background-color: var(--overlay-bg);">
+    <div class="flex justify-between items-center mb-4 mt-8 px-2">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-xl flex items-center justify-center" style="background: var(--accent-glow); color: var(--accent);"><i data-lucide="map-pin" class="w-4 h-4"></i></div>
+        <h3 class="sheet-title">Thermal Location View</h3>
+      </div>
+      <button onclick="window.closeMapModal()" class="sheet-close"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+    <div id="mapModalContainer" class="w-full flex-1 rounded-2xl overflow-hidden shadow-2xl" style="border: 1px solid var(--card-border);"></div>
+  </div>
   <div id="toastContainer" class="fixed top-4 left-0 right-0 z-[30000] flex flex-col items-center justify-start gap-2 pointer-events-none px-6" style="padding-top: env(safe-area-inset-top);"></div>
   <!-- MONEY VISUALIZER MODAL -->
   <div id="moneyVisualizerModal" class="hidden sheet" onclick="if(event.target===this) window.closeMoneyVisualizer()">
-    <div class="sheet-panel" style="max-height: 85vh;">
+    <div class="sheet-panel" style="max-height: 88vh;">
       <div class="sheet-handle"></div>
       <div class="sheet-header">
-        <p class="sheet-title"><i data-lucide="piggy-bank" class="w-3.5 h-3.5 inline-block mr-1 align-middle" style="color: var(--accent);"></i> What Your Savings Can Buy</p>
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl flex items-center justify-center" style="background: var(--accent-glow); color: var(--accent);"><i data-lucide="piggy-bank" class="w-4 h-4"></i></div>
+          <div>
+            <h3 class="sheet-title">Savings Visualizer</h3>
+            <p class="text-[9px] font-semibold" style="color: var(--text-muted);">What your saved money can buy</p>
+          </div>
+        </div>
         <button onclick="window.closeMoneyVisualizer()" class="sheet-close"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
       <div class="sheet-body">
@@ -1739,7 +1782,13 @@
     <div class="sheet-panel" style="max-height: 90vh;">
       <div class="sheet-handle"></div>
       <div class="sheet-header">
-        <p class="sheet-title"><i data-lucide="wind" class="w-3.5 h-3.5 inline-block mr-1 align-middle" style="color: var(--accent);"></i> Breathe</p>
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl flex items-center justify-center" style="background: rgba(56,189,248,0.12); color: #38BDF8;"><i data-lucide="wind" class="w-4 h-4"></i></div>
+          <div>
+            <h3 class="sheet-title">Breathe &amp; Reset</h3>
+            <p class="text-[9px] font-semibold" style="color: var(--text-muted);">Guided neural calm</p>
+          </div>
+        </div>
         <button onclick="window.closeBreathingModal()" class="sheet-close"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
       <div class="sheet-body flex flex-col items-center">
@@ -1785,6 +1834,16 @@
   <div id="relapseModal" class="hidden sheet" onclick="if(event.target===this) window.closeRelapseModal()">
     <div class="sheet-panel" style="max-height: 85vh;">
       <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl flex items-center justify-center" style="background: rgba(16,185,129,0.12); color: #10B981;"><i data-lucide="sprout" class="w-4 h-4"></i></div>
+          <div>
+            <h3 class="sheet-title">Recovery Compass</h3>
+            <p class="text-[9px] font-semibold" style="color: var(--text-muted);">Every attempt builds resilience</p>
+          </div>
+        </div>
+        <button onclick="window.closeRelapseModal()" class="sheet-close"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
       <div class="sheet-body flex flex-col items-center text-center pt-2">
         <div id="relapseIconWrap" class="w-20 h-20 rounded-full flex items-center justify-center mb-4 relapse-celebrate" style="background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(56,189,248,0.15)); border: 2px solid rgba(16,185,129,0.3);">
           <span class="text-4xl">🌱</span>
