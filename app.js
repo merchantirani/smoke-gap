@@ -3308,6 +3308,144 @@ function showStatDetail(type) {
     desc.innerText = sStreak > 0 ? `You've stayed within your ${settings.dailyLimit}-stick daily limit for ${sStreak} consecutive day${sStreak===1?'':'s'} (2 slip days tolerated). Don't break the chain!` : `Log a cigarette and stay within your daily limit to start your streak. Every day counts!`;
     const onTarget = sDates.filter(d => sByDate[d] <= settings.dailyLimit && d !== sToday).length;
     extra.innerHTML = row('Days On Target', `${onTarget}`) + row('Streak Tolerances', '2 slip days allowed') + row('Daily Limit', `${settings.dailyLimit} sticks`);
+  } else if (type === 'insightSpend') {
+    const activeLogs = getFilteredLogs();
+    const periodSpend = activeLogs.length * pricePerStick;
+    const daysCount = Math.max(1, new Set(activeLogs.map(l => new Date(l.timestamp).toDateString())).size);
+    const avgDailySpend = periodSpend / daysCount;
+    const projectedYearly = avgDailySpend * 365;
+    const totalSaved = computeTotalSaved();
+
+    iconClass = 'bg-red-500/10 text-red-500'; iconName = 'wallet';
+    title.innerText = "Financial Velocity & Savings";
+    value.innerText = `${settings.currency} ${periodSpend.toFixed(1)}`;
+    desc.innerText = `In this selected period, you smoked ${activeLogs.length} stick(s) costing ${settings.currency} ${periodSpend.toFixed(1)}. By pacing your cigarettes and widening your gaps, you have already protected ${settings.currency} ${totalSaved.toFixed(1)} lifetime capital!`;
+
+    if (pBox) pBox.classList.remove('hidden');
+    if (pLabel) pLabel.innerText = "Daily Spend Pacing";
+    const dailySpendRatio = Math.min(100, Math.round((avgDailySpend / Math.max(1, (settings.dailyLimit * pricePerStick))) * 100));
+    if (pPct) pPct.innerText = `${dailySpendRatio}% of limit`;
+    if (pBar) {
+      pBar.style.width = `${dailySpendRatio}%`;
+      pBar.style.background = dailySpendRatio <= 80 ? 'linear-gradient(90deg, #10B981, #34D399)' : 'linear-gradient(90deg, #EF4444, #F87171)';
+    }
+
+    extra.innerHTML = row('Period Logs', `${activeLogs.length} sticks`) +
+      row('Daily Average Spend', `${settings.currency} ${avgDailySpend.toFixed(1)} / day`) +
+      row('Cost Per Cigarette', `${settings.currency} ${pricePerStick.toFixed(2)}`) +
+      row('Projected Annual Cost', `${settings.currency} ${Math.round(projectedYearly)} / yr`) +
+      row('Total Lifetime Saved', `${settings.currency} ${totalSaved.toFixed(1)}`);
+
+  } else if (type === 'insightPacing') {
+    const activeLogs = getFilteredLogs();
+    const periodGaps = activeLogs.map(l => l.gap).filter(g => g !== null && g !== undefined);
+    const avgGap = periodGaps.length ? Math.round(periodGaps.reduce((a,b)=>a+b,0) / periodGaps.length) : 0;
+    const maxGap = periodGaps.length ? Math.max(...periodGaps) : 0;
+    const minGap = periodGaps.length ? Math.min(...periodGaps) : 0;
+    const baselineGap = Math.round(1440 / Math.max(1, settings.baselineSticks || settings.dailyLimit));
+
+    iconClass = 'bg-sky-500/10 text-sky-500'; iconName = 'clock';
+    title.innerText = "Pacing & Dopamine Gap Analysis";
+    value.innerText = formatGap(avgGap);
+    desc.innerText = avgGap > 0
+      ? `Your average delay between cigarettes in this period is ${formatGap(avgGap)} (Longest: ${formatGap(maxGap)}). Research proves gaps over 90 minutes allow dopamine receptors to begin self-repair.`
+      : `Record at least two cigarettes in this period to establish your pacing baseline.`;
+
+    if (pBox && avgGap > 0) {
+      pBox.classList.remove('hidden');
+      if (pLabel) pLabel.innerText = "Gap vs Starting Baseline";
+      const gapBoostPct = Math.min(100, Math.round((avgGap / Math.max(1, baselineGap)) * 100));
+      if (pPct) pPct.innerText = `${gapBoostPct}% of 24h cycle`;
+      if (pBar) {
+        pBar.style.width = `${gapBoostPct}%`;
+        pBar.style.background = 'linear-gradient(90deg, #38BDF8, #818CF8)';
+      }
+    }
+
+    extra.innerHTML = row('Period Average Gap', formatGap(avgGap)) +
+      row('Longest Gap Achieved', formatGap(maxGap)) +
+      row('Shortest / Vulnerable Gap', periodGaps.length ? formatGap(minGap) : '—') +
+      row('Calculated Baseline Gap', formatGap(baselineGap)) +
+      row('Neuro-Recovery Zone', avgGap >= 120 ? 'Optimal (2h+)' : 'Developing');
+
+  } else if (type === 'insightWinRate') {
+    const activeLogs = getFilteredLogs();
+    const activeTimeMin = activeLogs.length ? Math.min(...activeLogs.map(l => l.timestamp)) : 0;
+    const periodWaves = waves.filter(w => w >= activeTimeMin);
+    const winRate = (periodWaves.length + activeLogs.length) > 0 ? Math.round((periodWaves.length / (periodWaves.length + activeLogs.length)) * 100) : 0;
+
+    iconClass = 'bg-emerald-500/10 text-emerald-500'; iconName = 'shield-alert';
+    title.innerText = "Willpower Resilience & Win Rate";
+    value.innerText = `${winRate}% Resisted`;
+    desc.innerText = `You have actively ridden out ${periodWaves.length} craving wave(s) in this period. Every delay wave interrupts the automatic addiction loop and earns Streak Shields!`;
+
+    if (pBox) {
+      pBox.classList.remove('hidden');
+      if (pLabel) pLabel.innerText = "Craving Victory Ratio";
+      if (pPct) pPct.innerText = `${winRate}%`;
+      if (pBar) {
+        pBar.style.width = `${Math.min(100, winRate)}%`;
+        pBar.style.background = 'linear-gradient(90deg, #10B981, #34D399)';
+      }
+    }
+
+    extra.innerHTML = row('Urges Resisted', `${periodWaves.length} waves`) +
+      row('Cigarettes Logged', `${activeLogs.length} sticks`) +
+      row('Earned Shields 🛡️', `${waves.length} available`) +
+      row('Streak Protection Status', waves.length > 0 ? 'Active (Auto-save ready)' : 'Earn via Ride Urge');
+
+  } else if (type === 'insightPeak') {
+    const activeLogs = getFilteredLogs();
+    const hourCounts = Array(24).fill(0);
+    const trigCounts = {};
+    const dayCounts = Array(7).fill(0);
+
+    activeLogs.forEach(l => {
+      const d = new Date(l.timestamp);
+      hourCounts[d.getHours()]++;
+      dayCounts[d.getDay()]++;
+      const tArr = (Array.isArray(l.tags) && l.tags.length > 0) ? l.tags : (l.trigger ? [l.trigger] : []);
+      tArr.forEach(t => { trigCounts[t] = (trigCounts[t] || 0) + 1; });
+    });
+
+    const maxHour = Math.max(...hourCounts);
+    const peakH = maxHour > 0 ? hourCounts.indexOf(maxHour) : -1;
+    const peakHourText = peakH >= 0 ? `${peakH % 12 || 12}:00 ${peakH >= 12 ? 'PM' : 'AM'}` : '—';
+    const topTrig = Object.keys(trigCounts).sort((a,b) => trigCounts[b] - trigCounts[a])[0] || 'Uncategorized';
+    const daysName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const maxDayIdx = dayCounts.indexOf(Math.max(...dayCounts));
+    const heaviestDay = Math.max(...dayCounts) > 0 ? daysName[maxDayIdx] : '—';
+
+    iconClass = 'bg-orange-500/10 text-orange-500'; iconName = 'alert-triangle';
+    title.innerText = "High-Risk Habit Intel";
+    value.innerText = `Peak: ${peakHourText}`;
+    desc.innerText = peakH >= 0
+      ? `Your highest urge clustering occurs around ${peakHourText}, driven primarily by "${topTrig}". Pre-emptive action (drinking cold water, deep breathing) at this time yields 80% higher success.`
+      : `Keep logging tags to uncover your personal vulnerability windows.`;
+
+    extra.innerHTML = row('Peak Vulnerability Hour', peakHourText) +
+      row('Primary Trigger', topTrig) +
+      row('Heaviest Day of Week', heaviestDay) +
+      row('Suggested Shield Defense', '10m Ride Urge Wave');
+
+  } else if (type === 'smartInsight') {
+    const activeLogs = getFilteredLogs();
+    const textInsightEl = document.getElementById('smartTextInsight');
+    const insightText = textInsightEl ? textInsightEl.innerText : 'Track continuously to unlock custom psychological coaching.';
+
+    iconClass = 'bg-amber-500/10 text-amber-500'; iconName = 'sparkles';
+    title.innerText = "AI Habit Intelligence Coach";
+    value.innerText = "Personalized Intel";
+    desc.innerText = insightText;
+
+    const allGaps = logs.map(l => l.gap).filter(g => g !== null && g !== undefined);
+    const avgGap = allGaps.length ? Math.round(allGaps.reduce((a,b)=>a+b,0) / allGaps.length) : 0;
+    const lifeRegainedHrs = ((computeTotalSaved() / (settings.packPrice / settings.packSize)) * 11 / 60).toFixed(1);
+
+    extra.innerHTML = row('All-Time Gaps Average', formatGap(avgGap)) +
+      row('Estimated Life Regained', `+${lifeRegainedHrs} hrs`) +
+      row('Neuroplastic Adaptation', logs.length >= 20 ? 'Phase 2: Habit Decoupling' : 'Phase 1: Awareness Building') +
+      row('On-Device Privacy', '100% Offline Local Engine');
   }
   
   if (icon) {
