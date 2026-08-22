@@ -1051,6 +1051,7 @@ function switchTab(t) {
     localStorage.setItem('smoke_active_tab', t);
     if (t === 'history') renderHistory('fullHistoryList'); 
     if (t === 'insights') requestAnimationFrame(() => renderAllCharts());
+    if (t === 'settings') syncSettingsUI();
     refreshIcons();
   } catch(err) { 
     console.error("switchTab Error:", err); 
@@ -1227,7 +1228,10 @@ function applyTheme(t) {
 }
 
 function selectTheme(themeName) {
+  if (!themeName) return;
   settings.theme = themeName;
+  const sel = document.getElementById('themeSelect');
+  if (sel) sel.value = themeName;
   localStorage.setItem('smoke_settings', JSON.stringify(settings));
   applyTheme(themeName);
   updateThemeSwatchesUI();
@@ -1264,8 +1268,6 @@ function adjustSetting(key, delta, min, max) {
   
   const inputEl = document.getElementById(key + 'Input');
   if (inputEl) inputEl.value = val;
-  const displayEl = document.getElementById(key + 'Display');
-  if (displayEl) displayEl.innerText = val;
   
   localStorage.setItem('smoke_settings', JSON.stringify(settings));
   updateCostPerCigDisplay();
@@ -1273,12 +1275,18 @@ function adjustSetting(key, delta, min, max) {
   if (settings.haptics && navigator.vibrate) navigator.vibrate(15);
 }
 
-function setTimeFormat(fmt) {
-  settings.timeFormat = fmt;
+function onSettingInput(key, rawVal, min, max) {
+  let val = (key === 'packPrice') ? parseFloat(rawVal) : parseInt(rawVal);
+  if (isNaN(val)) return;
+  val = Math.max(min, Math.min(max, val));
+  settings[key] = val;
   localStorage.setItem('smoke_settings', JSON.stringify(settings));
-  const sel = document.getElementById('timeFormatSelect');
-  if (sel) sel.value = fmt;
-  
+  updateCostPerCigDisplay();
+  try { updateUI(); } catch(err){}
+}
+
+function updateTimeFormatUI() {
+  const fmt = settings.timeFormat || '12h';
   document.querySelectorAll('.time-fmt-btn').forEach(btn => {
     if (btn.getAttribute('data-fmt') === fmt) {
       btn.style.background = 'var(--accent)';
@@ -1288,9 +1296,31 @@ function setTimeFormat(fmt) {
       btn.style.color = 'var(--text-muted)';
     }
   });
+}
+
+function setTimeFormat(fmt) {
+  settings.timeFormat = fmt;
+  localStorage.setItem('smoke_settings', JSON.stringify(settings));
+  const sel = document.getElementById('timeFormatSelect');
+  if (sel) sel.value = fmt;
+  
+  updateTimeFormatUI();
   if (settings.haptics && navigator.vibrate) navigator.vibrate(15);
   try { updateUI(); } catch(err){}
   if (!document.getElementById('page-history').classList.contains('hidden')) renderHistory('fullHistoryList');
+}
+
+function updateLockSecsUI() {
+  const secs = settings.lockSecs || 300;
+  document.querySelectorAll('.cooldown-btn').forEach(btn => {
+    if (parseInt(btn.getAttribute('data-secs')) === secs) {
+      btn.style.background = 'var(--accent)';
+      btn.style.color = 'var(--accent-text)';
+    } else {
+      btn.style.background = 'transparent';
+      btn.style.color = 'var(--text-muted)';
+    }
+  });
 }
 
 function setLockSecs(secs) {
@@ -1299,15 +1329,7 @@ function setLockSecs(secs) {
   const sel = document.getElementById('lockSecsInput');
   if (sel) sel.value = settings.lockSecs;
   
-  document.querySelectorAll('.cooldown-btn').forEach(btn => {
-    if (parseInt(btn.getAttribute('data-secs')) === settings.lockSecs) {
-      btn.style.background = 'var(--accent)';
-      btn.style.color = 'var(--accent-text)';
-    } else {
-      btn.style.background = 'transparent';
-      btn.style.color = 'var(--text-muted)';
-    }
-  });
+  updateLockSecsUI();
   if (settings.haptics && navigator.vibrate) navigator.vibrate(15);
 }
 
@@ -1317,6 +1339,31 @@ function updateMotivationCounter() {
   if (mot && counter) {
     counter.innerText = `${mot.value.length}/100`;
   }
+}
+
+function syncSettingsUI() {
+  const dLim = document.getElementById('dailyLimitInput'); if (dLim) dLim.value = settings.dailyLimit;
+  const pPrice = document.getElementById('packPriceInput'); if (pPrice) pPrice.value = settings.packPrice;
+  const pSize = document.getElementById('packSizeInput'); if (pSize) pSize.value = settings.packSize;
+  const cur = document.getElementById('currencySelect'); if (cur) cur.value = settings.currency || 'AED';
+  const hap = document.getElementById('hapticsInput'); if (hap) hap.checked = !!settings.haptics;
+  const mot = document.getElementById('motivationInput'); if (mot) mot.value = settings.motivation || '';
+  const autoR = document.getElementById('autoReduceInput'); if (autoR) autoR.checked = !!settings.autoReduce;
+  const qdInput = document.getElementById('quitDateInput'); if (qdInput) qdInput.value = settings.quitDate || '';
+
+  const notifKeys = ['notifWaveComplete', 'notifGapWidened', 'notifInactivity', 'notifPredictive', 'notifEnableSos'];
+  notifKeys.forEach(k => {
+    const el = document.getElementById(k + 'Input');
+    if (el) el.checked = settings[k] !== false;
+  });
+
+  updateThemeSwatchesUI();
+  updateTimeFormatUI();
+  updateLockSecsUI();
+  updateMotivationCounter();
+  updatePinBadgeUI();
+  updateCostPerCigDisplay();
+  renderTriggerSettingsList();
 }
 
 function updateSettings() {
@@ -4466,6 +4513,8 @@ window.setupPin = setupPin;
 window.closePinSetupModal = closePinSetupModal;
 window.savePinSetup = savePinSetup;
 window.updateSettings = updateSettings;
+window.syncSettingsUI = syncSettingsUI;
+window.onSettingInput = onSettingInput;
 window.selectTheme = selectTheme;
 window.adjustSetting = adjustSetting;
 window.setTimeFormat = setTimeFormat;

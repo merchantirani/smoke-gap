@@ -1,5 +1,5 @@
-// PAUSE SERVICE WORKER - Offline Caching v3.0 (Mobile Optimized)
-const CACHE_VERSION = 'v5';
+// PAUSE SERVICE WORKER - Offline Caching v4.0 (Always-Fresh Network-First)
+const CACHE_VERSION = 'v7';
 const CACHE_NAME = `pause-cache-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `pause-runtime-${CACHE_VERSION}`;
 
@@ -115,7 +115,7 @@ async function cacheFirst(request) {
   }
 }
 
-// Strategy: Network First with Cache Fallback (for HTML pages)
+// Strategy: Network First with Cache Fallback (for HTML pages & dynamic scripts)
 async function networkFirst(request) {
   try {
     const response = await fetch(request);
@@ -187,8 +187,12 @@ self.addEventListener('fetch', (e) => {
       return;
     }
 
-    // Local app files - Cache First
+    // Local code files (HTML, JS, CSS) - Network First for instant code updates
     if (url.origin === location.origin) {
+      if (url.pathname.endsWith('.js') || url.pathname.endsWith('.html') || url.pathname.endsWith('.css') || url.pathname === '/') {
+        e.respondWith(networkFirst(e.request));
+        return;
+      }
       e.respondWith(cacheFirst(e.request));
       return;
     }
