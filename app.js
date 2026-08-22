@@ -3035,7 +3035,7 @@ function updateHeroDisplay(diff, prevGapMs, avgGapMs) {
   
   if (ringFill && avgGapMs > 0) {
     let ringPct = isVictory ? Math.min(100, 70 + bonusPct) : pct;
-    const circumference = 515.22;
+    const circumference = 615.75;
     const offset = circumference - (circumference * (ringPct / 100));
     ringFill.style.strokeDashoffset = offset;
 
