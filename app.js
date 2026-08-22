@@ -1,6 +1,6 @@
 // ==========================================
 // pause — Widen the gap.
-// Application Engine (Unified & Optimized)
+// Application Engine (Unified, Optimized & Premium)
 // ==========================================
 
 // --- State Initialization ---
@@ -183,7 +183,7 @@ function esc(s) { return String(s ?? '').replace(/[&<>"'`]/g, c => ({ '&':'&amp;
 function isLightTheme() { const t = settings.theme || 'white'; return LIGHT_THEMES.includes(t) || document.documentElement.classList.contains('theme-white') || document.documentElement.classList.contains('theme-paper') || document.documentElement.classList.contains('theme-calm'); }
 function formatAppTime(dateObj) { return dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: settings.timeFormat === '12h' }); }
 
-// Human-friendly gap formatting: minutes (<60m), hours (1h - 23h), and days (1d 4h, 2d, 12d)
+// Multi-tier human-friendly gap formatting: minutes (<60m), hours (1h - 23h), and days (1d 4h, 2d, 12d)
 function formatGap(m) { 
   if (m === null || m === undefined || isNaN(m)) return '—'; 
   m = Math.round(m);
@@ -2536,7 +2536,7 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
   ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.quadraticCurveTo(x + w, y + w, y + r);
   ctx.lineTo(x + w, y + h - r);
   ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
   ctx.lineTo(x + r, y + h);
@@ -2971,7 +2971,7 @@ function checkPeakNudge() {
       if (!isNaN(h)) hours[h] = (hours[h]||0)+1; 
     });
     if (Object.keys(hours).length > 0) {
-      let peakHrInt = parseInt(Object.keys(hours).reduce((a,b) => hours[a] > hours[b] ? a : b));
+      let peakHr = parseInt(Object.keys(hours).reduce((a,b) => hours[a] > hours[b] ? a : b));
       if (now.getHours() === peakHr || (now.getHours() === peakHr - 1 && now.getMinutes() >= 45)) {
         showToast("Your peak craving time is approaching. Ready to Ride It Out?");
         sendSystemNotification("☕ Peak Craving Approaching", "Your usual peak craving time is near. Stay mindful and prepare to Ride It Out!", 'notifPredictive');
@@ -3659,8 +3659,8 @@ function renderAllCharts() {
   if (activeLogs.length > 0) {
     let hours = {}; 
     activeLogs.forEach(l => { let h = new Date(l.timestamp).getHours(); hours[h] = (hours[h]||0)+1; });
-    let peakHrInt = parseInt(Object.keys(hours).reduce((a,b) => hours[a] > hours[b] ? a : b));
-    let peakDate = new Date(); peakDate.setHours(peakHrInt, 0, 0, 0);
+    let peakHr = parseInt(Object.keys(hours).reduce((a,b) => hours[a] > hours[b] ? a : b));
+    let peakDate = new Date(); peakDate.setHours(peakHr, 0, 0, 0);
     const peakHourEl = document.getElementById('insightPeakHour');
     if (peakHourEl) peakHourEl.innerText = formatAppTime(peakDate);
     
@@ -3685,9 +3685,9 @@ function renderAllCharts() {
       smartText = `You mostly struggle around <strong>${formatAppTime(peakDate)}</strong>, heavily triggered by <strong>${esc(topT)}</strong>.`;
     }
   } else {
-    document.getElementById('insightPeakHour').innerText = '--';
-    document.getElementById('insightTopTrigger').innerText = '--';
-    document.getElementById('insightHeaviestDay').innerText = '--';
+    const peakEl = document.getElementById('insightPeakHour'); if (peakEl) peakEl.innerText = '--';
+    const topEl = document.getElementById('insightTopTrigger'); if (topEl) topEl.innerText = '--';
+    const hvyEl = document.getElementById('insightHeaviestDay'); if (hvyEl) hvyEl.innerText = '--';
   }
   
   const smartInsightEl = document.getElementById('smartTextInsight');
@@ -3729,7 +3729,6 @@ function renderAllCharts() {
     const trendData = computeGapTrendData(activeLogs, filter);
     const ctx1 = document.getElementById('chart1').getContext('2d');
 
-    // Calculate trend direction for badge
     if (trendData.values.length >= 2) {
       const firstVal = trendData.values[0];
       const lastVal = trendData.values[trendData.values.length - 1];
@@ -3799,7 +3798,7 @@ function renderAllCharts() {
     console.error("Chart 1 error:", e);
   }
 
-  // --- CHART 2: Daily Counts vs Limit ---
+  // --- CHART 2: Daily Counts vs Limit (Dynamic Glow Bars) ---
   try {
     let dayMap = {}; 
     activeLogs.forEach(l => { 
@@ -3811,14 +3810,51 @@ function renderAllCharts() {
     let dayLabels = Object.keys(dayMap), dayCounts = Object.values(dayMap); 
     if (dayLabels.length === 0) { dayLabels = ['Today']; dayCounts = [0]; }
     const ctx2 = document.getElementById('chart2').getContext('2d');
-    const barGradient = ctx2.createLinearGradient(0, 0, 0, 180);
-    barGradient.addColorStop(0, '#10B981');
-    barGradient.addColorStop(1, '#10B98180');
+    
+    // Dynamic Bar Colors: Emerald for under/equal limit, Coral/Red for exceeding limit
+    const barColors = dayCounts.map(count => {
+      return count <= settings.dailyLimit ? '#10B981' : '#EF4444';
+    });
+
     setBadge('badge-chart2', activeLogs.length > 0 ? `${activeLogs.length} Total` : '', 'bg-amber-500/10 text-amber-500 border-amber-500/20');
-    upsertChart(2, ctx2, { type: 'bar', data: { labels: dayLabels, datasets: [{ label: 'Count', data: dayCounts, backgroundColor: barGradient, borderRadius: { topLeft: 6, topRight: 6, bottomLeft: 2, bottomRight: 2 }, borderSkipped: false, maxBarThickness: 20, barPercentage: 0.6 }, { label: 'Limit', data: dayLabels.map(() => settings.dailyLimit), type: 'line', borderColor: '#EF4444', borderWidth: 1.5, borderDash: [5,5], pointRadius: 0, borderCapStyle: 'round' }] }, options: { ...proOptions, scales: { x: { ...proOptions.scales.x, offset: true }, y: { ...proOptions.scales.y } } }, plugins: [crosshairPlugin] });
+    upsertChart(2, ctx2, { 
+      type: 'bar', 
+      data: { 
+        labels: dayLabels, 
+        datasets: [
+          { 
+            label: 'Cigarettes', 
+            data: dayCounts, 
+            backgroundColor: barColors, 
+            borderRadius: { topLeft: 8, topRight: 8, bottomLeft: 2, bottomRight: 2 }, 
+            borderSkipped: false, 
+            maxBarThickness: 22, 
+            barPercentage: 0.65 
+          }, 
+          { 
+            label: 'Goal Limit', 
+            data: dayLabels.map(() => settings.dailyLimit), 
+            type: 'line', 
+            borderColor: '#EF4444', 
+            borderWidth: 2, 
+            borderDash: [5, 5], 
+            pointRadius: 0, 
+            borderCapStyle: 'round' 
+          }
+        ] 
+      }, 
+      options: { 
+        ...proOptions, 
+        scales: { 
+          x: { ...proOptions.scales.x, offset: true }, 
+          y: { ...proOptions.scales.y } 
+        } 
+      }, 
+      plugins: [crosshairPlugin] 
+    });
   } catch(e){}
 
-  // --- CHART 3: Spent vs Saved ---
+  // --- CHART 3: Spent vs Saved (Luminous Area Graph) ---
   try {
     let cumulativeSpend = 0, spendData = [], savedData = [];
     let pricePerStick = settings.packPrice / settings.packSize;
@@ -3843,15 +3879,93 @@ function renderAllCharts() {
       });
     }
     const ctx3 = document.getElementById('chart3').getContext('2d');
-    upsertChart(3, ctx3, { type: 'line', data: { labels: labels, datasets: [{ label: 'Spent', data: spendData, borderColor: '#EF4444', backgroundColor: createPremiumGradient(ctx3, '#EF4444', '20', '05'), fill: true, tension: 0.4, borderWidth: 3, pointRadius: spendData.length <= 15 ? 3 : 0, pointHitRadius: 15 }, { label: 'Saved', data: savedData, borderColor: '#10B981', backgroundColor: createPremiumGradient(ctx3, '#10B981', '20', '05'), fill: true, tension: 0.4, borderWidth: 3, pointRadius: savedData.length <= 15 ? 3 : 0, pointHitRadius: 15 }] }, options: { ...proOptions, scales: { ...proOptions.scales, x: { ...proOptions.scales.x, offset: true } } }, plugins: [crosshairPlugin] });
+    upsertChart(3, ctx3, { 
+      type: 'line', 
+      data: { 
+        labels: labels, 
+        datasets: [
+          { 
+            label: 'Spent', 
+            data: spendData, 
+            borderColor: '#EF4444', 
+            backgroundColor: createPremiumGradient(ctx3, '#EF4444', '20', '05'), 
+            fill: true, 
+            tension: 0.4, 
+            borderWidth: 2.5, 
+            pointRadius: spendData.length <= 15 ? 3 : 0, 
+            pointHitRadius: 15 
+          }, 
+          { 
+            label: 'Saved', 
+            data: savedData, 
+            borderColor: '#10B981', 
+            backgroundColor: createPremiumGradient(ctx3, '#10B981', '25', '05'), 
+            fill: true, 
+            tension: 0.4, 
+            borderWidth: 2.5, 
+            pointRadius: savedData.length <= 15 ? 3 : 0, 
+            pointHitRadius: 15 
+          }
+        ] 
+      }, 
+      options: { 
+        ...proOptions, 
+        scales: { 
+          ...proOptions.scales, 
+          x: { ...proOptions.scales.x, offset: true } 
+        } 
+      }, 
+      plugins: [crosshairPlugin] 
+    });
     let finalSaved = savedData.length > 0 ? savedData[savedData.length - 1] : '0.0';
     setBadge('badge-chart3', activeLogs.length > 0 ? `Saved ${settings.currency} ${finalSaved}` : '', 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20');
   } catch(e){}
 
-  // --- CHART 4: Smoked vs Resisted ---
+  // --- CHART 4: Smoked vs Resisted (Cutout Donut) ---
   try {
     const ctx4 = document.getElementById('chart4').getContext('2d');
-    upsertChart(4, ctx4, { type: 'doughnut', data: { labels: ['Smoked', 'Resisted'], datasets: [{ data: [activeLogs.length, activeWaves.length], backgroundColor: ['#EF4444', '#0EA5E9'], borderWidth: 3, borderColor: isLightTheme() ? '#FFFFFF' : '#11131A', borderRadius: 6, cutout: '72%', spacing: 3 }] }, options: { responsive: true, maintainAspectRatio: false, animation: { animateRotate: true, duration: 800 }, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 14, font: { family: "'General Sans', sans-serif", size: 10, weight: '600' }, color: chartTextColor, usePointStyle: true, pointStyle: 'circle' } }, tooltip: { ...chartTooltipTheme, backgroundColor: isLightTheme() ? 'rgba(255,255,255,0.98)' : 'rgba(15,23,42,0.98)', borderColor: isLightTheme() ? 'rgba(203,213,225,0.5)' : 'rgba(255,255,255,0.06)', borderWidth: 1, cornerRadius: 14, padding: 12 } } }, plugins: [centerTextPlugin] });
+    upsertChart(4, ctx4, { 
+      type: 'doughnut', 
+      data: { 
+        labels: ['Smoked', 'Resisted'], 
+        datasets: [{ 
+          data: [activeLogs.length, activeWaves.length], 
+          backgroundColor: ['#EF4444', '#0EA5E9'], 
+          borderWidth: 3, 
+          borderColor: isLightTheme() ? '#FFFFFF' : '#11131A', 
+          borderRadius: 6, 
+          cutout: '74%', 
+          spacing: 3 
+        }] 
+      }, 
+      options: { 
+        responsive: true, 
+        maintainAspectRatio: false, 
+        animation: { animateRotate: true, duration: 800 }, 
+        plugins: { 
+          legend: { 
+            position: 'bottom', 
+            labels: { 
+              boxWidth: 10, 
+              padding: 14, 
+              font: { family: "'General Sans', sans-serif", size: 10, weight: '600' }, 
+              color: chartTextColor, 
+              usePointStyle: true, 
+              pointStyle: 'circle' 
+            } 
+          }, 
+          tooltip: { 
+            ...chartTooltipTheme, 
+            backgroundColor: isLightTheme() ? 'rgba(255,255,255,0.98)' : 'rgba(15,23,42,0.98)', 
+            borderColor: isLightTheme() ? 'rgba(203,213,225,0.5)' : 'rgba(255,255,255,0.06)', 
+            borderWidth: 1, 
+            cornerRadius: 14, 
+            padding: 12 
+          } 
+        } 
+      }, 
+      plugins: [centerTextPlugin] 
+    });
   } catch(e){}
 
   // --- CHART 5: Trigger Distribution ---
@@ -3866,7 +3980,48 @@ function renderAllCharts() {
     const triggerCounts = triggers.map(t => triggerCountMap[t] || 0);
     const topTriggerIdx = triggerCounts.length ? triggerCounts.indexOf(Math.max(...triggerCounts)) : -1;
     setBadge('badge-chart5', (topTriggerIdx >= 0 && triggerCounts[topTriggerIdx] > 0) ? `Top: ${triggers[topTriggerIdx]}` : '', 'bg-purple-500/10 text-purple-500 border-purple-500/20');
-    upsertChart(5, ctx5, { type: 'doughnut', data: { labels: triggers, datasets: [{ data: triggerCounts, backgroundColor: triggers.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]), borderWidth: 3, borderColor: isLightTheme() ? '#FFFFFF' : '#11131A', borderRadius: 4, cutout: '72%', spacing: 2 }] }, options: { responsive: true, maintainAspectRatio: false, animation: { animateRotate: true, duration: 800 }, plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, padding: 10, font: { family: "'General Sans', sans-serif", size: 9, weight: '600' }, color: chartTextColor, usePointStyle: true, pointStyle: 'circle' } }, tooltip: { ...chartTooltipTheme, backgroundColor: isLightTheme() ? 'rgba(255,255,255,0.98)' : 'rgba(15,23,42,0.98)', borderColor: isLightTheme() ? 'rgba(203,213,225,0.5)' : 'rgba(255,255,255,0.06)', borderWidth: 1, cornerRadius: 14, padding: 12 } } }, plugins: [centerTextPlugin] });
+    upsertChart(5, ctx5, { 
+      type: 'doughnut', 
+      data: { 
+        labels: triggers, 
+        datasets: [{ 
+          data: triggerCounts, 
+          backgroundColor: triggers.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]), 
+          borderWidth: 3, 
+          borderColor: isLightTheme() ? '#FFFFFF' : '#11131A', 
+          borderRadius: 4, 
+          cutout: '74%', 
+          spacing: 2 
+        }] 
+      }, 
+      options: { 
+        responsive: true, 
+        maintainAspectRatio: false, 
+        animation: { animateRotate: true, duration: 800 }, 
+        plugins: { 
+          legend: { 
+            position: 'bottom', 
+            labels: { 
+              boxWidth: 8, 
+              padding: 10, 
+              font: { family: "'General Sans', sans-serif", size: 9, weight: '600' }, 
+              color: chartTextColor, 
+              usePointStyle: true, 
+              pointStyle: 'circle' 
+            } 
+          }, 
+          tooltip: { 
+            ...chartTooltipTheme, 
+            backgroundColor: isLightTheme() ? 'rgba(255,255,255,0.98)' : 'rgba(15,23,42,0.98)', 
+            borderColor: isLightTheme() ? 'rgba(203,213,225,0.5)' : 'rgba(255,255,255,0.06)', 
+            borderWidth: 1, 
+            cornerRadius: 14, 
+            padding: 12 
+          } 
+        } 
+      }, 
+      plugins: [centerTextPlugin] 
+    });
   } catch(e){}
 
   // --- CHART 6: Peak Smoking by Time of Day ---
